@@ -2,9 +2,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'database.dart';
 import 'pdf_engine.dart';
 
-void main() {
+/// Global database instance
+late final AppDatabase database;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  database = AppDatabase();
   runApp(const MyApp());
 }
 
@@ -85,27 +91,44 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       return;
     }
 
-    setState(() => _status = 'Processing...');
-
     try {
-      final outputPath = await _pdfEngine.injectBookmark(
-        filePath,
-        bookmarkTitle,
-        pageNumber - 1,
+      // STEP 1: Dual-Layer Save - Instantly save to local database
+      await database.addBookmark(
+        filePath: filePath,
+        title: bookmarkTitle,
+        pageIndex: pageNumber - 1,
       );
 
       if (!mounted) return;
 
+      // Show instant UI feedback
       setState(() {
-        if (outputPath != null) {
-          _status = 'Success! File saved at $outputPath';
-        } else {
-          _status = 'Failed to inject bookmark. Check console for details.';
-        }
+        _status = 'Saved to local DB!';
+        _bookmarkTitleController.clear();
+        _pageNumberController.clear();
       });
-    } on PdfOverwriteException catch (e) {
+
+      // STEP 2: Background injection - Do NOT await, let it run in background
+      _pdfEngine.injectBookmark(
+        filePath,
+        bookmarkTitle,
+        pageNumber - 1,
+      ).then((outputPath) {
+        if (!mounted) return;
+        if (outputPath != null) {
+          setState(() {
+            _status = 'Synced to PDF file: $outputPath';
+          });
+        }
+      }).catchError((e) {
+        if (!mounted) return;
+        setState(() {
+          _status = 'PDF sync failed: $e';
+        });
+      });
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _status = e.message);
+      setState(() => _status = 'Error: $e');
     }
   }
 
@@ -115,56 +138,124 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       appBar: AppBar(
         title: const Text('Atlas UEP PoC'),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ElevatedButton(
-                onPressed: _pickPdf,
-                child: const Text('Select PDF'),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ElevatedButton(
+                    onPressed: _pickPdf,
+                    child: const Text('Select PDF'),
+                  ),
+                  if (_selectedFilePath != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _selectedFilePath!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _bookmarkTitleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Bookmark Title',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _pageNumberController,
+                    decoration: const InputDecoration(
+                      labelText: 'Page Number',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: _injectBookmark,
+                    child: const Text('INJECT BOOKMARK'),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    _status,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              if (_selectedFilePath != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  _selectedFilePath!,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          // Bookmarks ListView with FutureBuilder
+          Container(
+            color: Colors.grey[100],
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Saved Bookmarks',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                SizedBox(
+                  height: 250,
+                  child: FutureBuilder<List<Bookmark>>(
+                    future: database.getAllBookmarks(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Text('Error: ${snapshot.error}'),
+                        );
+                      }
+
+                      final bookmarks = snapshot.data ?? [];
+
+                      if (bookmarks.isEmpty) {
+                        return const Center(
+                          child: Text('No bookmarks yet'),
+                        );
+                      }
+
+                      return ListView.builder(
+                        itemCount: bookmarks.length,
+                        itemBuilder: (context, index) {
+                          final bookmark = bookmarks[index];
+                          return ListTile(
+                            title: Text(bookmark.title),
+                            subtitle: Text(
+                              'Page ${bookmark.pageIndex + 1} • ${bookmark.filePath.split('/').last}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () async {
+                                await database.deleteBookmark(bookmark.id);
+                                if (mounted) {
+                                  setState(() {});
+                                }
+                              },
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               ],
-              const SizedBox(height: 24),
-              TextField(
-                controller: _bookmarkTitleController,
-                decoration: const InputDecoration(
-                  labelText: 'Bookmark Title',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _pageNumberController,
-                decoration: const InputDecoration(
-                  labelText: 'Page Number',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _injectBookmark,
-                child: const Text('INJECT BOOKMARK'),
-              ),
-              const SizedBox(height: 32),
-              Text(
-                _status,
-                textAlign: TextAlign.center,
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

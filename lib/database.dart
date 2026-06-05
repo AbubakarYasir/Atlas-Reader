@@ -13,10 +13,27 @@ class Bookmarks extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get filePath => text()();
   TextColumn get title => text()();
-  IntColumn get pageIndex => integer()();
+  IntColumn get pageIndex => integer().nullable()();
+  TextColumn get description => text().nullable()();
+  IntColumn get parentId => integer().nullable().references(Bookmarks, #id, onDelete: KeyAction.cascade)();
+  BoolColumn get isFolder => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get modifiedAt =>
       dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Tags table definition
+@DataClassName('Tag')
+class Tags extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text().unique()();
+}
+
+/// BookmarkTags join table for many-to-many relationship
+@DataClassName('BookmarkTag')
+class BookmarkTags extends Table {
+  IntColumn get bookmarkId => integer().references(Bookmarks, #id, onDelete: KeyAction.cascade)();
+  IntColumn get tagId => integer().references(Tags, #id, onDelete: KeyAction.cascade)();
 }
 
 /// FileSnapshots table for tracking PDF state for reconciliation
@@ -29,12 +46,12 @@ class FileSnapshots extends Table {
 }
 
 /// AppDatabase class extending _$AppDatabase
-@DriftDatabase(tables: [Bookmarks, FileSnapshots])
+@DriftDatabase(tables: [Bookmarks, Tags, BookmarkTags, FileSnapshots])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -71,8 +88,10 @@ class AppDatabase extends _$AppDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         // For PoC, we'll drop and recreate
-        if (from < 2) {
+        if (from < 3) {
           await customStatement('DROP TABLE IF EXISTS bookmarks');
+          await customStatement('DROP TABLE IF EXISTS tags');
+          await customStatement('DROP TABLE IF EXISTS bookmark_tags');
           await customStatement('DROP TABLE IF EXISTS file_snapshots');
           await customStatement('DROP TABLE IF EXISTS bookmarks_fts');
           await m.createAll();
@@ -107,13 +126,19 @@ class AppDatabase extends _$AppDatabase {
   Future<int> addBookmark({
     required String filePath,
     required String title,
-    required int pageIndex,
+    int? pageIndex,
+    String? description,
+    int? parentId,
+    bool isFolder = false,
   }) async {
     return into(bookmarks).insert(
       BookmarksCompanion(
         filePath: Value(filePath),
         title: Value(title),
         pageIndex: Value(pageIndex),
+        description: Value(description),
+        parentId: Value(parentId),
+        isFolder: Value(isFolder),
       ),
     );
   }
@@ -148,9 +173,14 @@ class AppDatabase extends _$AppDatabase {
     ));
   }
 
-  /// Delete a bookmark
+  /// Delete a bookmark and cascade delete nested children
   Future<int> deleteBookmark(int id) async {
-    return (delete(bookmarks)..where((tbl) => tbl.id.equals(id))).go();
+    return await transaction(() async {
+      // First, delete all child bookmarks (those with parentId = id)
+      await (delete(bookmarks)..where((tbl) => tbl.parentId.equals(id))).go();
+      // Then delete the bookmark itself
+      return (delete(bookmarks)..where((tbl) => tbl.id.equals(id))).go();
+    });
   }
 
   /// Delete all bookmarks for a specific file
@@ -180,15 +210,15 @@ class AppDatabase extends _$AppDatabase {
   Future<bool> syncBookmark({
     required String filePath,
     required String title,
-    required int pageIndex,
+    int? pageIndex,
   }) async {
     // Check if bookmark with exact filePath and title already exists
     final existing = await (select(bookmarks)
-          ..where((tbl) => 
-            tbl.filePath.equals(filePath) & 
+          ..where((tbl) =>
+            tbl.filePath.equals(filePath) &
             tbl.title.equals(title)))
         .getSingleOrNull();
-    
+
     if (existing == null) {
       // Bookmark doesn't exist, insert it
       await into(bookmarks).insert(
@@ -200,7 +230,7 @@ class AppDatabase extends _$AppDatabase {
       );
       return true;
     }
-    
+
     // Bookmark already exists
     return false;
   }
@@ -209,11 +239,11 @@ class AppDatabase extends _$AppDatabase {
   /// If query is empty, returns all bookmarks
   Future<List<Bookmark>> searchBookmarks(String query) async {
     final trimmedQuery = query.trim();
-    
+
     if (trimmedQuery.isEmpty) {
       return getAllBookmarks();
     }
-    
+
     // Use FTS5 for lightning-fast full-text search
     final results = await customSelect(
       'SELECT b.* FROM bookmarks b '
@@ -226,12 +256,15 @@ class AppDatabase extends _$AppDatabase {
         id: row.data['id'] as int,
         filePath: row.data['file_path'] as String,
         title: row.data['title'] as String,
-        pageIndex: row.data['page_index'] as int,
+        pageIndex: row.data['page_index'] as int?,
+        description: row.data['description'] as String?,
+        parentId: row.data['parent_id'] as int?,
+        isFolder: row.data['is_folder'] as bool,
         createdAt: row.data['created_at'] as DateTime,
         modifiedAt: row.data['modified_at'] as DateTime,
       );
     }).get();
-    
+
     return results;
   }
 
@@ -262,6 +295,53 @@ class AppDatabase extends _$AppDatabase {
     return (select(fileSnapshots)
           ..where((tbl) => tbl.filePath.equals(filePath)))
         .getSingleOrNull();
+  }
+
+  /// Fetch all tags for a specific bookmark
+  Future<List<Tag>> getTagsForBookmark(int bookmarkId) async {
+    final query = select(tags).join([
+      innerJoin(bookmarkTags, bookmarkTags.tagId.equalsExp(tags.id)),
+    ]);
+    query.where(bookmarkTags.bookmarkId.equals(bookmarkId));
+    return query.map((row) => row.readTable(tags)).get();
+  }
+
+  /// Add a tag to a bookmark (transaction helper)
+  /// Creates the tag if it doesn't exist, then links it to the bookmark
+  Future<void> addTagToBookmark(int bookmarkId, String tagName) async {
+    return await transaction(() async {
+      // Check if tag already exists
+      final existingTag = await (select(tags)
+            ..where((tbl) => tbl.name.equals(tagName)))
+          .getSingleOrNull();
+
+      int tagId;
+      if (existingTag != null) {
+        tagId = existingTag.id;
+      } else {
+        // Create new tag
+        tagId = await into(tags).insert(
+          TagsCompanion(name: Value(tagName)),
+        );
+      }
+
+      // Check if the bookmark-tag relationship already exists
+      final existingRelation = await (select(bookmarkTags)
+            ..where((tbl) =>
+                tbl.bookmarkId.equals(bookmarkId) &
+                tbl.tagId.equals(tagId)))
+          .getSingleOrNull();
+
+      // Only insert if the relationship doesn't exist
+      if (existingRelation == null) {
+        await into(bookmarkTags).insert(
+          BookmarkTagsCompanion(
+            bookmarkId: Value(bookmarkId),
+            tagId: Value(tagId),
+          ),
+        );
+      }
+    });
   }
 }
 

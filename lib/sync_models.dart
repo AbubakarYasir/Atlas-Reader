@@ -8,7 +8,7 @@ enum SyncAction {
 /// Class representing a bookmark difference for sync preview
 class BookmarkDiff {
   final String title;
-  final int pageIndex;
+  final int? pageIndex;
   final SyncAction action;
 
   BookmarkDiff({

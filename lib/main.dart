@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:logging/logging.dart';
 
 import 'database.dart';
 import 'pdf_engine.dart';
@@ -14,6 +15,12 @@ late final AppDatabase database;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Configure logging to route through Flutter's debugPrint (avoids using print)
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((rec) {
+    // Use debugPrint to avoid analyzer `avoid_print` lint
+    debugPrint('${rec.level.name}: ${rec.loggerName}: ${rec.message}');
+  });
   database = AppDatabase();
   runApp(const MyApp());
 }
@@ -41,15 +48,20 @@ class AtlasHomePage extends StatefulWidget {
 }
 
 class _AtlasHomePageState extends State<AtlasHomePage> {
+  final _log = Logger('Main');
   String? _selectedFilePath;
   String _status = 'Waiting';
   String _searchQuery = '';
   bool _isSyncing = false;
   bool _isPushing = false;
   List<BookmarkDiff> _syncDiffs = [];
+  bool _isFolder = false;
+  int? _selectedParentFolderId;
 
   final _bookmarkTitleController = TextEditingController();
   final _pageNumberController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _tagsController = TextEditingController();
   final _pdfEngine = PdfEngine();
   final _syncEngine = SyncEngine(database);
 
@@ -57,6 +69,8 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
   void dispose() {
     _bookmarkTitleController.dispose();
     _pageNumberController.dispose();
+    _descriptionController.dispose();
+    _tagsController.dispose();
     super.dispose();
   }
 
@@ -161,6 +175,8 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
     final filePath = _selectedFilePath;
     final bookmarkTitle = _bookmarkTitleController.text.trim();
     final pageNumberText = _pageNumberController.text.trim();
+    final description = _descriptionController.text.trim();
+    final tagsText = _tagsController.text.trim();
 
     if (filePath == null) {
       setState(() => _status = 'Please select a PDF file first.');
@@ -170,70 +186,95 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       setState(() => _status = 'Please enter a bookmark title.');
       return;
     }
-    if (pageNumberText.isEmpty) {
+
+    // For folders, page number is not required
+    if (!_isFolder && pageNumberText.isEmpty) {
       setState(() => _status = 'Please enter a page number.');
       return;
     }
 
-    final pageNumber = int.tryParse(pageNumberText);
-    if (pageNumber == null || pageNumber < 1) {
-      setState(() => _status = 'Page number must be a positive integer.');
-      return;
+    int? pageNumber;
+    if (!_isFolder) {
+      pageNumber = int.tryParse(pageNumberText);
+      if (pageNumber == null || pageNumber < 1) {
+        setState(() => _status = 'Page number must be a positive integer.');
+        return;
+      }
     }
 
     try {
-      // Validate page number is within bounds
-      final pageCount = await _pdfEngine.getPageCount(filePath);
-      if (pageCount == null) {
-        setState(() => _status = 'Could not read PDF file.');
-        return;
-      }
-      if (pageNumber > pageCount) {
-        setState(
-          () => _status = 'Page $pageNumber exceeds document pages ($pageCount).',
-        );
-        return;
+      // Validate page number is within bounds (only for non-folders)
+      if (!_isFolder && pageNumber != null) {
+        final pageCount = await _pdfEngine.getPageCount(filePath);
+        if (pageCount == null) {
+          setState(() => _status = 'Could not read PDF file.');
+          return;
+        }
+        if (pageNumber > pageCount) {
+          setState(
+            () => _status = 'Page $pageNumber exceeds document pages ($pageCount).',
+          );
+          return;
+        }
       }
 
       // STEP 1: Dual-Layer Save - Instantly save to local database
-      await database.addBookmark(
+      final bookmarkId = await database.addBookmark(
         filePath: filePath,
         title: bookmarkTitle,
-        pageIndex: pageNumber - 1,
+        pageIndex: pageNumber != null ? pageNumber - 1 : null,
+        description: description.isNotEmpty ? description : null,
+        parentId: _selectedParentFolderId,
+        isFolder: _isFolder,
       );
+
+      // Add tags if provided
+      if (tagsText.isNotEmpty) {
+        final tags = tagsText.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+        for (final tag in tags) {
+          await database.addTagToBookmark(bookmarkId, tag);
+        }
+      }
 
       if (!mounted) return;
 
       // Show instant UI feedback
       setState(() {
-        _status = 'Saved to local DB!';
+        _status = _isFolder ? 'Folder created in local DB!' : 'Saved to local DB!';
         _bookmarkTitleController.clear();
         _pageNumberController.clear();
+        _descriptionController.clear();
+        _tagsController.clear();
+        _isFolder = false;
+        _selectedParentFolderId = null;
       });
 
-      // STEP 2: Background injection - Do NOT await, let it run in background
-      _pdfEngine.injectBookmark(
-        filePath,
-        bookmarkTitle,
-        pageNumber - 1,
-      ).then((outputPath) {
-        if (!mounted) return;
-        if (outputPath != null) {
+      // STEP 2: Background injection - Only for non-folders
+      if (!_isFolder && pageNumber != null) {
+        _pdfEngine.injectBookmark(
+          filePath,
+          bookmarkTitle,
+          pageNumber - 1,
+          description: description.isNotEmpty ? description : null,
+        ).then((outputPath) {
+          if (!mounted) return;
+          if (outputPath != null) {
+            setState(() {
+              _status = '✓ Synced to PDF! Bookmark embedded.';
+            });
+          } else {
+            // Check console for detailed error logs
+            setState(() {
+              _status = '⚠ Local DB saved, but PDF injection failed. Check console.';
+            });
+          }
+        }).catchError((e) {
+          if (!mounted) return;
           setState(() {
-            _status = '✓ Synced to PDF! Bookmark embedded.';
+            _status = '⚠ Error: $e (Check console for details)';
           });
-        } else {
-          // Check console for detailed error logs
-          setState(() {
-            _status = '⚠ Local DB saved, but PDF injection failed. Check console.';
-          });
-        }
-      }).catchError((e) {
-        if (!mounted) return;
-        setState(() {
-          _status = '⚠ Error: $e (Check console for details)';
         });
-      });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _status = 'Error: $e');
@@ -406,7 +447,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
         if (!pdfTitles.contains(bookmark.title)) {
           diffs.add(BookmarkDiff(
             title: bookmark.title,
-            pageIndex: bookmark.pageIndex!,
+            pageIndex: bookmark.pageIndex,
             action: SyncAction.add,
           ));
         }
@@ -430,7 +471,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
         if (pdfTitles.contains(bookmark.title)) {
           diffs.add(BookmarkDiff(
             title: bookmark.title,
-            pageIndex: bookmark.pageIndex!,
+            pageIndex: bookmark.pageIndex,
             action: SyncAction.keep,
           ));
         }
@@ -442,38 +483,65 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
         });
       }
     } catch (e) {
-      print('Error calculating sync diff: $e');
+      _log.warning('Error calculating sync diff: $e');
     }
   }
 
   Future<void> _showEditBookmarkDialog(Bookmark bookmark) async {
     final titleController = TextEditingController(text: bookmark.title);
-    final pageController = TextEditingController(text: '${bookmark.pageIndex! + 1}');
+    final pageController = TextEditingController(text: '${(bookmark.pageIndex ?? 0) + 1}');
+    final descriptionController = TextEditingController(text: bookmark.description ?? '');
+    final tagsController = TextEditingController();
+
+    // Load existing tags
+    final existingTags = await database.getTagsForBookmark(bookmark.id);
+    tagsController.text = existingTags.map((t) => t.name).join(', ');
+
+    if (!mounted) return;
 
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Edit Bookmark'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: 'New Title',
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'New Title',
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: pageController,
-                decoration: const InputDecoration(
-                  labelText: 'New Page Number',
+                const SizedBox(height: 12),
+                TextField(
+                  controller: pageController,
+                  decoration: const InputDecoration(
+                    labelText: 'New Page Number',
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (Markdown comments)',
+                    hintText: 'Optional: Add notes about this bookmark...',
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: tagsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Tags (comma-separated)',
+                    hintText: 'Optional: project, important, research...',
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -510,11 +578,31 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
 
     final newTitle = titleController.text.trim();
     final newPageNumber = int.tryParse(pageController.text.trim());
+    final newDescription = descriptionController.text.trim();
+    final newTagsText = tagsController.text.trim();
+
     if (newTitle.isEmpty || newPageNumber == null || newPageNumber < 1) {
       return;
     }
 
-    await database.updateBookmark(bookmark.id, newTitle, newPageNumber! - 1);
+    // Update bookmark basic info
+    await database.updateBookmark(
+      bookmark.id,
+      newTitle,
+      newPageNumber - 1,
+      description: newDescription.isNotEmpty ? newDescription : null,
+    );
+
+    // Handle tags - clear existing and add new ones
+    await database.clearTagsForBookmark(bookmark.id);
+
+    // Add new tags
+    if (newTagsText.isNotEmpty) {
+      final newTags = newTagsText.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+      for (final tag in newTags) {
+        await database.addTagToBookmark(bookmark.id, tag);
+      }
+    }
 
     if (!mounted) return;
 
@@ -575,6 +663,81 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description (Markdown comments)',
+                      border: OutlineInputBorder(),
+                      hintText: 'Optional: Add notes about this bookmark...',
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _tagsController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tags (comma-separated)',
+                      border: OutlineInputBorder(),
+                      hintText: 'Optional: project, important, research...',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _isFolder,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            _isFolder = value ?? false;
+                            // Clear parent folder when switching to folder mode
+                            if (_isFolder) {
+                              _selectedParentFolderId = null;
+                            }
+                          });
+                        },
+                      ),
+                      const Text('Create as Folder (virtual bookmark without page)'),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (!_isFolder && _selectedFilePath != null)
+                    FutureBuilder<List<Bookmark>>(
+                      future: database.getBookmarksForFile(_selectedFilePath!),
+                      builder: (context, snapshot) {
+                        final folders = snapshot.data?.where((b) => b.isFolder).toList() ?? [];
+
+                        if (folders.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+
+                        return DropdownButtonFormField<int>(
+                          key: ValueKey('parent-folder-$_selectedParentFolderId'),
+                          decoration: const InputDecoration(
+                            labelText: 'Parent Folder (optional)',
+                            border: OutlineInputBorder(),
+                          ),
+                          initialValue: _selectedParentFolderId,
+                          items: folders.map((folder) {
+                            return DropdownMenuItem<int>(
+                              value: folder.id,
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.folder, size: 16, color: Colors.amber),
+                                  const SizedBox(width: 8),
+                                  Text(folder.title),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (int? value) {
+                            setState(() {
+                              _selectedParentFolderId = value;
+                            });
+                          },
+                        );
+                      },
+                    ),
                   const SizedBox(height: 24),
                   Row(
                     children: [
@@ -698,7 +861,9 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                                     ),
                                   ),
                                   trailing: Text(
-                                    'Page ${diff.pageIndex + 1}',
+                                    diff.pageIndex != null
+                                        ? 'Page ${diff.pageIndex! + 1}'
+                                        : 'Folder',
                                     style: const TextStyle(fontSize: 12),
                                   ),
                                   subtitle: Text(
@@ -789,35 +954,101 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                         itemBuilder: (context, index) {
                           final bookmark = bookmarks[index];
                           final fileName = bookmark.filePath.split('/').last;
-                          
-                          return ListTile(
-                            title: Text(bookmark.title),
-                            subtitle: Text(
-                              'Page ${bookmark.pageIndex! + 1} • $fileName',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit),
-                                  onPressed: () async {
-                                    await _showEditBookmarkDialog(bookmark);
-                                  },
+
+                          return FutureBuilder<List<Tag>>(
+                            future: database.getTagsForBookmark(bookmark.id),
+                            builder: (context, tagSnapshot) {
+                              final tags = tagSnapshot.data ?? [];
+
+                              return ListTile(
+                                title: Row(
+                                  children: [
+                                    if (bookmark.parentId != null)
+                                      const Icon(Icons.subdirectory_arrow_right, size: 16, color: Colors.grey),
+                                    if (bookmark.parentId != null) const SizedBox(width: 4),
+                                    if (bookmark.isFolder)
+                                      const Icon(Icons.folder, size: 16, color: Colors.amber),
+                                    if (bookmark.isFolder) const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        bookmark.title,
+                                        style: bookmark.isFolder
+                                            ? const TextStyle(fontWeight: FontWeight.bold)
+                                            : null,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  onPressed: () async {
-                                    await database.deleteBookmark(bookmark.id);
-                                    if (mounted) {
-                                      await _calculateSyncDiff();
-                                      setState(() {});
-                                    }
-                                  },
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (!bookmark.isFolder)
+                                      Text(
+                                          'Page ${(bookmark.pageIndex ?? 0) + 1} • $fileName',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        )
+                                    else
+                                      Text(
+                                        'Folder • $fileName',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    if (bookmark.description != null && bookmark.description!.isNotEmpty)
+                                      Text(
+                                        bookmark.description!,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    if (tags.isNotEmpty)
+                                      Wrap(
+                                        spacing: 4,
+                                        children: tags.map((tag) {
+                                          return Chip(
+                                            label: Text(
+                                              tag.name,
+                                              style: const TextStyle(fontSize: 10),
+                                            ),
+                                            backgroundColor: Colors.blue[100],
+                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          );
+                                        }).toList(),
+                                      ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit),
+                                      onPressed: () async {
+                                        await _showEditBookmarkDialog(bookmark);
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete),
+                                      onPressed: () async {
+                                        await database.deleteBookmark(bookmark.id);
+                                        if (mounted) {
+                                          await _calculateSyncDiff();
+                                          setState(() {});
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           );
                         },
                       );

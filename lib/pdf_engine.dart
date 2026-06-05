@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:logging/logging.dart';
 
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
@@ -13,6 +14,7 @@ class PdfOverwriteException implements Exception {
 }
 
 class PdfEngine {
+  static final _log = Logger('PdfEngine');
   /// Get the page count of a PDF file
   Future<int?> getPageCount(String filePath) async {
     PdfDocument? document;
@@ -21,7 +23,7 @@ class PdfEngine {
       document = PdfDocument(inputBytes: bytes);
       return document.pages.count;
     } catch (e) {
-      print('[PDF] Error reading page count: $e');
+      _log.warning('[PDF] Error reading page count: $e');
       return null;
     } finally {
       document?.dispose();
@@ -36,8 +38,8 @@ class PdfEngine {
   }) async {
     PdfDocument? document;
     try {
-      print('[PDF] Starting bookmark injection for: $bookmarkTitle');
-      print('[PDF] File: $filePath, Page: $pageIndex');
+      _log.info('[PDF] Starting bookmark injection for: $bookmarkTitle');
+      _log.fine('[PDF] File: $filePath, Page: $pageIndex');
 
       final bytes = await File(filePath).readAsBytes();
       document = PdfDocument(inputBytes: bytes);
@@ -51,12 +53,12 @@ class PdfEngine {
       try {
         final bookmark = document.bookmarks.add(bookmarkTitle);
         bookmark.destination = PdfDestination(document.pages[pageIndex]);
-        print('[PDF] Bookmark added successfully: $bookmarkTitle');
-        print('[PDF] Bookmarks count in PDF: ${document.bookmarks.count}');
+        _log.info('[PDF] Bookmark added successfully: $bookmarkTitle');
+        _log.fine('[PDF] Bookmarks count in PDF: ${document.bookmarks.count}');
       } catch (e) {
-        print('[PDF] Error adding bookmark: $e');
-        print('[PDF] Attempted title (bytes): ${utf8.encode(bookmarkTitle)}');
-        print('[PDF] Attempted title (length): ${bookmarkTitle.length}');
+        _log.warning('[PDF] Error adding bookmark: $e');
+        _log.fine('[PDF] Attempted title (bytes): ${utf8.encode(bookmarkTitle)}');
+        _log.fine('[PDF] Attempted title (length): ${bookmarkTitle.length}');
         rethrow;
       }
 
@@ -64,23 +66,23 @@ class PdfEngine {
       // Note: Syncfusion PDF doesn't support customProperties, so we skip this for now
       // TODO: Implement alternative metadata storage for descriptions
       if (description != null) {
-        print("[PDF] Description provided but not saved (Syncfusion doesn't support customProperties)");
+        _log.fine("[PDF] Description provided but not saved (Syncfusion doesn't support customProperties)");
       }
 
       final outBytes = await document.save();
       document.dispose();
       document = null;
 
-      print('[PDF] Document saved, size: ${outBytes.length} bytes');
+      _log.fine('[PDF] Document saved, size: ${outBytes.length} bytes');
 
       await _safeOverwrite(filePath, outBytes);
-      print('[PDF] File overwritten successfully');
+      _log.info('[PDF] File overwritten successfully');
       return filePath;
     } on PdfOverwriteException {
       rethrow;
     } catch (e, stackTrace) {
-      print('[PDF] ERROR in injectBookmark: $e');
-      print('[PDF] Stack trace: $stackTrace');
+      _log.severe('[PDF] ERROR in injectBookmark: $e');
+      _log.severe('[PDF] Stack trace: $stackTrace');
       return null;
     } finally {
       document?.dispose();
@@ -115,7 +117,7 @@ class PdfEngine {
   ) async {
     PdfDocument? document;
     try {
-      print('[PDF] Starting bookmark extraction from: $filePath');
+      _log.info('[PDF] Starting bookmark extraction from: $filePath');
 
       final bytes = await File(filePath).readAsBytes();
       document = PdfDocument(inputBytes: bytes);
@@ -134,7 +136,7 @@ class PdfEngine {
 
         try {
           // Get bookmark title
-          final rawTitle = bookmark.title ?? 'Untitled Bookmark';
+          final rawTitle = bookmark.title;
 
           // Parse tags from title (format: "Title - #tag1, #tag2")
           String cleanTitle = rawTitle;
@@ -147,14 +149,13 @@ class PdfEngine {
             cleanTitle = rawTitle.substring(0, match.start);
             final tagString = match.group(1) ?? '';
             tags = tagString.split(RegExp(r',\s*')).map((t) => t.trim()).toList();
-            print('[PDF] Parsed tags from title: $tags');
+            _log.fine('[PDF] Parsed tags from title: $tags');
           }
 
           // Try to get the page index from the bookmark's destination
           int pageIndex = -1;
-          if (bookmark.destination != null && bookmark.destination!.page != null) {
-            // Find the page index using indexOf
-            pageIndex = document.pages.indexOf(bookmark.destination!.page!);
+          if (bookmark.destination != null) {
+            pageIndex = document.pages.indexOf(bookmark.destination!.page);
           }
 
           if (pageIndex >= 0) {
@@ -164,22 +165,22 @@ class PdfEngine {
               'description': descriptionsMap[cleanTitle],
               'tags': tags,
             });
-            print('[PDF] Extracted bookmark: "$cleanTitle" at page $pageIndex');
+            _log.fine('[PDF] Extracted bookmark: "$cleanTitle" at page $pageIndex');
           } else {
-            print('[PDF] Skipped bookmark "$cleanTitle" - destination page not found');
+            _log.fine('[PDF] Skipped bookmark "$cleanTitle" - destination page not found');
           }
         } catch (e) {
-          print('[PDF] Error processing bookmark $i: $e');
+          _log.warning('[PDF] Error processing bookmark $i: $e');
           // Continue to next bookmark
           continue;
         }
       }
 
-      print('[PDF] Extraction complete. Found ${bookmarksList.length} bookmarks');
+      _log.info('[PDF] Extraction complete. Found ${bookmarksList.length} bookmarks');
       return bookmarksList;
     } catch (e, stackTrace) {
-      print('[PDF] ERROR in extractBookmarks: $e');
-      print('[PDF] Stack trace: $stackTrace');
+      _log.severe('[PDF] ERROR in extractBookmarks: $e');
+      _log.severe('[PDF] Stack trace: $stackTrace');
       return [];
     } finally {
       document?.dispose();
@@ -194,8 +195,8 @@ class PdfEngine {
   ) async {
     PdfDocument? document;
     try {
-      print('[PDF] Starting batch bookmark injection for: $filePath');
-      print('[PDF] Number of bookmarks to inject: ${newBookmarks.length}');
+      _log.info('[PDF] Starting batch bookmark injection for: $filePath');
+      _log.fine('[PDF] Number of bookmarks to inject: ${newBookmarks.length}');
 
       final bytes = await File(filePath).readAsBytes();
       document = PdfDocument(inputBytes: bytes);
@@ -215,21 +216,21 @@ class PdfEngine {
           final bookmark = document.bookmarks.add(title);
           bookmark.destination = PdfDestination(document.pages[safePageIndex]);
           addedCount++;
-          print('[PDF] Added bookmark: "$title" at page $safePageIndex');
+          _log.fine('[PDF] Added bookmark: "$title" at page $safePageIndex');
         } catch (e) {
-          print('[PDF] Error adding bookmark "$title": $e');
+          _log.warning('[PDF] Error adding bookmark "$title": $e');
           // Continue to next bookmark
           continue;
         }
       }
 
-      print('[PDF] Successfully added $addedCount out of ${newBookmarks.length} bookmarks');
+      _log.info('[PDF] Successfully added $addedCount out of ${newBookmarks.length} bookmarks');
 
       final outBytes = await document.save();
       document.dispose();
       document = null;
 
-      print('[PDF] Document saved, size: ${outBytes.length} bytes');
+      _log.fine('[PDF] Document saved, size: ${outBytes.length} bytes');
 
       // Safe overwrite logic
       final tmpPath = '$filePath.tmp';
@@ -251,13 +252,13 @@ class PdfEngine {
         );
       }
 
-      print('[PDF] File overwritten successfully');
+      _log.info('[PDF] File overwritten successfully');
       return true;
     } on PdfOverwriteException {
       rethrow;
     } catch (e, stackTrace) {
-      print('[PDF] ERROR in injectBookmarksBatch: $e');
-      print('[PDF] Stack trace: $stackTrace');
+      _log.severe('[PDF] ERROR in injectBookmarksBatch: $e');
+      _log.severe('[PDF] Stack trace: $stackTrace');
       return false;
     } finally {
       document?.dispose();
@@ -275,14 +276,14 @@ class PdfEngine {
   }) async {
     PdfDocument? document;
     try {
-      print('[PDF] Starting bookmark overwrite for: $filePath');
-      print('[PDF] Number of bookmarks to set: ${finalBookmarks.length}');
+      _log.info('[PDF] Starting bookmark overwrite for: $filePath');
+      _log.fine('[PDF] Number of bookmarks to set: ${finalBookmarks.length}');
 
       final bytes = await File(filePath).readAsBytes();
       document = PdfDocument(inputBytes: bytes);
 
       // Clear all existing bookmarks
-      print('[PDF] Clearing existing bookmarks...');
+      _log.fine('[PDF] Clearing existing bookmarks...');
       document.bookmarks.clear();
 
       final pageCount = document.pages.count;
@@ -300,28 +301,28 @@ class PdfEngine {
           final bookmark = document.bookmarks.add(title);
           bookmark.destination = PdfDestination(document.pages[safePageIndex]);
           addedCount++;
-          print('[PDF] Added bookmark: "$title" at page $safePageIndex');
+          _log.fine('[PDF] Added bookmark: "$title" at page $safePageIndex');
         } catch (e) {
-          print('[PDF] Error adding bookmark "$title": $e');
+          _log.warning('[PDF] Error adding bookmark "$title": $e');
           // Continue to next bookmark
           continue;
         }
       }
 
-      print('[PDF] Successfully added $addedCount out of ${finalBookmarks.length} bookmarks');
+      _log.info('[PDF] Successfully added $addedCount out of ${finalBookmarks.length} bookmarks');
 
       // Write descriptions to custom property if provided
       // Note: Syncfusion PDF doesn't support customProperties, so we skip this for now
       // TODO: Implement alternative metadata storage for descriptions
       if (descriptions != null && descriptions.isNotEmpty) {
-        print("[PDF] Descriptions provided but not saved (Syncfusion doesn't support customProperties)");
+        _log.fine("[PDF] Descriptions provided but not saved (Syncfusion doesn't support customProperties)");
       }
 
       final outBytes = await document.save();
       document.dispose();
       document = null;
 
-      print('[PDF] Document saved, size: ${outBytes.length} bytes');
+      _log.fine('[PDF] Document saved, size: ${outBytes.length} bytes');
 
       // Safe overwrite logic
       final tmpPath = '$filePath.tmp';
@@ -343,7 +344,7 @@ class PdfEngine {
         );
       }
 
-      print('[PDF] File overwritten successfully');
+      _log.info('[PDF] File overwritten successfully');
 
       // Sync History Log Entry
       if (toRemove != null || toAdd != null) {
@@ -354,15 +355,15 @@ class PdfEngine {
         final addedStr = toAdd != null && toAdd.isNotEmpty
             ? 'Added: [${toAdd.join(", ")}]'
             : 'Added: []';
-        print('[SYNC HISTORY] Version pushed at $timestamp: $removedStr and $addedStr');
+        _log.fine('[SYNC HISTORY] Version pushed at $timestamp: $removedStr and $addedStr');
       }
 
       return true;
     } on PdfOverwriteException {
       rethrow;
     } catch (e, stackTrace) {
-      print('[PDF] ERROR in overwriteAllBookmarks: $e');
-      print('[PDF] Stack trace: $stackTrace');
+      _log.severe('[PDF] ERROR in overwriteAllBookmarks: $e');
+      _log.severe('[PDF] Stack trace: $stackTrace');
       return false;
     } finally {
       document?.dispose();

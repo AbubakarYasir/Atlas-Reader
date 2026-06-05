@@ -162,15 +162,28 @@ class AppDatabase extends _$AppDatabase {
     return select(bookmarks).get();
   }
 
-  /// Update a bookmark's title and page index using an efficient drift update statement.
-  Future<int> updateBookmark(int id, String newTitle, int newPageIndex) async {
+  /// Update a bookmark's title, page index, and optional description.
+  Future<int> updateBookmark(
+    int id,
+    String newTitle,
+    int newPageIndex, {
+    String? description,
+  }) async {
     return await (update(bookmarks)
           ..where((tbl) => tbl.id.equals(id)))
         .write(BookmarksCompanion(
       title: Value(newTitle),
       pageIndex: Value(newPageIndex),
+      description: description != null ? Value(description) : const Value.absent(),
       modifiedAt: Value(DateTime.now()),
     ));
+  }
+
+  /// Remove all tag links for a bookmark.
+  Future<void> clearTagsForBookmark(int bookmarkId) async {
+    await (delete(bookmarkTags)
+          ..where((tbl) => tbl.bookmarkId.equals(bookmarkId)))
+        .go();
   }
 
   /// Delete a bookmark and cascade delete nested children
@@ -225,7 +238,7 @@ class AppDatabase extends _$AppDatabase {
         BookmarksCompanion(
           filePath: Value(filePath),
           title: Value(title),
-          pageIndex: Value(pageIndex),
+          pageIndex: pageIndex != null ? Value(pageIndex) : const Value.absent(),
         ),
       );
       return true;

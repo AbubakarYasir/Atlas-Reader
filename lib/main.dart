@@ -40,6 +40,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
   String? _selectedFilePath;
   String _status = 'Waiting';
   String _searchQuery = '';
+  bool _isSyncing = false;
 
   final _bookmarkTitleController = TextEditingController();
   final _pageNumberController = TextEditingController();
@@ -151,6 +152,55 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
     }
   }
 
+  Future<void> _syncFile() async {
+    final filePath = _selectedFilePath;
+
+    if (filePath == null) {
+      setState(() => _status = 'Please select a PDF file first.');
+      return;
+    }
+
+    setState(() {
+      _isSyncing = true;
+      _status = 'Syncing bookmarks...';
+    });
+
+    try {
+      final bookmarks = await PdfEngine.extractBookmarks(filePath);
+      int newBookmarksCount = 0;
+
+      for (final bookmark in bookmarks) {
+        final title = bookmark['title'] as String;
+        final pageIndex = bookmark['pageIndex'] as int;
+
+        final wasAdded = await database.syncBookmark(
+          filePath: filePath,
+          title: title,
+          pageIndex: pageIndex,
+        );
+
+        if (wasAdded) {
+          newBookmarksCount++;
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _status = 'Sync Complete: $newBookmarksCount new bookmarks found';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _status = 'Error: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -197,9 +247,22 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _injectBookmark,
-                    child: const Text('INJECT BOOKMARK'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _injectBookmark,
+                          child: const Text('INJECT BOOKMARK'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _isSyncing ? null : _syncFile,
+                          child: const Text('SYNC FILE'),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 32),
                   Text(

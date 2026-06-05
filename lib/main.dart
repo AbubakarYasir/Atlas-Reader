@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'database.dart';
 import 'pdf_engine.dart';
+import 'sync_models.dart';
 
 /// Global database instance
 late final AppDatabase database;
@@ -41,6 +42,8 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
   String _status = 'Waiting';
   String _searchQuery = '';
   bool _isSyncing = false;
+  bool _isPushing = false;
+  List<BookmarkDiff> _syncDiffs = [];
 
   final _bookmarkTitleController = TextEditingController();
   final _pageNumberController = TextEditingController();
@@ -66,7 +69,11 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
     setState(() {
       _selectedFilePath = result.files.single.path;
       _status = 'PDF selected: $_selectedFilePath';
+      _syncDiffs = [];
     });
+
+    // Calculate sync diff after file is selected
+    await _calculateSyncDiff();
   }
 
   Future<void> _injectBookmark() async {
@@ -201,6 +208,136 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
     }
   }
 
+  Future<void> _pushToFile() async {
+    final filePath = _selectedFilePath;
+
+    if (filePath == null) {
+      setState(() => _status = 'Please select a PDF file first.');
+      return;
+    }
+
+    setState(() {
+      _isPushing = true;
+      _status = 'Committing changes to PDF...';
+    });
+
+    try {
+      // Fetch database bookmarks for this file
+      final dbBookmarks = await database.getBookmarksForFile(filePath);
+
+      // Map to List<Map<String, dynamic>>
+      final bookmarksToInject = dbBookmarks
+          .map((bookmark) => {
+                'title': bookmark.title,
+                'pageIndex': bookmark.pageIndex,
+              })
+          .toList();
+
+      // Calculate titles to remove and add for sync history
+      final toRemove = _syncDiffs
+          .where((diff) => diff.action == SyncAction.delete)
+          .map((diff) => diff.title)
+          .toList();
+      final toAdd = _syncDiffs
+          .where((diff) => diff.action == SyncAction.add)
+          .map((diff) => diff.title)
+          .toList();
+
+      // Overwrite all bookmarks in PDF with database bookmarks
+      final success = await PdfEngine.overwriteAllBookmarks(
+        filePath,
+        bookmarksToInject,
+        toRemove: toRemove,
+        toAdd: toAdd,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        setState(() {
+          _status = 'File successfully synced to match Database!';
+          _syncDiffs = [];
+        });
+      } else {
+        setState(() {
+          _status = 'Failed to sync bookmarks to PDF.';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _status = 'Error: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPushing = false;
+        });
+      }
+    }
+  }
+
+  /// Calculate the differences between database and PDF bookmarks
+  Future<void> _calculateSyncDiff() async {
+    final filePath = _selectedFilePath;
+    if (filePath == null) return;
+
+    try {
+      // Fetch database bookmarks for this file
+      final dbBookmarks = await database.getBookmarksForFile(filePath);
+
+      // Fetch PDF bookmarks
+      final pdfBookmarks = await PdfEngine.extractBookmarks(filePath);
+
+      // Create sets of titles for comparison
+      final dbTitles = dbBookmarks.map((b) => b.title).toSet();
+      final pdfTitles = pdfBookmarks.map((b) => b['title'] as String).toSet();
+
+      final diffs = <BookmarkDiff>[];
+
+      // Identify to add: in DB but not in PDF
+      for (final bookmark in dbBookmarks) {
+        if (!pdfTitles.contains(bookmark.title)) {
+          diffs.add(BookmarkDiff(
+            title: bookmark.title,
+            pageIndex: bookmark.pageIndex,
+            action: SyncAction.add,
+          ));
+        }
+      }
+
+      // Identify to delete: in PDF but not in DB
+      for (final bookmark in pdfBookmarks) {
+        final title = bookmark['title'] as String;
+        final pageIndex = bookmark['pageIndex'] as int;
+        if (!dbTitles.contains(title)) {
+          diffs.add(BookmarkDiff(
+            title: title,
+            pageIndex: pageIndex,
+            action: SyncAction.delete,
+          ));
+        }
+      }
+
+      // Identify to keep: in both
+      for (final bookmark in dbBookmarks) {
+        if (pdfTitles.contains(bookmark.title)) {
+          diffs.add(BookmarkDiff(
+            title: bookmark.title,
+            pageIndex: bookmark.pageIndex,
+            action: SyncAction.keep,
+          ));
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _syncDiffs = diffs;
+        });
+      }
+    } catch (e) {
+      print('Error calculating sync diff: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -262,9 +399,133 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                           child: const Text('SYNC FILE'),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: (_isPushing || _syncDiffs.isEmpty) ? null : _pushToFile,
+                          child: const Text('COMMIT CHANGES'),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 32),
+                  // Sync Preview Section
+                  if (_selectedFilePath != null && _syncDiffs.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Sync Preview',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green[100],
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Pending Adds: ${_syncDiffs.where((d) => d.action == SyncAction.add).length}',
+                                      style: const TextStyle(color: Colors.green),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red[100],
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Pending Deletions: ${_syncDiffs.where((d) => d.action == SyncAction.delete).length}',
+                                      style: const TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 150,
+                            child: ListView.builder(
+                              itemCount: _syncDiffs.length,
+                              itemBuilder: (context, index) {
+                                final diff = _syncDiffs[index];
+                                Color textColor;
+                                IconData icon;
+                                String actionText;
+
+                                switch (diff.action) {
+                                  case SyncAction.add:
+                                    textColor = Colors.green;
+                                    icon = Icons.add_circle;
+                                    actionText = 'ADD';
+                                    break;
+                                  case SyncAction.delete:
+                                    textColor = Colors.red;
+                                    icon = Icons.remove_circle;
+                                    actionText = 'REMOVE';
+                                    break;
+                                  case SyncAction.keep:
+                                    textColor = Colors.grey;
+                                    icon = Icons.check_circle;
+                                    actionText = 'KEEP';
+                                    break;
+                                }
+
+                                return ListTile(
+                                  dense: true,
+                                  leading: Icon(icon, color: textColor, size: 20),
+                                  title: Text(
+                                    diff.title,
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  trailing: Text(
+                                    'Page ${diff.pageIndex + 1}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  subtitle: Text(
+                                    actionText,
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   Text(
                     _status,
                     textAlign: TextAlign.center,

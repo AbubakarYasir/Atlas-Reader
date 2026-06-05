@@ -48,6 +48,13 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
+  /// Get all bookmarks for a specific file
+  Future<List<Bookmark>> getBookmarksForFile(String filePath) async {
+    return (select(bookmarks)
+          ..where((tbl) => tbl.filePath.equals(filePath)))
+        .get();
+  }
+
   /// Get all bookmarks
   Future<List<Bookmark>> getAllBookmarks() async {
     return select(bookmarks).get();

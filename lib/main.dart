@@ -610,6 +610,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                               onPressed: () async {
                                 await database.deleteBookmark(bookmark.id);
                                 if (mounted) {
+                                  await _calculateSyncDiff();
                                   setState(() {});
                                 }
                               },

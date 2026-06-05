@@ -91,9 +91,16 @@ class AppDatabase extends _$AppDatabase {
   }
 
   /// Search bookmarks by title
+  /// If query is empty, returns all bookmarks
   Future<List<Bookmark>> searchBookmarks(String query) async {
+    final trimmedQuery = query.trim();
+    
+    if (trimmedQuery.isEmpty) {
+      return getAllBookmarks();
+    }
+    
     return (select(bookmarks)
-          ..where((tbl) => tbl.title.like('%$query%')))
+          ..where((tbl) => tbl.title.like('%$trimmedQuery%')))
         .get();
   }
 }

@@ -90,6 +90,37 @@ class AppDatabase extends _$AppDatabase {
         .go();
   }
 
+  /// Sync bookmark from external source (PDF extraction)
+  /// Adds bookmark only if filePath + title combination doesn't exist
+  /// Returns true if new bookmark was added, false if it already exists
+  Future<bool> syncBookmark({
+    required String filePath,
+    required String title,
+    required int pageIndex,
+  }) async {
+    // Check if bookmark with exact filePath and title already exists
+    final existing = await (select(bookmarks)
+          ..where((tbl) => 
+            tbl.filePath.equals(filePath) & 
+            tbl.title.equals(title)))
+        .getSingleOrNull();
+    
+    if (existing == null) {
+      // Bookmark doesn't exist, insert it
+      await into(bookmarks).insert(
+        BookmarksCompanion(
+          filePath: Value(filePath),
+          title: Value(title),
+          pageIndex: Value(pageIndex),
+        ),
+      );
+      return true;
+    }
+    
+    // Bookmark already exists
+    return false;
+  }
+
   /// Search bookmarks by title
   /// If query is empty, returns all bookmarks
   Future<List<Bookmark>> searchBookmarks(String query) async {

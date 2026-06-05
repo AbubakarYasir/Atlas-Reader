@@ -118,13 +118,18 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
         if (!mounted) return;
         if (outputPath != null) {
           setState(() {
-            _status = 'Synced to PDF file: $outputPath';
+            _status = '✓ Synced to PDF! Bookmark embedded.';
+          });
+        } else {
+          // Check console for detailed error logs
+          setState(() {
+            _status = '⚠ Local DB saved, but PDF injection failed. Check console.';
           });
         }
       }).catchError((e) {
         if (!mounted) return;
         setState(() {
-          _status = 'PDF sync failed: $e';
+          _status = '⚠ Error: $e (Check console for details)';
         });
       });
     } catch (e) {

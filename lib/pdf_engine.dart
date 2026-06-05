@@ -13,6 +13,21 @@ class PdfOverwriteException implements Exception {
 }
 
 class PdfEngine {
+  /// Get the page count of a PDF file
+  Future<int?> getPageCount(String filePath) async {
+    PdfDocument? document;
+    try {
+      final bytes = await File(filePath).readAsBytes();
+      document = PdfDocument(inputBytes: bytes);
+      return document.pages.count;
+    } catch (e) {
+      print('[PDF] Error reading page count: $e');
+      return null;
+    } finally {
+      document?.dispose();
+    }
+  }
+
   Future<String?> injectBookmark(
     String filePath,
     String bookmarkTitle,

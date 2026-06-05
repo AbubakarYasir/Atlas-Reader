@@ -93,6 +93,19 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
     }
 
     try {
+      // Validate page number is within bounds
+      final pageCount = await _pdfEngine.getPageCount(filePath);
+      if (pageCount == null) {
+        setState(() => _status = 'Could not read PDF file.');
+        return;
+      }
+      if (pageNumber > pageCount) {
+        setState(
+          () => _status = 'Page $pageNumber exceeds document pages ($pageCount).',
+        );
+        return;
+      }
+
       // STEP 1: Dual-Layer Save - Instantly save to local database
       await database.addBookmark(
         filePath: filePath,

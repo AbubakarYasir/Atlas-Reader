@@ -969,124 +969,126 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                   const SizedBox(height: 32),
                   // Sync Preview Section
                   if (_selectedFilePath != null && _syncDiffs.isNotEmpty) ...[
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                    Material(
+                      color: Colors.grey[200],
+                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey),
+                        side: BorderSide(color: Colors.grey[400]!),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Sync Preview',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Sync Preview',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green[100],
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'Pending Adds: ${_syncDiffs.where((d) => d.action == SyncAction.add).length}',
+                                        style: const TextStyle(color: Colors.green),
+                                      ),
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green[100],
-                                      borderRadius: BorderRadius.circular(4),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red[100],
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'Pending Deletions: ${_syncDiffs.where((d) => d.action == SyncAction.delete).length}',
+                                        style: const TextStyle(color: Colors.red),
+                                      ),
                                     ),
-                                    child: Text(
-                                      'Pending Adds: ${_syncDiffs.where((d) => d.action == SyncAction.add).length}',
-                                      style: const TextStyle(color: Colors.green),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 150,
+                              child: Builder(
+                                builder: (context) {
+                                  final visibleDiffs = _syncDiffs.where((d) => d.action != SyncAction.keep).toList();
+                                  return ListView.builder(
+                                    itemCount: visibleDiffs.length,
+                                    itemBuilder: (context, index) {
+                                      final diff = visibleDiffs[index];
+                                  Color textColor;
+                                  IconData icon;
+                                  String actionText;
+
+                                  switch (diff.action) {
+                                    case SyncAction.add:
+                                      textColor = Colors.green;
+                                      icon = Icons.add_circle;
+                                      actionText = 'ADD';
+                                      break;
+                                    case SyncAction.delete:
+                                      textColor = Colors.red;
+                                      icon = Icons.remove_circle;
+                                      actionText = 'REMOVE';
+                                      break;
+                                    case SyncAction.keep:
+                                      textColor = Colors.grey;
+                                      icon = Icons.check_circle;
+                                      actionText = 'KEEP';
+                                      break;
+                                  }
+
+                                  return ListTile(
+                                    dense: true,
+                                    leading: Icon(icon, color: textColor, size: 20),
+                                    title: Text(
+                                      diff.title.isNotEmpty ? diff.title : '/',
+                                      style: TextStyle(
+                                        color: textColor,
+                                        fontSize: 14,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
+                                    trailing: Text(
+                                      diff.pageIndex != null
+                                          ? 'Page ${diff.pageIndex! + 1}'
+                                          : 'No page',
+                                      style: const TextStyle(fontSize: 12),
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red[100],
-                                      borderRadius: BorderRadius.circular(4),
+                                    subtitle: Text(
+                                      actionText,
+                                      style: TextStyle(
+                                        color: textColor,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                    child: Text(
-                                      'Pending Deletions: ${_syncDiffs.where((d) => d.action == SyncAction.delete).length}',
-                                      style: const TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                  );
+                                },
+                              );
+                            },
                           ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            height: 150,
-                            child: Builder(
-                              builder: (context) {
-                                final visibleDiffs = _syncDiffs.where((d) => d.action != SyncAction.keep).toList();
-                                return ListView.builder(
-                                  itemCount: visibleDiffs.length,
-                                  itemBuilder: (context, index) {
-                                    final diff = visibleDiffs[index];
-                                Color textColor;
-                                IconData icon;
-                                String actionText;
-
-                                switch (diff.action) {
-                                  case SyncAction.add:
-                                    textColor = Colors.green;
-                                    icon = Icons.add_circle;
-                                    actionText = 'ADD';
-                                    break;
-                                  case SyncAction.delete:
-                                    textColor = Colors.red;
-                                    icon = Icons.remove_circle;
-                                    actionText = 'REMOVE';
-                                    break;
-                                  case SyncAction.keep:
-                                    textColor = Colors.grey;
-                                    icon = Icons.check_circle;
-                                    actionText = 'KEEP';
-                                    break;
-                                }
-
-                                return ListTile(
-                                  dense: true,
-                                  leading: Icon(icon, color: textColor, size: 20),
-                                  title: Text(
-                                    diff.title.isNotEmpty ? diff.title : '/',
-                                    style: TextStyle(
-                                      color: textColor,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  trailing: Text(
-                                    diff.pageIndex != null
-                                        ? 'Page ${diff.pageIndex! + 1}'
-                                        : 'No page',
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                  subtitle: Text(
-                                    actionText,
-                                    style: TextStyle(
-                                      color: textColor,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
                         ),
-                      ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -1100,7 +1102,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
             ),
           ),
           // Bookmarks ListView with FutureBuilder
-          Container(
+          Material(
             color: Colors.grey[100],
             child: Column(
               children: [

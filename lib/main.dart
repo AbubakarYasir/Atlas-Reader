@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -58,6 +60,77 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
     super.dispose();
   }
 
+  bool checkFileExists(String filePath) {
+    return File(filePath).existsSync();
+  }
+
+  Future<String?> _resolveMissingFile(String oldPath) async {
+    if (checkFileExists(oldPath)) {
+      return oldPath;
+    }
+
+    final locate = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('File Missing!'),
+          content: Text(
+            'The file is no longer at $oldPath. Would you like to locate its new home?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Locate'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (locate != true) {
+      return null;
+    }
+
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (result == null || result.files.single.path == null) {
+      return null;
+    }
+
+    final newPath = result.files.single.path!;
+    final updatedBookmarks = await database.updateFilePaths(oldPath, newPath);
+
+    if (!mounted) {
+      return null;
+    }
+
+    setState(() {
+      _selectedFilePath = newPath;
+      _status = 'File path relinked to $newPath';
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Successfully updated $updatedBookmarks bookmarks to the new file path!',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+
+    await _calculateSyncDiff();
+    return newPath;
+  }
+
   Future<void> _pickPdf() async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
@@ -68,8 +141,14 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       return;
     }
 
+    final initialPath = result.files.single.path!;
+    final resolvedPath = await _resolveMissingFile(initialPath);
+    if (resolvedPath == null) {
+      return;
+    }
+
     setState(() {
-      _selectedFilePath = result.files.single.path;
+      _selectedFilePath = resolvedPath;
       _status = 'PDF selected: $_selectedFilePath';
       _syncDiffs = [];
     });
@@ -169,13 +248,22 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       return;
     }
 
+    final resolvedPath = await _resolveMissingFile(filePath);
+    if (resolvedPath == null) {
+      setState(() {
+        _isSyncing = false;
+        _status = 'Sync canceled because the file could not be located.';
+      });
+      return;
+    }
+
     setState(() {
       _isSyncing = true;
       _status = 'Syncing bookmarks...';
     });
 
     try {
-      final bookmarks = await PdfEngine.extractBookmarks(filePath);
+      final bookmarks = await PdfEngine.extractBookmarks(resolvedPath);
       int newBookmarksCount = 0;
 
       for (final bookmark in bookmarks) {
@@ -183,7 +271,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
         final pageIndex = bookmark['pageIndex'] as int;
 
         final wasAdded = await database.syncBookmark(
-          filePath: filePath,
+          filePath: resolvedPath,
           title: title,
           pageIndex: pageIndex,
         );
@@ -218,6 +306,15 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       return;
     }
 
+    final resolvedPath = await _resolveMissingFile(filePath);
+    if (resolvedPath == null) {
+      setState(() {
+        _isPushing = false;
+        _status = 'Commit canceled because the file could not be located.';
+      });
+      return;
+    }
+
     setState(() {
       _isPushing = true;
       _status = 'Committing changes to PDF...';
@@ -235,7 +332,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
 
     try {
       // Use SyncEngine for incremental reconciliation
-      final result = await _syncEngine.reconcile(filePath);
+      final result = await _syncEngine.reconcile(resolvedPath);
 
       if (!mounted) return;
 
@@ -347,6 +444,90 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
     } catch (e) {
       print('Error calculating sync diff: $e');
     }
+  }
+
+  Future<void> _showEditBookmarkDialog(Bookmark bookmark) async {
+    final titleController = TextEditingController(text: bookmark.title);
+    final pageController = TextEditingController(text: '${bookmark.pageIndex + 1}');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Bookmark'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'New Title',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: pageController,
+                decoration: const InputDecoration(
+                  labelText: 'New Page Number',
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final newTitle = titleController.text.trim();
+                final newPageNumber = int.tryParse(pageController.text.trim());
+
+                if (newTitle.isEmpty || newPageNumber == null || newPageNumber < 1) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid title and page number.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (saved != true || !mounted) {
+      return;
+    }
+
+    final newTitle = titleController.text.trim();
+    final newPageNumber = int.tryParse(pageController.text.trim());
+    if (newTitle.isEmpty || newPageNumber == null || newPageNumber < 1) {
+      return;
+    }
+
+    await database.updateBookmark(bookmark.id, newTitle, newPageNumber - 1);
+
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    await _calculateSyncDiff();
+    setState(() {});
+
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Bookmark edited locally. Remember to Commit Changes to update the PDF file!'),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   @override
@@ -616,15 +797,26 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () async {
-                                await database.deleteBookmark(bookmark.id);
-                                if (mounted) {
-                                  await _calculateSyncDiff();
-                                  setState(() {});
-                                }
-                              },
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () async {
+                                    await _showEditBookmarkDialog(bookmark);
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete),
+                                  onPressed: () async {
+                                    await database.deleteBookmark(bookmark.id);
+                                    if (mounted) {
+                                      await _calculateSyncDiff();
+                                      setState(() {});
+                                    }
+                                  },
+                                ),
+                              ],
                             ),
                           );
                         },

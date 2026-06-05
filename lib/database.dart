@@ -137,30 +137,15 @@ class AppDatabase extends _$AppDatabase {
     return select(bookmarks).get();
   }
 
-  /// Update a bookmark
-  Future<bool> updateBookmark({
-    required int id,
-    required String title,
-    required int pageIndex,
-  }) async {
-    return update(bookmarks).replace(
-      Bookmark(
-        id: id,
-        filePath: (await (select(bookmarks)
-              ..where((tbl) => tbl.id.equals(id)))
-            .getSingleOrNull())
-            ?.filePath ??
-            '',
-        title: title,
-        pageIndex: pageIndex,
-        createdAt: (await (select(bookmarks)
-              ..where((tbl) => tbl.id.equals(id)))
-            .getSingleOrNull())
-            ?.createdAt ??
-            DateTime.now(),
-        modifiedAt: DateTime.now(),
-      ),
-    );
+  /// Update a bookmark's title and page index using an efficient drift update statement.
+  Future<int> updateBookmark(int id, String newTitle, int newPageIndex) async {
+    return await (update(bookmarks)
+          ..where((tbl) => tbl.id.equals(id)))
+        .write(BookmarksCompanion(
+      title: Value(newTitle),
+      pageIndex: Value(newPageIndex),
+      modifiedAt: Value(DateTime.now()),
+    ));
   }
 
   /// Delete a bookmark
@@ -172,6 +157,21 @@ class AppDatabase extends _$AppDatabase {
   Future<int> deleteBookmarksByFile(String filePath) async {
     return (delete(bookmarks)..where((tbl) => tbl.filePath.equals(filePath)))
         .go();
+  }
+
+  /// Update every bookmark and file snapshot matching an old path to the new path in one transaction
+  Future<int> updateFilePaths(String oldPath, String newPath) async {
+    return await transaction(() async {
+      final bookmarkChanges = await (update(bookmarks)
+            ..where((tbl) => tbl.filePath.equals(oldPath)))
+          .write(BookmarksCompanion(filePath: Value(newPath)));
+
+      await (update(fileSnapshots)
+            ..where((tbl) => tbl.filePath.equals(oldPath)))
+          .write(FileSnapshotsCompanion(filePath: Value(newPath)));
+
+      return bookmarkChanges;
+    });
   }
 
   /// Sync bookmark from external source (PDF extraction)
@@ -221,7 +221,16 @@ class AppDatabase extends _$AppDatabase {
       'WHERE bookmarks_fts MATCH ? '
       'ORDER BY rank',
       variables: [Variable.withString(trimmedQuery)],
-    ).map((row) => Bookmark.fromData(row.data)).get();
+    ).map((row) {
+      return Bookmark(
+        id: row.data['id'] as int,
+        filePath: row.data['file_path'] as String,
+        title: row.data['title'] as String,
+        pageIndex: row.data['page_index'] as int,
+        createdAt: row.data['created_at'] as DateTime,
+        modifiedAt: row.data['modified_at'] as DateTime,
+      );
+    }).get();
     
     return results;
   }

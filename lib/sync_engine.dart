@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+
 import 'database.dart';
 import 'pdf_engine.dart';
 
@@ -19,31 +21,17 @@ class SyncEngine {
       final currentBookmarks = await database.getBookmarksForFile(filePath);
       final currentDbTitles = currentBookmarks.map((b) => b.title).toSet();
 
-      // Step 2: Fetch last known state from FileSnapshots
-      final snapshot = await database.getFileSnapshot(filePath);
+      // Step 2: Fetch current bookmarks from PDF
+      final pdfBookmarks = await PdfEngine.extractBookmarks(filePath);
+      final pdfTitles = pdfBookmarks.map((b) => b['title'] as String).toSet();
 
-      // Step 3: Parse last known state
-      List<String> lastKnownTitles = [];
-      if (snapshot != null && snapshot.lastKnownState.isNotEmpty) {
-        try {
-          lastKnownTitles = (jsonDecode(snapshot.lastKnownState) as List)
-              .map((e) => e as String)
-              .toList();
-        } catch (e) {
-          print('[SYNC] Error parsing lastKnownState: $e');
-          // If parsing fails, treat as empty state
-          lastKnownTitles = [];
-        }
-      }
-
-      final lastKnownTitlesSet = lastKnownTitles.toSet();
-
-      // Step 4: Identify toAdd and toDelete
+      // Step 3: Identify toAdd and toDelete by comparing DB vs PDF
       final toAdd = currentBookmarks
-          .where((bookmark) => !lastKnownTitlesSet.contains(bookmark.title))
+          .where((bookmark) => !pdfTitles.contains(bookmark.title))
           .toList();
 
-      final toDeleteTitles = lastKnownTitles
+      final toDeleteTitles = pdfBookmarks
+          .map((b) => b['title'] as String)
           .where((title) => !currentDbTitles.contains(title))
           .toList();
 
@@ -59,11 +47,11 @@ class SyncEngine {
         return (0, 0);
       }
 
-      // Step 5: Load PDF
+      // Step 4: Load PDF
       final bytes = await File(filePath).readAsBytes();
-      final document = await PdfDocument(inputBytes: bytes);
+      final document = PdfDocument(inputBytes: bytes);
 
-      // Step 6: Perform deletions
+      // Step 5: Perform deletions
       int deletedCount = 0;
       for (final titleToDelete in toDeleteTitles) {
         // Find the bookmark by title
@@ -80,7 +68,7 @@ class SyncEngine {
         }
       }
 
-      // Step 7: Perform additions
+      // Step 6: Perform additions
       int addedCount = 0;
       final pageCount = document.pages.count;
       for (final bookmarkToAdd in toAdd) {
@@ -99,7 +87,7 @@ class SyncEngine {
 
       print('[SYNC] Added $addedCount, Deleted $deletedCount bookmarks');
 
-      // Step 8: Save PDF using Safe Overwrite
+      // Step 7: Save PDF using Safe Overwrite
       final outBytes = await document.save();
       document.dispose();
 
@@ -125,7 +113,7 @@ class SyncEngine {
 
       print('[SYNC] File overwritten successfully');
 
-      // Step 9: Update FileSnapshots table
+      // Step 8: Update FileSnapshots table with new state
       await database.saveFileSnapshot(
         filePath,
         currentBookmarks.map((b) => b.title).toList(),

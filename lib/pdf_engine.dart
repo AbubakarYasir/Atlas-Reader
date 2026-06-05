@@ -4,6 +4,9 @@ import 'package:logging/logging.dart';
 
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
+import 'bookmark_tree.dart';
+import 'database.dart';
+
 class PdfOverwriteException implements Exception {
   PdfOverwriteException(this.message);
 
@@ -110,8 +113,9 @@ class PdfEngine {
     }
   }
 
-  /// Extract all bookmarks from a PDF file
-  /// Returns a list of maps with 'title', 'pageIndex', 'description', and 'tags' keys
+  /// Extract all bookmarks from a PDF file, including nested sub-bookmarks.
+  /// Each entry includes a hierarchical [path], [title], optional [pageIndex],
+  /// [isFolder], [description], and [tags].
   static Future<List<Map<String, dynamic>>> extractBookmarks(
     String filePath,
   ) async {
@@ -124,56 +128,13 @@ class PdfEngine {
 
       final bookmarksList = <Map<String, dynamic>>[];
 
-      // Read custom property for descriptions
-      // Note: Syncfusion PDF doesn't support customProperties, so we skip this for now
-      // Descriptions will need to be stored in a separate metadata file or alternative approach
-      Map<String, String> descriptionsMap = {};
-      // TODO: Implement alternative metadata storage for descriptions
-
-      // Loop through all bookmarks in the document
       for (int i = 0; i < document.bookmarks.count; i++) {
-        final bookmark = document.bookmarks[i];
-
-        try {
-          // Get bookmark title
-          final rawTitle = bookmark.title;
-
-          // Parse tags from title (format: "Title - #tag1, #tag2")
-          String cleanTitle = rawTitle;
-          List<String> tags = [];
-
-          final tagPattern = RegExp(r'\s-\s*#([^\s,]+(?:,\s*#[^\s,]+)*)$');
-          final match = tagPattern.firstMatch(rawTitle);
-
-          if (match != null) {
-            cleanTitle = rawTitle.substring(0, match.start);
-            final tagString = match.group(1) ?? '';
-            tags = tagString.split(RegExp(r',\s*')).map((t) => t.trim()).toList();
-            _log.fine('[PDF] Parsed tags from title: $tags');
-          }
-
-          // Try to get the page index from the bookmark's destination
-          int pageIndex = -1;
-          if (bookmark.destination != null) {
-            pageIndex = document.pages.indexOf(bookmark.destination!.page);
-          }
-
-          if (pageIndex >= 0) {
-            bookmarksList.add({
-              'title': cleanTitle,
-              'pageIndex': pageIndex,
-              'description': descriptionsMap[cleanTitle],
-              'tags': tags,
-            });
-            _log.fine('[PDF] Extracted bookmark: "$cleanTitle" at page $pageIndex');
-          } else {
-            _log.fine('[PDF] Skipped bookmark "$cleanTitle" - destination page not found');
-          }
-        } catch (e) {
-          _log.warning('[PDF] Error processing bookmark $i: $e');
-          // Continue to next bookmark
-          continue;
-        }
+        _collectBookmarkSubtree(
+          document.bookmarks[i],
+          document,
+          bookmarksList,
+          const [],
+        );
       }
 
       _log.info('[PDF] Extraction complete. Found ${bookmarksList.length} bookmarks');
@@ -184,6 +145,172 @@ class PdfEngine {
       return [];
     } finally {
       document?.dispose();
+    }
+  }
+
+  static void _collectBookmarkSubtree(
+    PdfBookmark bookmark,
+    PdfDocument document,
+    List<Map<String, dynamic>> out,
+    List<String> pathPrefix,
+  ) {
+    try {
+      final rawTitle = bookmark.title;
+      final parsed = _parseBookmarkTitle(rawTitle);
+      final cleanTitle = parsed.title;
+      final tags = parsed.tags;
+      final path = [...pathPrefix, cleanTitle];
+
+      int? pageIndex;
+      final page = bookmark.destination?.page;
+      if (page != null) {
+        final index = document.pages.indexOf(page);
+        if (index >= 0) {
+          pageIndex = index;
+        }
+      }
+
+      final hasChildren = bookmark.count > 0;
+      final isFolder = hasChildren && pageIndex == null;
+
+      out.add({
+        'path': path,
+        'title': cleanTitle,
+        'pageIndex': pageIndex,
+        'isFolder': isFolder,
+        'description': null,
+        'tags': tags,
+      });
+
+      _log.fine(
+        '[PDF] Extracted bookmark: "${BookmarkTree.displayPath(path)}" '
+        '${pageIndex != null ? 'at page ${pageIndex + 1}' : '(folder)'}',
+      );
+
+      for (int i = 0; i < bookmark.count; i++) {
+        _collectBookmarkSubtree(bookmark[i], document, out, path);
+      }
+    } catch (e) {
+      _log.warning('[PDF] Error processing bookmark "${bookmark.title}": $e');
+    }
+  }
+
+  static ({String title, List<String> tags}) _parseBookmarkTitle(String rawTitle) {
+    final tagPattern = RegExp(r'\s-\s*#([^\s,]+(?:,\s*#[^\s,]+)*)$');
+    final match = tagPattern.firstMatch(rawTitle);
+
+    if (match == null) {
+      return (title: rawTitle, tags: const []);
+    }
+
+    final cleanTitle = rawTitle.substring(0, match.start);
+    final tagString = match.group(1) ?? '';
+    final tags = tagString.split(RegExp(r',\s*')).map((t) => t.trim()).toList();
+    return (title: cleanTitle, tags: tags);
+  }
+
+  static String _titleWithTags(String title, List<String> tags) {
+    if (tags.isEmpty) return title;
+    final tagString = tags.map((tag) => '#$tag').join(', ');
+    return '$title - $tagString';
+  }
+
+  /// Replaces all PDF bookmarks with the hierarchical tree from the database.
+  static Future<bool> overwriteBookmarkTree(
+    String filePath,
+    List<Bookmark> dbBookmarks, {
+    Map<int, List<String>> tagsByBookmarkId = const {},
+  }) async {
+    PdfDocument? document;
+    try {
+      _log.info('[PDF] Starting hierarchical bookmark overwrite for: $filePath');
+
+      final bytes = await File(filePath).readAsBytes();
+      document = PdfDocument(inputBytes: bytes);
+      document.bookmarks.clear();
+
+      final forest = BookmarkTree.buildForest(dbBookmarks);
+      final pageCount = document.pages.count;
+
+      for (final root in forest) {
+        _writeBookmarkNode(
+          document.bookmarks,
+          document,
+          root,
+          tagsByBookmarkId,
+          pageCount,
+        );
+      }
+
+      final outBytes = await document.save();
+      document.dispose();
+      document = null;
+
+      await _safeOverwriteStatic(filePath, outBytes);
+      _log.info('[PDF] Hierarchical bookmark tree written successfully');
+      return true;
+    } on PdfOverwriteException {
+      rethrow;
+    } catch (e, stackTrace) {
+      _log.severe('[PDF] ERROR in overwriteBookmarkTree: $e');
+      _log.severe('[PDF] Stack trace: $stackTrace');
+      return false;
+    } finally {
+      document?.dispose();
+    }
+  }
+
+  static void _writeBookmarkNode(
+    PdfBookmarkBase parent,
+    PdfDocument document,
+    BookmarkTreeNode node,
+    Map<int, List<String>> tagsByBookmarkId,
+    int pageCount,
+  ) {
+    final bookmark = node.bookmark;
+    final tags = tagsByBookmarkId[bookmark.id] ?? const [];
+    final title = _titleWithTags(bookmark.title, tags);
+    final pdfBookmark = parent.add(title);
+
+    if (!bookmark.isFolder && bookmark.pageIndex != null) {
+      final safePageIndex = bookmark.pageIndex! >= pageCount
+          ? pageCount - 1
+          : bookmark.pageIndex!;
+      pdfBookmark.destination = PdfDestination(document.pages[safePageIndex]);
+    }
+
+    for (final child in node.children) {
+      _writeBookmarkNode(
+        pdfBookmark,
+        document,
+        child,
+        tagsByBookmarkId,
+        pageCount,
+      );
+    }
+  }
+
+  static Future<void> _safeOverwriteStatic(
+    String originalPath,
+    List<int> outBytes,
+  ) async {
+    final tmpPath = '$originalPath.tmp';
+    final originalFile = File(originalPath);
+    final tmpFile = File(tmpPath);
+
+    await tmpFile.writeAsBytes(outBytes);
+
+    try {
+      await originalFile.delete();
+      await tmpFile.rename(originalPath);
+    } catch (_) {
+      if (await tmpFile.exists()) {
+        await tmpFile.delete();
+      }
+      throw PdfOverwriteException(
+        'Could not replace the PDF because it is open in another application. '
+        'Close the file and try again.',
+      );
     }
   }
 

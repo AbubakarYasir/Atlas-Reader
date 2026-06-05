@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 
+import 'bookmark_grouping.dart';
+import 'bookmark_tree.dart';
 import 'database.dart';
 import 'pdf_engine.dart';
 import 'sync_engine.dart';
@@ -55,8 +57,8 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
   bool _isSyncing = false;
   bool _isPushing = false;
   List<BookmarkDiff> _syncDiffs = [];
-  bool _isFolder = false;
-  int? _selectedParentFolderId;
+  BookmarkSort _selectedSort = BookmarkSort.pageNumber;
+  BookmarkViewGroup _selectedViewGroup = BookmarkViewGroup.book;
 
   final _bookmarkTitleController = TextEditingController();
   final _pageNumberController = TextEditingController();
@@ -187,45 +189,36 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       return;
     }
 
-    // For folders, page number is not required
-    if (!_isFolder && pageNumberText.isEmpty) {
+    if (pageNumberText.isEmpty) {
       setState(() => _status = 'Please enter a page number.');
       return;
     }
 
-    int? pageNumber;
-    if (!_isFolder) {
-      pageNumber = int.tryParse(pageNumberText);
-      if (pageNumber == null || pageNumber < 1) {
-        setState(() => _status = 'Page number must be a positive integer.');
-        return;
-      }
+    final pageNumber = int.tryParse(pageNumberText);
+    if (pageNumber == null || pageNumber < 1) {
+      setState(() => _status = 'Page number must be a positive integer.');
+      return;
     }
 
     try {
-      // Validate page number is within bounds (only for non-folders)
-      if (!_isFolder && pageNumber != null) {
-        final pageCount = await _pdfEngine.getPageCount(filePath);
-        if (pageCount == null) {
-          setState(() => _status = 'Could not read PDF file.');
-          return;
-        }
-        if (pageNumber > pageCount) {
-          setState(
-            () => _status = 'Page $pageNumber exceeds document pages ($pageCount).',
-          );
-          return;
-        }
+      final pageCount = await _pdfEngine.getPageCount(filePath);
+      if (pageCount == null) {
+        setState(() => _status = 'Could not read PDF file.');
+        return;
+      }
+      if (pageNumber > pageCount) {
+        setState(
+          () => _status = 'Page $pageNumber exceeds document pages ($pageCount).',
+        );
+        return;
       }
 
       // STEP 1: Dual-Layer Save - Instantly save to local database
       final bookmarkId = await database.addBookmark(
         filePath: filePath,
         title: bookmarkTitle,
-        pageIndex: pageNumber != null ? pageNumber - 1 : null,
+        pageIndex: pageNumber - 1,
         description: description.isNotEmpty ? description : null,
-        parentId: _selectedParentFolderId,
-        isFolder: _isFolder,
       );
 
       // Add tags if provided
@@ -240,41 +233,36 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
 
       // Show instant UI feedback
       setState(() {
-        _status = _isFolder ? 'Folder created in local DB!' : 'Saved to local DB!';
+        _status = 'Saved to local DB!';
         _bookmarkTitleController.clear();
         _pageNumberController.clear();
         _descriptionController.clear();
         _tagsController.clear();
-        _isFolder = false;
-        _selectedParentFolderId = null;
       });
 
-      // STEP 2: Background injection - Only for non-folders
-      if (!_isFolder && pageNumber != null) {
-        _pdfEngine.injectBookmark(
-          filePath,
-          bookmarkTitle,
-          pageNumber - 1,
-          description: description.isNotEmpty ? description : null,
-        ).then((outputPath) {
-          if (!mounted) return;
-          if (outputPath != null) {
-            setState(() {
-              _status = '✓ Synced to PDF! Bookmark embedded.';
-            });
-          } else {
-            // Check console for detailed error logs
-            setState(() {
-              _status = '⚠ Local DB saved, but PDF injection failed. Check console.';
-            });
-          }
-        }).catchError((e) {
-          if (!mounted) return;
+      // STEP 2: Background injection
+      _pdfEngine.injectBookmark(
+        filePath,
+        bookmarkTitle,
+        pageNumber - 1,
+        description: description.isNotEmpty ? description : null,
+      ).then((outputPath) {
+        if (!mounted) return;
+        if (outputPath != null) {
           setState(() {
-            _status = '⚠ Error: $e (Check console for details)';
+            _status = '✓ Synced to PDF! Bookmark embedded.';
           });
+        } else {
+          setState(() {
+            _status = '⚠ Local DB saved, but PDF injection failed. Check console.';
+          });
+        }
+      }).catchError((e) {
+        if (!mounted) return;
+        setState(() {
+          _status = '⚠ Error: $e (Check console for details)';
         });
-      }
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _status = 'Error: $e');
@@ -305,22 +293,8 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
 
     try {
       final bookmarks = await PdfEngine.extractBookmarks(resolvedPath);
-      int newBookmarksCount = 0;
-
-      for (final bookmark in bookmarks) {
-        final title = bookmark['title'] as String;
-        final pageIndex = bookmark['pageIndex'] as int;
-
-        final wasAdded = await database.syncBookmark(
-          filePath: resolvedPath,
-          title: title,
-          pageIndex: pageIndex,
-        );
-
-        if (wasAdded) {
-          newBookmarksCount++;
-        }
-      }
+      final newBookmarksCount =
+          await database.syncBookmarkHierarchy(resolvedPath, bookmarks);
 
       if (!mounted) return;
 
@@ -436,43 +410,40 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       // Fetch PDF bookmarks
       final pdfBookmarks = await PdfEngine.extractBookmarks(filePath);
 
-      // Create sets of titles for comparison
-      final dbTitles = dbBookmarks.map((b) => b.title).toSet();
-      final pdfTitles = pdfBookmarks.map((b) => b['title'] as String).toSet();
+      final byId = BookmarkTree.indexById(dbBookmarks);
+      final dbPathKeys = dbBookmarks
+          .map((bookmark) =>
+              BookmarkTree.pathKey(BookmarkTree.pathForBookmark(bookmark, byId)))
+          .toSet();
+      final pdfPathKeys = pdfBookmarks
+          .map((bookmark) =>
+              BookmarkTree.pathKey(List<String>.from(bookmark['path'] as List)))
+          .toSet();
 
       final diffs = <BookmarkDiff>[];
 
-      // Identify to add: in DB but not in PDF
       for (final bookmark in dbBookmarks) {
-        if (!pdfTitles.contains(bookmark.title)) {
+        final pathKey =
+            BookmarkTree.pathKey(BookmarkTree.pathForBookmark(bookmark, byId));
+        if (!pdfPathKeys.contains(pathKey)) {
           diffs.add(BookmarkDiff(
-            title: bookmark.title,
+            title: BookmarkTree.displayPath(
+              BookmarkTree.pathForBookmark(bookmark, byId),
+            ),
             pageIndex: bookmark.pageIndex,
             action: SyncAction.add,
           ));
         }
       }
 
-      // Identify to delete: in PDF but not in DB
       for (final bookmark in pdfBookmarks) {
-        final title = bookmark['title'] as String;
-        final pageIndex = bookmark['pageIndex'] as int;
-        if (!dbTitles.contains(title)) {
+        final path = List<String>.from(bookmark['path'] as List);
+        final pathKey = BookmarkTree.pathKey(path);
+        if (!dbPathKeys.contains(pathKey)) {
           diffs.add(BookmarkDiff(
-            title: title,
-            pageIndex: pageIndex,
+            title: BookmarkTree.displayPath(path),
+            pageIndex: bookmark['pageIndex'] as int?,
             action: SyncAction.delete,
-          ));
-        }
-      }
-
-      // Identify to keep: in both
-      for (final bookmark in dbBookmarks) {
-        if (pdfTitles.contains(bookmark.title)) {
-          diffs.add(BookmarkDiff(
-            title: bookmark.title,
-            pageIndex: bookmark.pageIndex,
-            action: SyncAction.keep,
           ));
         }
       }
@@ -618,6 +589,294 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
     );
   }
 
+  Future<({List<Bookmark> bookmarks, Map<int, List<Tag>> tagsByBookmarkId})>
+      _loadBookmarksWithTags() async {
+    final matches = await database.searchBookmarks(_searchQuery);
+    final bookmarks = _searchQuery.isEmpty
+        ? matches
+        : BookmarkTree.includeWithAncestors(
+            matches,
+            await database.getAllBookmarks(),
+          );
+    final tagsByBookmarkId =
+        await database.getTagsByBookmarkIds(bookmarks.map((b) => b.id));
+    return (bookmarks: bookmarks, tagsByBookmarkId: tagsByBookmarkId);
+  }
+
+  Future<void> _confirmRemoveBook(String filePath) async {
+    final fileName = BookmarkGrouping.fileNameFromPath(filePath);
+    final bookmarkCount =
+        (await database.getBookmarksForFile(filePath)).length;
+
+    if (!mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove book from bookmarks?'),
+        content: Text(
+          'Remove all $bookmarkCount bookmark${bookmarkCount == 1 ? '' : 's'} '
+          'for "$fileName" from your local list?\n\n'
+          'This does not change the PDF file until you commit changes.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remove all'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    await database.deleteBookmarksByFile(filePath);
+    if (!mounted) return;
+
+    await _calculateSyncDiff();
+    setState(() {});
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Removed all bookmarks for $fileName'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+  }
+
+  Widget _buildBookmarkTile(
+    Bookmark bookmark,
+    List<Tag> tags, {
+    int depth = 0,
+    bool showFileName = true,
+    String? titleOverride,
+  }) {
+    final fileName = BookmarkGrouping.fileNameFromPath(bookmark.filePath);
+
+    return ListTile(
+      contentPadding: EdgeInsets.only(left: 16 + (depth * 20.0), right: 16),
+      leading: bookmark.isFolder
+          ? Icon(Icons.folder_outlined, color: Colors.amber[800], size: 20)
+          : Icon(Icons.bookmark_outline, color: Colors.blue[700], size: 20),
+      title: Text(titleOverride ?? bookmark.title),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!bookmark.isFolder && bookmark.pageIndex != null)
+            Text(
+              showFileName
+                  ? 'Page ${bookmark.pageIndex! + 1} • $fileName'
+                  : 'Page ${bookmark.pageIndex! + 1}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          else if (showFileName)
+            Text(
+              fileName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          if (bookmark.description != null && bookmark.description!.isNotEmpty)
+            Text(
+              bookmark.description!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          if (tags.isNotEmpty)
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: tags.map((tag) {
+                return Chip(
+                  label: Text(
+                    tag.name,
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                  backgroundColor: Colors.blue[100],
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+      trailing: bookmark.isFolder
+          ? IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Remove folder and sub-bookmarks',
+              onPressed: () async {
+                await database.deleteBookmark(bookmark.id);
+                if (mounted) {
+                  await _calculateSyncDiff();
+                  setState(() {});
+                }
+              },
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () async {
+                    await _showEditBookmarkDialog(bookmark);
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () async {
+                    await database.deleteBookmark(bookmark.id);
+                    if (mounted) {
+                      await _calculateSyncDiff();
+                      setState(() {});
+                    }
+                  },
+                ),
+              ],
+            ),
+    );
+  }
+
+  List<Widget> _buildBookmarkTreeNodes(
+    List<BookmarkTreeNode> nodes,
+    Map<int, List<Tag>> tagsByBookmarkId, {
+    int depth = 0,
+    bool showFileName = true,
+  }) {
+    return nodes.map((node) {
+      final bookmark = node.bookmark;
+      final hasChildren = node.children.isNotEmpty;
+
+      if (!hasChildren) {
+        return _buildBookmarkTile(
+          bookmark,
+          tagsByBookmarkId[bookmark.id] ?? [],
+          depth: depth,
+          showFileName: showFileName,
+        );
+      }
+
+      return Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.only(left: 8 + (depth * 20.0), right: 8),
+          leading: Icon(
+            bookmark.isFolder ? Icons.folder_outlined : Icons.bookmark_outline,
+            color: bookmark.isFolder ? Colors.amber[800] : Colors.blue[700],
+            size: 20,
+          ),
+          title: Text(bookmark.title),
+          subtitle: !bookmark.isFolder && bookmark.pageIndex != null
+              ? Text('Page ${bookmark.pageIndex! + 1}')
+              : null,
+          children: [
+            if (!bookmark.isFolder)
+              _buildBookmarkTile(
+                bookmark,
+                tagsByBookmarkId[bookmark.id] ?? [],
+                depth: depth + 1,
+                showFileName: showFileName,
+              ),
+            ..._buildBookmarkTreeNodes(
+              node.children,
+              tagsByBookmarkId,
+              depth: depth + 1,
+              showFileName: showFileName,
+            ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+
+  Widget _buildGroupedBookmarksList(
+    List<Bookmark> bookmarks,
+    Map<int, List<Tag>> tagsByBookmarkId,
+  ) {
+    if (_selectedViewGroup == BookmarkViewGroup.flat) {
+      final byId = BookmarkTree.indexById(bookmarks);
+      final sorted = BookmarkGrouping.flatList(bookmarks);
+      BookmarkGrouping.sortBookmarks(sorted, _selectedSort);
+
+      return ListView.builder(
+        itemCount: sorted.length,
+        itemBuilder: (context, index) {
+          final bookmark = sorted[index];
+          return _buildBookmarkTile(
+            bookmark,
+            tagsByBookmarkId[bookmark.id] ?? [],
+            depth: BookmarkTree.depth(bookmark, byId),
+          );
+        },
+      );
+    }
+
+    if (_selectedViewGroup == BookmarkViewGroup.book) {
+      final groups = BookmarkGrouping.groupByBook(bookmarks);
+
+      return ListView(
+        children: groups.entries.map((entry) {
+          final headerLabel = BookmarkGrouping.bookGroupLabel(entry.key);
+          final roots = BookmarkTree.rootsForFile(bookmarks, entry.key);
+          final count = entry.value.length;
+
+          return ExpansionTile(
+            leading: const Icon(Icons.menu_book, size: 20),
+            title: Text(headerLabel),
+            subtitle: Text('$count bookmark${count == 1 ? '' : 's'}'),
+            children: [
+              ListTile(
+                leading: Icon(Icons.delete_sweep, color: Colors.red[700]),
+                title: const Text('Remove all bookmarks for this book'),
+                onTap: () => _confirmRemoveBook(entry.key),
+              ),
+              ..._buildBookmarkTreeNodes(
+                roots,
+                tagsByBookmarkId,
+                showFileName: false,
+              ),
+            ],
+          );
+        }).toList(),
+      );
+    }
+
+    final groups = BookmarkGrouping.groupByTag(bookmarks, tagsByBookmarkId);
+    final sortedGroups = BookmarkGrouping.sortedGroups(groups, _selectedSort);
+    final byId = BookmarkTree.indexById(bookmarks);
+
+    return ListView(
+      children: sortedGroups.entries.map((entry) {
+        final count = entry.value.length;
+
+        return ExpansionTile(
+          leading: const Icon(Icons.label, size: 20),
+          title: Text(entry.key),
+          subtitle: Text('$count bookmark${count == 1 ? '' : 's'}'),
+          children: entry.value.map((bookmark) {
+            final path = BookmarkTree.pathForBookmark(bookmark, byId);
+            return _buildBookmarkTile(
+              bookmark,
+              tagsByBookmarkId[bookmark.id] ?? [],
+              showFileName: true,
+              titleOverride: path.length > 1
+                  ? BookmarkTree.displayPath(path)
+                  : bookmark.title,
+            );
+          }).toList(),
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -682,62 +941,6 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                       hintText: 'Optional: project, important, research...',
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _isFolder,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _isFolder = value ?? false;
-                            // Clear parent folder when switching to folder mode
-                            if (_isFolder) {
-                              _selectedParentFolderId = null;
-                            }
-                          });
-                        },
-                      ),
-                      const Text('Create as Folder (virtual bookmark without page)'),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (!_isFolder && _selectedFilePath != null)
-                    FutureBuilder<List<Bookmark>>(
-                      future: database.getBookmarksForFile(_selectedFilePath!),
-                      builder: (context, snapshot) {
-                        final folders = snapshot.data?.where((b) => b.isFolder).toList() ?? [];
-
-                        if (folders.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-
-                        return DropdownButtonFormField<int>(
-                          key: ValueKey('parent-folder-$_selectedParentFolderId'),
-                          decoration: const InputDecoration(
-                            labelText: 'Parent Folder (optional)',
-                            border: OutlineInputBorder(),
-                          ),
-                          initialValue: _selectedParentFolderId,
-                          items: folders.map((folder) {
-                            return DropdownMenuItem<int>(
-                              value: folder.id,
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.folder, size: 16, color: Colors.amber),
-                                  const SizedBox(width: 8),
-                                  Text(folder.title),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (int? value) {
-                            setState(() {
-                              _selectedParentFolderId = value;
-                            });
-                          },
-                        );
-                      },
-                    ),
                   const SizedBox(height: 24),
                   Row(
                     children: [
@@ -824,10 +1027,13 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                           const SizedBox(height: 12),
                           SizedBox(
                             height: 150,
-                            child: ListView.builder(
-                              itemCount: _syncDiffs.length,
-                              itemBuilder: (context, index) {
-                                final diff = _syncDiffs[index];
+                            child: Builder(
+                              builder: (context) {
+                                final visibleDiffs = _syncDiffs.where((d) => d.action != SyncAction.keep).toList();
+                                return ListView.builder(
+                                  itemCount: visibleDiffs.length,
+                                  itemBuilder: (context, index) {
+                                    final diff = visibleDiffs[index];
                                 Color textColor;
                                 IconData icon;
                                 String actionText;
@@ -854,7 +1060,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                                   dense: true,
                                   leading: Icon(icon, color: textColor, size: 20),
                                   title: Text(
-                                    diff.title,
+                                    diff.title.isNotEmpty ? diff.title : '/',
                                     style: TextStyle(
                                       color: textColor,
                                       fontSize: 14,
@@ -863,7 +1069,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                                   trailing: Text(
                                     diff.pageIndex != null
                                         ? 'Page ${diff.pageIndex! + 1}'
-                                        : 'Folder',
+                                        : 'No page',
                                     style: const TextStyle(fontSize: 12),
                                   ),
                                   subtitle: Text(
@@ -876,8 +1082,10 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                                   ),
                                 );
                               },
-                            ),
-                          ),
+                            );
+                          },
+                        ),
+                      ),
                         ],
                       ),
                     ),
@@ -896,11 +1104,65 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
             color: Colors.grey[100],
             child: Column(
               children: [
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Saved Bookmarks',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Saved Bookmarks',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      Icon(Icons.sort, size: 18, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      DropdownButton<BookmarkSort>(
+                        value: _selectedSort,
+                        underline: const SizedBox.shrink(),
+                        items: BookmarkSort.values.map((sort) {
+                          return DropdownMenuItem(
+                            value: sort,
+                            child: Text(sort.label, style: const TextStyle(fontSize: 13)),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() => _selectedSort = value);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.view_list, size: 18, color: Colors.grey[600]),
+                      const SizedBox(width: 8),
+                      const Text('Group by:', style: TextStyle(fontSize: 13)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: SegmentedButton<BookmarkViewGroup>(
+                          segments: BookmarkViewGroup.values.map((group) {
+                            return ButtonSegment(
+                              value: group,
+                              label: Text(group.label, style: const TextStyle(fontSize: 11)),
+                              icon: Icon(
+                                switch (group) {
+                                  BookmarkViewGroup.book => Icons.menu_book,
+                                  BookmarkViewGroup.tag => Icons.label,
+                                  BookmarkViewGroup.flat => Icons.list,
+                                },
+                                size: 16,
+                              ),
+                            );
+                          }).toList(),
+                          selected: {_selectedViewGroup},
+                          onSelectionChanged: (selection) {
+                            setState(() => _selectedViewGroup = selection.first);
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 // Command Center Search Bar
@@ -923,9 +1185,10 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                   ),
                 ),
                 SizedBox(
-                  height: 250,
-                  child: FutureBuilder<List<Bookmark>>(
-                    future: database.searchBookmarks(_searchQuery),
+                  height: 300,
+                  child: FutureBuilder<
+                      ({List<Bookmark> bookmarks, Map<int, List<Tag>> tagsByBookmarkId})>(
+                    future: _loadBookmarksWithTags(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
@@ -937,120 +1200,23 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                         );
                       }
 
-                      final bookmarks = snapshot.data ?? [];
+                      final data = snapshot.data;
+                      final bookmarks = data?.bookmarks ?? [];
+                      final tagsByBookmarkId = data?.tagsByBookmarkId ?? {};
 
                       if (bookmarks.isEmpty) {
                         return Center(
                           child: Text(
-                            _searchQuery.isEmpty 
-                              ? 'No bookmarks yet' 
-                              : 'No bookmarks match "$_searchQuery"',
+                            _searchQuery.isEmpty
+                                ? 'No bookmarks yet'
+                                : 'No bookmarks match "$_searchQuery"',
                           ),
                         );
                       }
 
-                      return ListView.builder(
-                        itemCount: bookmarks.length,
-                        itemBuilder: (context, index) {
-                          final bookmark = bookmarks[index];
-                          final fileName = bookmark.filePath.split('/').last;
-
-                          return FutureBuilder<List<Tag>>(
-                            future: database.getTagsForBookmark(bookmark.id),
-                            builder: (context, tagSnapshot) {
-                              final tags = tagSnapshot.data ?? [];
-
-                              return ListTile(
-                                title: Row(
-                                  children: [
-                                    if (bookmark.parentId != null)
-                                      const Icon(Icons.subdirectory_arrow_right, size: 16, color: Colors.grey),
-                                    if (bookmark.parentId != null) const SizedBox(width: 4),
-                                    if (bookmark.isFolder)
-                                      const Icon(Icons.folder, size: 16, color: Colors.amber),
-                                    if (bookmark.isFolder) const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        bookmark.title,
-                                        style: bookmark.isFolder
-                                            ? const TextStyle(fontWeight: FontWeight.bold)
-                                            : null,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (!bookmark.isFolder)
-                                      Text(
-                                          'Page ${(bookmark.pageIndex ?? 0) + 1} • $fileName',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        )
-                                    else
-                                      Text(
-                                        'Folder • $fileName',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    if (bookmark.description != null && bookmark.description!.isNotEmpty)
-                                      Text(
-                                        bookmark.description!,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    if (tags.isNotEmpty)
-                                      Wrap(
-                                        spacing: 4,
-                                        children: tags.map((tag) {
-                                          return Chip(
-                                            label: Text(
-                                              tag.name,
-                                              style: const TextStyle(fontSize: 10),
-                                            ),
-                                            backgroundColor: Colors.blue[100],
-                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                          );
-                                        }).toList(),
-                                      ),
-                                  ],
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit),
-                                      onPressed: () async {
-                                        await _showEditBookmarkDialog(bookmark);
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete),
-                                      onPressed: () async {
-                                        await database.deleteBookmark(bookmark.id);
-                                        if (mounted) {
-                                          await _calculateSyncDiff();
-                                          setState(() {});
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        },
+                      return _buildGroupedBookmarksList(
+                        bookmarks,
+                        tagsByBookmarkId,
                       );
                     },
                   ),

@@ -105,12 +105,12 @@ class $BookmarksTable extends Bookmarks
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
-  static const VerificationMeta _modifiedAtMeta = const VerificationMeta(
-    'modifiedAt',
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
   );
   @override
-  late final GeneratedColumn<DateTime> modifiedAt = GeneratedColumn<DateTime>(
-    'modified_at',
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
@@ -127,7 +127,7 @@ class $BookmarksTable extends Bookmarks
     parentId,
     isFolder,
     createdAt,
-    modifiedAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -193,10 +193,10 @@ class $BookmarksTable extends Bookmarks
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
-    if (data.containsKey('modified_at')) {
+    if (data.containsKey('updated_at')) {
       context.handle(
-        _modifiedAtMeta,
-        modifiedAt.isAcceptableOrUnknown(data['modified_at']!, _modifiedAtMeta),
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
     return context;
@@ -240,9 +240,9 @@ class $BookmarksTable extends Bookmarks
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
-      modifiedAt: attachedDatabase.typeMapping.read(
+      updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
-        data['${effectivePrefix}modified_at'],
+        data['${effectivePrefix}updated_at'],
       )!,
     );
   }
@@ -262,7 +262,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
   final int? parentId;
   final bool isFolder;
   final DateTime createdAt;
-  final DateTime modifiedAt;
+  final DateTime updatedAt;
   const Bookmark({
     required this.id,
     required this.filePath,
@@ -272,7 +272,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     this.parentId,
     required this.isFolder,
     required this.createdAt,
-    required this.modifiedAt,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -291,7 +291,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     }
     map['is_folder'] = Variable<bool>(isFolder);
     map['created_at'] = Variable<DateTime>(createdAt);
-    map['modified_at'] = Variable<DateTime>(modifiedAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
 
@@ -311,7 +311,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
           : Value(parentId),
       isFolder: Value(isFolder),
       createdAt: Value(createdAt),
-      modifiedAt: Value(modifiedAt),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -329,7 +329,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
       parentId: serializer.fromJson<int?>(json['parentId']),
       isFolder: serializer.fromJson<bool>(json['isFolder']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      modifiedAt: serializer.fromJson<DateTime>(json['modifiedAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
   @override
@@ -344,7 +344,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
       'parentId': serializer.toJson<int?>(parentId),
       'isFolder': serializer.toJson<bool>(isFolder),
       'createdAt': serializer.toJson<DateTime>(createdAt),
-      'modifiedAt': serializer.toJson<DateTime>(modifiedAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
 
@@ -357,7 +357,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     Value<int?> parentId = const Value.absent(),
     bool? isFolder,
     DateTime? createdAt,
-    DateTime? modifiedAt,
+    DateTime? updatedAt,
   }) => Bookmark(
     id: id ?? this.id,
     filePath: filePath ?? this.filePath,
@@ -367,7 +367,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     parentId: parentId.present ? parentId.value : this.parentId,
     isFolder: isFolder ?? this.isFolder,
     createdAt: createdAt ?? this.createdAt,
-    modifiedAt: modifiedAt ?? this.modifiedAt,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   Bookmark copyWithCompanion(BookmarksCompanion data) {
     return Bookmark(
@@ -381,9 +381,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
       parentId: data.parentId.present ? data.parentId.value : this.parentId,
       isFolder: data.isFolder.present ? data.isFolder.value : this.isFolder,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      modifiedAt: data.modifiedAt.present
-          ? data.modifiedAt.value
-          : this.modifiedAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -398,7 +396,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
           ..write('parentId: $parentId, ')
           ..write('isFolder: $isFolder, ')
           ..write('createdAt: $createdAt, ')
-          ..write('modifiedAt: $modifiedAt')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -413,7 +411,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     parentId,
     isFolder,
     createdAt,
-    modifiedAt,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -427,7 +425,7 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
           other.parentId == this.parentId &&
           other.isFolder == this.isFolder &&
           other.createdAt == this.createdAt &&
-          other.modifiedAt == this.modifiedAt);
+          other.updatedAt == this.updatedAt);
 }
 
 class BookmarksCompanion extends UpdateCompanion<Bookmark> {
@@ -439,7 +437,7 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
   final Value<int?> parentId;
   final Value<bool> isFolder;
   final Value<DateTime> createdAt;
-  final Value<DateTime> modifiedAt;
+  final Value<DateTime> updatedAt;
   const BookmarksCompanion({
     this.id = const Value.absent(),
     this.filePath = const Value.absent(),
@@ -449,7 +447,7 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     this.parentId = const Value.absent(),
     this.isFolder = const Value.absent(),
     this.createdAt = const Value.absent(),
-    this.modifiedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   BookmarksCompanion.insert({
     this.id = const Value.absent(),
@@ -460,7 +458,7 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     this.parentId = const Value.absent(),
     this.isFolder = const Value.absent(),
     this.createdAt = const Value.absent(),
-    this.modifiedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   }) : filePath = Value(filePath),
        title = Value(title);
   static Insertable<Bookmark> custom({
@@ -472,7 +470,7 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     Expression<int>? parentId,
     Expression<bool>? isFolder,
     Expression<DateTime>? createdAt,
-    Expression<DateTime>? modifiedAt,
+    Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -483,7 +481,7 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
       if (parentId != null) 'parent_id': parentId,
       if (isFolder != null) 'is_folder': isFolder,
       if (createdAt != null) 'created_at': createdAt,
-      if (modifiedAt != null) 'modified_at': modifiedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -496,7 +494,7 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     Value<int?>? parentId,
     Value<bool>? isFolder,
     Value<DateTime>? createdAt,
-    Value<DateTime>? modifiedAt,
+    Value<DateTime>? updatedAt,
   }) {
     return BookmarksCompanion(
       id: id ?? this.id,
@@ -507,7 +505,7 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
       parentId: parentId ?? this.parentId,
       isFolder: isFolder ?? this.isFolder,
       createdAt: createdAt ?? this.createdAt,
-      modifiedAt: modifiedAt ?? this.modifiedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -538,8 +536,8 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
-    if (modifiedAt.present) {
-      map['modified_at'] = Variable<DateTime>(modifiedAt.value);
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
     return map;
   }
@@ -555,7 +553,7 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
           ..write('parentId: $parentId, ')
           ..write('isFolder: $isFolder, ')
           ..write('createdAt: $createdAt, ')
-          ..write('modifiedAt: $modifiedAt')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -1330,7 +1328,7 @@ typedef $$BookmarksTableCreateCompanionBuilder =
       Value<int?> parentId,
       Value<bool> isFolder,
       Value<DateTime> createdAt,
-      Value<DateTime> modifiedAt,
+      Value<DateTime> updatedAt,
     });
 typedef $$BookmarksTableUpdateCompanionBuilder =
     BookmarksCompanion Function({
@@ -1342,7 +1340,7 @@ typedef $$BookmarksTableUpdateCompanionBuilder =
       Value<int?> parentId,
       Value<bool> isFolder,
       Value<DateTime> createdAt,
-      Value<DateTime> modifiedAt,
+      Value<DateTime> updatedAt,
     });
 
 final class $$BookmarksTableReferences
@@ -1434,8 +1432,8 @@ class $$BookmarksTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<DateTime> get modifiedAt => $composableBuilder(
-    column: $table.modifiedAt,
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1532,8 +1530,8 @@ class $$BookmarksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<DateTime> get modifiedAt => $composableBuilder(
-    column: $table.modifiedAt,
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1593,10 +1591,8 @@ class $$BookmarksTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  GeneratedColumn<DateTime> get modifiedAt => $composableBuilder(
-    column: $table.modifiedAt,
-    builder: (column) => column,
-  );
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$BookmarksTableAnnotationComposer get parentId {
     final $$BookmarksTableAnnotationComposer composer = $composerBuilder(
@@ -1683,7 +1679,7 @@ class $$BookmarksTableTableManager
                 Value<int?> parentId = const Value.absent(),
                 Value<bool> isFolder = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> modifiedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
               }) => BookmarksCompanion(
                 id: id,
                 filePath: filePath,
@@ -1693,7 +1689,7 @@ class $$BookmarksTableTableManager
                 parentId: parentId,
                 isFolder: isFolder,
                 createdAt: createdAt,
-                modifiedAt: modifiedAt,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
@@ -1705,7 +1701,7 @@ class $$BookmarksTableTableManager
                 Value<int?> parentId = const Value.absent(),
                 Value<bool> isFolder = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> modifiedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
               }) => BookmarksCompanion.insert(
                 id: id,
                 filePath: filePath,
@@ -1715,7 +1711,7 @@ class $$BookmarksTableTableManager
                 parentId: parentId,
                 isFolder: isFolder,
                 createdAt: createdAt,
-                modifiedAt: modifiedAt,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(

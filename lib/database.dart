@@ -5,6 +5,8 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
+import 'bookmark_tree.dart';
+
 part 'database.g.dart';
 
 /// Bookmarks table definition
@@ -18,7 +20,7 @@ class Bookmarks extends Table {
   IntColumn get parentId => integer().nullable().references(Bookmarks, #id, onDelete: KeyAction.cascade)();
   BoolColumn get isFolder => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get modifiedAt =>
+  DateTimeColumn get updatedAt =>
       dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -51,7 +53,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -87,6 +89,11 @@ class AppDatabase extends _$AppDatabase {
         ''');
       },
       onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 4 && from >= 3) {
+          await customStatement(
+            'ALTER TABLE bookmarks RENAME COLUMN modified_at TO updated_at',
+          );
+        }
         // For PoC, we'll drop and recreate
         if (from < 3) {
           await customStatement('DROP TABLE IF EXISTS bookmarks');
@@ -175,7 +182,7 @@ class AppDatabase extends _$AppDatabase {
       title: Value(newTitle),
       pageIndex: Value(newPageIndex),
       description: description != null ? Value(description) : const Value.absent(),
-      modifiedAt: Value(DateTime.now()),
+      updatedAt: Value(DateTime.now()),
     ));
   }
 
@@ -186,14 +193,9 @@ class AppDatabase extends _$AppDatabase {
         .go();
   }
 
-  /// Delete a bookmark and cascade delete nested children
+  /// Delete a bookmark. Child rows cascade via foreign key.
   Future<int> deleteBookmark(int id) async {
-    return await transaction(() async {
-      // First, delete all child bookmarks (those with parentId = id)
-      await (delete(bookmarks)..where((tbl) => tbl.parentId.equals(id))).go();
-      // Then delete the bookmark itself
-      return (delete(bookmarks)..where((tbl) => tbl.id.equals(id))).go();
-    });
+    return (delete(bookmarks)..where((tbl) => tbl.id.equals(id))).go();
   }
 
   /// Delete all bookmarks for a specific file
@@ -217,35 +219,113 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Finds a bookmark by file, parent, and title.
+  Future<Bookmark?> findBookmark({
+    required String filePath,
+    required String title,
+    int? parentId,
+  }) async {
+    return (select(bookmarks)
+          ..where((tbl) {
+            final parentMatches = parentId == null
+                ? tbl.parentId.isNull()
+                : tbl.parentId.equals(parentId);
+            return tbl.filePath.equals(filePath) &
+                tbl.title.equals(title) &
+                parentMatches;
+          }))
+        .getSingleOrNull();
+  }
+
   /// Sync bookmark from external source (PDF extraction)
-  /// Adds bookmark only if filePath + title combination doesn't exist
+  /// Adds bookmark only if filePath + parent + title combination doesn't exist
   /// Returns true if new bookmark was added, false if it already exists
   Future<bool> syncBookmark({
     required String filePath,
     required String title,
     int? pageIndex,
+    int? parentId,
+    bool isFolder = false,
   }) async {
-    // Check if bookmark with exact filePath and title already exists
-    final existing = await (select(bookmarks)
-          ..where((tbl) =>
-            tbl.filePath.equals(filePath) &
-            tbl.title.equals(title)))
-        .getSingleOrNull();
+    final existing = await findBookmark(
+      filePath: filePath,
+      title: title,
+      parentId: parentId,
+    );
 
     if (existing == null) {
-      // Bookmark doesn't exist, insert it
       await into(bookmarks).insert(
         BookmarksCompanion(
           filePath: Value(filePath),
           title: Value(title),
           pageIndex: pageIndex != null ? Value(pageIndex) : const Value.absent(),
+          parentId: Value(parentId),
+          isFolder: Value(isFolder),
         ),
       );
       return true;
     }
 
-    // Bookmark already exists
     return false;
+  }
+
+  /// Syncs a full extracted bookmark hierarchy into the database.
+  /// Returns the number of newly added bookmarks.
+  Future<int> syncBookmarkHierarchy(
+    String filePath,
+    List<Map<String, dynamic>> extracted,
+  ) async {
+    final sorted = List<Map<String, dynamic>>.from(extracted)
+      ..sort(
+        (a, b) => (a['path'] as List).length.compareTo((b['path'] as List).length),
+      );
+
+    final pathToId = <String, int>{};
+    var addedCount = 0;
+
+    for (final item in sorted) {
+      final path = List<String>.from(item['path'] as List);
+      final title = path.last;
+      final parentKey =
+          path.length > 1 ? BookmarkTree.pathKey(path.sublist(0, path.length - 1)) : null;
+      final parentId = parentKey != null ? pathToId[parentKey] : null;
+      final pageIndex = item['pageIndex'] as int?;
+      final isFolder = item['isFolder'] as bool? ?? false;
+      final description = item['description'] as String?;
+      final tags = (item['tags'] as List?)?.cast<String>() ?? const <String>[];
+
+      final existing = await findBookmark(
+        filePath: filePath,
+        title: title,
+        parentId: parentId,
+      );
+
+      if (existing != null) {
+        pathToId[BookmarkTree.pathKey(path)] = existing.id;
+        continue;
+      }
+
+      final bookmarkId = await addBookmark(
+        filePath: filePath,
+        title: title,
+        pageIndex: pageIndex,
+        description: description,
+        parentId: parentId,
+        isFolder: isFolder,
+      );
+
+      for (final tag in tags) {
+        final cleanTag = tag.startsWith('#') ? tag.substring(1) : tag;
+        if (cleanTag.isNotEmpty) {
+          await addTagToBookmark(bookmarkId, cleanTag);
+        }
+      }
+
+      pathToId[BookmarkTree.pathKey(path)] = bookmarkId;
+      addedCount++;
+    }
+
+    return addedCount;
   }
 
   /// Search bookmarks by title using FTS5
@@ -274,7 +354,7 @@ class AppDatabase extends _$AppDatabase {
         parentId: row.data['parent_id'] as int?,
         isFolder: row.data['is_folder'] as bool,
         createdAt: row.data['created_at'] as DateTime,
-        modifiedAt: row.data['modified_at'] as DateTime,
+        updatedAt: row.data['updated_at'] as DateTime,
       );
     }).get();
 
@@ -308,6 +388,25 @@ class AppDatabase extends _$AppDatabase {
     return (select(fileSnapshots)
           ..where((tbl) => tbl.filePath.equals(filePath)))
         .getSingleOrNull();
+  }
+
+  /// Fetch tags for many bookmarks in one query (bookmark id -> tags).
+  Future<Map<int, List<Tag>>> getTagsByBookmarkIds(Iterable<int> bookmarkIds) async {
+    final ids = bookmarkIds.toList();
+    if (ids.isEmpty) return {};
+
+    final query = select(tags).join([
+      innerJoin(bookmarkTags, bookmarkTags.tagId.equalsExp(tags.id)),
+    ]);
+    query.where(bookmarkTags.bookmarkId.isIn(ids));
+
+    final map = <int, List<Tag>>{};
+    for (final row in await query.get()) {
+      final tag = row.readTable(tags);
+      final bookmarkId = row.readTable(bookmarkTags).bookmarkId;
+      map.putIfAbsent(bookmarkId, () => []).add(tag);
+    }
+    return map;
   }
 
   /// Fetch all tags for a specific bookmark

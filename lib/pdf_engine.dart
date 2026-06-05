@@ -31,13 +31,14 @@ class PdfEngine {
   Future<String?> injectBookmark(
     String filePath,
     String bookmarkTitle,
-    int pageIndex,
-  ) async {
+    int pageIndex, {
+    String? description,
+  }) async {
     PdfDocument? document;
     try {
       print('[PDF] Starting bookmark injection for: $bookmarkTitle');
       print('[PDF] File: $filePath, Page: $pageIndex');
-      
+
       final bytes = await File(filePath).readAsBytes();
       document = PdfDocument(inputBytes: bytes);
 
@@ -57,6 +58,13 @@ class PdfEngine {
         print('[PDF] Attempted title (bytes): ${utf8.encode(bookmarkTitle)}');
         print('[PDF] Attempted title (length): ${bookmarkTitle.length}');
         rethrow;
+      }
+
+      // Update descriptions in custom property if description is provided
+      // Note: Syncfusion PDF doesn't support customProperties, so we skip this for now
+      // TODO: Implement alternative metadata storage for descriptions
+      if (description != null) {
+        print("[PDF] Description provided but not saved (Syncfusion doesn't support customProperties)");
       }
 
       final outBytes = await document.save();
@@ -101,7 +109,7 @@ class PdfEngine {
   }
 
   /// Extract all bookmarks from a PDF file
-  /// Returns a list of maps with 'title' and 'pageIndex' keys
+  /// Returns a list of maps with 'title', 'pageIndex', 'description', and 'tags' keys
   static Future<List<Map<String, dynamic>>> extractBookmarks(
     String filePath,
   ) async {
@@ -114,13 +122,33 @@ class PdfEngine {
 
       final bookmarksList = <Map<String, dynamic>>[];
 
+      // Read custom property for descriptions
+      // Note: Syncfusion PDF doesn't support customProperties, so we skip this for now
+      // Descriptions will need to be stored in a separate metadata file or alternative approach
+      Map<String, String> descriptionsMap = {};
+      // TODO: Implement alternative metadata storage for descriptions
+
       // Loop through all bookmarks in the document
       for (int i = 0; i < document.bookmarks.count; i++) {
         final bookmark = document.bookmarks[i];
 
         try {
           // Get bookmark title
-          final title = bookmark.title ?? 'Untitled Bookmark';
+          final rawTitle = bookmark.title ?? 'Untitled Bookmark';
+
+          // Parse tags from title (format: "Title - #tag1, #tag2")
+          String cleanTitle = rawTitle;
+          List<String> tags = [];
+
+          final tagPattern = RegExp(r'\s-\s*#([^\s,]+(?:,\s*#[^\s,]+)*)$');
+          final match = tagPattern.firstMatch(rawTitle);
+
+          if (match != null) {
+            cleanTitle = rawTitle.substring(0, match.start);
+            final tagString = match.group(1) ?? '';
+            tags = tagString.split(RegExp(r',\s*')).map((t) => t.trim()).toList();
+            print('[PDF] Parsed tags from title: $tags');
+          }
 
           // Try to get the page index from the bookmark's destination
           int pageIndex = -1;
@@ -131,12 +159,14 @@ class PdfEngine {
 
           if (pageIndex >= 0) {
             bookmarksList.add({
-              'title': title,
+              'title': cleanTitle,
               'pageIndex': pageIndex,
+              'description': descriptionsMap[cleanTitle],
+              'tags': tags,
             });
-            print('[PDF] Extracted bookmark: "$title" at page $pageIndex');
+            print('[PDF] Extracted bookmark: "$cleanTitle" at page $pageIndex');
           } else {
-            print('[PDF] Skipped bookmark "$title" - destination page not found');
+            print('[PDF] Skipped bookmark "$cleanTitle" - destination page not found');
           }
         } catch (e) {
           print('[PDF] Error processing bookmark $i: $e');
@@ -241,6 +271,7 @@ class PdfEngine {
     List<Map<String, dynamic>> finalBookmarks, {
     List<String>? toRemove,
     List<String>? toAdd,
+    Map<String, String>? descriptions,
   }) async {
     PdfDocument? document;
     try {
@@ -278,6 +309,13 @@ class PdfEngine {
       }
 
       print('[PDF] Successfully added $addedCount out of ${finalBookmarks.length} bookmarks');
+
+      // Write descriptions to custom property if provided
+      // Note: Syncfusion PDF doesn't support customProperties, so we skip this for now
+      // TODO: Implement alternative metadata storage for descriptions
+      if (descriptions != null && descriptions.isNotEmpty) {
+        print("[PDF] Descriptions provided but not saved (Syncfusion doesn't support customProperties)");
+      }
 
       final outBytes = await document.save();
       document.dispose();

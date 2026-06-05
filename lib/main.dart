@@ -406,7 +406,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
         if (!pdfTitles.contains(bookmark.title)) {
           diffs.add(BookmarkDiff(
             title: bookmark.title,
-            pageIndex: bookmark.pageIndex,
+            pageIndex: bookmark.pageIndex!,
             action: SyncAction.add,
           ));
         }
@@ -430,7 +430,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
         if (pdfTitles.contains(bookmark.title)) {
           diffs.add(BookmarkDiff(
             title: bookmark.title,
-            pageIndex: bookmark.pageIndex,
+            pageIndex: bookmark.pageIndex!,
             action: SyncAction.keep,
           ));
         }
@@ -448,7 +448,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
 
   Future<void> _showEditBookmarkDialog(Bookmark bookmark) async {
     final titleController = TextEditingController(text: bookmark.title);
-    final pageController = TextEditingController(text: '${bookmark.pageIndex + 1}');
+    final pageController = TextEditingController(text: '${bookmark.pageIndex! + 1}');
 
     final saved = await showDialog<bool>(
       context: context,
@@ -514,7 +514,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       return;
     }
 
-    await database.updateBookmark(bookmark.id, newTitle, newPageNumber - 1);
+    await database.updateBookmark(bookmark.id, newTitle, newPageNumber! - 1);
 
     if (!mounted) return;
 
@@ -793,7 +793,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                           return ListTile(
                             title: Text(bookmark.title),
                             subtitle: Text(
-                              'Page ${bookmark.pageIndex + 1} • $fileName',
+                              'Page ${bookmark.pageIndex! + 1} • $fileName',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

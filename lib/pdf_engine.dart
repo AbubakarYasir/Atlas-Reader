@@ -99,4 +99,60 @@ class PdfEngine {
       );
     }
   }
+
+  /// Extract all bookmarks from a PDF file
+  /// Returns a list of maps with 'title' and 'pageIndex' keys
+  static Future<List<Map<String, dynamic>>> extractBookmarks(
+    String filePath,
+  ) async {
+    PdfDocument? document;
+    try {
+      print('[PDF] Starting bookmark extraction from: $filePath');
+
+      final bytes = await File(filePath).readAsBytes();
+      document = PdfDocument(inputBytes: bytes);
+
+      final bookmarksList = <Map<String, dynamic>>[];
+
+      // Loop through all bookmarks in the document
+      for (int i = 0; i < document.bookmarks.count; i++) {
+        final bookmark = document.bookmarks[i];
+
+        try {
+          // Get bookmark title
+          final title = bookmark.title ?? 'Untitled Bookmark';
+
+          // Try to get the page index from the bookmark's destination
+          int pageIndex = -1;
+          if (bookmark.destination != null && bookmark.destination!.page != null) {
+            // Find the page index using indexOf
+            pageIndex = document.pages.indexOf(bookmark.destination!.page!);
+          }
+
+          if (pageIndex >= 0) {
+            bookmarksList.add({
+              'title': title,
+              'pageIndex': pageIndex,
+            });
+            print('[PDF] Extracted bookmark: "$title" at page $pageIndex');
+          } else {
+            print('[PDF] Skipped bookmark "$title" - destination page not found');
+          }
+        } catch (e) {
+          print('[PDF] Error processing bookmark $i: $e');
+          // Continue to next bookmark
+          continue;
+        }
+      }
+
+      print('[PDF] Extraction complete. Found ${bookmarksList.length} bookmarks');
+      return bookmarksList;
+    } catch (e, stackTrace) {
+      print('[PDF] ERROR in extractBookmarks: $e');
+      print('[PDF] Stack trace: $stackTrace');
+      return [];
+    } finally {
+      document?.dispose();
+    }
+  }
 }

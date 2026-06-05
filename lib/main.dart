@@ -39,6 +39,7 @@ class AtlasHomePage extends StatefulWidget {
 class _AtlasHomePageState extends State<AtlasHomePage> {
   String? _selectedFilePath;
   String _status = 'Waiting';
+  String _searchQuery = '';
 
   final _bookmarkTitleController = TextEditingController();
   final _pageNumberController = TextEditingController();
@@ -203,10 +204,29 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
+                // Command Center Search Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Command Center: Search all bookmarks...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
                 SizedBox(
                   height: 250,
                   child: FutureBuilder<List<Bookmark>>(
-                    future: database.getAllBookmarks(),
+                    future: database.searchBookmarks(_searchQuery),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
@@ -221,8 +241,12 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                       final bookmarks = snapshot.data ?? [];
 
                       if (bookmarks.isEmpty) {
-                        return const Center(
-                          child: Text('No bookmarks yet'),
+                        return Center(
+                          child: Text(
+                            _searchQuery.isEmpty 
+                              ? 'No bookmarks yet' 
+                              : 'No bookmarks match "$_searchQuery"',
+                          ),
                         );
                       }
 
@@ -230,10 +254,12 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                         itemCount: bookmarks.length,
                         itemBuilder: (context, index) {
                           final bookmark = bookmarks[index];
+                          final fileName = bookmark.filePath.split('/').last;
+                          
                           return ListTile(
                             title: Text(bookmark.title),
                             subtitle: Text(
-                              'Page ${bookmark.pageIndex + 1} • ${bookmark.filePath.split('/').last}',
+                              'Page ${bookmark.pageIndex + 1} • $fileName',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

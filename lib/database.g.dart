@@ -399,15 +399,327 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
   }
 }
 
+class $FileSnapshotsTable extends FileSnapshots
+    with TableInfo<$FileSnapshotsTable, FileSnapshot> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FileSnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _filePathMeta = const VerificationMeta(
+    'filePath',
+  );
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+    'file_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastKnownStateMeta = const VerificationMeta(
+    'lastKnownState',
+  );
+  @override
+  late final GeneratedColumn<String> lastKnownState = GeneratedColumn<String>(
+    'last_known_state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    filePath,
+    lastKnownState,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'file_snapshots';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FileSnapshot> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(
+        _filePathMeta,
+        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_filePathMeta);
+    }
+    if (data.containsKey('last_known_state')) {
+      context.handle(
+        _lastKnownStateMeta,
+        lastKnownState.isAcceptableOrUnknown(
+          data['last_known_state']!,
+          _lastKnownStateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastKnownStateMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FileSnapshot map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FileSnapshot(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      filePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_path'],
+      )!,
+      lastKnownState: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_known_state'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $FileSnapshotsTable createAlias(String alias) {
+    return $FileSnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class FileSnapshot extends DataClass implements Insertable<FileSnapshot> {
+  final int id;
+  final String filePath;
+  final String lastKnownState;
+  final DateTime updatedAt;
+  const FileSnapshot({
+    required this.id,
+    required this.filePath,
+    required this.lastKnownState,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['file_path'] = Variable<String>(filePath);
+    map['last_known_state'] = Variable<String>(lastKnownState);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  FileSnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return FileSnapshotsCompanion(
+      id: Value(id),
+      filePath: Value(filePath),
+      lastKnownState: Value(lastKnownState),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory FileSnapshot.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FileSnapshot(
+      id: serializer.fromJson<int>(json['id']),
+      filePath: serializer.fromJson<String>(json['filePath']),
+      lastKnownState: serializer.fromJson<String>(json['lastKnownState']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'filePath': serializer.toJson<String>(filePath),
+      'lastKnownState': serializer.toJson<String>(lastKnownState),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  FileSnapshot copyWith({
+    int? id,
+    String? filePath,
+    String? lastKnownState,
+    DateTime? updatedAt,
+  }) => FileSnapshot(
+    id: id ?? this.id,
+    filePath: filePath ?? this.filePath,
+    lastKnownState: lastKnownState ?? this.lastKnownState,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  FileSnapshot copyWithCompanion(FileSnapshotsCompanion data) {
+    return FileSnapshot(
+      id: data.id.present ? data.id.value : this.id,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      lastKnownState: data.lastKnownState.present
+          ? data.lastKnownState.value
+          : this.lastKnownState,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FileSnapshot(')
+          ..write('id: $id, ')
+          ..write('filePath: $filePath, ')
+          ..write('lastKnownState: $lastKnownState, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, filePath, lastKnownState, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FileSnapshot &&
+          other.id == this.id &&
+          other.filePath == this.filePath &&
+          other.lastKnownState == this.lastKnownState &&
+          other.updatedAt == this.updatedAt);
+}
+
+class FileSnapshotsCompanion extends UpdateCompanion<FileSnapshot> {
+  final Value<int> id;
+  final Value<String> filePath;
+  final Value<String> lastKnownState;
+  final Value<DateTime> updatedAt;
+  const FileSnapshotsCompanion({
+    this.id = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.lastKnownState = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  FileSnapshotsCompanion.insert({
+    this.id = const Value.absent(),
+    required String filePath,
+    required String lastKnownState,
+    this.updatedAt = const Value.absent(),
+  }) : filePath = Value(filePath),
+       lastKnownState = Value(lastKnownState);
+  static Insertable<FileSnapshot> custom({
+    Expression<int>? id,
+    Expression<String>? filePath,
+    Expression<String>? lastKnownState,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (filePath != null) 'file_path': filePath,
+      if (lastKnownState != null) 'last_known_state': lastKnownState,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  FileSnapshotsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? filePath,
+    Value<String>? lastKnownState,
+    Value<DateTime>? updatedAt,
+  }) {
+    return FileSnapshotsCompanion(
+      id: id ?? this.id,
+      filePath: filePath ?? this.filePath,
+      lastKnownState: lastKnownState ?? this.lastKnownState,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (lastKnownState.present) {
+      map['last_known_state'] = Variable<String>(lastKnownState.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FileSnapshotsCompanion(')
+          ..write('id: $id, ')
+          ..write('filePath: $filePath, ')
+          ..write('lastKnownState: $lastKnownState, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $BookmarksTable bookmarks = $BookmarksTable(this);
+  late final $FileSnapshotsTable fileSnapshots = $FileSnapshotsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [bookmarks];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    bookmarks,
+    fileSnapshots,
+  ];
 }
 
 typedef $$BookmarksTableCreateCompanionBuilder =
@@ -619,10 +931,189 @@ typedef $$BookmarksTableProcessedTableManager =
       Bookmark,
       PrefetchHooks Function()
     >;
+typedef $$FileSnapshotsTableCreateCompanionBuilder =
+    FileSnapshotsCompanion Function({
+      Value<int> id,
+      required String filePath,
+      required String lastKnownState,
+      Value<DateTime> updatedAt,
+    });
+typedef $$FileSnapshotsTableUpdateCompanionBuilder =
+    FileSnapshotsCompanion Function({
+      Value<int> id,
+      Value<String> filePath,
+      Value<String> lastKnownState,
+      Value<DateTime> updatedAt,
+    });
+
+class $$FileSnapshotsTableFilterComposer
+    extends Composer<_$AppDatabase, $FileSnapshotsTable> {
+  $$FileSnapshotsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastKnownState => $composableBuilder(
+    column: $table.lastKnownState,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FileSnapshotsTableOrderingComposer
+    extends Composer<_$AppDatabase, $FileSnapshotsTable> {
+  $$FileSnapshotsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastKnownState => $composableBuilder(
+    column: $table.lastKnownState,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FileSnapshotsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FileSnapshotsTable> {
+  $$FileSnapshotsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<String> get lastKnownState => $composableBuilder(
+    column: $table.lastKnownState,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$FileSnapshotsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FileSnapshotsTable,
+          FileSnapshot,
+          $$FileSnapshotsTableFilterComposer,
+          $$FileSnapshotsTableOrderingComposer,
+          $$FileSnapshotsTableAnnotationComposer,
+          $$FileSnapshotsTableCreateCompanionBuilder,
+          $$FileSnapshotsTableUpdateCompanionBuilder,
+          (
+            FileSnapshot,
+            BaseReferences<_$AppDatabase, $FileSnapshotsTable, FileSnapshot>,
+          ),
+          FileSnapshot,
+          PrefetchHooks Function()
+        > {
+  $$FileSnapshotsTableTableManager(_$AppDatabase db, $FileSnapshotsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FileSnapshotsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FileSnapshotsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FileSnapshotsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> filePath = const Value.absent(),
+                Value<String> lastKnownState = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => FileSnapshotsCompanion(
+                id: id,
+                filePath: filePath,
+                lastKnownState: lastKnownState,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String filePath,
+                required String lastKnownState,
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => FileSnapshotsCompanion.insert(
+                id: id,
+                filePath: filePath,
+                lastKnownState: lastKnownState,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FileSnapshotsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FileSnapshotsTable,
+      FileSnapshot,
+      $$FileSnapshotsTableFilterComposer,
+      $$FileSnapshotsTableOrderingComposer,
+      $$FileSnapshotsTableAnnotationComposer,
+      $$FileSnapshotsTableCreateCompanionBuilder,
+      $$FileSnapshotsTableUpdateCompanionBuilder,
+      (
+        FileSnapshot,
+        BaseReferences<_$AppDatabase, $FileSnapshotsTable, FileSnapshot>,
+      ),
+      FileSnapshot,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
   $$BookmarksTableTableManager get bookmarks =>
       $$BookmarksTableTableManager(_db, _db.bookmarks);
+  $$FileSnapshotsTableTableManager get fileSnapshots =>
+      $$FileSnapshotsTableTableManager(_db, _db.fileSnapshots);
 }

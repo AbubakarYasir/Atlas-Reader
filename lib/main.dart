@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'database.dart';
 import 'pdf_engine.dart';
+import 'sync_engine.dart';
 import 'sync_models.dart';
 
 /// Global database instance
@@ -48,6 +49,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
   final _bookmarkTitleController = TextEditingController();
   final _pageNumberController = TextEditingController();
   final _pdfEngine = PdfEngine();
+  final _syncEngine = SyncEngine(database);
 
   @override
   void dispose() {
@@ -221,51 +223,60 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       _status = 'Committing changes to PDF...';
     });
 
-    try {
-      // Fetch database bookmarks for this file
-      final dbBookmarks = await database.getBookmarksForFile(filePath);
-
-      // Map to List<Map<String, dynamic>>
-      final bookmarksToInject = dbBookmarks
-          .map((bookmark) => {
-                'title': bookmark.title,
-                'pageIndex': bookmark.pageIndex,
-              })
-          .toList();
-
-      // Calculate titles to remove and add for sync history
-      final toRemove = _syncDiffs
-          .where((diff) => diff.action == SyncAction.delete)
-          .map((diff) => diff.title)
-          .toList();
-      final toAdd = _syncDiffs
-          .where((diff) => diff.action == SyncAction.add)
-          .map((diff) => diff.title)
-          .toList();
-
-      // Overwrite all bookmarks in PDF with database bookmarks
-      final success = await PdfEngine.overwriteAllBookmarks(
-        filePath,
-        bookmarksToInject,
-        toRemove: toRemove,
-        toAdd: toAdd,
+    // Show snackbar for sync progress
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Syncing changes...'),
+          duration: Duration(seconds: 1),
+        ),
       );
+    }
+
+    try {
+      // Use SyncEngine for incremental reconciliation
+      final result = await _syncEngine.reconcile(filePath);
 
       if (!mounted) return;
 
-      if (success) {
+      if (result != null) {
+        final (adds, deletes) = result;
         setState(() {
-          _status = 'File successfully synced to match Database!';
+          _status = 'Successfully committed $adds adds and $deletes deletes';
           _syncDiffs = [];
         });
+
+        // Show success snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Successfully committed $adds adds and $deletes deletes'),
+            backgroundColor: Colors.green,
+          ),
+        );
       } else {
         setState(() {
           _status = 'Failed to sync bookmarks to PDF.';
         });
+
+        // Show error snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to sync bookmarks to PDF.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _status = 'Error: $e');
+
+      // Show error snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {

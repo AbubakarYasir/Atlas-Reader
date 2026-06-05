@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -18,13 +19,89 @@ class Bookmarks extends Table {
       dateTime().withDefault(currentDateAndTime)();
 }
 
+/// FileSnapshots table for tracking PDF state for reconciliation
+@DataClassName('FileSnapshot')
+class FileSnapshots extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get filePath => text()();
+  TextColumn get lastKnownState => text()(); // JSON list of bookmark titles
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 /// AppDatabase class extending _$AppDatabase
-@DriftDatabase(tables: [Bookmarks])
+@DriftDatabase(tables: [Bookmarks, FileSnapshots])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        await m.createAll();
+        // Create FTS5 virtual table for full-text search
+        await customStatement('''
+          CREATE VIRTUAL TABLE IF NOT EXISTS bookmarks_fts 
+          USING fts5(title, content=bookmarks, content_rowid=id);
+        ''');
+        // Populate FTS table with existing data
+        await customStatement('''
+          INSERT INTO bookmarks_fts(rowid, title)
+          SELECT id, title FROM bookmarks;
+        ''');
+        // Create triggers to keep FTS in sync
+        await customStatement('''
+          CREATE TRIGGER IF NOT EXISTS bookmarks_ai AFTER INSERT ON bookmarks BEGIN
+            INSERT INTO bookmarks_fts(rowid, title) VALUES (new.id, new.title);
+          END;
+        ''');
+        await customStatement('''
+          CREATE TRIGGER IF NOT EXISTS bookmarks_ad AFTER DELETE ON bookmarks BEGIN
+            INSERT INTO bookmarks_fts(bookmarks_fts, rowid, title) VALUES('delete', old.id, old.title);
+          END;
+        ''');
+        await customStatement('''
+          CREATE TRIGGER IF NOT EXISTS bookmarks_au AFTER UPDATE ON bookmarks BEGIN
+            INSERT INTO bookmarks_fts(bookmarks_fts, rowid, title) VALUES('delete', old.id, old.title);
+            INSERT INTO bookmarks_fts(rowid, title) VALUES (new.id, new.title);
+          END;
+        ''');
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        // For PoC, we'll drop and recreate
+        if (from < 2) {
+          await customStatement('DROP TABLE IF EXISTS bookmarks');
+          await customStatement('DROP TABLE IF EXISTS file_snapshots');
+          await customStatement('DROP TABLE IF EXISTS bookmarks_fts');
+          await m.createAll();
+          // Create FTS5 virtual table
+          await customStatement('''
+            CREATE VIRTUAL TABLE IF NOT EXISTS bookmarks_fts 
+            USING fts5(title, content=bookmarks, content_rowid=id);
+          ''');
+          // Create triggers
+          await customStatement('''
+            CREATE TRIGGER IF NOT EXISTS bookmarks_ai AFTER INSERT ON bookmarks BEGIN
+              INSERT INTO bookmarks_fts(rowid, title) VALUES (new.id, new.title);
+            END;
+          ''');
+          await customStatement('''
+            CREATE TRIGGER IF NOT EXISTS bookmarks_ad AFTER DELETE ON bookmarks BEGIN
+              INSERT INTO bookmarks_fts(bookmarks_fts, rowid, title) VALUES('delete', old.id, old.title);
+            END;
+          ''');
+          await customStatement('''
+            CREATE TRIGGER IF NOT EXISTS bookmarks_au AFTER UPDATE ON bookmarks BEGIN
+              INSERT INTO bookmarks_fts(bookmarks_fts, rowid, title) VALUES('delete', old.id, old.title);
+              INSERT INTO bookmarks_fts(rowid, title) VALUES (new.id, new.title);
+            END;
+          ''');
+        }
+      },
+    );
+  }
 
   /// Add a new bookmark to the database
   Future<int> addBookmark({
@@ -128,7 +205,7 @@ class AppDatabase extends _$AppDatabase {
     return false;
   }
 
-  /// Search bookmarks by title
+  /// Search bookmarks by title using FTS5
   /// If query is empty, returns all bookmarks
   Future<List<Bookmark>> searchBookmarks(String query) async {
     final trimmedQuery = query.trim();
@@ -137,9 +214,45 @@ class AppDatabase extends _$AppDatabase {
       return getAllBookmarks();
     }
     
-    return (select(bookmarks)
-          ..where((tbl) => tbl.title.like('%$trimmedQuery%')))
-        .get();
+    // Use FTS5 for lightning-fast full-text search
+    final results = await customSelect(
+      'SELECT b.* FROM bookmarks b '
+      'INNER JOIN bookmarks_fts fts ON b.id = fts.rowid '
+      'WHERE bookmarks_fts MATCH ? '
+      'ORDER BY rank',
+      variables: [Variable.withString(trimmedQuery)],
+    ).map((row) => Bookmark.fromData(row.data)).get();
+    
+    return results;
+  }
+
+  /// Save or update file snapshot for reconciliation
+  Future<void> saveFileSnapshot(String filePath, List<String> bookmarkTitles) async {
+    final jsonState = jsonEncode(bookmarkTitles);
+    
+    final existing = await (select(fileSnapshots)
+          ..where((tbl) => tbl.filePath.equals(filePath)))
+        .getSingleOrNull();
+    
+    if (existing != null) {
+      await (update(fileSnapshots)..where((tbl) => tbl.id.equals(existing.id)))
+          .write(FileSnapshotsCompanion(
+        lastKnownState: Value(jsonState),
+        updatedAt: Value(DateTime.now()),
+      ));
+    } else {
+      await into(fileSnapshots).insert(FileSnapshotsCompanion(
+        filePath: Value(filePath),
+        lastKnownState: Value(jsonState),
+      ));
+    }
+  }
+
+  /// Get file snapshot for reconciliation
+  Future<FileSnapshot?> getFileSnapshot(String filePath) async {
+    return (select(fileSnapshots)
+          ..where((tbl) => tbl.filePath.equals(filePath)))
+        .getSingleOrNull();
   }
 }
 

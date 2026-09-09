@@ -158,4 +158,20 @@ void main() {
     expect(files.single.filePath, newPath);
     expect(bookmarks.single.title, 'Saved locally');
   });
+
+  test('renaming a folder preserves its folder state and page', () async {
+    final folderId = await db.addBookmark(
+      filePath: r'C:\Books\outline.pdf',
+      title: 'Part one',
+      pageIndex: 0,
+      isFolder: true,
+    );
+
+    await db.renameBookmark(folderId, 'Part I');
+
+    final bookmarks = await db.getBookmarksForFile(r'C:\Books\outline.pdf');
+    expect(bookmarks.single.title, 'Part I');
+    expect(bookmarks.single.isFolder, isTrue);
+    expect(bookmarks.single.pageIndex, 0);
+  });
 }

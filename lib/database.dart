@@ -230,6 +230,16 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  /// Renames a bookmark or outline folder without changing its page or type.
+  Future<int> renameBookmark(int id, String newTitle) {
+    return (update(bookmarks)..where((tbl) => tbl.id.equals(id))).write(
+      BookmarksCompanion(
+        title: Value(newTitle),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   /// Remove all tag links for a bookmark.
   Future<void> clearTagsForBookmark(int bookmarkId) async {
     await (delete(

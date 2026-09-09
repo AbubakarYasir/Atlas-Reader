@@ -675,6 +675,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _showEditBookmarkDialog(Bookmark bookmark) async {
+    if (bookmark.isFolder) {
+      await _showRenameFolderDialog(bookmark);
+      return;
+    }
     final titleController = TextEditingController(text: bookmark.title);
     final pageController = TextEditingController(
       text: '${(bookmark.pageIndex ?? 0) + 1}',
@@ -815,6 +819,41 @@ class _LibraryScreenState extends State<LibraryScreen> {
         backgroundColor: Colors.green,
       ),
     );
+  }
+
+  Future<void> _showRenameFolderDialog(Bookmark bookmark) async {
+    final titleController = TextEditingController(text: bookmark.title);
+    final renamed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Rename folder'),
+        content: TextField(
+          controller: titleController,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Folder title'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Rename'),
+          ),
+        ],
+      ),
+    );
+    final title = titleController.text.trim();
+    titleController.dispose();
+    if (renamed != true || title.isEmpty || !mounted) return;
+
+    await database.renameBookmark(bookmark.id, title);
+    if (!mounted) return;
+    await _calculateSyncDiff();
+    if (!mounted) return;
+    setState(() {});
+    AccessibilityAnnouncer.announce(context, '$title renamed.');
   }
 
   Future<({List<Bookmark> bookmarks, Map<int, List<Tag>> tagsByBookmarkId})>

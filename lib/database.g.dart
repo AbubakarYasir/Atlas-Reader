@@ -3253,6 +3253,659 @@ class AnnotationsCompanion extends UpdateCompanion<DocumentAnnotation> {
   }
 }
 
+class $ScratchpadNotesTable extends ScratchpadNotes
+    with TableInfo<$ScratchpadNotesTable, ScratchpadNote> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ScratchpadNotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _filePathMeta = const VerificationMeta(
+    'filePath',
+  );
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+    'file_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, filePath, content, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'scratchpad_notes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ScratchpadNote> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(
+        _filePathMeta,
+        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_filePathMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ScratchpadNote map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ScratchpadNote(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      filePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_path'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ScratchpadNotesTable createAlias(String alias) {
+    return $ScratchpadNotesTable(attachedDatabase, alias);
+  }
+}
+
+class ScratchpadNote extends DataClass implements Insertable<ScratchpadNote> {
+  final int id;
+  final String filePath;
+  final String content;
+  final DateTime updatedAt;
+  const ScratchpadNote({
+    required this.id,
+    required this.filePath,
+    required this.content,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['file_path'] = Variable<String>(filePath);
+    map['content'] = Variable<String>(content);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ScratchpadNotesCompanion toCompanion(bool nullToAbsent) {
+    return ScratchpadNotesCompanion(
+      id: Value(id),
+      filePath: Value(filePath),
+      content: Value(content),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ScratchpadNote.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ScratchpadNote(
+      id: serializer.fromJson<int>(json['id']),
+      filePath: serializer.fromJson<String>(json['filePath']),
+      content: serializer.fromJson<String>(json['content']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'filePath': serializer.toJson<String>(filePath),
+      'content': serializer.toJson<String>(content),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ScratchpadNote copyWith({
+    int? id,
+    String? filePath,
+    String? content,
+    DateTime? updatedAt,
+  }) => ScratchpadNote(
+    id: id ?? this.id,
+    filePath: filePath ?? this.filePath,
+    content: content ?? this.content,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ScratchpadNote copyWithCompanion(ScratchpadNotesCompanion data) {
+    return ScratchpadNote(
+      id: data.id.present ? data.id.value : this.id,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      content: data.content.present ? data.content.value : this.content,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScratchpadNote(')
+          ..write('id: $id, ')
+          ..write('filePath: $filePath, ')
+          ..write('content: $content, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, filePath, content, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ScratchpadNote &&
+          other.id == this.id &&
+          other.filePath == this.filePath &&
+          other.content == this.content &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ScratchpadNotesCompanion extends UpdateCompanion<ScratchpadNote> {
+  final Value<int> id;
+  final Value<String> filePath;
+  final Value<String> content;
+  final Value<DateTime> updatedAt;
+  const ScratchpadNotesCompanion({
+    this.id = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.content = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  ScratchpadNotesCompanion.insert({
+    this.id = const Value.absent(),
+    required String filePath,
+    required String content,
+    this.updatedAt = const Value.absent(),
+  }) : filePath = Value(filePath),
+       content = Value(content);
+  static Insertable<ScratchpadNote> custom({
+    Expression<int>? id,
+    Expression<String>? filePath,
+    Expression<String>? content,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (filePath != null) 'file_path': filePath,
+      if (content != null) 'content': content,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  ScratchpadNotesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? filePath,
+    Value<String>? content,
+    Value<DateTime>? updatedAt,
+  }) {
+    return ScratchpadNotesCompanion(
+      id: id ?? this.id,
+      filePath: filePath ?? this.filePath,
+      content: content ?? this.content,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScratchpadNotesCompanion(')
+          ..write('id: $id, ')
+          ..write('filePath: $filePath, ')
+          ..write('content: $content, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReadingSessionTabsTable extends ReadingSessionTabs
+    with TableInfo<$ReadingSessionTabsTable, ReadingSessionTab> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReadingSessionTabsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _filePathMeta = const VerificationMeta(
+    'filePath',
+  );
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+    'file_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pageNumberMeta = const VerificationMeta(
+    'pageNumber',
+  );
+  @override
+  late final GeneratedColumn<int> pageNumber = GeneratedColumn<int>(
+    'page_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _tabOrderMeta = const VerificationMeta(
+    'tabOrder',
+  );
+  @override
+  late final GeneratedColumn<int> tabOrder = GeneratedColumn<int>(
+    'tab_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    filePath,
+    pageNumber,
+    tabOrder,
+    isActive,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reading_session_tabs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReadingSessionTab> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(
+        _filePathMeta,
+        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_filePathMeta);
+    }
+    if (data.containsKey('page_number')) {
+      context.handle(
+        _pageNumberMeta,
+        pageNumber.isAcceptableOrUnknown(data['page_number']!, _pageNumberMeta),
+      );
+    }
+    if (data.containsKey('tab_order')) {
+      context.handle(
+        _tabOrderMeta,
+        tabOrder.isAcceptableOrUnknown(data['tab_order']!, _tabOrderMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tabOrderMeta);
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ReadingSessionTab map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReadingSessionTab(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      filePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_path'],
+      )!,
+      pageNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_number'],
+      )!,
+      tabOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tab_order'],
+      )!,
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+    );
+  }
+
+  @override
+  $ReadingSessionTabsTable createAlias(String alias) {
+    return $ReadingSessionTabsTable(attachedDatabase, alias);
+  }
+}
+
+class ReadingSessionTab extends DataClass
+    implements Insertable<ReadingSessionTab> {
+  final int id;
+  final String filePath;
+  final int pageNumber;
+  final int tabOrder;
+  final bool isActive;
+  const ReadingSessionTab({
+    required this.id,
+    required this.filePath,
+    required this.pageNumber,
+    required this.tabOrder,
+    required this.isActive,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['file_path'] = Variable<String>(filePath);
+    map['page_number'] = Variable<int>(pageNumber);
+    map['tab_order'] = Variable<int>(tabOrder);
+    map['is_active'] = Variable<bool>(isActive);
+    return map;
+  }
+
+  ReadingSessionTabsCompanion toCompanion(bool nullToAbsent) {
+    return ReadingSessionTabsCompanion(
+      id: Value(id),
+      filePath: Value(filePath),
+      pageNumber: Value(pageNumber),
+      tabOrder: Value(tabOrder),
+      isActive: Value(isActive),
+    );
+  }
+
+  factory ReadingSessionTab.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReadingSessionTab(
+      id: serializer.fromJson<int>(json['id']),
+      filePath: serializer.fromJson<String>(json['filePath']),
+      pageNumber: serializer.fromJson<int>(json['pageNumber']),
+      tabOrder: serializer.fromJson<int>(json['tabOrder']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'filePath': serializer.toJson<String>(filePath),
+      'pageNumber': serializer.toJson<int>(pageNumber),
+      'tabOrder': serializer.toJson<int>(tabOrder),
+      'isActive': serializer.toJson<bool>(isActive),
+    };
+  }
+
+  ReadingSessionTab copyWith({
+    int? id,
+    String? filePath,
+    int? pageNumber,
+    int? tabOrder,
+    bool? isActive,
+  }) => ReadingSessionTab(
+    id: id ?? this.id,
+    filePath: filePath ?? this.filePath,
+    pageNumber: pageNumber ?? this.pageNumber,
+    tabOrder: tabOrder ?? this.tabOrder,
+    isActive: isActive ?? this.isActive,
+  );
+  ReadingSessionTab copyWithCompanion(ReadingSessionTabsCompanion data) {
+    return ReadingSessionTab(
+      id: data.id.present ? data.id.value : this.id,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      pageNumber: data.pageNumber.present
+          ? data.pageNumber.value
+          : this.pageNumber,
+      tabOrder: data.tabOrder.present ? data.tabOrder.value : this.tabOrder,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingSessionTab(')
+          ..write('id: $id, ')
+          ..write('filePath: $filePath, ')
+          ..write('pageNumber: $pageNumber, ')
+          ..write('tabOrder: $tabOrder, ')
+          ..write('isActive: $isActive')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, filePath, pageNumber, tabOrder, isActive);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReadingSessionTab &&
+          other.id == this.id &&
+          other.filePath == this.filePath &&
+          other.pageNumber == this.pageNumber &&
+          other.tabOrder == this.tabOrder &&
+          other.isActive == this.isActive);
+}
+
+class ReadingSessionTabsCompanion extends UpdateCompanion<ReadingSessionTab> {
+  final Value<int> id;
+  final Value<String> filePath;
+  final Value<int> pageNumber;
+  final Value<int> tabOrder;
+  final Value<bool> isActive;
+  const ReadingSessionTabsCompanion({
+    this.id = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.pageNumber = const Value.absent(),
+    this.tabOrder = const Value.absent(),
+    this.isActive = const Value.absent(),
+  });
+  ReadingSessionTabsCompanion.insert({
+    this.id = const Value.absent(),
+    required String filePath,
+    this.pageNumber = const Value.absent(),
+    required int tabOrder,
+    this.isActive = const Value.absent(),
+  }) : filePath = Value(filePath),
+       tabOrder = Value(tabOrder);
+  static Insertable<ReadingSessionTab> custom({
+    Expression<int>? id,
+    Expression<String>? filePath,
+    Expression<int>? pageNumber,
+    Expression<int>? tabOrder,
+    Expression<bool>? isActive,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (filePath != null) 'file_path': filePath,
+      if (pageNumber != null) 'page_number': pageNumber,
+      if (tabOrder != null) 'tab_order': tabOrder,
+      if (isActive != null) 'is_active': isActive,
+    });
+  }
+
+  ReadingSessionTabsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? filePath,
+    Value<int>? pageNumber,
+    Value<int>? tabOrder,
+    Value<bool>? isActive,
+  }) {
+    return ReadingSessionTabsCompanion(
+      id: id ?? this.id,
+      filePath: filePath ?? this.filePath,
+      pageNumber: pageNumber ?? this.pageNumber,
+      tabOrder: tabOrder ?? this.tabOrder,
+      isActive: isActive ?? this.isActive,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (pageNumber.present) {
+      map['page_number'] = Variable<int>(pageNumber.value);
+    }
+    if (tabOrder.present) {
+      map['tab_order'] = Variable<int>(tabOrder.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingSessionTabsCompanion(')
+          ..write('id: $id, ')
+          ..write('filePath: $filePath, ')
+          ..write('pageNumber: $pageNumber, ')
+          ..write('tabOrder: $tabOrder, ')
+          ..write('isActive: $isActive')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3263,6 +3916,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LibraryFoldersTable libraryFolders = $LibraryFoldersTable(this);
   late final $LibraryFilesTable libraryFiles = $LibraryFilesTable(this);
   late final $AnnotationsTable annotations = $AnnotationsTable(this);
+  late final $ScratchpadNotesTable scratchpadNotes = $ScratchpadNotesTable(
+    this,
+  );
+  late final $ReadingSessionTabsTable readingSessionTabs =
+      $ReadingSessionTabsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3275,6 +3933,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     libraryFolders,
     libraryFiles,
     annotations,
+    scratchpadNotes,
+    readingSessionTabs,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -5729,6 +6389,396 @@ typedef $$AnnotationsTableProcessedTableManager =
       DocumentAnnotation,
       PrefetchHooks Function()
     >;
+typedef $$ScratchpadNotesTableCreateCompanionBuilder =
+    ScratchpadNotesCompanion Function({
+      Value<int> id,
+      required String filePath,
+      required String content,
+      Value<DateTime> updatedAt,
+    });
+typedef $$ScratchpadNotesTableUpdateCompanionBuilder =
+    ScratchpadNotesCompanion Function({
+      Value<int> id,
+      Value<String> filePath,
+      Value<String> content,
+      Value<DateTime> updatedAt,
+    });
+
+class $$ScratchpadNotesTableFilterComposer
+    extends Composer<_$AppDatabase, $ScratchpadNotesTable> {
+  $$ScratchpadNotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ScratchpadNotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ScratchpadNotesTable> {
+  $$ScratchpadNotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ScratchpadNotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ScratchpadNotesTable> {
+  $$ScratchpadNotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ScratchpadNotesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ScratchpadNotesTable,
+          ScratchpadNote,
+          $$ScratchpadNotesTableFilterComposer,
+          $$ScratchpadNotesTableOrderingComposer,
+          $$ScratchpadNotesTableAnnotationComposer,
+          $$ScratchpadNotesTableCreateCompanionBuilder,
+          $$ScratchpadNotesTableUpdateCompanionBuilder,
+          (
+            ScratchpadNote,
+            BaseReferences<
+              _$AppDatabase,
+              $ScratchpadNotesTable,
+              ScratchpadNote
+            >,
+          ),
+          ScratchpadNote,
+          PrefetchHooks Function()
+        > {
+  $$ScratchpadNotesTableTableManager(
+    _$AppDatabase db,
+    $ScratchpadNotesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ScratchpadNotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ScratchpadNotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ScratchpadNotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> filePath = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => ScratchpadNotesCompanion(
+                id: id,
+                filePath: filePath,
+                content: content,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String filePath,
+                required String content,
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => ScratchpadNotesCompanion.insert(
+                id: id,
+                filePath: filePath,
+                content: content,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ScratchpadNotesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ScratchpadNotesTable,
+      ScratchpadNote,
+      $$ScratchpadNotesTableFilterComposer,
+      $$ScratchpadNotesTableOrderingComposer,
+      $$ScratchpadNotesTableAnnotationComposer,
+      $$ScratchpadNotesTableCreateCompanionBuilder,
+      $$ScratchpadNotesTableUpdateCompanionBuilder,
+      (
+        ScratchpadNote,
+        BaseReferences<_$AppDatabase, $ScratchpadNotesTable, ScratchpadNote>,
+      ),
+      ScratchpadNote,
+      PrefetchHooks Function()
+    >;
+typedef $$ReadingSessionTabsTableCreateCompanionBuilder =
+    ReadingSessionTabsCompanion Function({
+      Value<int> id,
+      required String filePath,
+      Value<int> pageNumber,
+      required int tabOrder,
+      Value<bool> isActive,
+    });
+typedef $$ReadingSessionTabsTableUpdateCompanionBuilder =
+    ReadingSessionTabsCompanion Function({
+      Value<int> id,
+      Value<String> filePath,
+      Value<int> pageNumber,
+      Value<int> tabOrder,
+      Value<bool> isActive,
+    });
+
+class $$ReadingSessionTabsTableFilterComposer
+    extends Composer<_$AppDatabase, $ReadingSessionTabsTable> {
+  $$ReadingSessionTabsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tabOrder => $composableBuilder(
+    column: $table.tabOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ReadingSessionTabsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReadingSessionTabsTable> {
+  $$ReadingSessionTabsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tabOrder => $composableBuilder(
+    column: $table.tabOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ReadingSessionTabsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReadingSessionTabsTable> {
+  $$ReadingSessionTabsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get tabOrder =>
+      $composableBuilder(column: $table.tabOrder, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+}
+
+class $$ReadingSessionTabsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReadingSessionTabsTable,
+          ReadingSessionTab,
+          $$ReadingSessionTabsTableFilterComposer,
+          $$ReadingSessionTabsTableOrderingComposer,
+          $$ReadingSessionTabsTableAnnotationComposer,
+          $$ReadingSessionTabsTableCreateCompanionBuilder,
+          $$ReadingSessionTabsTableUpdateCompanionBuilder,
+          (
+            ReadingSessionTab,
+            BaseReferences<
+              _$AppDatabase,
+              $ReadingSessionTabsTable,
+              ReadingSessionTab
+            >,
+          ),
+          ReadingSessionTab,
+          PrefetchHooks Function()
+        > {
+  $$ReadingSessionTabsTableTableManager(
+    _$AppDatabase db,
+    $ReadingSessionTabsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReadingSessionTabsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReadingSessionTabsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReadingSessionTabsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> filePath = const Value.absent(),
+                Value<int> pageNumber = const Value.absent(),
+                Value<int> tabOrder = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+              }) => ReadingSessionTabsCompanion(
+                id: id,
+                filePath: filePath,
+                pageNumber: pageNumber,
+                tabOrder: tabOrder,
+                isActive: isActive,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String filePath,
+                Value<int> pageNumber = const Value.absent(),
+                required int tabOrder,
+                Value<bool> isActive = const Value.absent(),
+              }) => ReadingSessionTabsCompanion.insert(
+                id: id,
+                filePath: filePath,
+                pageNumber: pageNumber,
+                tabOrder: tabOrder,
+                isActive: isActive,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ReadingSessionTabsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReadingSessionTabsTable,
+      ReadingSessionTab,
+      $$ReadingSessionTabsTableFilterComposer,
+      $$ReadingSessionTabsTableOrderingComposer,
+      $$ReadingSessionTabsTableAnnotationComposer,
+      $$ReadingSessionTabsTableCreateCompanionBuilder,
+      $$ReadingSessionTabsTableUpdateCompanionBuilder,
+      (
+        ReadingSessionTab,
+        BaseReferences<
+          _$AppDatabase,
+          $ReadingSessionTabsTable,
+          ReadingSessionTab
+        >,
+      ),
+      ReadingSessionTab,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5746,4 +6796,8 @@ class $AppDatabaseManager {
       $$LibraryFilesTableTableManager(_db, _db.libraryFiles);
   $$AnnotationsTableTableManager get annotations =>
       $$AnnotationsTableTableManager(_db, _db.annotations);
+  $$ScratchpadNotesTableTableManager get scratchpadNotes =>
+      $$ScratchpadNotesTableTableManager(_db, _db.scratchpadNotes);
+  $$ReadingSessionTabsTableTableManager get readingSessionTabs =>
+      $$ReadingSessionTabsTableTableManager(_db, _db.readingSessionTabs);
 }

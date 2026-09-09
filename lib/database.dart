@@ -102,6 +102,25 @@ class Annotations extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// Markdown research notes associated with a book or document
+@DataClassName('ScratchpadNote')
+class ScratchpadNotes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get filePath => text().unique()();
+  TextColumn get content => text()();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Active reading session tabs for session persistence across app restarts
+@DataClassName('ReadingSessionTab')
+class ReadingSessionTabs extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get filePath => text()();
+  IntColumn get pageNumber => integer().withDefault(const Constant(1))();
+  IntColumn get tabOrder => integer()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(false))();
+}
+
 /// AppDatabase class extending _$AppDatabase
 @DriftDatabase(
   tables: [
@@ -112,6 +131,8 @@ class Annotations extends Table {
     LibraryFolders,
     LibraryFiles,
     Annotations,
+    ScratchpadNotes,
+    ReadingSessionTabs,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -121,7 +142,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -226,6 +247,10 @@ class AppDatabase extends _$AppDatabase {
               INSERT INTO annotations_fts(rowid, selected_text, note) VALUES (new.id, new.selected_text, new.note);
             END;
           ''');
+        }
+        if (from < 8) {
+          await m.createTable(scratchpadNotes);
+          await m.createTable(readingSessionTabs);
         }
         // For PoC, we'll drop and recreate
         if (from < 3) {
@@ -1100,6 +1125,52 @@ class AppDatabase extends _$AppDatabase {
     ).get();
 
     return rows.map((row) => annotations.map(row.data)).toList();
+  }
+
+  /// Save or update a Markdown research scratchpad note
+  Future<void> saveScratchpadNote(String filePath, String content) async {
+    await into(scratchpadNotes).insertOnConflictUpdate(
+      ScratchpadNotesCompanion(
+        filePath: Value(filePath),
+        content: Value(content),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  /// Get the research scratchpad note for a file
+  Future<String?> getScratchpadNote(String filePath) async {
+    final note = await (select(
+      scratchpadNotes,
+    )..where((tbl) => tbl.filePath.equals(filePath))).getSingleOrNull();
+    return note?.content;
+  }
+
+  /// Persist open reading session tabs
+  Future<void> saveReadingSessionTabs(
+    List<({String filePath, int pageNumber, bool isActive})> tabs,
+  ) async {
+    await transaction(() async {
+      await delete(readingSessionTabs).go();
+      for (var i = 0; i < tabs.length; i++) {
+        final t = tabs[i];
+        await into(readingSessionTabs).insert(
+          ReadingSessionTabsCompanion(
+            filePath: Value(t.filePath),
+            pageNumber: Value(t.pageNumber),
+            tabOrder: Value(i),
+            isActive: Value(t.isActive),
+          ),
+        );
+      }
+    });
+  }
+
+  /// Load persisted reading session tabs
+  Future<List<ReadingSessionTab>> getReadingSessionTabs() async {
+    final q = select(readingSessionTabs)
+      ..orderBy([(tbl) => OrderingTerm.asc(tbl.tabOrder)]);
+    return q.get();
   }
 }
 

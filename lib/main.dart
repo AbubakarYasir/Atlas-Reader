@@ -10,7 +10,9 @@ import 'bookmark_tree.dart';
 import 'database.dart';
 import 'pdf_engine.dart';
 import 'sync_engine.dart';
+import 'sync_diff.dart';
 import 'sync_models.dart';
+import 'widgets/accessible_bookmark_tile.dart';
 
 /// Global database instance
 late final AppDatabase database;
@@ -410,26 +412,20 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       // Fetch PDF bookmarks
       final pdfBookmarks = await PdfEngine.extractBookmarks(filePath);
 
+      final diff = SyncDiffCalculator.calculateFromSources(
+        dbBookmarks: dbBookmarks,
+        pdfExtracted: pdfBookmarks,
+      );
       final byId = BookmarkTree.indexById(dbBookmarks);
-      final dbPathKeys = dbBookmarks
-          .map((bookmark) =>
-              BookmarkTree.pathKey(BookmarkTree.pathForBookmark(bookmark, byId)))
-          .toSet();
-      final pdfPathKeys = pdfBookmarks
-          .map((bookmark) =>
-              BookmarkTree.pathKey(List<String>.from(bookmark['path'] as List)))
-          .toSet();
-
       final diffs = <BookmarkDiff>[];
 
       for (final bookmark in dbBookmarks) {
-        final pathKey =
-            BookmarkTree.pathKey(BookmarkTree.pathForBookmark(bookmark, byId));
-        if (!pdfPathKeys.contains(pathKey)) {
+        final path =
+            BookmarkTree.pathForBookmark(bookmark, byId);
+        final pathKey = BookmarkTree.pathKey(path);
+        if (diff.toAddToPdf.contains(pathKey)) {
           diffs.add(BookmarkDiff(
-            title: BookmarkTree.displayPath(
-              BookmarkTree.pathForBookmark(bookmark, byId),
-            ),
+            title: BookmarkTree.displayPath(path),
             pageIndex: bookmark.pageIndex,
             action: SyncAction.add,
           ));
@@ -439,7 +435,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       for (final bookmark in pdfBookmarks) {
         final path = List<String>.from(bookmark['path'] as List);
         final pathKey = BookmarkTree.pathKey(path);
-        if (!dbPathKeys.contains(pathKey)) {
+        if (diff.toDeleteFromPdf.contains(pathKey)) {
           diffs.add(BookmarkDiff(
             title: BookmarkTree.displayPath(path),
             pageIndex: bookmark['pageIndex'] as int?,
@@ -657,7 +653,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
   }) {
     final fileName = BookmarkGrouping.fileNameFromPath(bookmark.filePath);
 
-    return ListTile(
+    return AccessibleBookmarkTile(
       contentPadding: EdgeInsets.only(left: 16 + (depth * 20.0), right: 16),
       leading: bookmark.isFolder
           ? Icon(Icons.folder_outlined, color: Colors.amber[800], size: 20)
@@ -764,35 +760,32 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
         );
       }
 
-      return Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: EdgeInsets.only(left: 8 + (depth * 20.0), right: 8),
-          leading: Icon(
-            bookmark.isFolder ? Icons.folder_outlined : Icons.bookmark_outline,
-            color: bookmark.isFolder ? Colors.amber[800] : Colors.blue[700],
-            size: 20,
-          ),
-          title: Text(bookmark.title),
-          subtitle: !bookmark.isFolder && bookmark.pageIndex != null
-              ? Text('Page ${bookmark.pageIndex! + 1}')
-              : null,
-          children: [
-            if (!bookmark.isFolder)
-              _buildBookmarkTile(
-                bookmark,
-                tagsByBookmarkId[bookmark.id] ?? [],
-                depth: depth + 1,
-                showFileName: showFileName,
-              ),
-            ..._buildBookmarkTreeNodes(
-              node.children,
-              tagsByBookmarkId,
+      return AccessibleExpansionTile(
+        tilePadding: EdgeInsets.only(left: 8 + (depth * 20.0), right: 8),
+        leading: Icon(
+          bookmark.isFolder ? Icons.folder_outlined : Icons.bookmark_outline,
+          color: bookmark.isFolder ? Colors.amber[800] : Colors.blue[700],
+          size: 20,
+        ),
+        title: Text(bookmark.title),
+        subtitle: !bookmark.isFolder && bookmark.pageIndex != null
+            ? Text('Page ${bookmark.pageIndex! + 1}')
+            : null,
+        children: [
+          if (!bookmark.isFolder)
+            _buildBookmarkTile(
+              bookmark,
+              tagsByBookmarkId[bookmark.id] ?? [],
               depth: depth + 1,
               showFileName: showFileName,
             ),
-          ],
-        ),
+          ..._buildBookmarkTreeNodes(
+            node.children,
+            tagsByBookmarkId,
+            depth: depth + 1,
+            showFileName: showFileName,
+          ),
+        ],
       );
     }).toList();
   }
@@ -828,12 +821,12 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
           final roots = BookmarkTree.rootsForFile(bookmarks, entry.key);
           final count = entry.value.length;
 
-          return ExpansionTile(
+          return AccessibleExpansionTile(
             leading: const Icon(Icons.menu_book, size: 20),
             title: Text(headerLabel),
             subtitle: Text('$count bookmark${count == 1 ? '' : 's'}'),
             children: [
-              ListTile(
+              AccessibleBookmarkTile(
                 leading: Icon(Icons.delete_sweep, color: Colors.red[700]),
                 title: const Text('Remove all bookmarks for this book'),
                 onTap: () => _confirmRemoveBook(entry.key),
@@ -857,7 +850,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
       children: sortedGroups.entries.map((entry) {
         final count = entry.value.length;
 
-        return ExpansionTile(
+        return AccessibleExpansionTile(
           leading: const Icon(Icons.label, size: 20),
           title: Text(entry.key),
           subtitle: Text('$count bookmark${count == 1 ? '' : 's'}'),
@@ -1057,7 +1050,7 @@ class _AtlasHomePageState extends State<AtlasHomePage> {
                                       break;
                                   }
 
-                                  return ListTile(
+                                  return AccessibleBookmarkTile(
                                     dense: true,
                                     leading: Icon(icon, color: textColor, size: 20),
                                     title: Text(

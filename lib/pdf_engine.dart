@@ -6,6 +6,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 import 'bookmark_tree.dart';
 import 'database.dart';
+import 'pdf_safe_file_writer.dart';
 
 class PdfOverwriteException implements Exception {
   PdfOverwriteException(this.message);
@@ -18,6 +19,7 @@ class PdfOverwriteException implements Exception {
 
 class PdfEngine {
   static final _log = Logger('PdfEngine');
+
   /// Get the page count of a PDF file
   Future<int?> getPageCount(String filePath) async {
     PdfDocument? document;
@@ -46,10 +48,13 @@ class PdfEngine {
 
       final bytes = await File(filePath).readAsBytes();
       document = PdfDocument(inputBytes: bytes);
+      final documentPageCount = document.pages.count;
 
       // Verify page index is valid
       if (pageIndex >= document.pages.count) {
-        throw Exception('Page index $pageIndex exceeds document pages (${document.pages.count})');
+        throw Exception(
+          'Page index $pageIndex exceeds document pages (${document.pages.count})',
+        );
       }
 
       // Add bookmark with Unicode support
@@ -60,7 +65,9 @@ class PdfEngine {
         _log.fine('[PDF] Bookmarks count in PDF: ${document.bookmarks.count}');
       } catch (e) {
         _log.warning('[PDF] Error adding bookmark: $e');
-        _log.fine('[PDF] Attempted title (bytes): ${utf8.encode(bookmarkTitle)}');
+        _log.fine(
+          '[PDF] Attempted title (bytes): ${utf8.encode(bookmarkTitle)}',
+        );
         _log.fine('[PDF] Attempted title (length): ${bookmarkTitle.length}');
         rethrow;
       }
@@ -69,7 +76,9 @@ class PdfEngine {
       // Note: Syncfusion PDF doesn't support customProperties, so we skip this for now
       // TODO: Implement alternative metadata storage for descriptions
       if (description != null) {
-        _log.fine("[PDF] Description provided but not saved (Syncfusion doesn't support customProperties)");
+        _log.fine(
+          "[PDF] Description provided but not saved (Syncfusion doesn't support customProperties)",
+        );
       }
 
       final outBytes = await document.save();
@@ -78,7 +87,11 @@ class PdfEngine {
 
       _log.fine('[PDF] Document saved, size: ${outBytes.length} bytes');
 
-      await _safeOverwrite(filePath, outBytes);
+      await PdfSafeFileWriter.replacePdfFile(
+        filePath,
+        outBytes,
+        expectedPageCount: documentPageCount,
+      );
       _log.info('[PDF] File overwritten successfully');
       return filePath;
     } on PdfOverwriteException {
@@ -89,27 +102,6 @@ class PdfEngine {
       return null;
     } finally {
       document?.dispose();
-    }
-  }
-
-  Future<void> _safeOverwrite(String originalPath, List<int> outBytes) async {
-    final tmpPath = '$originalPath.tmp';
-    final originalFile = File(originalPath);
-    final tmpFile = File(tmpPath);
-
-    await tmpFile.writeAsBytes(outBytes);
-
-    try {
-      await originalFile.delete();
-      await tmpFile.rename(originalPath);
-    } catch (_) {
-      if (await tmpFile.exists()) {
-        await tmpFile.delete();
-      }
-      throw PdfOverwriteException(
-        'Could not replace the PDF because it is open in another application. '
-        'Close the file and try again.',
-      );
     }
   }
 
@@ -137,7 +129,9 @@ class PdfEngine {
         );
       }
 
-      _log.info('[PDF] Extraction complete. Found ${bookmarksList.length} bookmarks');
+      _log.info(
+        '[PDF] Extraction complete. Found ${bookmarksList.length} bookmarks',
+      );
       return bookmarksList;
     } catch (e, stackTrace) {
       _log.severe('[PDF] ERROR in extractBookmarks: $e');
@@ -195,7 +189,9 @@ class PdfEngine {
     }
   }
 
-  static ({String title, List<String> tags}) _parseBookmarkTitle(String rawTitle) {
+  static ({String title, List<String> tags}) _parseBookmarkTitle(
+    String rawTitle,
+  ) {
     final tagPattern = RegExp(r'\s-\s*#([^\s,]+(?:,\s*#[^\s,]+)*)$');
     final match = tagPattern.firstMatch(rawTitle);
 
@@ -223,7 +219,9 @@ class PdfEngine {
   }) async {
     PdfDocument? document;
     try {
-      _log.info('[PDF] Starting hierarchical bookmark overwrite for: $filePath');
+      _log.info(
+        '[PDF] Starting hierarchical bookmark overwrite for: $filePath',
+      );
 
       final bytes = await File(filePath).readAsBytes();
       document = PdfDocument(inputBytes: bytes);
@@ -246,7 +244,11 @@ class PdfEngine {
       document.dispose();
       document = null;
 
-      await _safeOverwriteStatic(filePath, outBytes);
+      await PdfSafeFileWriter.replacePdfFile(
+        filePath,
+        outBytes,
+        expectedPageCount: pageCount,
+      );
       _log.info('[PDF] Hierarchical bookmark tree written successfully');
       return true;
     } on PdfOverwriteException {
@@ -290,30 +292,6 @@ class PdfEngine {
     }
   }
 
-  static Future<void> _safeOverwriteStatic(
-    String originalPath,
-    List<int> outBytes,
-  ) async {
-    final tmpPath = '$originalPath.tmp';
-    final originalFile = File(originalPath);
-    final tmpFile = File(tmpPath);
-
-    await tmpFile.writeAsBytes(outBytes);
-
-    try {
-      await originalFile.delete();
-      await tmpFile.rename(originalPath);
-    } catch (_) {
-      if (await tmpFile.exists()) {
-        await tmpFile.delete();
-      }
-      throw PdfOverwriteException(
-        'Could not replace the PDF because it is open in another application. '
-        'Close the file and try again.',
-      );
-    }
-  }
-
   /// Inject multiple bookmarks into a PDF file in a single operation
   /// Returns true if successful, false if it fails
   static Future<bool> injectBookmarksBatch(
@@ -337,7 +315,9 @@ class PdfEngine {
         final pageIndex = bookmarkData['pageIndex'] as int;
 
         // Handle out-of-bounds pages by defaulting to the last page
-        final safePageIndex = pageIndex >= pageCount ? pageCount - 1 : pageIndex;
+        final safePageIndex = pageIndex >= pageCount
+            ? pageCount - 1
+            : pageIndex;
 
         try {
           final bookmark = document.bookmarks.add(title);
@@ -351,33 +331,19 @@ class PdfEngine {
         }
       }
 
-      _log.info('[PDF] Successfully added $addedCount out of ${newBookmarks.length} bookmarks');
+      _log.info(
+        '[PDF] Successfully added $addedCount out of ${newBookmarks.length} bookmarks',
+      );
 
       final outBytes = await document.save();
       document.dispose();
       document = null;
 
-      _log.fine('[PDF] Document saved, size: ${outBytes.length} bytes');
-
-      // Safe overwrite logic
-      final tmpPath = '$filePath.tmp';
-      final originalFile = File(filePath);
-      final tmpFile = File(tmpPath);
-
-      await tmpFile.writeAsBytes(outBytes);
-
-      try {
-        await originalFile.delete();
-        await tmpFile.rename(filePath);
-      } catch (_) {
-        if (await tmpFile.exists()) {
-          await tmpFile.delete();
-        }
-        throw PdfOverwriteException(
-          'Could not replace the PDF because it is open in another application. '
-          'Close the file and try again.',
-        );
-      }
+      await PdfSafeFileWriter.replacePdfFile(
+        filePath,
+        outBytes,
+        expectedPageCount: pageCount,
+      );
 
       _log.info('[PDF] File overwritten successfully');
       return true;
@@ -422,7 +388,9 @@ class PdfEngine {
         final pageIndex = bookmarkData['pageIndex'] as int;
 
         // Handle out-of-bounds pages by defaulting to the last page
-        final safePageIndex = pageIndex >= pageCount ? pageCount - 1 : pageIndex;
+        final safePageIndex = pageIndex >= pageCount
+            ? pageCount - 1
+            : pageIndex;
 
         try {
           final bookmark = document.bookmarks.add(title);
@@ -436,40 +404,28 @@ class PdfEngine {
         }
       }
 
-      _log.info('[PDF] Successfully added $addedCount out of ${finalBookmarks.length} bookmarks');
+      _log.info(
+        '[PDF] Successfully added $addedCount out of ${finalBookmarks.length} bookmarks',
+      );
 
       // Write descriptions to custom property if provided
       // Note: Syncfusion PDF doesn't support customProperties, so we skip this for now
       // TODO: Implement alternative metadata storage for descriptions
       if (descriptions != null && descriptions.isNotEmpty) {
-        _log.fine("[PDF] Descriptions provided but not saved (Syncfusion doesn't support customProperties)");
+        _log.fine(
+          "[PDF] Descriptions provided but not saved (Syncfusion doesn't support customProperties)",
+        );
       }
 
       final outBytes = await document.save();
       document.dispose();
       document = null;
 
-      _log.fine('[PDF] Document saved, size: ${outBytes.length} bytes');
-
-      // Safe overwrite logic
-      final tmpPath = '$filePath.tmp';
-      final originalFile = File(filePath);
-      final tmpFile = File(tmpPath);
-
-      await tmpFile.writeAsBytes(outBytes);
-
-      try {
-        await originalFile.delete();
-        await tmpFile.rename(filePath);
-      } catch (_) {
-        if (await tmpFile.exists()) {
-          await tmpFile.delete();
-        }
-        throw PdfOverwriteException(
-          'Could not replace the PDF because it is open in another application. '
-          'Close the file and try again.',
-        );
-      }
+      await PdfSafeFileWriter.replacePdfFile(
+        filePath,
+        outBytes,
+        expectedPageCount: pageCount,
+      );
 
       _log.info('[PDF] File overwritten successfully');
 
@@ -482,7 +438,9 @@ class PdfEngine {
         final addedStr = toAdd != null && toAdd.isNotEmpty
             ? 'Added: [${toAdd.join(", ")}]'
             : 'Added: []';
-        _log.fine('[SYNC HISTORY] Version pushed at $timestamp: $removedStr and $addedStr');
+        _log.fine(
+          '[SYNC HISTORY] Version pushed at $timestamp: $removedStr and $addedStr',
+        );
       }
 
       return true;

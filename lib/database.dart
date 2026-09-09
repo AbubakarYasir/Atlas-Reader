@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -6,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 import 'bookmark_tree.dart';
+import 'file_snapshot_state.dart';
 
 part 'database.g.dart';
 
@@ -17,11 +17,14 @@ class Bookmarks extends Table {
   TextColumn get title => text()();
   IntColumn get pageIndex => integer().nullable()();
   TextColumn get description => text().nullable()();
-  IntColumn get parentId => integer().nullable().references(Bookmarks, #id, onDelete: KeyAction.cascade)();
+  IntColumn get parentId => integer().nullable().references(
+    Bookmarks,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
   BoolColumn get isFolder => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
 /// Tags table definition
@@ -34,8 +37,10 @@ class Tags extends Table {
 /// BookmarkTags join table for many-to-many relationship
 @DataClassName('BookmarkTag')
 class BookmarkTags extends Table {
-  IntColumn get bookmarkId => integer().references(Bookmarks, #id, onDelete: KeyAction.cascade)();
-  IntColumn get tagId => integer().references(Tags, #id, onDelete: KeyAction.cascade)();
+  IntColumn get bookmarkId =>
+      integer().references(Bookmarks, #id, onDelete: KeyAction.cascade)();
+  IntColumn get tagId =>
+      integer().references(Tags, #id, onDelete: KeyAction.cascade)();
 }
 
 /// FileSnapshots table for tracking PDF state for reconciliation
@@ -43,7 +48,8 @@ class BookmarkTags extends Table {
 class FileSnapshots extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get filePath => text()();
-  TextColumn get lastKnownState => text()(); // JSON list of bookmark titles
+  TextColumn get lastKnownState =>
+      text()(); // JSON v2 path keys (+ legacy titles)
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -51,6 +57,9 @@ class FileSnapshots extends Table {
 @DriftDatabase(tables: [Bookmarks, Tags, BookmarkTags, FileSnapshots])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
+
+  /// Creates an in-memory or otherwise caller-provided database for tests.
+  AppDatabase.forTesting(super.executor);
 
   @override
   int get schemaVersion => 4;
@@ -152,16 +161,16 @@ class AppDatabase extends _$AppDatabase {
 
   /// Get all bookmarks for a specific file
   Future<List<Bookmark>> getBookmarksByFile(String filePath) async {
-    return (select(bookmarks)
-          ..where((tbl) => tbl.filePath.equals(filePath)))
-        .get();
+    return (select(
+      bookmarks,
+    )..where((tbl) => tbl.filePath.equals(filePath))).get();
   }
 
   /// Get all bookmarks for a specific file
   Future<List<Bookmark>> getBookmarksForFile(String filePath) async {
-    return (select(bookmarks)
-          ..where((tbl) => tbl.filePath.equals(filePath)))
-        .get();
+    return (select(
+      bookmarks,
+    )..where((tbl) => tbl.filePath.equals(filePath))).get();
   }
 
   /// Get all bookmarks
@@ -176,21 +185,23 @@ class AppDatabase extends _$AppDatabase {
     int newPageIndex, {
     String? description,
   }) async {
-    return await (update(bookmarks)
-          ..where((tbl) => tbl.id.equals(id)))
-        .write(BookmarksCompanion(
-      title: Value(newTitle),
-      pageIndex: Value(newPageIndex),
-      description: description != null ? Value(description) : const Value.absent(),
-      updatedAt: Value(DateTime.now()),
-    ));
+    return await (update(bookmarks)..where((tbl) => tbl.id.equals(id))).write(
+      BookmarksCompanion(
+        title: Value(newTitle),
+        pageIndex: Value(newPageIndex),
+        description: description != null
+            ? Value(description)
+            : const Value.absent(),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   /// Remove all tag links for a bookmark.
   Future<void> clearTagsForBookmark(int bookmarkId) async {
-    await (delete(bookmarkTags)
-          ..where((tbl) => tbl.bookmarkId.equals(bookmarkId)))
-        .go();
+    await (delete(
+      bookmarkTags,
+    )..where((tbl) => tbl.bookmarkId.equals(bookmarkId))).go();
   }
 
   /// Delete a bookmark. Child rows cascade via foreign key.
@@ -200,16 +211,18 @@ class AppDatabase extends _$AppDatabase {
 
   /// Delete all bookmarks for a specific file
   Future<int> deleteBookmarksByFile(String filePath) async {
-    return (delete(bookmarks)..where((tbl) => tbl.filePath.equals(filePath)))
-        .go();
+    return (delete(
+      bookmarks,
+    )..where((tbl) => tbl.filePath.equals(filePath))).go();
   }
 
   /// Update every bookmark and file snapshot matching an old path to the new path in one transaction
   Future<int> updateFilePaths(String oldPath, String newPath) async {
     return await transaction(() async {
-      final bookmarkChanges = await (update(bookmarks)
-            ..where((tbl) => tbl.filePath.equals(oldPath)))
-          .write(BookmarksCompanion(filePath: Value(newPath)));
+      final bookmarkChanges =
+          await (update(bookmarks)
+                ..where((tbl) => tbl.filePath.equals(oldPath)))
+              .write(BookmarksCompanion(filePath: Value(newPath)));
 
       await (update(fileSnapshots)
             ..where((tbl) => tbl.filePath.equals(oldPath)))
@@ -225,15 +238,14 @@ class AppDatabase extends _$AppDatabase {
     required String title,
     int? parentId,
   }) async {
-    return (select(bookmarks)
-          ..where((tbl) {
-            final parentMatches = parentId == null
-                ? tbl.parentId.isNull()
-                : tbl.parentId.equals(parentId);
-            return tbl.filePath.equals(filePath) &
-                tbl.title.equals(title) &
-                parentMatches;
-          }))
+    return (select(bookmarks)..where((tbl) {
+          final parentMatches = parentId == null
+              ? tbl.parentId.isNull()
+              : tbl.parentId.equals(parentId);
+          return tbl.filePath.equals(filePath) &
+              tbl.title.equals(title) &
+              parentMatches;
+        }))
         .getSingleOrNull();
   }
 
@@ -258,7 +270,9 @@ class AppDatabase extends _$AppDatabase {
         BookmarksCompanion(
           filePath: Value(filePath),
           title: Value(title),
-          pageIndex: pageIndex != null ? Value(pageIndex) : const Value.absent(),
+          pageIndex: pageIndex != null
+              ? Value(pageIndex)
+              : const Value.absent(),
           parentId: Value(parentId),
           isFolder: Value(isFolder),
         ),
@@ -277,7 +291,8 @@ class AppDatabase extends _$AppDatabase {
   ) async {
     final sorted = List<Map<String, dynamic>>.from(extracted)
       ..sort(
-        (a, b) => (a['path'] as List).length.compareTo((b['path'] as List).length),
+        (a, b) =>
+            (a['path'] as List).length.compareTo((b['path'] as List).length),
       );
 
     final pathToId = <String, int>{};
@@ -286,8 +301,9 @@ class AppDatabase extends _$AppDatabase {
     for (final item in sorted) {
       final path = List<String>.from(item['path'] as List);
       final title = path.last;
-      final parentKey =
-          path.length > 1 ? BookmarkTree.pathKey(path.sublist(0, path.length - 1)) : null;
+      final parentKey = path.length > 1
+          ? BookmarkTree.pathKey(path.sublist(0, path.length - 1))
+          : null;
       final parentId = parentKey != null ? pathToId[parentKey] : null;
       final pageIndex = item['pageIndex'] as int?;
       final isFolder = item['isFolder'] as bool? ?? false;
@@ -338,66 +354,86 @@ class AppDatabase extends _$AppDatabase {
     }
 
     // Use FTS5 for lightning-fast full-text search
-    final results = await customSelect(
-      'SELECT b.* FROM bookmarks b '
-      'INNER JOIN bookmarks_fts fts ON b.id = fts.rowid '
-      'WHERE bookmarks_fts MATCH ? '
-      'ORDER BY rank',
-      variables: [Variable.withString(trimmedQuery)],
-    ).map((row) {
-      return Bookmark(
-        id: row.data['id'] as int,
-        filePath: row.data['file_path'] as String,
-        title: row.data['title'] as String,
-        pageIndex: row.data['page_index'] as int?,
-        description: row.data['description'] as String?,
-        parentId: row.data['parent_id'] as int?,
-        isFolder: row.data['is_folder'] as bool,
-        createdAt: row.data['created_at'] as DateTime,
-        updatedAt: row.data['updated_at'] as DateTime,
-      );
-    }).get();
+    final results =
+        await customSelect(
+          'SELECT b.* FROM bookmarks b '
+          'INNER JOIN bookmarks_fts fts ON b.id = fts.rowid '
+          'WHERE bookmarks_fts MATCH ? '
+          'ORDER BY rank',
+          variables: [Variable.withString(trimmedQuery)],
+        ).map((row) {
+          return Bookmark(
+            id: row.data['id'] as int,
+            filePath: row.data['file_path'] as String,
+            title: row.data['title'] as String,
+            pageIndex: row.data['page_index'] as int?,
+            description: row.data['description'] as String?,
+            parentId: row.data['parent_id'] as int?,
+            isFolder: row.data['is_folder'] as bool,
+            createdAt: row.data['created_at'] as DateTime,
+            updatedAt: row.data['updated_at'] as DateTime,
+          );
+        }).get();
 
     return results;
   }
 
-  /// Save or update file snapshot for reconciliation
-  Future<void> saveFileSnapshot(String filePath, List<String> bookmarkTitles) async {
-    final jsonState = jsonEncode(bookmarkTitles);
-    
-    final existing = await (select(fileSnapshots)
-          ..where((tbl) => tbl.filePath.equals(filePath)))
-        .getSingleOrNull();
-    
+  /// Save or update file snapshot using full hierarchical path keys.
+  Future<void> saveFileSnapshot(
+    String filePath,
+    List<Bookmark> bookmarks,
+  ) async {
+    final jsonState = FileSnapshotState.fromBookmarks(bookmarks).encode();
+
+    final existing = await (select(
+      fileSnapshots,
+    )..where((tbl) => tbl.filePath.equals(filePath))).getSingleOrNull();
+
     if (existing != null) {
-      await (update(fileSnapshots)..where((tbl) => tbl.id.equals(existing.id)))
-          .write(FileSnapshotsCompanion(
-        lastKnownState: Value(jsonState),
-        updatedAt: Value(DateTime.now()),
-      ));
+      await (update(
+        fileSnapshots,
+      )..where((tbl) => tbl.id.equals(existing.id))).write(
+        FileSnapshotsCompanion(
+          lastKnownState: Value(jsonState),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
     } else {
-      await into(fileSnapshots).insert(FileSnapshotsCompanion(
-        filePath: Value(filePath),
-        lastKnownState: Value(jsonState),
-      ));
+      await into(fileSnapshots).insert(
+        FileSnapshotsCompanion(
+          filePath: Value(filePath),
+          lastKnownState: Value(jsonState),
+        ),
+      );
     }
+  }
+
+  /// Reads the stored path keys for a file, migrating legacy title snapshots.
+  Future<List<String>> getFileSnapshotPathKeys(String filePath) async {
+    final snapshot = await getFileSnapshot(filePath);
+    if (snapshot == null) {
+      return [];
+    }
+    return FileSnapshotState.decode(snapshot.lastKnownState).pathKeys;
   }
 
   /// Get file snapshot for reconciliation
   Future<FileSnapshot?> getFileSnapshot(String filePath) async {
-    return (select(fileSnapshots)
-          ..where((tbl) => tbl.filePath.equals(filePath)))
-        .getSingleOrNull();
+    return (select(
+      fileSnapshots,
+    )..where((tbl) => tbl.filePath.equals(filePath))).getSingleOrNull();
   }
 
   /// Fetch tags for many bookmarks in one query (bookmark id -> tags).
-  Future<Map<int, List<Tag>>> getTagsByBookmarkIds(Iterable<int> bookmarkIds) async {
+  Future<Map<int, List<Tag>>> getTagsByBookmarkIds(
+    Iterable<int> bookmarkIds,
+  ) async {
     final ids = bookmarkIds.toList();
     if (ids.isEmpty) return {};
 
-    final query = select(tags).join([
-      innerJoin(bookmarkTags, bookmarkTags.tagId.equalsExp(tags.id)),
-    ]);
+    final query = select(
+      tags,
+    ).join([innerJoin(bookmarkTags, bookmarkTags.tagId.equalsExp(tags.id))]);
     query.where(bookmarkTags.bookmarkId.isIn(ids));
 
     final map = <int, List<Tag>>{};
@@ -411,9 +447,9 @@ class AppDatabase extends _$AppDatabase {
 
   /// Fetch all tags for a specific bookmark
   Future<List<Tag>> getTagsForBookmark(int bookmarkId) async {
-    final query = select(tags).join([
-      innerJoin(bookmarkTags, bookmarkTags.tagId.equalsExp(tags.id)),
-    ]);
+    final query = select(
+      tags,
+    ).join([innerJoin(bookmarkTags, bookmarkTags.tagId.equalsExp(tags.id))]);
     query.where(bookmarkTags.bookmarkId.equals(bookmarkId));
     return query.map((row) => row.readTable(tags)).get();
   }
@@ -423,26 +459,25 @@ class AppDatabase extends _$AppDatabase {
   Future<void> addTagToBookmark(int bookmarkId, String tagName) async {
     return await transaction(() async {
       // Check if tag already exists
-      final existingTag = await (select(tags)
-            ..where((tbl) => tbl.name.equals(tagName)))
-          .getSingleOrNull();
+      final existingTag = await (select(
+        tags,
+      )..where((tbl) => tbl.name.equals(tagName))).getSingleOrNull();
 
       int tagId;
       if (existingTag != null) {
         tagId = existingTag.id;
       } else {
         // Create new tag
-        tagId = await into(tags).insert(
-          TagsCompanion(name: Value(tagName)),
-        );
+        tagId = await into(tags).insert(TagsCompanion(name: Value(tagName)));
       }
 
       // Check if the bookmark-tag relationship already exists
-      final existingRelation = await (select(bookmarkTags)
-            ..where((tbl) =>
-                tbl.bookmarkId.equals(bookmarkId) &
-                tbl.tagId.equals(tagId)))
-          .getSingleOrNull();
+      final existingRelation =
+          await (select(bookmarkTags)..where(
+                (tbl) =>
+                    tbl.bookmarkId.equals(bookmarkId) & tbl.tagId.equals(tagId),
+              ))
+              .getSingleOrNull();
 
       // Only insert if the relationship doesn't exist
       if (existingRelation == null) {

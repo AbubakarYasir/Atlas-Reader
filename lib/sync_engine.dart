@@ -1,8 +1,8 @@
 import 'package:logging/logging.dart';
 
-import 'bookmark_tree.dart';
 import 'database.dart';
 import 'pdf_engine.dart';
+import 'sync_diff.dart';
 
 class SyncEngine {
   final AppDatabase database;
@@ -17,36 +17,25 @@ class SyncEngine {
       _log.info('[SYNC] Starting reconciliation for: $filePath');
 
       final currentBookmarks = await database.getBookmarksForFile(filePath);
-      final byId = BookmarkTree.indexById(currentBookmarks);
-      final dbPathKeys = currentBookmarks
-          .map((bookmark) => BookmarkTree.pathKey(BookmarkTree.pathForBookmark(bookmark, byId)))
-          .toSet();
-
       final pdfBookmarks = await PdfEngine.extractBookmarks(filePath);
-      final pdfPathKeys = pdfBookmarks
-          .map((bookmark) => BookmarkTree.pathKey(List<String>.from(bookmark['path'] as List)))
-          .toSet();
-
-      final toAddToPdf = dbPathKeys.difference(pdfPathKeys);
-      final toDeleteFromPdf = pdfPathKeys.difference(dbPathKeys);
-      final toAddToDb = pdfPathKeys.difference(dbPathKeys);
-
-      _log.info(
-        '[SYNC] To add to PDF: ${toAddToPdf.length}, '
-        'To delete from PDF: ${toDeleteFromPdf.length}, '
-        'To add to DB: ${toAddToDb.length}',
+      final diff = SyncDiffCalculator.calculateFromSources(
+        dbBookmarks: currentBookmarks,
+        pdfExtracted: pdfBookmarks,
       );
 
-      if (toAddToPdf.isEmpty && toDeleteFromPdf.isEmpty && toAddToDb.isEmpty) {
+      _log.info(
+        '[SYNC] To add to PDF: ${diff.toAddToPdf.length}, '
+        'To delete from PDF: ${diff.toDeleteFromPdf.length}, '
+        'To add to DB: ${diff.toAddToDb.length}',
+      );
+
+      if (!diff.hasChanges) {
         _log.info('[SYNC] No changes detected, updating snapshot only');
-        await database.saveFileSnapshot(
-          filePath,
-          currentBookmarks.map((b) => b.title).toList(),
-        );
+        await database.saveFileSnapshot(filePath, currentBookmarks);
         return (0, 0);
       }
 
-      if (toAddToPdf.isNotEmpty || toDeleteFromPdf.isNotEmpty) {
+      if (diff.toAddToPdf.isNotEmpty || diff.toDeleteFromPdf.isNotEmpty) {
         final tagsByBookmarkId = <int, List<String>>{};
         for (final bookmark in currentBookmarks) {
           final tags = await database.getTagsForBookmark(bookmark.id);
@@ -66,23 +55,22 @@ class SyncEngine {
         }
       }
 
-      if (toAddToDb.isNotEmpty) {
+      if (diff.toAddToDb.isNotEmpty) {
         final missingFromDb = pdfBookmarks.where((bookmark) {
-          final pathKey =
-              BookmarkTree.pathKey(List<String>.from(bookmark['path'] as List));
-          return toAddToDb.contains(pathKey);
+          final pathKey = SyncDiffCalculator.pathKeysFromPdfExtract([bookmark]).single;
+          return diff.toAddToDb.contains(pathKey);
         }).toList();
 
         await database.syncBookmarkHierarchy(filePath, missingFromDb);
       }
 
       final refreshedBookmarks = await database.getBookmarksForFile(filePath);
-      await database.saveFileSnapshot(
-        filePath,
-        refreshedBookmarks.map((b) => b.title).toList(),
-      );
+      await database.saveFileSnapshot(filePath, refreshedBookmarks);
 
-      return (toAddToPdf.length, toDeleteFromPdf.length);
+      return (diff.toAddToPdf.length, diff.toDeleteFromPdf.length);
+    } on PdfOverwriteException catch (e) {
+      _log.severe('[SYNC] PDF overwrite blocked: $e');
+      return null;
     } catch (e, stackTrace) {
       _log.severe('[SYNC] ERROR in reconcile: $e');
       _log.severe('[SYNC] Stack trace: $stackTrace');

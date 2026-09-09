@@ -5,7 +5,7 @@
 
 | Release | Status | Formats | Primary platform |
 |---|---|---|---|
-| `0.8.0-beta.1` (build 2) | Beta source checkpoint; release build pending | PDF reader/editor; PDF and EPUB discovery | Windows 11 |
+| `0.8.0-beta.1` (build 2) | C0 accepted; C1 reader workspace in progress | PDF reader/editor; PDF and EPUB discovery | Windows 11 |
 
 Atlas Reader focuses on three jobs:
 
@@ -84,6 +84,10 @@ flutter build windows --release
 
 The executable and its adjacent runtime files must remain together. A packaged
 installer and optional PDF file association are pre-1.0 work.
+
+Versioned beta ZIPs, checksums, verification notes, and limitations are
+published on the project's
+[GitHub Releases](https://github.com/AbubakarYasir/Atlas-Reader/releases) page.
 
 ## Quick start
 
@@ -281,11 +285,11 @@ Verified on Windows on 2026-09-09:
 flutter analyze                                            0 issues
 flutter test                                               50 passed, 2 opt-in audits skipped
 flutter test integration_test/windows_reader_workflow_test.dart -d windows
-                                                           previous run: 3 passed; latest rerun blocked by MSVC C1041
-flutter build windows --release                            pending final beta build
+                                                           3 passed
+flutter build windows --release                            succeeded
 ```
 
-The native integration runner covers these scenarios; rerun it after the MSVC fix before distributing this checkpoint:
+The native integration runner covers these scenarios:
 
 - A launch-argument PDF outside all library folders opens and enters Recents.
 - A mouse stroke saves as standard `/Ink`, stays on its source page, and is
@@ -298,6 +302,17 @@ The native integration runner covers these scenarios; rerun it after the MSVC fi
 
 The two skipped unit tests are read-only smoke tests that require personal
 Arabic and English PDF paths supplied through environment variables.
+
+## Roadmap and owner checkpoints
+
+Development follows the [checkpoint roadmap](CHECKPOINTS.md) to stable `1.0`.
+Only one checkpoint is active at a time. After its automated gates pass, work
+stops for the numbered owner test; the next checkpoint does not start until the
+owner explicitly records a PASS.
+
+The owner accepted **C0 — Baseline acceptance** on 2026-09-09. The active work
+is **C1 — Reader workspace**; implementation will stop again when its release
+build and numbered owner test are ready.
 
 ## Developer guide
 
@@ -449,11 +464,13 @@ Atlas follows [Semantic Versioning](https://semver.org/):
 
 The version is defined in `pubspec.yaml`. Release changes belong in
 `CHANGELOG.md`, and engineering scope and acceptance criteria belong in
-`PLAN.md`.
+`PLAN.md`. Delivery order, evidence, and owner stop gates belong in
+`CHECKPOINTS.md`.
 
 ## Documentation
 
 - [Engineering and accessibility plan](PLAN.md)
+- [Delivery checkpoints and owner tests](CHECKPOINTS.md)
 - [Release history](CHANGELOG.md)
 - [Additional project notes](INFO.md)
 

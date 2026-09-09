@@ -1,10 +1,13 @@
 # Atlas Reader — Master Plan
 ## Universal Embedding Protocol · Maximum Accessibility · Production Quality
 
-**Status:** `0.8.0-beta.1` source checkpoint (50 tests passed; native rerun and
-release build pending); historical Stages 1–11 remain in
-the repository, but only library discovery, bookmarking, PDF reading, and PDF
-writing are in the primary product surface. Stage 12 and later are deferred.
+**Status:** `0.8.0-beta.1` automated baseline verified (50 tests passed, 2
+optional personal-file audits skipped, 3 native Windows integration scenarios
+passed, and the release build succeeded); C0 was owner-accepted on 2026-09-09
+and C1 is in progress.
+Historical Stages 1–11 remain in the repository, but only library discovery,
+bookmarking, PDF reading, and PDF writing are in the primary product surface.
+Stage 12 and later are deferred.
 
 **Last updated:** September 2026
 
@@ -491,92 +494,24 @@ Future: `(file_uuid, bookmark_uuid)` when XMP UUIDs land.
 
 ---
 
-## X. Roadmap (Accessibility Gates)
+## X. Delivery roadmap and accessibility gates
 
-### Phase 1 — PoC ✅ → Hardening (Weeks 1–8)
+The earlier week-based phase roadmap has been retired. Delivered historical
+work is recorded in §X.A below; remaining work is sequenced in
+[`CHECKPOINTS.md`](CHECKPOINTS.md), which is the authoritative operational
+roadmap from `0.8.0-beta.1` to stable `1.0.0`.
 
-**Done:**
-- Dual-layer save, Drift + FTS5, hierarchical sync, Command Center search, remove book
+Only one checkpoint may be active. After its automated gates and Windows
+release build pass, implementation stops for the checkpoint's numbered owner
+test. The next checkpoint cannot begin until the owner explicitly records a
+PASS. A failed owner test returns the same checkpoint to implementation and
+requires affected tests plus the common quality gate to be rerun.
 
-**Completed in Stage 1:**
-
-- Material-backed bookmark and expansion rows; the nested `ListTile` warning is resolved.
-- Version 2 full-path snapshots, with legacy flat-title snapshots readable.
-- Validated temporary PDF output and recovery-file replacement.
-- Tree, snapshot, diff, and initial-widget test coverage.
-
-**Remaining (with a11y gate):**
-
-| Task | A11y gate |
-|------|-----------|
-| Split `main.dart` into modules | Each screen has semantics audit |
-| Add `AccessibilityAnnouncer` for sync events | Live region announcements |
-| High-contrast + dark themes | Contrast audit pass |
-| Keyboard shortcuts (desktop) | Full keyboard task completion |
-| `sort_order` column + PDF order preserved | Screen reader order matches visual |
-
-**Phase 1 exit criteria:** Arabic PDF with 16+ nested bookmarks—full keyboard + Narrator task without mouse.
-
----
-
-### Phase 2 — Reader & UEP Hardening (Weeks 9–16)
-
-**Completed in Stage 3:**
-
-- Windows PDF reader with on-demand page rendering, continuous scrolling, zoom,
-  text selection, active-page tracking, and `Ctrl+B` bookmarking.
-- Reader bookmark dialog that automatically uses the currently visible page.
-- Background-isolate document byte I/O plus page-count, outline-extraction, and
-  single-bookmark PDF generation work.
-
-| Deliverable | A11y gate |
-|-------------|-----------|
-| PDF viewer with page nav | Zoom, keyboard page flip, focus not trapped |
-| UUID in metadata | — |
-| Incremental sync | Status announcements for long ops |
-| Description → XMP or annotation | Plain-text fallback for AT |
-| Undo stack for edits | Undo announced and keyboard accessible |
-| File Abstraction Layer (SAF) | Android folder picker accessible |
-
-**Phase 2 exit criteria:** Create bookmark from reader, commit, open in Acrobat—verify hierarchy + Arabic titles.
-
----
-
-### Phase 3 — Library & Command Center (Weeks 17–24)
-
-**Completed in Stage 4:**
-
-- Global `Ctrl+K` Command Center with bookmark results that show book,
-  breadcrumb path, and target page, then open the selected PDF at that page.
-- Multiple library-folder selection, recursive background PDF scanning,
-  indexed library-files view, and change watching while Atlas is open.
-- Best-effort in-folder rename reconciliation that carries existing local
-  bookmark and snapshot associations to a safely matched new path.
-
-| Deliverable | A11y gate |
-|-------------|-----------|
-| Folder scanner isolate | Progress announced |
-| Command Center overlay | Modal focus trap, Esc closes |
-| Search descriptions in FTS | Results readable in full |
-| EPUB support | Same tree semantics as PDF |
-| l10n: en + ar | RTL layout test suite green |
-
-**Phase 3 exit criteria:** 100 PDFs indexed; search < 100 ms; Arabic UI fully mirrored.
-
----
-
-### Phase 4 — Excellence & Beta (Weeks 25–32)
-
-| Deliverable | A11y gate |
-|-------------|-----------|
-| Batch edit + shift pages | Multi-select with checkbox semantics |
-| Clean-up merge UI | Diff readable line-by-line |
-| Dyslexia font option | Applies to UI chrome, not PDF content |
-| Onboarding + help | Skip link, replay from settings |
-| Riverpod + design system | All components from accessible kit |
-| Beta feedback loop | A11y bug priority = P0 |
-
-**Phase 4 exit criteria:** WCAG 2.2 AA audit documented; beta users complete core tasks with assistive tech.
+Accessibility is enforced continuously: every checkpoint must cover its new
+Arabic strings, RTL behavior, keyboard operation, semantics, focus visibility,
+text scaling, and preservation of unrelated PDF data. C8 performs the complete
+cross-product audit, while C9 supplies the required pen, touch, HDD, and
+physical-printer evidence that blocks stable 1.0 if absent.
 
 ---
 
@@ -839,33 +774,20 @@ This delivery record reflects the Windows implementation through
 
 ---
 
-## XIII. Immediate Next Actions (Beta hardening only)
+## XIII. Execution checkpoints
 
-1. Complete the desktop reader workspace: reliable Write-mode zoom and pan,
-   fit/percentage controls, a persistent tabbed navigation panel, and exact
-   page/thumbnail navigation.
-2. Finish full bookmark management: edit, reorder, nest, move, search, and
-   preserve the PDF outline with Arabic/RTL and standard-reader round trips.
-3. Expand standard PDF annotations in this order: text markup and notes, then
-   editable free text/callouts and shapes, then the searchable annotation panel.
-4. Add native Windows print preview and controls for printer, ranges, scaling,
-   paper, copies, odd/even, multi-up, booklet, grayscale, and margins.
-5. Add the portable library-detail workflow: embedded-thumbnail detection,
-   first-page PDF cover rendering fallback, detailed metadata display, and an
-   explicit XMP/PDF metadata editor with round-trip tests.
-6. Complete full Arabic localization and RTL acceptance: translation coverage,
-   mixed-script layout, Arabic metadata/search/sort behavior, Narrator, and
-   Arabic PDF round-trip verification.
-7. Complete measured large-library and long-document performance profiling on
-   representative HDD, SSD, mouse, touch, and pen hardware.
-8. Add a packaged Windows installer and optional `.pdf` file association while
-   retaining explicit user control over defaults.
-9. Complete high-contrast, 200% text scale, Narrator, and Arabic RTL acceptance
-   passes before a stable `1.0` candidate.
+The ordered goals, release versions, automated gates, owner acceptance tests,
+hardware requirements, and stop conditions are maintained in
+[`CHECKPOINTS.md`](CHECKPOINTS.md). Its checkpoint ledger supersedes every
+informal or historical sequence elsewhere in this document.
 
-Text-to-speech, speed-reading, research lookup, cloud services, and other
-secondary stages remain explicitly deferred until the three core workflows
-meet the stable-release quality bar.
+The owner accepted **C0 — Baseline acceptance** at `0.8.0-beta.1` (build 2) on
+2026-09-09. **C1 — Reader workspace** is the only active checkpoint and must
+stop for its numbered owner test before C2 begins.
+
+Text-to-speech, speed-reading in the primary UI, research lookup, cloud
+services, and other secondary stages remain explicitly deferred until the
+three core workflows meet the stable-release quality bar.
 
 ---
 
@@ -882,4 +804,6 @@ meet the stable-release quality bar.
 
 ---
 
-*This document supersedes informal planning in README §V–VI for execution purposes. README remains the vision narrative; PLAN.md is the engineering and accessibility contract.*
+*README is the user and contributor guide; PLAN.md is the engineering and
+accessibility contract; CHECKPOINTS.md is the authoritative delivery order and
+owner-acceptance record.*

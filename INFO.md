@@ -8,7 +8,8 @@
 
 This file is a compact orientation note. User installation and operation live
 in `README.md`; implemented stages, acceptance criteria, and deferred work live
-in `PLAN.md`; release history lives in `CHANGELOG.md`.
+in `PLAN.md`; delivery order and owner stop gates live in `CHECKPOINTS.md`;
+release history lives in `CHANGELOG.md`.
 
 ## Current product focus
 
@@ -29,6 +30,10 @@ errors and controls, mixed-script metadata, search, accessibility, and PDF
 round trips.
 The plan intentionally excludes conversion, signing, forms, OCR, cloud services,
 multimedia, and 3D features.
+
+The owner accepted **C0 — Baseline acceptance** on 2026-09-09. Execution is now
+limited to **C1 — Reader workspace**, with status **In progress**. Work must
+stop again when C1 is ready for its owner test.
 
 The primary shell contains Library, Recents, Bookmarks, Favorites, Folders, and
 Settings. Any PDF can also be opened directly or supplied as a Windows launch
@@ -82,9 +87,10 @@ argument without enrolling its parent directory.
 ## Verification
 
 Analysis passed with zero issues and the full unit/widget suite passed 50 tests
-with 2 optional personal-file audits skipped. The previous native integration
-run passed 3 tests; its latest rerun was blocked by MSVC C1041. The `/FS` fix
-needs a native rerun, and the Windows release build remains pending.
+with 2 optional personal-file audits skipped. The native Windows integration
+suite passed all 3 scenarios, and the Windows release build succeeded. The two
+skipped audits still require copied personal Arabic and English PDFs and do not
+count as passing evidence.
 
 Commands for reproducing verification:
 

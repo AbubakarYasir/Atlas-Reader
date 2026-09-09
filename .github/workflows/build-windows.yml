@@ -1,4 +1,4 @@
-name: Windows beta build
+name: Windows beta release
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: windows-beta-${{ github.ref }}
@@ -37,16 +37,61 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      - name: Verify tag, package version, and release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $packageVersion = (Select-String -Path pubspec.yaml -Pattern '^version:\s*(.+)$').Matches[0].Groups[1].Value.Trim()
+          $releaseVersion = $packageVersion.Split('+')[0]
+          $expectedTag = "v$releaseVersion"
+          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+            throw "Tag $env:GITHUB_REF_NAME does not match pubspec version $packageVersion (expected $expectedTag)."
+          }
+          $notes = "docs/releases/$env:GITHUB_REF_NAME.md"
+          if (-not (Test-Path -LiteralPath $notes)) {
+            throw "Missing release notes: $notes"
+          }
+
+      - name: Verify Dart formatting
+        run: dart format --output=none --set-exit-if-changed lib test integration_test
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
       - name: Build Windows release
         run: flutter build windows --release
 
       - name: Package complete runtime bundle
         shell: pwsh
-        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath atlas-reader-windows-${{ github.ref_name }}.zip -Force
+        run: |
+          $archive = "atlas-reader-windows-$env:GITHUB_REF_NAME.zip"
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath $archive -Force
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash.ToLowerInvariant()
+          "$hash  $archive" | Set-Content -Encoding ascii "$archive.sha256"
 
       - name: Upload Windows beta
         uses: actions/upload-artifact@v4
         with:
           name: atlas-reader-windows-${{ github.ref_name }}
-          path: atlas-reader-windows-${{ github.ref_name }}.zip
+          path: |
+            atlas-reader-windows-${{ github.ref_name }}.zip
+            atlas-reader-windows-${{ github.ref_name }}.zip.sha256
           retention-days: 30
+
+      - name: Publish GitHub prerelease
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $archive = "atlas-reader-windows-$tag.zip"
+          gh release create $tag $archive "$archive.sha256" `
+            --repo $env:GITHUB_REPOSITORY `
+            --title "Atlas Reader $tag — Windows beta" `
+            --notes-file "docs/releases/$tag.md" `
+            --prerelease `
+            --verify-tag

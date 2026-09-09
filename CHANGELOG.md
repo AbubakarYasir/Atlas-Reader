@@ -5,7 +5,21 @@ Versioning while it moves through pre-1.0 Windows beta releases.
 
 ## [Unreleased]
 
-### Planned scope
+### Documentation and delivery process
+
+- Added `CHECKPOINTS.md` as the operational roadmap from the verified
+  `0.8.0-beta.1` baseline through `1.0.0`, with one active checkpoint, explicit
+  automated evidence, numbered owner tests, hardware requirements, and stop
+  gates between releases.
+- Recorded the owner's C0 PASS on 2026-09-09 and moved C1 — Reader workspace to
+  **In progress** as the only active checkpoint.
+- Reconciled README, plan, project notes, and verification records around the
+  checkpoint workflow.
+- Upgraded the beta-tag workflow to validate the tag against `pubspec.yaml`,
+  run the quality suite, package the complete Windows runtime with a SHA-256
+  checksum, and publish a documented GitHub prerelease automatically.
+
+### Planned product scope
 
 - Added a focused desktop PDF-reader roadmap informed by established reader and
   pen-first editor workflows: centered page canvas, tabbed navigation panel,
@@ -77,11 +91,10 @@ Versioning while it moves through pre-1.0 Windows beta releases.
 
 - `flutter analyze`: zero issues.
 - `flutter test`: 50 passed, 2 opt-in personal-file audits skipped.
-- Previous native Windows integration: 3 passed—external PDF launch and Recents,
+- Native Windows integration: 3 passed—external PDF launch and Recents,
   pen `/Ink` round-trip with page isolation/outline/metadata preservation, and
   two-folder Arabic/English library plus bookmark search.
-- Latest native rerun hit MSVC C1041; the `/FS` build fix is included but a
-  successful rerun and Windows release build remain pending.
+- Windows release build succeeded after the `/FS` build fix.
 
 ## Focused core workflow — Library, bookmarks, and PDF ink (2026-09-09)
 

@@ -7,6 +7,8 @@ enum ReadingMode {
 
 enum ReaderThemeMode { day, night, oled, warmParchment }
 
+enum ReaderZoomPreset { fitPage, fitWidth, custom }
+
 class ReaderPreferences {
   const ReaderPreferences({
     this.mode = ReadingMode.continuousVertical,

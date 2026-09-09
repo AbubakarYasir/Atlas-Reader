@@ -307,6 +307,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'System, light, dark, and high-contrast themes'**
   String get themeDescription;
+
+  /// No description provided for @readerNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Reader navigation'**
+  String get readerNavigation;
+
+  /// No description provided for @pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get pages;
+
+  /// No description provided for @outline.
+  ///
+  /// In en, this message translates to:
+  /// **'Outline'**
+  String get outline;
+
+  /// No description provided for @bookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmarks'**
+  String get bookmarks;
+
+  /// No description provided for @annotations.
+  ///
+  /// In en, this message translates to:
+  /// **'Annotations'**
+  String get annotations;
+
+  /// No description provided for @searchCurrentPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search this panel'**
+  String get searchCurrentPanel;
+
+  /// No description provided for @clearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearch;
+
+  /// No description provided for @closeNavigationPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close reader navigation'**
+  String get closeNavigationPanel;
+
+  /// No description provided for @loadingPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading pages…'**
+  String get loadingPages;
+
+  /// No description provided for @noBookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'No bookmarks in this document'**
+  String get noBookmarks;
+
+  /// No description provided for @noOutline.
+  ///
+  /// In en, this message translates to:
+  /// **'No outline in this document'**
+  String get noOutline;
+
+  /// No description provided for @noAnnotations.
+  ///
+  /// In en, this message translates to:
+  /// **'No annotations in this document'**
+  String get noAnnotations;
+
+  /// No description provided for @pageThumbnail.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} thumbnail'**
+  String pageThumbnail(Object page);
+
+  /// No description provided for @showNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show reader navigation'**
+  String get showNavigation;
+
+  /// No description provided for @hideNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide reader navigation'**
+  String get hideNavigation;
+
+  /// No description provided for @zoomPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom {percent}%'**
+  String zoomPercent(Object percent);
+
+  /// No description provided for @zoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get zoomOut;
+
+  /// No description provided for @zoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get zoomIn;
+
+  /// No description provided for @fitPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit page'**
+  String get fitPage;
+
+  /// No description provided for @fitWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit width'**
+  String get fitWidth;
+
+  /// No description provided for @write.
+  ///
+  /// In en, this message translates to:
+  /// **'Write'**
+  String get write;
+
+  /// No description provided for @openDocumentTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Open document tab'**
+  String get openDocumentTab;
+
+  /// No description provided for @closeDocumentTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Close {title}'**
+  String closeDocumentTab(Object title);
 }
 
 class _AppLocalizationsDelegate

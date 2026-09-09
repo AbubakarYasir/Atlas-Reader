@@ -10,8 +10,8 @@ is implemented, verified, handed to the owner, and accepted.
 |---|---|
 | Checkpoint | **C1 — Reader workspace** |
 | Target release | `0.8.0-beta.2` (build 3) |
-| Status | **In progress** |
-| Automated evidence | `flutter analyze`: 0 issues; `flutter test`: 50 passed and 2 optional audits skipped; Windows integration: 3 passed; Windows release build: succeeded |
+| Status | **Ready for owner test** |
+| Automated evidence | `dart format`: clean; `flutter analyze`: 0 issues; `flutter test`: 53 passed and 2 optional audits skipped; Windows integration: 3 passed; Windows release build: succeeded |
 | Build | `build\windows\x64\runner\Release\atlas_poc.exe` |
 | Hardware still required before 1.0 | Pen, touch, representative HDD, and physical printer |
 | Previous owner decision | C0 accepted on 2026-09-09 |
@@ -68,7 +68,7 @@ flutter test test/runtime_pdf_audit_test.dart
 | ID | Release | Checkpoint | Status | Owner approval |
 |---|---|---|---|---|
 | C0 | `0.8.0-beta.1` | Baseline acceptance | **Accepted** | PASS — 2026-09-09 |
-| C1 | `0.8.0-beta.2` | Reader workspace | **In progress** | — |
+| C1 | `0.8.0-beta.2` | Reader workspace | **Ready for owner test** | Pending |
 | C2 | `0.8.0-beta.3` | Complete bookmarks | **Not started** | — |
 | C3 | `0.8.0-beta.4` | Text markup and notes | **Not started** | — |
 | C4 | `0.8.0-beta.5` | Advanced annotations | **Not started** | — |
@@ -124,6 +124,28 @@ text scale using mouse and keyboard.
 
 **Stop gate:** All navigation paths land on the requested page, session state
 restores, no control obscures content, and the workflow passes at 200% scale.
+
+### Acceptance record — C1
+
+- Status: Ready for owner test
+- Commit: C1 reader-workspace candidate on `main`
+- Version/build: `0.8.0-beta.2+3`
+- Executable: `build\windows\x64\runner\Release\atlas_poc.exe`
+- Automated commands and results: formatting clean; analysis 0 issues; 53
+  unit/widget tests passed; 2 personal-file audits skipped; 3 Windows
+  integration scenarios passed; release build succeeded
+- Focused tests: panel search and exact jumps, fit/percentage zoom selection,
+  Arabic navigation at 200% scale, rendered page previews, and ink drawing in
+  the reduced workspace viewport
+- Fixture copies required: three PDFs, including one mixed Arabic/English PDF
+  with an outline and one writable PDF copy for Write-mode testing
+- Known limitations: PDF is the only readable/writable format; the two
+  personal-file audits remain unrun without owner-supplied fixture copies
+- Hardware evidence supplied: desktop mouse/keyboard only; pen, touch, HDD,
+  and physical printer remain required at C9
+- Owner result: Pending
+- Defects found: None open
+- Approval date: Pending
 
 ## C2 — Complete bookmarks
 

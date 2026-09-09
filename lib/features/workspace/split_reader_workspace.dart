@@ -1,12 +1,12 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/file_system/document_file_system.dart';
 import '../../database.dart';
+import '../../l10n/app_localizations.dart';
 import '../reader/pdf_reader_screen.dart';
-import 'research_scratchpad.dart';
-
-enum WorkspaceSplitMode { single, sideBySideBooks, bookAndScratchpad }
 
 class WorkspaceTabItem {
   WorkspaceTabItem({
@@ -20,6 +20,12 @@ class WorkspaceTabItem {
   int currentPage;
 }
 
+/// Focused desktop document workspace.
+///
+/// Reader instances stay mounted in an [IndexedStack], so changing tabs does
+/// not discard the current page, zoom, navigation panel, or an active writing
+/// session. Page changes are persisted after a short debounce to avoid turning
+/// scroll events into database write bursts.
 class SplitReaderWorkspace extends StatefulWidget {
   const SplitReaderWorkspace({
     super.key,
@@ -27,9 +33,11 @@ class SplitReaderWorkspace extends StatefulWidget {
     required this.database,
     required this.fileSystem,
     required this.onCreateBookmark,
+    this.initialPageNumber = 1,
   });
 
   final String initialFilePath;
+  final int initialPageNumber;
   final AppDatabase database;
   final DocumentFileSystem fileSystem;
   final Future<void> Function(String filePath, ReaderBookmarkDraft draft)
@@ -42,45 +50,55 @@ class SplitReaderWorkspace extends StatefulWidget {
 class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
   final List<WorkspaceTabItem> _tabs = [];
   int _activeTabIndex = 0;
-  WorkspaceSplitMode _splitMode = WorkspaceSplitMode.single;
-  String? _secondaryFilePath;
-  int _primaryPage = 1;
+  bool _loading = true;
+  Timer? _persistDebounce;
 
   @override
   void initState() {
     super.initState();
-    _initWorkspace();
+    unawaited(_initWorkspace());
+  }
+
+  @override
+  void dispose() {
+    _persistDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _initWorkspace() async {
     final savedTabs = await widget.database.getReadingSessionTabs();
-    if (savedTabs.isNotEmpty) {
-      for (final t in savedTabs) {
-        if (await widget.fileSystem.exists(t.filePath)) {
-          final title = _titleFromPath(t.filePath);
-          _tabs.add(
-            WorkspaceTabItem(
-              filePath: t.filePath,
-              title: title,
-              currentPage: t.pageNumber,
-            ),
-          );
-        }
+    for (final saved in savedTabs) {
+      if (await widget.fileSystem.exists(saved.filePath)) {
+        _tabs.add(
+          WorkspaceTabItem(
+            filePath: saved.filePath,
+            title: _titleFromPath(saved.filePath),
+            currentPage: saved.pageNumber,
+          ),
+        );
       }
     }
 
-    if (_tabs.isEmpty) {
-      final title = _titleFromPath(widget.initialFilePath);
+    final requestedIndex = _tabs.indexWhere(
+      (tab) => tab.filePath == widget.initialFilePath,
+    );
+    if (requestedIndex >= 0) {
+      _activeTabIndex = requestedIndex;
+      _tabs[requestedIndex].currentPage = widget.initialPageNumber;
+    } else {
       _tabs.add(
-        WorkspaceTabItem(filePath: widget.initialFilePath, title: title),
+        WorkspaceTabItem(
+          filePath: widget.initialFilePath,
+          title: _titleFromPath(widget.initialFilePath),
+          currentPage: widget.initialPageNumber,
+        ),
       );
+      _activeTabIndex = _tabs.length - 1;
     }
 
-    if (mounted) {
-      setState(() {
-        _activeTabIndex = 0;
-      });
-    }
+    if (!mounted) return;
+    setState(() => _loading = false);
+    await _persistTabs();
   }
 
   String _titleFromPath(String path) {
@@ -89,289 +107,219 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
   }
 
   Future<void> _persistTabs() async {
-    final sessionList = <({String filePath, int pageNumber, bool isActive})>[];
-    for (var i = 0; i < _tabs.length; i++) {
-      final tab = _tabs[i];
-      sessionList.add((
-        filePath: tab.filePath,
-        pageNumber: tab.currentPage,
-        isActive: i == _activeTabIndex,
-      ));
-    }
-    await widget.database.saveReadingSessionTabs(sessionList);
+    if (_tabs.isEmpty) return;
+    await widget.database.saveReadingSessionTabs([
+      for (var index = 0; index < _tabs.length; index++)
+        (
+          filePath: _tabs[index].filePath,
+          pageNumber: _tabs[index].currentPage,
+          isActive: index == _activeTabIndex,
+        ),
+    ]);
+  }
+
+  void _schedulePersist() {
+    _persistDebounce?.cancel();
+    _persistDebounce = Timer(
+      const Duration(milliseconds: 350),
+      () => unawaited(_persistTabs()),
+    );
   }
 
   Future<void> _openNewTab() async {
-    final result = await FilePicker.pickFiles(
+    final result = await FilePicker.pickFile(
+      dialogTitle: AppLocalizations.of(context)!.openDocumentTab,
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'epub'],
+      allowedExtensions: const ['pdf'],
     );
-    if (result.isNotEmpty && result.single.path != null) {
-      final path = result.single.path!;
-      final title = _titleFromPath(path);
-      setState(() {
-        final existingIndex = _tabs.indexWhere((t) => t.filePath == path);
-        if (existingIndex >= 0) {
-          _activeTabIndex = existingIndex;
-        } else {
-          _tabs.add(WorkspaceTabItem(filePath: path, title: title));
-          _activeTabIndex = _tabs.length - 1;
-        }
-      });
-      await _persistTabs();
+    final path = result?.path;
+    if (path == null || !await widget.fileSystem.exists(path) || !mounted) {
+      return;
     }
-  }
 
-  void _closeTab(int index) {
-    if (_tabs.length <= 1) return;
     setState(() {
-      _tabs.removeAt(index);
-      if (_activeTabIndex >= _tabs.length) {
+      final existingIndex = _tabs.indexWhere((tab) => tab.filePath == path);
+      if (existingIndex >= 0) {
+        _activeTabIndex = existingIndex;
+      } else {
+        _tabs.add(
+          WorkspaceTabItem(filePath: path, title: _titleFromPath(path)),
+        );
         _activeTabIndex = _tabs.length - 1;
       }
     });
-    _persistTabs();
+    await _persistTabs();
   }
 
-  Future<void> _pickSecondaryBook() async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'epub'],
-    );
-    if (result.isNotEmpty && result.single.path != null) {
-      setState(() {
-        _secondaryFilePath = result.single.path;
-      });
+  void _activateTab(int index) {
+    if (index == _activeTabIndex) return;
+    setState(() => _activeTabIndex = index);
+    _schedulePersist();
+  }
+
+  void _closeTab(int index) {
+    if (_tabs.length == 1) {
+      Navigator.of(context).maybePop();
+      return;
     }
+    setState(() {
+      _tabs.removeAt(index);
+      if (index < _activeTabIndex) {
+        _activeTabIndex--;
+      } else if (_activeTabIndex >= _tabs.length) {
+        _activeTabIndex = _tabs.length - 1;
+      }
+    });
+    _schedulePersist();
+  }
+
+  void _recordPage(int index, int page) {
+    if (index >= _tabs.length || _tabs[index].currentPage == page) return;
+    _tabs[index].currentPage = page;
+    _schedulePersist();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_tabs.isEmpty) {
+    if (_loading || _tabs.isEmpty) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-
-    final activeTab = _tabs[_activeTabIndex];
 
     return Scaffold(
       body: Column(
         children: [
-          _buildTabBar(context),
-          Expanded(child: _buildWorkspaceContent(activeTab)),
+          _DocumentTabBar(
+            tabs: _tabs,
+            activeIndex: _activeTabIndex,
+            onActivate: _activateTab,
+            onClose: _closeTab,
+            onOpen: _openNewTab,
+          ),
+          Expanded(
+            child: IndexedStack(
+              index: _activeTabIndex,
+              children: [
+                for (var index = 0; index < _tabs.length; index++)
+                  PdfReaderScreen(
+                    key: ValueKey(_tabs[index].filePath),
+                    filePath: _tabs[index].filePath,
+                    fileSystem: widget.fileSystem,
+                    database: widget.database,
+                    initialPageNumber: _tabs[index].currentPage,
+                    onPageChanged: (page) => _recordPage(index, page),
+                    onCreateBookmark: (draft) =>
+                        widget.onCreateBookmark(_tabs[index].filePath, draft),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildTabBar(BuildContext context) {
-    return Container(
-      height: 42,
-      decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.surfaceContainerHighest.withAlpha(90),
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor.withAlpha(80),
+class _DocumentTabBar extends StatelessWidget {
+  const _DocumentTabBar({
+    required this.tabs,
+    required this.activeIndex,
+    required this.onActivate,
+    required this.onClose,
+    required this.onOpen,
+  });
+
+  final List<WorkspaceTabItem> tabs;
+  final int activeIndex;
+  final ValueChanged<int> onActivate;
+  final ValueChanged<int> onClose;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context)!;
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: 44,
+          child: Row(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  key: const ValueKey('document-tab-strip'),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: tabs.length,
+                  itemBuilder: (context, index) {
+                    final tab = tabs[index];
+                    final selected = index == activeIndex;
+                    return Semantics(
+                      selected: selected,
+                      button: true,
+                      label: tab.title,
+                      child: InkWell(
+                        key: ValueKey('document-tab-${tab.filePath}'),
+                        onTap: () => onActivate(index),
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 120,
+                            maxWidth: 220,
+                          ),
+                          padding: const EdgeInsetsDirectional.only(start: 12),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? Theme.of(context).colorScheme.surface
+                                : Colors.transparent,
+                            border: BorderDirectional(
+                              end: BorderSide(
+                                color: Theme.of(context).dividerColor,
+                              ),
+                              bottom: BorderSide(
+                                color: selected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.transparent,
+                                width: 3,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.picture_as_pdf_outlined,
+                                size: 17,
+                              ),
+                              const SizedBox(width: 7),
+                              Expanded(
+                                child: Text(
+                                  tab.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: strings.closeDocumentTab(tab.title),
+                                visualDensity: VisualDensity.compact,
+                                onPressed: () => onClose(index),
+                                icon: const Icon(Icons.close, size: 16),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              IconButton(
+                tooltip: strings.openDocumentTab,
+                onPressed: onOpen,
+                icon: const Icon(Icons.add),
+              ),
+              const SizedBox(width: 4),
+            ],
           ),
         ),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _tabs.length,
-              itemBuilder: (context, index) {
-                final tab = _tabs[index];
-                final isActive = index == _activeTabIndex;
-
-                return InkWell(
-                  onTap: () {
-                    setState(() => _activeTabIndex = index);
-                    _persistTabs();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? Theme.of(context).colorScheme.surface
-                          : Colors.transparent,
-                      border: Border(
-                        right: BorderSide(
-                          color: Theme.of(context).dividerColor.withAlpha(50),
-                        ),
-                        bottom: BorderSide(
-                          color: isActive
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.transparent,
-                          width: 2.5,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.menu_book, size: 14),
-                        const SizedBox(width: 6),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 160),
-                          child: Text(
-                            tab.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: isActive
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                        if (_tabs.length > 1) ...[
-                          const SizedBox(width: 4),
-                          InkWell(
-                            onTap: () => _closeTab(index),
-                            child: const Icon(Icons.close, size: 14),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.add, size: 18),
-            tooltip: 'Open new document tab',
-            visualDensity: VisualDensity.compact,
-            onPressed: _openNewTab,
-          ),
-          const VerticalDivider(width: 16, indent: 8, endIndent: 8),
-          SegmentedButton<WorkspaceSplitMode>(
-            segments: const [
-              ButtonSegment(
-                value: WorkspaceSplitMode.single,
-                icon: Icon(Icons.crop_square, size: 16),
-                tooltip: 'Single View',
-              ),
-              ButtonSegment(
-                value: WorkspaceSplitMode.sideBySideBooks,
-                icon: Icon(Icons.view_column_outlined, size: 16),
-                tooltip: 'Side-by-Side Books',
-              ),
-              ButtonSegment(
-                value: WorkspaceSplitMode.bookAndScratchpad,
-                icon: Icon(Icons.vertical_split_outlined, size: 16),
-                tooltip: 'Book & Scratchpad',
-              ),
-            ],
-            selected: {_splitMode},
-            onSelectionChanged: (set) {
-              setState(() {
-                _splitMode = set.first;
-                if (_splitMode == WorkspaceSplitMode.sideBySideBooks &&
-                    _secondaryFilePath == null) {
-                  _pickSecondaryBook();
-                }
-              });
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
     );
-  }
-
-  Widget _buildWorkspaceContent(WorkspaceTabItem activeTab) {
-    switch (_splitMode) {
-      case WorkspaceSplitMode.single:
-        return PdfReaderScreen(
-          key: ValueKey(activeTab.filePath),
-          filePath: activeTab.filePath,
-          fileSystem: widget.fileSystem,
-          database: widget.database,
-          initialPageNumber: activeTab.currentPage,
-          onCreateBookmark: (draft) =>
-              widget.onCreateBookmark(activeTab.filePath, draft),
-        );
-
-      case WorkspaceSplitMode.sideBySideBooks:
-        return Row(
-          children: [
-            Expanded(
-              child: PdfReaderScreen(
-                key: ValueKey('left_${activeTab.filePath}'),
-                filePath: activeTab.filePath,
-                fileSystem: widget.fileSystem,
-                database: widget.database,
-                initialPageNumber: activeTab.currentPage,
-                onCreateBookmark: (draft) =>
-                    widget.onCreateBookmark(activeTab.filePath, draft),
-              ),
-            ),
-            const VerticalDivider(width: 1),
-            Expanded(
-              child: _secondaryFilePath != null
-                  ? PdfReaderScreen(
-                      key: ValueKey('right_$_secondaryFilePath'),
-                      filePath: _secondaryFilePath!,
-                      fileSystem: widget.fileSystem,
-                      database: widget.database,
-                      onCreateBookmark: (draft) =>
-                          widget.onCreateBookmark(_secondaryFilePath!, draft),
-                    )
-                  : Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.compare_arrows,
-                            size: 48,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Select second book for side-by-side comparison',
-                          ),
-                          const SizedBox(height: 12),
-                          FilledButton.icon(
-                            onPressed: _pickSecondaryBook,
-                            icon: const Icon(Icons.folder_open),
-                            label: const Text('Open Companion Book'),
-                          ),
-                        ],
-                      ),
-                    ),
-            ),
-          ],
-        );
-
-      case WorkspaceSplitMode.bookAndScratchpad:
-        return Row(
-          children: [
-            Expanded(
-              child: PdfReaderScreen(
-                key: ValueKey('main_${activeTab.filePath}'),
-                filePath: activeTab.filePath,
-                fileSystem: widget.fileSystem,
-                database: widget.database,
-                initialPageNumber: activeTab.currentPage,
-                onCreateBookmark: (draft) =>
-                    widget.onCreateBookmark(activeTab.filePath, draft),
-              ),
-            ),
-            ResearchScratchpad(
-              filePath: activeTab.filePath,
-              database: widget.database,
-              currentPage: _primaryPage,
-              onJumpToPage: (page) => setState(() => _primaryPage = page),
-              onClose: () =>
-                  setState(() => _splitMode = WorkspaceSplitMode.single),
-            ),
-          ],
-        );
-    }
   }
 }

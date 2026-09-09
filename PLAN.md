@@ -1,10 +1,10 @@
 # Atlas Reader — Master Plan
 ## Universal Embedding Protocol · Maximum Accessibility · Production Quality
 
-**Status:** `0.8.0-beta.1` automated baseline verified (50 tests passed, 2
-optional personal-file audits skipped, 3 native Windows integration scenarios
+**Status:** `0.8.0-beta.2` reader-workspace candidate verified (53 tests passed,
+2 optional personal-file audits skipped, 3 native Windows integration scenarios
 passed, and the release build succeeded); C0 was owner-accepted on 2026-09-09
-and C1 is in progress.
+and C1 is ready for owner testing.
 Historical Stages 1–11 remain in the repository, but only library discovery,
 bookmarking, PDF reading, and PDF writing are in the primary product surface.
 Stage 12 and later are deferred.
@@ -782,7 +782,7 @@ hardware requirements, and stop conditions are maintained in
 informal or historical sequence elsewhere in this document.
 
 The owner accepted **C0 — Baseline acceptance** at `0.8.0-beta.1` (build 2) on
-2026-09-09. **C1 — Reader workspace** is the only active checkpoint and must
+2026-09-09. **C1 — Reader workspace** is ready for owner testing and must
 stop for its numbered owner test before C2 begins.
 
 Text-to-speech, speed-reading in the primary UI, research lookup, cloud

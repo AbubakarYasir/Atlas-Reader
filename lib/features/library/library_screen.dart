@@ -20,6 +20,7 @@ import '../../features/command_center/command_center_shortcuts.dart';
 import '../../features/reader/bookmark_composer.dart';
 import '../../features/reader/pdf_reader_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/workspace/split_reader_workspace.dart';
 import '../../pdf_engine.dart';
 import '../../scanned_pdf.dart';
 import '../../sync_engine.dart';
@@ -113,13 +114,12 @@ class _MyAppState extends State<MyApp> {
 
     await navigator.push<void>(
       MaterialPageRoute(
-        builder: (_) => PdfReaderScreen(
-          filePath: filePath,
+        builder: (_) => SplitReaderWorkspace(
+          initialFilePath: filePath,
           fileSystem: _fileSystem,
           database: database,
           initialPageNumber: pageNumber,
-          onCreateBookmark: (draft) =>
-              _createBookmarkFromReader(filePath, draft),
+          onCreateBookmark: _createBookmarkFromReader,
         ),
       ),
     );
@@ -589,10 +589,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
-        builder: (_) => PdfReaderScreen(
-          filePath: resolvedPath,
+        builder: (_) => SplitReaderWorkspace(
+          initialFilePath: resolvedPath,
           fileSystem: _fileSystem,
-          onCreateBookmark: (draft) async {
+          database: database,
+          onCreateBookmark: (filePath, draft) async {
+            _selectedFilePath = filePath;
             _bookmarkTitleController.text = draft.title;
             _pageNumberController.text = draft.pageNumber.toString();
             _descriptionController.text = draft.description ?? '';

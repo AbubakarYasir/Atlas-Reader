@@ -5,6 +5,24 @@ Versioning while it moves through pre-1.0 Windows beta releases.
 
 ## [Unreleased]
 
+### C1 reader workspace candidate (`0.8.0-beta.2+3`)
+
+- Routed every PDF entry point into one persistent multi-document workspace;
+  open tabs keep their reader state mounted and restore saved pages on restart.
+- Added a collapsible Pages, Outline, Bookmarks, and Annotations panel with
+  per-panel search, selected-page state, rendered page previews, and exact-page
+  jumps. Compact windows use the same panel in a modal sheet.
+- Added fit-page, fit-width, and explicit 100–400% zoom controls to both read
+  and Write modes, with compact actions that remain usable at 200% text scale.
+- Added English and Arabic resources and semantic labels for all new reader
+  workspace controls.
+- Fixed an unsafe workspace-disposal write that could race a closing database,
+  and made the Windows ink integration exercise the visible page region when a
+  persistent navigation panel reduces the canvas width.
+- Verified formatting, zero analyzer issues, 53 passing unit/widget tests,
+  3 passing Windows integration scenarios, and a successful Windows release
+  build. Two opt-in personal-PDF audits remain skipped pending copied fixtures.
+
 ### Documentation and delivery process
 
 - Added `CHECKPOINTS.md` as the operational roadmap from the verified

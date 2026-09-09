@@ -5,6 +5,7 @@ import '../../core/accessibility/accessibility_announcer.dart';
 import '../../core/file_system/document_file_system.dart';
 import '../../database.dart';
 import '../reader/pdf_reader_screen.dart';
+import '../workspace/split_reader_workspace.dart';
 
 enum BookshelfViewMode { coverGrid, detailedList, condensedList }
 
@@ -129,13 +130,12 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
     if (!mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
-        builder: (_) => PdfReaderScreen(
-          filePath: book.filePath,
+        builder: (_) => SplitReaderWorkspace(
+          initialFilePath: book.filePath,
           fileSystem: widget.fileSystem,
           database: widget.database,
           initialPageNumber: book.currentPage,
-          onCreateBookmark: (draft) =>
-              widget.onCreateBookmark(book.filePath, draft),
+          onCreateBookmark: widget.onCreateBookmark,
         ),
       ),
     );

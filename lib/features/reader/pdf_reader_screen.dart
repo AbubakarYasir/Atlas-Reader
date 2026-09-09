@@ -12,11 +12,13 @@ import '../../l10n/app_localizations.dart';
 import '../../pdf_engine.dart';
 import 'ink_toolbar.dart';
 import 'reader_models.dart';
+import 'reader_navigation_panel.dart';
 import 'reader_outline_builder.dart';
 import 'reader_outline_sidebar.dart';
 import 'reader_scrub_bar.dart';
 import 'reader_settings_dialog.dart';
 import 'reader_thumbnail_jumper.dart';
+import 'reader_zoom_controls.dart';
 
 class ReaderBookmarkDraft {
   const ReaderBookmarkDraft({
@@ -48,6 +50,7 @@ class PdfReaderScreen extends StatefulWidget {
     required this.onCreateBookmark,
     this.initialPageNumber = 1,
     this.database,
+    this.onPageChanged,
   });
 
   final String filePath;
@@ -55,12 +58,14 @@ class PdfReaderScreen extends StatefulWidget {
   final Future<void> Function(ReaderBookmarkDraft draft) onCreateBookmark;
   final int initialPageNumber;
   final AppDatabase? database;
+  final ValueChanged<int>? onPageChanged;
 
   @override
   State<PdfReaderScreen> createState() => _PdfReaderScreenState();
 }
 
 class _PdfReaderScreenState extends State<PdfReaderScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final syncfusion.PdfViewerController _viewerController =
       syncfusion.PdfViewerController();
   late Future<List<int>> _documentBytes;
@@ -69,13 +74,18 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
 
   editor.PdfEditingController? _editingController;
   editor.PdfViewerController? _editingViewerController;
+  editor.PdfDocument? _thumbnailDocument;
   int _savedEditingRevision = 0;
   bool _savingInk = false;
 
   late int _activePage = widget.initialPageNumber;
   int _pageCount = 0;
   bool _savingBookmark = false;
-  bool _showOutlineSidebar = true;
+  bool _showNavigationPanel = true;
+  int _annotationRevision = 0;
+  int _zoomPercent = 100;
+  int _writingViewGeneration = 0;
+  ReaderZoomPreset _zoomPreset = ReaderZoomPreset.fitWidth;
 
   ReaderPreferences _preferences = const ReaderPreferences();
   List<ReaderOutlineItem> _outline = [];
@@ -90,12 +100,15 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     super.initState();
     _pdfEngine = PdfEngine(fileSystem: widget.fileSystem);
     _documentBytes = widget.fileSystem.readAsBytesInBackground(widget.filePath);
+    _viewerController.addListener(_handleReadViewport);
+    unawaited(_loadThumbnailDocument());
     unawaited(_loadOutline());
     unawaited(_indexExistingInk());
   }
 
   @override
   void dispose() {
+    _viewerController.removeListener(_handleReadViewport);
     _viewerController.dispose();
     _disposeEditingSession();
     _localDatabase?.close();
@@ -167,6 +180,21 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     }
   }
 
+  Future<void> _loadThumbnailDocument() async {
+    try {
+      final bytes = Uint8List.fromList(await _documentBytes);
+      final document = editor.PdfDocument.open(bytes);
+      if (!mounted) return;
+      setState(() {
+        _thumbnailDocument = document;
+        if (_pageCount == 0) _pageCount = document.pageCount;
+      });
+    } catch (_) {
+      // Page navigation remains available with lightweight placeholders when
+      // a malformed document cannot be parsed by the thumbnail renderer.
+    }
+  }
+
   Future<void> _indexExistingInk() async {
     try {
       final bytes = Uint8List.fromList(await _documentBytes);
@@ -195,6 +223,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
           )
           .toList(growable: false),
     );
+    if (mounted) setState(() => _annotationRevision++);
   }
 
   void _jumpToPage(int pageNumber) {
@@ -206,22 +235,67 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
       _viewerController.jumpToPage(target);
     }
     setState(() => _activePage = target);
+    widget.onPageChanged?.call(target);
     unawaited(
       _db.updateReadingProgress(widget.filePath, target, pageCount: _pageCount),
     );
   }
 
+  void _handleReadViewport() {
+    if (!mounted || _isWriting) return;
+    final percent = (_viewerController.zoomLevel * 100).round();
+    if (percent != _zoomPercent) setState(() => _zoomPercent = percent);
+  }
+
   void _changeZoom(double delta) {
     final editingViewer = _editingViewerController;
     if (_isWriting && editingViewer != null) {
-      editingViewer.setZoom(
-        (editingViewer.zoom + delta).clamp(.5, 4).toDouble(),
-      );
+      final zoom = (editingViewer.zoom + delta).clamp(.5, 4).toDouble();
+      editingViewer.setZoom(zoom);
+      setState(() {
+        _zoomPreset = ReaderZoomPreset.custom;
+        _zoomPercent = (zoom * 100).round();
+      });
       return;
     }
-    _viewerController.zoomLevel = (_viewerController.zoomLevel + delta)
-        .clamp(1, 3)
-        .toDouble();
+    final zoom = (_viewerController.zoomLevel + delta).clamp(1, 4).toDouble();
+    _viewerController.zoomLevel = zoom;
+    setState(() {
+      _zoomPreset = ReaderZoomPreset.custom;
+      _zoomPercent = (zoom * 100).round();
+    });
+  }
+
+  void _applyZoomSelection((ReaderZoomPreset, int?) selection) {
+    final (preset, requestedPercent) = selection;
+    if (preset == ReaderZoomPreset.custom && requestedPercent != null) {
+      final minimum = _isWriting ? 50 : 100;
+      final percent = requestedPercent.clamp(minimum, 400).toInt();
+      final zoom = percent / 100;
+      if (_isWriting) {
+        _editingViewerController?.setZoom(zoom);
+      } else {
+        _viewerController.zoomLevel = zoom;
+      }
+      setState(() {
+        _zoomPreset = ReaderZoomPreset.custom;
+        _zoomPercent = percent;
+      });
+      return;
+    }
+
+    setState(() {
+      _zoomPreset = preset;
+      _zoomPercent = 100;
+      if (_isWriting) _writingViewGeneration++;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_isWriting) {
+        _viewerController.zoomLevel = 1;
+        _viewerController.jumpToPage(_activePage);
+      }
+    });
   }
 
   void _openThumbnailJumper() {
@@ -276,6 +350,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         unawaited(editingViewer.jumpToPage(_activePage - 1));
+        if (_zoomPreset == ReaderZoomPreset.custom) {
+          editingViewer.setZoom(_zoomPercent / 100);
+        }
       });
     } catch (error) {
       if (mounted) _showError('Could not start writing mode: $error');
@@ -290,7 +367,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     setState(() {
       _activePage = page;
       _pageCount = viewer.pageCount;
+      _zoomPercent = (viewer.zoom * 100).round();
     });
+    widget.onPageChanged?.call(page);
     unawaited(
       _db.updateReadingProgress(
         widget.filePath,
@@ -540,9 +619,105 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     );
   }
 
+  ReaderNavigationPanel _navigationPanel({
+    required VoidCallback onClose,
+    ValueChanged<int>? onSelectPage,
+    double width = 336,
+  }) {
+    return ReaderNavigationPanel(
+      filePath: widget.filePath,
+      database: _db,
+      outline: _outline,
+      currentPage: _activePage,
+      pageCount: _pageCount,
+      chapterPages: _chapterPages,
+      bookmarkedPages: _bookmarkedPages,
+      pageOffset: _preferences.pageOffset,
+      annotationRevision: _annotationRevision,
+      pagePreviewBuilder: _buildPagePreview,
+      width: width,
+      onSelectPage: onSelectPage ?? _jumpToPage,
+      onClose: onClose,
+    );
+  }
+
+  Widget _buildPagePreview(BuildContext context, int pageNumber) {
+    final document = _thumbnailDocument;
+    if (document == null || pageNumber < 1 || pageNumber > document.pageCount) {
+      return const SizedBox.shrink();
+    }
+    final page = document.page(pageNumber - 1);
+    final box = page.cropBox;
+    final rotated = page.rotation == 90 || page.rotation == 270;
+    final width = rotated ? box.height : box.width;
+    final height = rotated ? box.width : box.height;
+    return ClipRect(
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox(
+          width: width,
+          height: height,
+          child: IgnorePointer(
+            child: editor.PdfPageView(
+              page: page,
+              scale: .3,
+              showAnnotations: true,
+              qualityVisible: false,
+              onScreen: true,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openNavigationSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: .88,
+        child: _navigationPanel(
+          width: MediaQuery.sizeOf(sheetContext).width,
+          onClose: () => Navigator.of(sheetContext).pop(),
+          onSelectPage: (page) {
+            Navigator.of(sheetContext).pop();
+            _jumpToPage(page);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReaderWorkspace(bool persistentNavigation) {
+    final canvas = Expanded(
+      child: Container(
+        color: _backgroundColor(_preferences.theme),
+        child: _isWriting ? _buildWritingSurface() : _buildReadingSurface(),
+      ),
+    );
+    if (!persistentNavigation || !_showNavigationPanel) {
+      return Row(children: [canvas]);
+    }
+    return Row(
+      children: [
+        _navigationPanel(
+          onClose: () => setState(() => _showNavigationPanel = false),
+        ),
+        VerticalDivider(width: 1, color: Theme.of(context).dividerColor),
+        canvas,
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context)!;
+    final compactActions =
+        MediaQuery.sizeOf(context).width < 760 ||
+        MediaQuery.textScalerOf(context).scale(16) >= 28;
+    final persistentNavigation = MediaQuery.sizeOf(context).width >= 900;
     final printedPage = _activePage + _preferences.pageOffset;
     final title = _preferences.pageOffset != 0
         ? 'Page $_activePage (Book p. $printedPage) of $_pageCount'
@@ -568,27 +743,32 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
         child: Focus(
           autofocus: true,
           child: Scaffold(
+            key: _scaffoldKey,
             appBar: AppBar(
               title: Text(title),
               actions: [
                 IconButton(
-                  tooltip: 'Outline and bookmarks',
-                  onPressed: () => setState(
-                    () => _showOutlineSidebar = !_showOutlineSidebar,
-                  ),
+                  tooltip: persistentNavigation && _showNavigationPanel
+                      ? strings.hideNavigation
+                      : strings.showNavigation,
+                  onPressed: persistentNavigation
+                      ? () => setState(
+                          () => _showNavigationPanel = !_showNavigationPanel,
+                        )
+                      : _openNavigationSheet,
                   icon: Icon(
-                    _showOutlineSidebar ? Icons.menu_open : Icons.menu_book,
+                    persistentNavigation && _showNavigationPanel
+                        ? Icons.menu_open
+                        : Icons.view_sidebar_outlined,
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Zoom out',
-                  onPressed: () => _changeZoom(-.25),
-                  icon: const Icon(Icons.zoom_out),
-                ),
-                IconButton(
-                  tooltip: 'Zoom in',
-                  onPressed: () => _changeZoom(.25),
-                  icon: const Icon(Icons.zoom_in),
+                ReaderZoomControls(
+                  percent: _zoomPercent,
+                  preset: _zoomPreset,
+                  compact: compactActions,
+                  onZoomOut: () => _changeZoom(-.25),
+                  onZoomIn: () => _changeZoom(.25),
+                  onPresetSelected: _applyZoomSelection,
                 ),
                 if (!_isWriting) ...[
                   IconButton(
@@ -601,11 +781,18 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                           )
                         : const Icon(Icons.bookmark_add_outlined),
                   ),
-                  FilledButton.tonalIcon(
-                    onPressed: _enterWritingMode,
-                    icon: const Icon(Icons.draw_outlined),
-                    label: const Text('Write'),
-                  ),
+                  if (compactActions)
+                    IconButton(
+                      tooltip: strings.write,
+                      onPressed: _enterWritingMode,
+                      icon: const Icon(Icons.draw_outlined),
+                    )
+                  else
+                    FilledButton.tonalIcon(
+                      onPressed: _enterWritingMode,
+                      icon: const Icon(Icons.draw_outlined),
+                      label: Text(strings.write),
+                    ),
                 ],
                 IconButton(
                   tooltip: 'Go to page',
@@ -630,28 +817,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                     onSave: () => unawaited(_saveInk()),
                     onDone: () => unawaited(_leaveWritingMode()),
                   ),
-                Expanded(
-                  child: Row(
-                    children: [
-                      if (_showOutlineSidebar)
-                        ReaderOutlineSidebar(
-                          outline: _outline,
-                          currentPage: _activePage,
-                          onSelectPage: _jumpToPage,
-                          onClose: () =>
-                              setState(() => _showOutlineSidebar = false),
-                        ),
-                      Expanded(
-                        child: Container(
-                          color: _backgroundColor(_preferences.theme),
-                          child: _isWriting
-                              ? _buildWritingSurface()
-                              : _buildReadingSurface(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Expanded(child: _buildReaderWorkspace(persistentNavigation)),
                 ReaderScrubBar(
                   currentPage: _activePage,
                   pageCount: _pageCount,
@@ -673,6 +839,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
       RepaintBoundary(
         key: const ValueKey('ink-canvas-repaint-boundary'),
         child: editor.PdfEditorView(
+          key: ValueKey('writing-${_zoomPreset.name}-$_writingViewGeneration'),
           controller: _editingController!,
           viewerController: _editingViewerController!,
           documentId: widget.filePath,
@@ -680,7 +847,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
           onSave: (_) => unawaited(_saveInk()),
           backgroundColor: _backgroundColor(_preferences.theme),
           pageLayout: const editor.PdfPageLayout.verticalContinuous(),
-          initialFit: editor.PdfViewerFit.page,
+          initialFit: _zoomPreset == ReaderZoomPreset.fitPage
+              ? editor.PdfViewerFit.page
+              : editor.PdfViewerFit.width,
           features: const editor.PdfEditorFeatures(
             headerBar: false,
             search: false,
@@ -743,12 +912,15 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                       ),
                     );
                   }
-                  final single = _preferences.mode == ReadingMode.singlePage;
+                  final single =
+                      _zoomPreset == ReaderZoomPreset.fitPage ||
+                      _preferences.mode == ReadingMode.singlePage;
                   return syncfusion.SfPdfViewer.memory(
                     Uint8List.fromList(snapshot.data!),
                     controller: _viewerController,
                     enableDoubleTapZooming: true,
                     enableTextSelection: true,
+                    maxZoomLevel: 4,
                     pageLayoutMode: single
                         ? syncfusion.PdfPageLayoutMode.single
                         : syncfusion.PdfPageLayoutMode.continuous,
@@ -757,6 +929,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                         : syncfusion.PdfScrollDirection.vertical,
                     onPageChanged: (details) {
                       setState(() => _activePage = details.newPageNumber);
+                      widget.onPageChanged?.call(details.newPageNumber);
                       unawaited(
                         _db.updateReadingProgress(
                           widget.filePath,
@@ -775,6 +948,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                         _activePage = target;
                         _pageCount = details.document.pages.count;
                       });
+                      widget.onPageChanged?.call(target);
                     },
                     onDocumentLoadFailed: (details) {
                       _showError(

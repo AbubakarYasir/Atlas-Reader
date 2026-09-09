@@ -5,7 +5,7 @@
 
 | Release | Status | Formats | Primary platform |
 |---|---|---|---|
-| `0.8.0-beta.1` (build 2) | C0 accepted; C1 reader workspace in progress | PDF reader/editor; PDF and EPUB discovery | Windows 11 |
+| `0.8.0-beta.2` (build 3) | C1 reader workspace ready for owner test; latest published release is `0.8.0-beta.1` | PDF reader/editor; PDF and EPUB discovery | Windows 11 |
 
 Atlas Reader focuses on three jobs:
 
@@ -283,7 +283,7 @@ Verified on Windows on 2026-09-09:
 
 ```text
 flutter analyze                                            0 issues
-flutter test                                               50 passed, 2 opt-in audits skipped
+flutter test                                               53 passed, 2 opt-in audits skipped
 flutter test integration_test/windows_reader_workflow_test.dart -d windows
                                                            3 passed
 flutter build windows --release                            succeeded
@@ -310,9 +310,9 @@ Only one checkpoint is active at a time. After its automated gates pass, work
 stops for the numbered owner test; the next checkpoint does not start until the
 owner explicitly records a PASS.
 
-The owner accepted **C0 — Baseline acceptance** on 2026-09-09. The active work
-is **C1 — Reader workspace**; implementation will stop again when its release
-build and numbered owner test are ready.
+The owner accepted **C0 — Baseline acceptance** on 2026-09-09. **C1 — Reader
+workspace** is verified and stopped at **Ready for owner test**; C2 will not
+start until the owner records an explicit PASS.
 
 ## Developer guide
 

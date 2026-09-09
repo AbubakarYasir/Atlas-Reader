@@ -137,4 +137,79 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get themeDescription =>
       'System, light, dark, and high-contrast themes';
+
+  @override
+  String get readerNavigation => 'Reader navigation';
+
+  @override
+  String get pages => 'Pages';
+
+  @override
+  String get outline => 'Outline';
+
+  @override
+  String get bookmarks => 'Bookmarks';
+
+  @override
+  String get annotations => 'Annotations';
+
+  @override
+  String get searchCurrentPanel => 'Search this panel';
+
+  @override
+  String get clearSearch => 'Clear search';
+
+  @override
+  String get closeNavigationPanel => 'Close reader navigation';
+
+  @override
+  String get loadingPages => 'Loading pages…';
+
+  @override
+  String get noBookmarks => 'No bookmarks in this document';
+
+  @override
+  String get noOutline => 'No outline in this document';
+
+  @override
+  String get noAnnotations => 'No annotations in this document';
+
+  @override
+  String pageThumbnail(Object page) {
+    return 'Page $page thumbnail';
+  }
+
+  @override
+  String get showNavigation => 'Show reader navigation';
+
+  @override
+  String get hideNavigation => 'Hide reader navigation';
+
+  @override
+  String zoomPercent(Object percent) {
+    return 'Zoom $percent%';
+  }
+
+  @override
+  String get zoomOut => 'Zoom out';
+
+  @override
+  String get zoomIn => 'Zoom in';
+
+  @override
+  String get fitPage => 'Fit page';
+
+  @override
+  String get fitWidth => 'Fit width';
+
+  @override
+  String get write => 'Write';
+
+  @override
+  String get openDocumentTab => 'Open document tab';
+
+  @override
+  String closeDocumentTab(Object title) {
+    return 'Close $title';
+  }
 }

@@ -135,4 +135,79 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get themeDescription => 'سمة النظام والفاتحة والداكنة وعالية التباين';
+
+  @override
+  String get readerNavigation => 'التنقل في القارئ';
+
+  @override
+  String get pages => 'الصفحات';
+
+  @override
+  String get outline => 'المخطط';
+
+  @override
+  String get bookmarks => 'العلامات المرجعية';
+
+  @override
+  String get annotations => 'التعليقات التوضيحية';
+
+  @override
+  String get searchCurrentPanel => 'البحث في هذه اللوحة';
+
+  @override
+  String get clearSearch => 'مسح البحث';
+
+  @override
+  String get closeNavigationPanel => 'إغلاق لوحة تنقل القارئ';
+
+  @override
+  String get loadingPages => 'جارٍ تحميل الصفحات…';
+
+  @override
+  String get noBookmarks => 'لا توجد علامات مرجعية في هذا المستند';
+
+  @override
+  String get noOutline => 'لا يوجد مخطط في هذا المستند';
+
+  @override
+  String get noAnnotations => 'لا توجد تعليقات توضيحية في هذا المستند';
+
+  @override
+  String pageThumbnail(Object page) {
+    return 'صورة مصغرة للصفحة $page';
+  }
+
+  @override
+  String get showNavigation => 'إظهار تنقل القارئ';
+
+  @override
+  String get hideNavigation => 'إخفاء تنقل القارئ';
+
+  @override
+  String zoomPercent(Object percent) {
+    return 'التكبير $percent%';
+  }
+
+  @override
+  String get zoomOut => 'تصغير';
+
+  @override
+  String get zoomIn => 'تكبير';
+
+  @override
+  String get fitPage => 'ملاءمة الصفحة';
+
+  @override
+  String get fitWidth => 'ملاءمة العرض';
+
+  @override
+  String get write => 'كتابة';
+
+  @override
+  String get openDocumentTab => 'فتح علامة تبويب لمستند';
+
+  @override
+  String closeDocumentTab(Object title) {
+    return 'إغلاق $title';
+  }
 }

@@ -109,6 +109,11 @@ void main() {
     );
     await _pumpFor(tester, const Duration(seconds: 4));
     expect(find.text('Write'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('reader-page-thumbnail-1')),
+      findsOneWidget,
+    );
+    expect(find.byType(editor.PdfPageView), findsWidgets);
 
     await tester.tap(find.text('Write'));
     await _pumpFor(tester, const Duration(seconds: 5));
@@ -118,9 +123,15 @@ void main() {
     );
     expect(find.byTooltip('Pen'), findsOneWidget);
 
-    expect(find.byType(editor.PdfPageView), findsWidgets);
-    final firstPageRect = tester.getRect(find.byType(editor.PdfPageView).first);
-    final start = firstPageRect.center - const Offset(70, 30);
+    final writingPages = find.descendant(
+      of: find.byKey(const ValueKey('ink-canvas-repaint-boundary')),
+      matching: find.byType(editor.PdfPageView),
+    );
+    expect(writingPages, findsWidgets);
+    final firstPageRect = tester.getRect(writingPages.first);
+    final logicalSize = tester.view.physicalSize / tester.view.devicePixelRatio;
+    final visiblePageRect = firstPageRect.intersect(Offset.zero & logicalSize);
+    final start = visiblePageRect.center - const Offset(50, 30);
     final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await gesture.down(start);
     for (var step = 1; step <= 12; step++) {

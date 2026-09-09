@@ -1579,6 +1579,34 @@ class $LibraryFilesTable extends LibraryFiles
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _authorMeta = const VerificationMeta('author');
+  @override
+  late final GeneratedColumn<String> author = GeneratedColumn<String>(
+    'author',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _formatMeta = const VerificationMeta('format');
+  @override
+  late final GeneratedColumn<String> format = GeneratedColumn<String>(
+    'format',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('PDF'),
+  );
   static const VerificationMeta _bookmarkCountMeta = const VerificationMeta(
     'bookmarkCount',
   );
@@ -1590,6 +1618,97 @@ class $LibraryFilesTable extends LibraryFiles
     type: DriftSqlType.int,
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _pageCountMeta = const VerificationMeta(
+    'pageCount',
+  );
+  @override
+  late final GeneratedColumn<int> pageCount = GeneratedColumn<int>(
+    'page_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _currentPageMeta = const VerificationMeta(
+    'currentPage',
+  );
+  @override
+  late final GeneratedColumn<int> currentPage = GeneratedColumn<int>(
+    'current_page',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _fileSizeBytesMeta = const VerificationMeta(
+    'fileSizeBytes',
+  );
+  @override
+  late final GeneratedColumn<int> fileSizeBytes = GeneratedColumn<int>(
+    'file_size_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _isFavoriteMeta = const VerificationMeta(
+    'isFavorite',
+  );
+  @override
+  late final GeneratedColumn<bool> isFavorite = GeneratedColumn<bool>(
+    'is_favorite',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_favorite" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _coverPathMeta = const VerificationMeta(
+    'coverPath',
+  );
+  @override
+  late final GeneratedColumn<String> coverPath = GeneratedColumn<String>(
+    'cover_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastOpenedMeta = const VerificationMeta(
+    'lastOpened',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastOpened = GeneratedColumn<DateTime>(
+    'last_opened',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _seriesMeta = const VerificationMeta('series');
+  @override
+  late final GeneratedColumn<String> series = GeneratedColumn<String>(
+    'series',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
+  @override
+  late final GeneratedColumn<String> tags = GeneratedColumn<String>(
+    'tags',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
     'lastModified',
@@ -1620,7 +1739,18 @@ class $LibraryFilesTable extends LibraryFiles
     folderId,
     filePath,
     fileName,
+    title,
+    author,
+    format,
     bookmarkCount,
+    pageCount,
+    currentPage,
+    fileSizeBytes,
+    isFavorite,
+    coverPath,
+    lastOpened,
+    series,
+    tags,
     lastModified,
     lastScanned,
   ];
@@ -1663,6 +1793,24 @@ class $LibraryFilesTable extends LibraryFiles
     } else if (isInserting) {
       context.missing(_fileNameMeta);
     }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('author')) {
+      context.handle(
+        _authorMeta,
+        author.isAcceptableOrUnknown(data['author']!, _authorMeta),
+      );
+    }
+    if (data.containsKey('format')) {
+      context.handle(
+        _formatMeta,
+        format.isAcceptableOrUnknown(data['format']!, _formatMeta),
+      );
+    }
     if (data.containsKey('bookmark_count')) {
       context.handle(
         _bookmarkCountMeta,
@@ -1670,6 +1818,60 @@ class $LibraryFilesTable extends LibraryFiles
           data['bookmark_count']!,
           _bookmarkCountMeta,
         ),
+      );
+    }
+    if (data.containsKey('page_count')) {
+      context.handle(
+        _pageCountMeta,
+        pageCount.isAcceptableOrUnknown(data['page_count']!, _pageCountMeta),
+      );
+    }
+    if (data.containsKey('current_page')) {
+      context.handle(
+        _currentPageMeta,
+        currentPage.isAcceptableOrUnknown(
+          data['current_page']!,
+          _currentPageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('file_size_bytes')) {
+      context.handle(
+        _fileSizeBytesMeta,
+        fileSizeBytes.isAcceptableOrUnknown(
+          data['file_size_bytes']!,
+          _fileSizeBytesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_favorite')) {
+      context.handle(
+        _isFavoriteMeta,
+        isFavorite.isAcceptableOrUnknown(data['is_favorite']!, _isFavoriteMeta),
+      );
+    }
+    if (data.containsKey('cover_path')) {
+      context.handle(
+        _coverPathMeta,
+        coverPath.isAcceptableOrUnknown(data['cover_path']!, _coverPathMeta),
+      );
+    }
+    if (data.containsKey('last_opened')) {
+      context.handle(
+        _lastOpenedMeta,
+        lastOpened.isAcceptableOrUnknown(data['last_opened']!, _lastOpenedMeta),
+      );
+    }
+    if (data.containsKey('series')) {
+      context.handle(
+        _seriesMeta,
+        series.isAcceptableOrUnknown(data['series']!, _seriesMeta),
+      );
+    }
+    if (data.containsKey('tags')) {
+      context.handle(
+        _tagsMeta,
+        tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta),
       );
     }
     if (data.containsKey('last_modified')) {
@@ -1717,10 +1919,54 @@ class $LibraryFilesTable extends LibraryFiles
         DriftSqlType.string,
         data['${effectivePrefix}file_name'],
       )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      ),
+      author: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author'],
+      ),
+      format: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}format'],
+      )!,
       bookmarkCount: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}bookmark_count'],
       )!,
+      pageCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_count'],
+      )!,
+      currentPage: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}current_page'],
+      )!,
+      fileSizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}file_size_bytes'],
+      )!,
+      isFavorite: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_favorite'],
+      )!,
+      coverPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cover_path'],
+      ),
+      lastOpened: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_opened'],
+      ),
+      series: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}series'],
+      ),
+      tags: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags'],
+      ),
       lastModified: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_modified'],
@@ -1743,7 +1989,18 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
   final int folderId;
   final String filePath;
   final String fileName;
+  final String? title;
+  final String? author;
+  final String format;
   final int bookmarkCount;
+  final int pageCount;
+  final int currentPage;
+  final int fileSizeBytes;
+  final bool isFavorite;
+  final String? coverPath;
+  final DateTime? lastOpened;
+  final String? series;
+  final String? tags;
   final DateTime lastModified;
   final DateTime lastScanned;
   const LibraryFile({
@@ -1751,7 +2008,18 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
     required this.folderId,
     required this.filePath,
     required this.fileName,
+    this.title,
+    this.author,
+    required this.format,
     required this.bookmarkCount,
+    required this.pageCount,
+    required this.currentPage,
+    required this.fileSizeBytes,
+    required this.isFavorite,
+    this.coverPath,
+    this.lastOpened,
+    this.series,
+    this.tags,
     required this.lastModified,
     required this.lastScanned,
   });
@@ -1762,7 +2030,30 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
     map['folder_id'] = Variable<int>(folderId);
     map['file_path'] = Variable<String>(filePath);
     map['file_name'] = Variable<String>(fileName);
+    if (!nullToAbsent || title != null) {
+      map['title'] = Variable<String>(title);
+    }
+    if (!nullToAbsent || author != null) {
+      map['author'] = Variable<String>(author);
+    }
+    map['format'] = Variable<String>(format);
     map['bookmark_count'] = Variable<int>(bookmarkCount);
+    map['page_count'] = Variable<int>(pageCount);
+    map['current_page'] = Variable<int>(currentPage);
+    map['file_size_bytes'] = Variable<int>(fileSizeBytes);
+    map['is_favorite'] = Variable<bool>(isFavorite);
+    if (!nullToAbsent || coverPath != null) {
+      map['cover_path'] = Variable<String>(coverPath);
+    }
+    if (!nullToAbsent || lastOpened != null) {
+      map['last_opened'] = Variable<DateTime>(lastOpened);
+    }
+    if (!nullToAbsent || series != null) {
+      map['series'] = Variable<String>(series);
+    }
+    if (!nullToAbsent || tags != null) {
+      map['tags'] = Variable<String>(tags);
+    }
     map['last_modified'] = Variable<DateTime>(lastModified);
     map['last_scanned'] = Variable<DateTime>(lastScanned);
     return map;
@@ -1774,7 +2065,28 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
       folderId: Value(folderId),
       filePath: Value(filePath),
       fileName: Value(fileName),
+      title: title == null && nullToAbsent
+          ? const Value.absent()
+          : Value(title),
+      author: author == null && nullToAbsent
+          ? const Value.absent()
+          : Value(author),
+      format: Value(format),
       bookmarkCount: Value(bookmarkCount),
+      pageCount: Value(pageCount),
+      currentPage: Value(currentPage),
+      fileSizeBytes: Value(fileSizeBytes),
+      isFavorite: Value(isFavorite),
+      coverPath: coverPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coverPath),
+      lastOpened: lastOpened == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastOpened),
+      series: series == null && nullToAbsent
+          ? const Value.absent()
+          : Value(series),
+      tags: tags == null && nullToAbsent ? const Value.absent() : Value(tags),
       lastModified: Value(lastModified),
       lastScanned: Value(lastScanned),
     );
@@ -1790,7 +2102,18 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
       folderId: serializer.fromJson<int>(json['folderId']),
       filePath: serializer.fromJson<String>(json['filePath']),
       fileName: serializer.fromJson<String>(json['fileName']),
+      title: serializer.fromJson<String?>(json['title']),
+      author: serializer.fromJson<String?>(json['author']),
+      format: serializer.fromJson<String>(json['format']),
       bookmarkCount: serializer.fromJson<int>(json['bookmarkCount']),
+      pageCount: serializer.fromJson<int>(json['pageCount']),
+      currentPage: serializer.fromJson<int>(json['currentPage']),
+      fileSizeBytes: serializer.fromJson<int>(json['fileSizeBytes']),
+      isFavorite: serializer.fromJson<bool>(json['isFavorite']),
+      coverPath: serializer.fromJson<String?>(json['coverPath']),
+      lastOpened: serializer.fromJson<DateTime?>(json['lastOpened']),
+      series: serializer.fromJson<String?>(json['series']),
+      tags: serializer.fromJson<String?>(json['tags']),
       lastModified: serializer.fromJson<DateTime>(json['lastModified']),
       lastScanned: serializer.fromJson<DateTime>(json['lastScanned']),
     );
@@ -1803,7 +2126,18 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
       'folderId': serializer.toJson<int>(folderId),
       'filePath': serializer.toJson<String>(filePath),
       'fileName': serializer.toJson<String>(fileName),
+      'title': serializer.toJson<String?>(title),
+      'author': serializer.toJson<String?>(author),
+      'format': serializer.toJson<String>(format),
       'bookmarkCount': serializer.toJson<int>(bookmarkCount),
+      'pageCount': serializer.toJson<int>(pageCount),
+      'currentPage': serializer.toJson<int>(currentPage),
+      'fileSizeBytes': serializer.toJson<int>(fileSizeBytes),
+      'isFavorite': serializer.toJson<bool>(isFavorite),
+      'coverPath': serializer.toJson<String?>(coverPath),
+      'lastOpened': serializer.toJson<DateTime?>(lastOpened),
+      'series': serializer.toJson<String?>(series),
+      'tags': serializer.toJson<String?>(tags),
       'lastModified': serializer.toJson<DateTime>(lastModified),
       'lastScanned': serializer.toJson<DateTime>(lastScanned),
     };
@@ -1814,7 +2148,18 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
     int? folderId,
     String? filePath,
     String? fileName,
+    Value<String?> title = const Value.absent(),
+    Value<String?> author = const Value.absent(),
+    String? format,
     int? bookmarkCount,
+    int? pageCount,
+    int? currentPage,
+    int? fileSizeBytes,
+    bool? isFavorite,
+    Value<String?> coverPath = const Value.absent(),
+    Value<DateTime?> lastOpened = const Value.absent(),
+    Value<String?> series = const Value.absent(),
+    Value<String?> tags = const Value.absent(),
     DateTime? lastModified,
     DateTime? lastScanned,
   }) => LibraryFile(
@@ -1822,7 +2167,18 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
     folderId: folderId ?? this.folderId,
     filePath: filePath ?? this.filePath,
     fileName: fileName ?? this.fileName,
+    title: title.present ? title.value : this.title,
+    author: author.present ? author.value : this.author,
+    format: format ?? this.format,
     bookmarkCount: bookmarkCount ?? this.bookmarkCount,
+    pageCount: pageCount ?? this.pageCount,
+    currentPage: currentPage ?? this.currentPage,
+    fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+    isFavorite: isFavorite ?? this.isFavorite,
+    coverPath: coverPath.present ? coverPath.value : this.coverPath,
+    lastOpened: lastOpened.present ? lastOpened.value : this.lastOpened,
+    series: series.present ? series.value : this.series,
+    tags: tags.present ? tags.value : this.tags,
     lastModified: lastModified ?? this.lastModified,
     lastScanned: lastScanned ?? this.lastScanned,
   );
@@ -1832,9 +2188,28 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
       folderId: data.folderId.present ? data.folderId.value : this.folderId,
       filePath: data.filePath.present ? data.filePath.value : this.filePath,
       fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      title: data.title.present ? data.title.value : this.title,
+      author: data.author.present ? data.author.value : this.author,
+      format: data.format.present ? data.format.value : this.format,
       bookmarkCount: data.bookmarkCount.present
           ? data.bookmarkCount.value
           : this.bookmarkCount,
+      pageCount: data.pageCount.present ? data.pageCount.value : this.pageCount,
+      currentPage: data.currentPage.present
+          ? data.currentPage.value
+          : this.currentPage,
+      fileSizeBytes: data.fileSizeBytes.present
+          ? data.fileSizeBytes.value
+          : this.fileSizeBytes,
+      isFavorite: data.isFavorite.present
+          ? data.isFavorite.value
+          : this.isFavorite,
+      coverPath: data.coverPath.present ? data.coverPath.value : this.coverPath,
+      lastOpened: data.lastOpened.present
+          ? data.lastOpened.value
+          : this.lastOpened,
+      series: data.series.present ? data.series.value : this.series,
+      tags: data.tags.present ? data.tags.value : this.tags,
       lastModified: data.lastModified.present
           ? data.lastModified.value
           : this.lastModified,
@@ -1851,7 +2226,18 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
           ..write('folderId: $folderId, ')
           ..write('filePath: $filePath, ')
           ..write('fileName: $fileName, ')
+          ..write('title: $title, ')
+          ..write('author: $author, ')
+          ..write('format: $format, ')
           ..write('bookmarkCount: $bookmarkCount, ')
+          ..write('pageCount: $pageCount, ')
+          ..write('currentPage: $currentPage, ')
+          ..write('fileSizeBytes: $fileSizeBytes, ')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('coverPath: $coverPath, ')
+          ..write('lastOpened: $lastOpened, ')
+          ..write('series: $series, ')
+          ..write('tags: $tags, ')
           ..write('lastModified: $lastModified, ')
           ..write('lastScanned: $lastScanned')
           ..write(')'))
@@ -1864,7 +2250,18 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
     folderId,
     filePath,
     fileName,
+    title,
+    author,
+    format,
     bookmarkCount,
+    pageCount,
+    currentPage,
+    fileSizeBytes,
+    isFavorite,
+    coverPath,
+    lastOpened,
+    series,
+    tags,
     lastModified,
     lastScanned,
   );
@@ -1876,7 +2273,18 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
           other.folderId == this.folderId &&
           other.filePath == this.filePath &&
           other.fileName == this.fileName &&
+          other.title == this.title &&
+          other.author == this.author &&
+          other.format == this.format &&
           other.bookmarkCount == this.bookmarkCount &&
+          other.pageCount == this.pageCount &&
+          other.currentPage == this.currentPage &&
+          other.fileSizeBytes == this.fileSizeBytes &&
+          other.isFavorite == this.isFavorite &&
+          other.coverPath == this.coverPath &&
+          other.lastOpened == this.lastOpened &&
+          other.series == this.series &&
+          other.tags == this.tags &&
           other.lastModified == this.lastModified &&
           other.lastScanned == this.lastScanned);
 }
@@ -1886,7 +2294,18 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
   final Value<int> folderId;
   final Value<String> filePath;
   final Value<String> fileName;
+  final Value<String?> title;
+  final Value<String?> author;
+  final Value<String> format;
   final Value<int> bookmarkCount;
+  final Value<int> pageCount;
+  final Value<int> currentPage;
+  final Value<int> fileSizeBytes;
+  final Value<bool> isFavorite;
+  final Value<String?> coverPath;
+  final Value<DateTime?> lastOpened;
+  final Value<String?> series;
+  final Value<String?> tags;
   final Value<DateTime> lastModified;
   final Value<DateTime> lastScanned;
   const LibraryFilesCompanion({
@@ -1894,7 +2313,18 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
     this.folderId = const Value.absent(),
     this.filePath = const Value.absent(),
     this.fileName = const Value.absent(),
+    this.title = const Value.absent(),
+    this.author = const Value.absent(),
+    this.format = const Value.absent(),
     this.bookmarkCount = const Value.absent(),
+    this.pageCount = const Value.absent(),
+    this.currentPage = const Value.absent(),
+    this.fileSizeBytes = const Value.absent(),
+    this.isFavorite = const Value.absent(),
+    this.coverPath = const Value.absent(),
+    this.lastOpened = const Value.absent(),
+    this.series = const Value.absent(),
+    this.tags = const Value.absent(),
     this.lastModified = const Value.absent(),
     this.lastScanned = const Value.absent(),
   });
@@ -1903,7 +2333,18 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
     required int folderId,
     required String filePath,
     required String fileName,
+    this.title = const Value.absent(),
+    this.author = const Value.absent(),
+    this.format = const Value.absent(),
     this.bookmarkCount = const Value.absent(),
+    this.pageCount = const Value.absent(),
+    this.currentPage = const Value.absent(),
+    this.fileSizeBytes = const Value.absent(),
+    this.isFavorite = const Value.absent(),
+    this.coverPath = const Value.absent(),
+    this.lastOpened = const Value.absent(),
+    this.series = const Value.absent(),
+    this.tags = const Value.absent(),
     required DateTime lastModified,
     this.lastScanned = const Value.absent(),
   }) : folderId = Value(folderId),
@@ -1915,7 +2356,18 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
     Expression<int>? folderId,
     Expression<String>? filePath,
     Expression<String>? fileName,
+    Expression<String>? title,
+    Expression<String>? author,
+    Expression<String>? format,
     Expression<int>? bookmarkCount,
+    Expression<int>? pageCount,
+    Expression<int>? currentPage,
+    Expression<int>? fileSizeBytes,
+    Expression<bool>? isFavorite,
+    Expression<String>? coverPath,
+    Expression<DateTime>? lastOpened,
+    Expression<String>? series,
+    Expression<String>? tags,
     Expression<DateTime>? lastModified,
     Expression<DateTime>? lastScanned,
   }) {
@@ -1924,7 +2376,18 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
       if (folderId != null) 'folder_id': folderId,
       if (filePath != null) 'file_path': filePath,
       if (fileName != null) 'file_name': fileName,
+      if (title != null) 'title': title,
+      if (author != null) 'author': author,
+      if (format != null) 'format': format,
       if (bookmarkCount != null) 'bookmark_count': bookmarkCount,
+      if (pageCount != null) 'page_count': pageCount,
+      if (currentPage != null) 'current_page': currentPage,
+      if (fileSizeBytes != null) 'file_size_bytes': fileSizeBytes,
+      if (isFavorite != null) 'is_favorite': isFavorite,
+      if (coverPath != null) 'cover_path': coverPath,
+      if (lastOpened != null) 'last_opened': lastOpened,
+      if (series != null) 'series': series,
+      if (tags != null) 'tags': tags,
       if (lastModified != null) 'last_modified': lastModified,
       if (lastScanned != null) 'last_scanned': lastScanned,
     });
@@ -1935,7 +2398,18 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
     Value<int>? folderId,
     Value<String>? filePath,
     Value<String>? fileName,
+    Value<String?>? title,
+    Value<String?>? author,
+    Value<String>? format,
     Value<int>? bookmarkCount,
+    Value<int>? pageCount,
+    Value<int>? currentPage,
+    Value<int>? fileSizeBytes,
+    Value<bool>? isFavorite,
+    Value<String?>? coverPath,
+    Value<DateTime?>? lastOpened,
+    Value<String?>? series,
+    Value<String?>? tags,
     Value<DateTime>? lastModified,
     Value<DateTime>? lastScanned,
   }) {
@@ -1944,7 +2418,18 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
       folderId: folderId ?? this.folderId,
       filePath: filePath ?? this.filePath,
       fileName: fileName ?? this.fileName,
+      title: title ?? this.title,
+      author: author ?? this.author,
+      format: format ?? this.format,
       bookmarkCount: bookmarkCount ?? this.bookmarkCount,
+      pageCount: pageCount ?? this.pageCount,
+      currentPage: currentPage ?? this.currentPage,
+      fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+      isFavorite: isFavorite ?? this.isFavorite,
+      coverPath: coverPath ?? this.coverPath,
+      lastOpened: lastOpened ?? this.lastOpened,
+      series: series ?? this.series,
+      tags: tags ?? this.tags,
       lastModified: lastModified ?? this.lastModified,
       lastScanned: lastScanned ?? this.lastScanned,
     );
@@ -1965,8 +2450,41 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
     if (fileName.present) {
       map['file_name'] = Variable<String>(fileName.value);
     }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (author.present) {
+      map['author'] = Variable<String>(author.value);
+    }
+    if (format.present) {
+      map['format'] = Variable<String>(format.value);
+    }
     if (bookmarkCount.present) {
       map['bookmark_count'] = Variable<int>(bookmarkCount.value);
+    }
+    if (pageCount.present) {
+      map['page_count'] = Variable<int>(pageCount.value);
+    }
+    if (currentPage.present) {
+      map['current_page'] = Variable<int>(currentPage.value);
+    }
+    if (fileSizeBytes.present) {
+      map['file_size_bytes'] = Variable<int>(fileSizeBytes.value);
+    }
+    if (isFavorite.present) {
+      map['is_favorite'] = Variable<bool>(isFavorite.value);
+    }
+    if (coverPath.present) {
+      map['cover_path'] = Variable<String>(coverPath.value);
+    }
+    if (lastOpened.present) {
+      map['last_opened'] = Variable<DateTime>(lastOpened.value);
+    }
+    if (series.present) {
+      map['series'] = Variable<String>(series.value);
+    }
+    if (tags.present) {
+      map['tags'] = Variable<String>(tags.value);
     }
     if (lastModified.present) {
       map['last_modified'] = Variable<DateTime>(lastModified.value);
@@ -1984,7 +2502,18 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
           ..write('folderId: $folderId, ')
           ..write('filePath: $filePath, ')
           ..write('fileName: $fileName, ')
+          ..write('title: $title, ')
+          ..write('author: $author, ')
+          ..write('format: $format, ')
           ..write('bookmarkCount: $bookmarkCount, ')
+          ..write('pageCount: $pageCount, ')
+          ..write('currentPage: $currentPage, ')
+          ..write('fileSizeBytes: $fileSizeBytes, ')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('coverPath: $coverPath, ')
+          ..write('lastOpened: $lastOpened, ')
+          ..write('series: $series, ')
+          ..write('tags: $tags, ')
           ..write('lastModified: $lastModified, ')
           ..write('lastScanned: $lastScanned')
           ..write(')'))
@@ -3540,7 +4069,18 @@ typedef $$LibraryFilesTableCreateCompanionBuilder =
       required int folderId,
       required String filePath,
       required String fileName,
+      Value<String?> title,
+      Value<String?> author,
+      Value<String> format,
       Value<int> bookmarkCount,
+      Value<int> pageCount,
+      Value<int> currentPage,
+      Value<int> fileSizeBytes,
+      Value<bool> isFavorite,
+      Value<String?> coverPath,
+      Value<DateTime?> lastOpened,
+      Value<String?> series,
+      Value<String?> tags,
       required DateTime lastModified,
       Value<DateTime> lastScanned,
     });
@@ -3550,7 +4090,18 @@ typedef $$LibraryFilesTableUpdateCompanionBuilder =
       Value<int> folderId,
       Value<String> filePath,
       Value<String> fileName,
+      Value<String?> title,
+      Value<String?> author,
+      Value<String> format,
       Value<int> bookmarkCount,
+      Value<int> pageCount,
+      Value<int> currentPage,
+      Value<int> fileSizeBytes,
+      Value<bool> isFavorite,
+      Value<String?> coverPath,
+      Value<DateTime?> lastOpened,
+      Value<String?> series,
+      Value<String?> tags,
       Value<DateTime> lastModified,
       Value<DateTime> lastScanned,
     });
@@ -3603,8 +4154,63 @@ class $$LibraryFilesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get author => $composableBuilder(
+    column: $table.author,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get format => $composableBuilder(
+    column: $table.format,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get bookmarkCount => $composableBuilder(
     column: $table.bookmarkCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pageCount => $composableBuilder(
+    column: $table.pageCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get currentPage => $composableBuilder(
+    column: $table.currentPage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fileSizeBytes => $composableBuilder(
+    column: $table.fileSizeBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coverPath => $composableBuilder(
+    column: $table.coverPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastOpened => $composableBuilder(
+    column: $table.lastOpened,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get series => $composableBuilder(
+    column: $table.series,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tags => $composableBuilder(
+    column: $table.tags,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3666,8 +4272,63 @@ class $$LibraryFilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get author => $composableBuilder(
+    column: $table.author,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get format => $composableBuilder(
+    column: $table.format,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get bookmarkCount => $composableBuilder(
     column: $table.bookmarkCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pageCount => $composableBuilder(
+    column: $table.pageCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get currentPage => $composableBuilder(
+    column: $table.currentPage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fileSizeBytes => $composableBuilder(
+    column: $table.fileSizeBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get coverPath => $composableBuilder(
+    column: $table.coverPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastOpened => $composableBuilder(
+    column: $table.lastOpened,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get series => $composableBuilder(
+    column: $table.series,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tags => $composableBuilder(
+    column: $table.tags,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3723,10 +4384,51 @@ class $$LibraryFilesTableAnnotationComposer
   GeneratedColumn<String> get fileName =>
       $composableBuilder(column: $table.fileName, builder: (column) => column);
 
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get author =>
+      $composableBuilder(column: $table.author, builder: (column) => column);
+
+  GeneratedColumn<String> get format =>
+      $composableBuilder(column: $table.format, builder: (column) => column);
+
   GeneratedColumn<int> get bookmarkCount => $composableBuilder(
     column: $table.bookmarkCount,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get pageCount =>
+      $composableBuilder(column: $table.pageCount, builder: (column) => column);
+
+  GeneratedColumn<int> get currentPage => $composableBuilder(
+    column: $table.currentPage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get fileSizeBytes => $composableBuilder(
+    column: $table.fileSizeBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get coverPath =>
+      $composableBuilder(column: $table.coverPath, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastOpened => $composableBuilder(
+    column: $table.lastOpened,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get series =>
+      $composableBuilder(column: $table.series, builder: (column) => column);
+
+  GeneratedColumn<String> get tags =>
+      $composableBuilder(column: $table.tags, builder: (column) => column);
 
   GeneratedColumn<DateTime> get lastModified => $composableBuilder(
     column: $table.lastModified,
@@ -3794,7 +4496,18 @@ class $$LibraryFilesTableTableManager
                 Value<int> folderId = const Value.absent(),
                 Value<String> filePath = const Value.absent(),
                 Value<String> fileName = const Value.absent(),
+                Value<String?> title = const Value.absent(),
+                Value<String?> author = const Value.absent(),
+                Value<String> format = const Value.absent(),
                 Value<int> bookmarkCount = const Value.absent(),
+                Value<int> pageCount = const Value.absent(),
+                Value<int> currentPage = const Value.absent(),
+                Value<int> fileSizeBytes = const Value.absent(),
+                Value<bool> isFavorite = const Value.absent(),
+                Value<String?> coverPath = const Value.absent(),
+                Value<DateTime?> lastOpened = const Value.absent(),
+                Value<String?> series = const Value.absent(),
+                Value<String?> tags = const Value.absent(),
                 Value<DateTime> lastModified = const Value.absent(),
                 Value<DateTime> lastScanned = const Value.absent(),
               }) => LibraryFilesCompanion(
@@ -3802,7 +4515,18 @@ class $$LibraryFilesTableTableManager
                 folderId: folderId,
                 filePath: filePath,
                 fileName: fileName,
+                title: title,
+                author: author,
+                format: format,
                 bookmarkCount: bookmarkCount,
+                pageCount: pageCount,
+                currentPage: currentPage,
+                fileSizeBytes: fileSizeBytes,
+                isFavorite: isFavorite,
+                coverPath: coverPath,
+                lastOpened: lastOpened,
+                series: series,
+                tags: tags,
                 lastModified: lastModified,
                 lastScanned: lastScanned,
               ),
@@ -3812,7 +4536,18 @@ class $$LibraryFilesTableTableManager
                 required int folderId,
                 required String filePath,
                 required String fileName,
+                Value<String?> title = const Value.absent(),
+                Value<String?> author = const Value.absent(),
+                Value<String> format = const Value.absent(),
                 Value<int> bookmarkCount = const Value.absent(),
+                Value<int> pageCount = const Value.absent(),
+                Value<int> currentPage = const Value.absent(),
+                Value<int> fileSizeBytes = const Value.absent(),
+                Value<bool> isFavorite = const Value.absent(),
+                Value<String?> coverPath = const Value.absent(),
+                Value<DateTime?> lastOpened = const Value.absent(),
+                Value<String?> series = const Value.absent(),
+                Value<String?> tags = const Value.absent(),
                 required DateTime lastModified,
                 Value<DateTime> lastScanned = const Value.absent(),
               }) => LibraryFilesCompanion.insert(
@@ -3820,7 +4555,18 @@ class $$LibraryFilesTableTableManager
                 folderId: folderId,
                 filePath: filePath,
                 fileName: fileName,
+                title: title,
+                author: author,
+                format: format,
                 bookmarkCount: bookmarkCount,
+                pageCount: pageCount,
+                currentPage: currentPage,
+                fileSizeBytes: fileSizeBytes,
+                isFavorite: isFavorite,
+                coverPath: coverPath,
+                lastOpened: lastOpened,
+                series: series,
+                tags: tags,
                 lastModified: lastModified,
                 lastScanned: lastScanned,
               ),

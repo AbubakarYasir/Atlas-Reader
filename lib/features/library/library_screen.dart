@@ -1188,6 +1188,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           database: database,
                           fileSystem: _fileSystem,
                           onCreateBookmark: _createBookmarkFromLibrary,
+                          onSelectPdf: (path) {
+                            setState(() {
+                              _selectedFilePath = path;
+                            });
+                            _calculateSyncDiff();
+                          },
                         ),
                       ),
                     );

@@ -40,6 +40,33 @@ class PdfEngine {
     }
   }
 
+  /// Get page count and metadata (title, author) of a PDF file
+  Future<({int pageCount, String? title, String? author})?> getDocumentMetadata(
+    String filePath,
+  ) async {
+    try {
+      final bytes = await _fileSystem.readAsBytesInBackground(filePath);
+      return Isolate.run(() {
+        final document = PdfDocument(inputBytes: bytes);
+        try {
+          final count = document.pages.count;
+          final t = document.documentInformation.title.trim();
+          final a = document.documentInformation.author.trim();
+          return (
+            pageCount: count,
+            title: t.isEmpty ? null : t,
+            author: a.isEmpty ? null : a,
+          );
+        } finally {
+          document.dispose();
+        }
+      });
+    } catch (e) {
+      _log.warning('[PDF] Error reading document metadata: $e');
+      return null;
+    }
+  }
+
   Future<String?> injectBookmark(
     String filePath,
     String bookmarkTitle,

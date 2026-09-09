@@ -59,7 +59,7 @@ class LibraryFolders extends Table {
   DateTimeColumn get addedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-/// A single PDF discovered by a library-folder scan, with outline metadata.
+/// A document discovered by a library-folder scan, with metadata and reading state.
 @DataClassName('LibraryFile')
 class LibraryFiles extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -67,7 +67,18 @@ class LibraryFiles extends Table {
       integer().references(LibraryFolders, #id, onDelete: KeyAction.cascade)();
   TextColumn get filePath => text().unique()();
   TextColumn get fileName => text()();
+  TextColumn get title => text().nullable()();
+  TextColumn get author => text().nullable()();
+  TextColumn get format => text().withDefault(const Constant('PDF'))();
   IntColumn get bookmarkCount => integer().withDefault(const Constant(0))();
+  IntColumn get pageCount => integer().withDefault(const Constant(0))();
+  IntColumn get currentPage => integer().withDefault(const Constant(1))();
+  IntColumn get fileSizeBytes => integer().withDefault(const Constant(0))();
+  BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
+  TextColumn get coverPath => text().nullable()();
+  DateTimeColumn get lastOpened => dateTime().nullable()();
+  TextColumn get series => text().nullable()();
+  TextColumn get tags => text().nullable()();
   DateTimeColumn get lastModified => dateTime()();
   DateTimeColumn get lastScanned =>
       dateTime().withDefault(currentDateAndTime)();
@@ -91,7 +102,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -135,6 +146,19 @@ class AppDatabase extends _$AppDatabase {
         if (from < 5) {
           await m.createTable(libraryFolders);
           await m.createTable(libraryFiles);
+        }
+        if (from < 6) {
+          await m.addColumn(libraryFiles, libraryFiles.title);
+          await m.addColumn(libraryFiles, libraryFiles.author);
+          await m.addColumn(libraryFiles, libraryFiles.format);
+          await m.addColumn(libraryFiles, libraryFiles.pageCount);
+          await m.addColumn(libraryFiles, libraryFiles.currentPage);
+          await m.addColumn(libraryFiles, libraryFiles.fileSizeBytes);
+          await m.addColumn(libraryFiles, libraryFiles.isFavorite);
+          await m.addColumn(libraryFiles, libraryFiles.coverPath);
+          await m.addColumn(libraryFiles, libraryFiles.lastOpened);
+          await m.addColumn(libraryFiles, libraryFiles.series);
+          await m.addColumn(libraryFiles, libraryFiles.tags);
         }
         // For PoC, we'll drop and recreate
         if (from < 3) {
@@ -598,7 +622,15 @@ class AppDatabase extends _$AppDatabase {
           )..where((tbl) => tbl.id.equals(existing.id))).write(
             LibraryFilesCompanion(
               fileName: Value(pdf.fileName),
+              title: pdf.title != null ? Value(pdf.title) : const Value.absent(),
+              author: pdf.author != null ? Value(pdf.author) : const Value.absent(),
+              format: Value(pdf.format),
               bookmarkCount: Value(pdf.bookmarkCount),
+              pageCount: pdf.pageCount > 0 ? Value(pdf.pageCount) : const Value.absent(),
+              fileSizeBytes: pdf.fileSizeBytes > 0 ? Value(pdf.fileSizeBytes) : const Value.absent(),
+              coverPath: pdf.coverPath != null ? Value(pdf.coverPath) : const Value.absent(),
+              tags: pdf.tags != null ? Value(pdf.tags) : const Value.absent(),
+              series: pdf.series != null ? Value(pdf.series) : const Value.absent(),
               lastModified: Value(pdf.lastModified),
               lastScanned: Value(DateTime.now()),
             ),
@@ -622,6 +654,14 @@ class AppDatabase extends _$AppDatabase {
                 folderId: Value(folderId),
                 filePath: Value(pdf.filePath),
                 fileName: Value(pdf.fileName),
+                title: pdf.title != null ? Value(pdf.title) : const Value.absent(),
+                author: pdf.author != null ? Value(pdf.author) : const Value.absent(),
+                format: Value(pdf.format),
+                pageCount: pdf.pageCount > 0 ? Value(pdf.pageCount) : const Value.absent(),
+                fileSizeBytes: pdf.fileSizeBytes > 0 ? Value(pdf.fileSizeBytes) : const Value.absent(),
+                coverPath: pdf.coverPath != null ? Value(pdf.coverPath) : const Value.absent(),
+                tags: pdf.tags != null ? Value(pdf.tags) : const Value.absent(),
+                series: pdf.series != null ? Value(pdf.series) : const Value.absent(),
                 lastScanned: Value(DateTime.now()),
               ),
             );
@@ -639,7 +679,17 @@ class AppDatabase extends _$AppDatabase {
               folderId: Value(folderId),
               filePath: Value(pdf.filePath),
               fileName: Value(pdf.fileName),
+              title: Value(pdf.title),
+              author: Value(pdf.author),
+              format: Value(pdf.format),
               bookmarkCount: Value(pdf.bookmarkCount),
+              pageCount: Value(pdf.pageCount),
+              currentPage: const Value(1),
+              fileSizeBytes: Value(pdf.fileSizeBytes),
+              isFavorite: const Value(false),
+              coverPath: Value(pdf.coverPath),
+              tags: Value(pdf.tags),
+              series: Value(pdf.series),
               lastModified: Value(pdf.lastModified),
               lastScanned: Value(DateTime.now()),
             ),
@@ -711,4 +761,205 @@ class AppDatabase extends _$AppDatabase {
     }
     return paths;
   }
+
+  /// Toggle favorite status of a book
+  Future<bool> toggleFavorite(int fileId) async {
+    final file = await (select(
+      libraryFiles,
+    )..where((tbl) => tbl.id.equals(fileId))).getSingleOrNull();
+    if (file == null) return false;
+    final nextFav = !file.isFavorite;
+    await (update(
+      libraryFiles,
+    )..where((tbl) => tbl.id.equals(fileId))).write(
+      LibraryFilesCompanion(isFavorite: Value(nextFav)),
+    );
+    return nextFav;
+  }
+
+  /// Update active reading progress
+  Future<void> updateReadingProgress(
+    String filePath,
+    int currentPage, {
+    int? pageCount,
+  }) async {
+    final existing = await (select(
+      libraryFiles,
+    )..where((tbl) => tbl.filePath.equals(filePath))).getSingleOrNull();
+    if (existing != null) {
+      await (update(
+        libraryFiles,
+      )..where((tbl) => tbl.id.equals(existing.id))).write(
+        LibraryFilesCompanion(
+          currentPage: Value(currentPage),
+          pageCount: pageCount != null && pageCount > 0
+              ? Value(pageCount)
+              : const Value.absent(),
+          lastOpened: Value(DateTime.now()),
+        ),
+      );
+    }
+  }
+
+  /// Update book metadata
+  Future<void> updateBookMetadata(
+    int fileId, {
+    String? title,
+    String? author,
+    String? series,
+    String? tags,
+    String? coverPath,
+  }) async {
+    await (update(
+      libraryFiles,
+    )..where((tbl) => tbl.id.equals(fileId))).write(
+      LibraryFilesCompanion(
+        title: title != null ? Value(title) : const Value.absent(),
+        author: author != null ? Value(author) : const Value.absent(),
+        series: series != null ? Value(series) : const Value.absent(),
+        tags: tags != null ? Value(tags) : const Value.absent(),
+        coverPath: coverPath != null ? Value(coverPath) : const Value.absent(),
+      ),
+    );
+  }
+
+  /// Returns map of distinct authors to book counts
+  Future<Map<String, int>> getDistinctAuthors() async {
+    final files = await select(libraryFiles).get();
+    final counts = <String, int>{};
+    for (final file in files) {
+      final author = file.author?.trim();
+      if (author != null && author.isNotEmpty) {
+        counts[author] = (counts[author] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }
+
+  /// Returns map of distinct tags to book counts
+  Future<Map<String, int>> getDistinctTags() async {
+    final files = await select(libraryFiles).get();
+    final counts = <String, int>{};
+    for (final file in files) {
+      final fileTags = file.tags?.split(',') ?? const [];
+      for (final t in fileTags) {
+        final clean = t.trim().replaceAll(RegExp(r'^#'), '');
+        if (clean.isNotEmpty) {
+          counts[clean] = (counts[clean] ?? 0) + 1;
+        }
+      }
+    }
+    return counts;
+  }
+
+  /// Returns map of distinct series to book counts
+  Future<Map<String, int>> getDistinctSeries() async {
+    final files = await select(libraryFiles).get();
+    final counts = <String, int>{};
+    for (final file in files) {
+      final series = file.series?.trim();
+      if (series != null && series.isNotEmpty) {
+        counts[series] = (counts[series] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }
+
+  /// Filtered, searchable, sorted library files list
+  Future<List<LibraryFile>> getFilteredLibraryFiles({
+    int? folderId,
+    String? query,
+    String? author,
+    String? tag,
+    String? series,
+    String? format,
+    bool? onlyFavorites,
+    LibrarySortBy sortBy = LibrarySortBy.title,
+    bool ascending = true,
+  }) async {
+    final q = select(libraryFiles);
+    if (folderId != null) {
+      q.where((tbl) => tbl.folderId.equals(folderId));
+    }
+    if (onlyFavorites == true) {
+      q.where((tbl) => tbl.isFavorite.equals(true));
+    }
+    if (format != null && format.isNotEmpty) {
+      q.where((tbl) => tbl.format.equals(format));
+    }
+    if (author != null && author.isNotEmpty) {
+      q.where((tbl) => tbl.author.equals(author));
+    }
+    if (series != null && series.isNotEmpty) {
+      q.where((tbl) => tbl.series.equals(series));
+    }
+
+    final trimmedQuery = query?.trim() ?? '';
+    if (trimmedQuery.isNotEmpty) {
+      final lower = trimmedQuery.toLowerCase();
+      q.where(
+        (tbl) =>
+            tbl.fileName.lower().contains(lower) |
+            tbl.title.lower().contains(lower) |
+            tbl.author.lower().contains(lower),
+      );
+    }
+
+    var list = await q.get();
+
+    if (tag != null && tag.isNotEmpty) {
+      final cleanTag = tag.trim().replaceAll(RegExp(r'^#'), '').toLowerCase();
+      list = list.where((file) {
+        final tags = file.tags?.toLowerCase() ?? '';
+        return tags
+            .split(',')
+            .map((t) => t.trim().replaceAll(RegExp(r'^#'), ''))
+            .contains(cleanTag);
+      }).toList();
+    }
+
+    list.sort((a, b) {
+      int cmp = 0;
+      switch (sortBy) {
+        case LibrarySortBy.title:
+          final aName = (a.title?.isNotEmpty ?? false) ? a.title! : a.fileName;
+          final bName = (b.title?.isNotEmpty ?? false) ? b.title! : b.fileName;
+          cmp = aName.toLowerCase().compareTo(bName.toLowerCase());
+          break;
+        case LibrarySortBy.author:
+          final aAuthor = a.author ?? '';
+          final bAuthor = b.author ?? '';
+          cmp = aAuthor.toLowerCase().compareTo(bAuthor.toLowerCase());
+          break;
+        case LibrarySortBy.dateAdded:
+          cmp = a.lastScanned.compareTo(b.lastScanned);
+          break;
+        case LibrarySortBy.lastOpened:
+          final aTime = a.lastOpened ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bTime = b.lastOpened ?? DateTime.fromMillisecondsSinceEpoch(0);
+          cmp = aTime.compareTo(bTime);
+          break;
+        case LibrarySortBy.fileSize:
+          cmp = a.fileSizeBytes.compareTo(b.fileSizeBytes);
+          break;
+        case LibrarySortBy.progress:
+          final aProg = a.pageCount > 0 ? (a.currentPage / a.pageCount) : 0.0;
+          final bProg = b.pageCount > 0 ? (b.currentPage / b.pageCount) : 0.0;
+          cmp = aProg.compareTo(bProg);
+          break;
+      }
+      return ascending ? cmp : -cmp;
+    });
+
+    return list;
+  }
+}
+
+enum LibrarySortBy {
+  title,
+  author,
+  dateAdded,
+  lastOpened,
+  fileSize,
+  progress,
 }

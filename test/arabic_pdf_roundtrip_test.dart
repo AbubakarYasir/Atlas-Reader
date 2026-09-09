@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:atlas_poc/bookmark_tree.dart';
 import 'package:atlas_poc/core/file_system/windows_document_file_system.dart';
 import 'package:atlas_poc/database.dart';
 import 'package:atlas_poc/pdf_engine.dart';

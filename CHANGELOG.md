@@ -3,6 +3,28 @@
 All notable changes are documented here. This project follows a staged
 hardening approach rather than formal releases.
 
+## Stage 11 — Speed reading and hands-free mode (2026-09-09)
+
+### Added
+
+- Hands-free reader overlay with pause, direction, speed, and stop controls.
+- RSVP speed reader for selectable current-page PDF text, with 200–800 WPM,
+  readable focus highlighting, display themes, and Arabic-aware word direction.
+- Background page-text extraction for the speed reader plus widget and engine
+  regression tests.
+
+## Stages 6–10 — Arabic verification, research, and workspace (2026-09-09)
+
+### Added
+
+- Arabic nested-outline round-trip coverage, safe bookmark injection, tag
+  persistence, and bi-directional PDF/database synchronization.
+- Visual bookshelf discovery, rich library metadata, covers, EPUB discovery,
+  filters, and reading-progress tracking.
+- Basic and Research reading modes, display themes, page controls, thumbnail
+  jumping, annotations, citations, split reading, tabbed sessions, and linked
+  research scratchpads.
+
 ## Stage 5 — Accessibility and Arabic language support (2026-09-09)
 
 ### Added

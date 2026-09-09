@@ -10,6 +10,8 @@ import '../../pdf_engine.dart';
 import '../research/annotations_drawer.dart';
 import '../research/citation_generator.dart';
 import '../research/research_selection_toolbar.dart';
+import '../speed_reading/auto_scroll_overlay.dart';
+import '../speed_reading/rsvp_speed_reader.dart';
 import 'reader_models.dart';
 import 'reader_outline_sidebar.dart';
 import 'reader_scrub_bar.dart';
@@ -68,6 +70,8 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   var _savingBookmark = false;
   var _showOutlineSidebar = false;
   var _showAnnotationsDrawer = false;
+  var _showAutoScroll = false;
+  double _autoScrollDistance = 0;
 
   String? _selectedText;
   ReaderPreferences _preferences = const ReaderPreferences();
@@ -161,11 +165,48 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     final title = fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
     showDialog<void>(
       context: context,
-      builder: (_) => CitationDialog(
-        title: title,
-        pageNumber: printedPage,
-      ),
+      builder: (_) => CitationDialog(title: title, pageNumber: printedPage),
     );
+  }
+
+  Future<void> _openSpeedReader() async {
+    final text = await _pdfEngine.extractPageText(
+      widget.filePath,
+      _activePage - 1,
+    );
+    if (!mounted) return;
+    if (text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No selectable text was found on this page.'),
+        ),
+      );
+      AccessibilityAnnouncer.announce(
+        context,
+        'No selectable text was found on this page.',
+      );
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (_) => RsvpSpeedReader(text: text),
+    );
+  }
+
+  void _handleAutoScrollTick(double delta) {
+    // Syncfusion exposes the current scroll position but not a public setter.
+    // In page layouts, advancing after a measured reading distance is the
+    // supported, hands-free equivalent and works for both page directions.
+    _autoScrollDistance += delta;
+    const pageAdvanceDistance = 680.0;
+    if (_autoScrollDistance >= pageAdvanceDistance &&
+        _activePage < _pageCount) {
+      _autoScrollDistance = 0;
+      _viewerController.nextPage();
+    } else if (_autoScrollDistance <= -pageAdvanceDistance && _activePage > 1) {
+      _autoScrollDistance = 0;
+      _viewerController.previousPage();
+    }
   }
 
   Future<void> _createAnnotation({
@@ -202,7 +243,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${type[0].toUpperCase()}${type.substring(1)} saved to PDF and database!'),
+          content: Text(
+            '${type[0].toUpperCase()}${type.substring(1)} saved to PDF and database!',
+          ),
         ),
       );
       AccessibilityAnnouncer.announce(context, '$type annotation saved');
@@ -225,8 +268,14 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -244,17 +293,49 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
         return const ColorFilter.mode(Color(0x18795548), BlendMode.multiply);
       case ReaderThemeMode.night:
         return const ColorFilter.matrix([
-          -0.85, 0, 0, 0, 230,
-          0, -0.85, 0, 0, 230,
-          0, 0, -0.85, 0, 230,
-          0, 0, 0, 1, 0,
+          -0.85,
+          0,
+          0,
+          0,
+          230,
+          0,
+          -0.85,
+          0,
+          0,
+          230,
+          0,
+          0,
+          -0.85,
+          0,
+          230,
+          0,
+          0,
+          0,
+          1,
+          0,
         ]);
       case ReaderThemeMode.oled:
         return const ColorFilter.matrix([
-          -1.0, 0, 0, 0, 255,
-          0, -1.0, 0, 0, 255,
-          0, 0, -1.0, 0, 255,
-          0, 0, 0, 1, 0,
+          -1.0,
+          0,
+          0,
+          0,
+          255,
+          0,
+          -1.0,
+          0,
+          0,
+          255,
+          0,
+          0,
+          -1.0,
+          0,
+          255,
+          0,
+          0,
+          0,
+          1,
+          0,
         ]);
     }
   }
@@ -396,8 +477,8 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     final titleText = _preferences.pageOffset != 0
         ? 'Page $_activePage (Book p. $printedPageNum) of $_pageCount'
         : (_pageCount == 0
-            ? strings.pageNumber(_activePage)
-            : strings.pageNumberOf(_activePage, _pageCount));
+              ? strings.pageNumber(_activePage)
+              : strings.pageNumberOf(_activePage, _pageCount));
 
     return Shortcuts(
       shortcuts: const {
@@ -423,7 +504,11 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                 if (isResearch) ...[
                   IconButton(
                     tooltip: 'Table of Contents',
-                    icon: Icon(_showOutlineSidebar ? Icons.format_list_bulleted : Icons.menu_book),
+                    icon: Icon(
+                      _showOutlineSidebar
+                          ? Icons.format_list_bulleted
+                          : Icons.menu_book,
+                    ),
                     onPressed: () => setState(() {
                       _showOutlineSidebar = !_showOutlineSidebar;
                       if (_showOutlineSidebar) _showAnnotationsDrawer = false;
@@ -431,7 +516,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                   ),
                   IconButton(
                     tooltip: 'Annotations & Notes',
-                    icon: Icon(_showAnnotationsDrawer ? Icons.draw : Icons.draw_outlined),
+                    icon: Icon(
+                      _showAnnotationsDrawer ? Icons.draw : Icons.draw_outlined,
+                    ),
                     onPressed: () => setState(() {
                       _showAnnotationsDrawer = !_showAnnotationsDrawer;
                       if (_showAnnotationsDrawer) _showOutlineSidebar = false;
@@ -451,6 +538,25 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                     tooltip: 'Reading and Display settings',
                     icon: const Icon(Icons.tune_outlined),
                     onPressed: _openSettingsDialog,
+                  ),
+                  IconButton(
+                    tooltip: _showAutoScroll
+                        ? 'Stop hands-free auto-scroll'
+                        : 'Start hands-free auto-scroll',
+                    icon: Icon(
+                      _showAutoScroll
+                          ? Icons.pause_circle_outline
+                          : Icons.play_circle_outline,
+                    ),
+                    onPressed: () => setState(() {
+                      _showAutoScroll = !_showAutoScroll;
+                      _autoScrollDistance = 0;
+                    }),
+                  ),
+                  IconButton(
+                    tooltip: 'Open speed reader for this page',
+                    icon: const Icon(Icons.speed),
+                    onPressed: _openSpeedReader,
                   ),
                 ],
                 IconButton(
@@ -480,12 +586,20 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                   onPressed: _savingBookmark ? null : _openBookmarkDialog,
                 ),
                 IconButton(
-                  tooltip: isResearch ? 'Switch to Basic Mode' : 'Switch to Research Mode',
-                  icon: Icon(isResearch ? Icons.desktop_windows : Icons.menu_open),
-                  color: isResearch ? Theme.of(context).colorScheme.primary : null,
+                  tooltip: isResearch
+                      ? 'Switch to Basic Mode'
+                      : 'Switch to Research Mode',
+                  icon: Icon(
+                    isResearch ? Icons.desktop_windows : Icons.menu_open,
+                  ),
+                  color: isResearch
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
                   onPressed: () {
                     setState(() {
-                      _preferences = _preferences.copyWith(isResearchMode: !isResearch);
+                      _preferences = _preferences.copyWith(
+                        isResearchMode: !isResearch,
+                      );
                       if (!_preferences.isResearchMode) {
                         _showOutlineSidebar = false;
                         _showAnnotationsDrawer = false;
@@ -505,7 +619,8 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                           outline: _outline,
                           currentPage: _activePage,
                           onSelectPage: _jumpToPage,
-                          onClose: () => setState(() => _showOutlineSidebar = false),
+                          onClose: () =>
+                              setState(() => _showOutlineSidebar = false),
                         ),
                       Expanded(
                         child: Container(
@@ -515,24 +630,36 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                             children: [
                               _wrapViewerWithMarginCrop(
                                 ColorFiltered(
-                                  colorFilter: _getColorFilter(_preferences.theme) ??
-                                      const ColorFilter.mode(Colors.transparent, BlendMode.dst),
+                                  colorFilter:
+                                      _getColorFilter(_preferences.theme) ??
+                                      const ColorFilter.mode(
+                                        Colors.transparent,
+                                        BlendMode.dst,
+                                      ),
                                   child: FutureBuilder<List<int>>(
                                     future: _documentBytes,
                                     builder: (context, snapshot) {
-                                      if (snapshot.connectionState != ConnectionState.done) {
-                                        return const Center(child: CircularProgressIndicator());
+                                      if (snapshot.connectionState !=
+                                          ConnectionState.done) {
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
+                                        );
                                       }
-                                      if (snapshot.hasError || !snapshot.hasData) {
+                                      if (snapshot.hasError ||
+                                          !snapshot.hasData) {
                                         return Center(
                                           child: Padding(
                                             padding: const EdgeInsets.all(24),
-                                            child: Text('Could not open this PDF: ${snapshot.error}'),
+                                            child: Text(
+                                              'Could not open this PDF: ${snapshot.error}',
+                                            ),
                                           ),
                                         );
                                       }
 
-                                      final isSingle = _preferences.mode == ReadingMode.singlePage;
+                                      final isSingle =
+                                          _preferences.mode ==
+                                          ReadingMode.singlePage;
 
                                       return SfPdfViewer.memory(
                                         Uint8List.fromList(snapshot.data!),
@@ -547,11 +674,15 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                                             : PdfScrollDirection.vertical,
                                         onTextSelectionChanged: (details) {
                                           setState(() {
-                                            _selectedText = details.selectedText?.trim();
+                                            _selectedText = details.selectedText
+                                                ?.trim();
                                           });
                                         },
                                         onPageChanged: (details) {
-                                          setState(() => _activePage = details.newPageNumber);
+                                          setState(
+                                            () => _activePage =
+                                                details.newPageNumber,
+                                          );
                                           _db.updateReadingProgress(
                                             widget.filePath,
                                             details.newPageNumber,
@@ -559,14 +690,19 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                                           );
                                         },
                                         onDocumentLoaded: (details) {
-                                          final targetPage = widget.initialPageNumber.clamp(
-                                            1,
-                                            details.document.pages.count,
+                                          final targetPage = widget
+                                              .initialPageNumber
+                                              .clamp(
+                                                1,
+                                                details.document.pages.count,
+                                              );
+                                          _viewerController.jumpToPage(
+                                            targetPage,
                                           );
-                                          _viewerController.jumpToPage(targetPage);
                                           setState(() {
                                             _activePage = targetPage;
-                                            _pageCount = details.document.pages.count;
+                                            _pageCount =
+                                                details.document.pages.count;
                                           });
                                         },
                                         onDocumentLoadFailed: (details) {
@@ -574,7 +710,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                                             context,
                                             'Could not render PDF: ${details.description}',
                                           );
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 'Could not render PDF: ${details.description}',
@@ -598,7 +736,8 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                                     ),
                                   ),
                                 ),
-                              if (_selectedText != null && _selectedText!.isNotEmpty)
+                              if (_selectedText != null &&
+                                  _selectedText!.isNotEmpty)
                                 Positioned(
                                   top: 16,
                                   left: 0,
@@ -606,20 +745,50 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                                   child: Center(
                                     child: ResearchSelectionToolbar(
                                       selectedText: _selectedText!,
-                                      onHighlight: (color) => _createAnnotation(type: 'highlight', colorHex: color),
-                                      onUnderline: () => _createAnnotation(type: 'underline', colorHex: '#74C0FC'),
-                                      onStrikethrough: () => _createAnnotation(type: 'strikethrough', colorHex: '#FFA8A8'),
+                                      onHighlight: (color) => _createAnnotation(
+                                        type: 'highlight',
+                                        colorHex: color,
+                                      ),
+                                      onUnderline: () => _createAnnotation(
+                                        type: 'underline',
+                                        colorHex: '#74C0FC',
+                                      ),
+                                      onStrikethrough: () => _createAnnotation(
+                                        type: 'strikethrough',
+                                        colorHex: '#FFA8A8',
+                                      ),
                                       onAddNote: _promptAddNote,
                                       onCite: _openCitationDialog,
                                       onCopy: () {
-                                        Clipboard.setData(ClipboardData(text: _selectedText!));
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Selected text copied')),
+                                        Clipboard.setData(
+                                          ClipboardData(text: _selectedText!),
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Selected text copied',
+                                            ),
+                                          ),
                                         );
                                         setState(() => _selectedText = null);
                                       },
-                                      onClose: () => setState(() => _selectedText = null),
+                                      onClose: () =>
+                                          setState(() => _selectedText = null),
                                     ),
+                                  ),
+                                ),
+                              if (_showAutoScroll)
+                                Positioned(
+                                  right: 20,
+                                  bottom: 20,
+                                  child: AutoScrollOverlay(
+                                    onScrollTick: _handleAutoScrollTick,
+                                    onClose: () => setState(() {
+                                      _showAutoScroll = false;
+                                      _autoScrollDistance = 0;
+                                    }),
                                   ),
                                 ),
                             ],
@@ -632,7 +801,8 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                           database: _db,
                           currentPage: _activePage,
                           onJumpToPage: _jumpToPage,
-                          onClose: () => setState(() => _showAnnotationsDrawer = false),
+                          onClose: () =>
+                              setState(() => _showAnnotationsDrawer = false),
                         ),
                     ],
                   ),

@@ -136,10 +136,34 @@ class PdfEngine {
     }
   }
 
+  /// Extracts selectable text from one PDF page without blocking the UI.
+  /// Returns an empty string for scanned or image-only pages.
+  Future<String> extractPageText(String filePath, int pageIndex) async {
+    try {
+      final bytes = await _fileSystem.readAsBytesInBackground(filePath);
+      return Isolate.run(() => _extractPageTextFromBytes(bytes, pageIndex));
+    } catch (e, stackTrace) {
+      _log.warning('[PDF] Error extracting page text: $e', stackTrace);
+      return '';
+    }
+  }
+
   static int _pageCountFromBytes(List<int> bytes) {
     final document = PdfDocument(inputBytes: bytes);
     try {
       return document.pages.count;
+    } finally {
+      document.dispose();
+    }
+  }
+
+  static String _extractPageTextFromBytes(List<int> bytes, int pageIndex) {
+    final document = PdfDocument(inputBytes: bytes);
+    try {
+      if (pageIndex < 0 || pageIndex >= document.pages.count) return '';
+      return PdfTextExtractor(
+        document,
+      ).extractText(startPageIndex: pageIndex, endPageIndex: pageIndex);
     } finally {
       document.dispose();
     }

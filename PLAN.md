@@ -615,12 +615,13 @@ Future: `(file_uuid, bookmark_uuid)` when XMP UUIDs land.
 
 ## XIII. Immediate Next Actions (Priority)
 
-1. **Add `Ctrl+O` and tree parent/child navigation** — complete the remaining
-   desktop shortcut map.
-2. **Add dark + high-contrast themes** — verify contrast ratios.
-3. **Add Arabic RTL widget test** — exercise mirrored layouts at 200% text.
-4. **Split UI from `main.dart`** — Library, BookmarkManager, SyncReview.
-5. **Golden-file sync tests** — including Arabic nested PDF fixture.
+1. **Stage 12 — TTS Studio** — Narrator-compatible playback and page tracking.
+2. **Stage 13 — Research lookup** — FTS snippets, dictionary, translation,
+   and footnote previews.
+3. **Stage 14 — Backup and export** — Markdown export, safe backups, and open
+   sync protocols.
+4. **Stage 15 — release polish** — complete shortcut map, high-contrast
+   verification, Arabic normalization, and accessibility acceptance testing.
 
 ---
 

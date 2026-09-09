@@ -16,7 +16,11 @@ void main() {
       final fileSystem = const WindowsDocumentFileSystem();
       final engine = PdfEngine(fileSystem: fileSystem);
       final document = PdfDocument();
-      document.pages.add();
+      final page = document.pages.add();
+      page.graphics.drawString(
+        'Atlas Reader page text',
+        PdfStandardFont(PdfFontFamily.helvetica, 12),
+      );
       final originalBytes = document.saveSync();
       document.dispose();
 
@@ -29,6 +33,7 @@ void main() {
 
       expect(await engine.getPageCount(path), 1);
       expect(await engine.extractBookmarks(path), isEmpty);
+      expect(await engine.extractPageText(path, 0), contains('Atlas Reader'));
 
       expect(await engine.injectBookmark(path, 'Important page', 0), path);
       final bookmarks = await engine.extractBookmarks(path);

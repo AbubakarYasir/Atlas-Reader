@@ -24,6 +24,10 @@ an account, cloud storage, or an internet connection to manage them.
   English and Arabic (right-to-left) from **Settings**.
 - Add one or more folders to your library; Atlas scans their PDFs and notices
   additions, removals, and renames while the app is open.
+- Browse a visual bookshelf, annotate PDF text, compare two books, and keep a
+  linked research scratchpad beside your reading.
+- Use hands-free auto-advance and a 200–800 WPM speed reader for selectable
+  text on a PDF page.
 - Browse bookmarks by book, tag, or a flat indented list.
 - Edit or delete individual bookmarks, or remove all local bookmarks for a
   book.
@@ -166,6 +170,15 @@ changes only after **Commit Changes**.
 Atlas announces major save, sync, and error outcomes to Windows screen readers
 without moving your keyboard focus.
 
+### Research and speed-reading tools
+
+Switch to **Research Mode** in the reader to reveal the outline, annotations,
+citation, thumbnail, and display controls. Use the play-circle button for
+hands-free page advance; its floating controls set direction and reading speed.
+Use the speed icon to open the current page in the RSVP speed reader. It works
+with selectable PDF text, supports Arabic right-to-left words, and offers 200
+to 800 words per minute.
+
 ## Keeping your PDFs safe
 
 Atlas does not overwrite a PDF directly. Before replacing a file, it:
@@ -187,7 +200,8 @@ your original PDF.
 - Rename reconciliation retains local bookmark links when Atlas can safely
   match a renamed PDF within the same library folder by its modification time
   and outline signature. If a file cannot be matched, it is indexed as new.
-- EPUB files are planned, but not supported yet.
+- EPUB discovery is supported in the library; PDF remains the format currently
+  available in the full reader and document-sync workflows.
 - Notes and tags are stored locally; PDF outline titles are the portable part.
 - The app is currently designed and tested primarily for Windows.
 
@@ -200,7 +214,7 @@ flutter test
 flutter analyze
 ```
 
-The project currently has 24 automated tests. They cover bookmark-tree paths,
+The project currently has 37 automated tests. They cover bookmark-tree paths,
 snapshot compatibility, sync differences, command and library data behavior,
 folder scanning, widget startup, and Windows document file operations,
 including isolate-backed PDF bookmark processing.

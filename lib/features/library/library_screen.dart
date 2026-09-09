@@ -925,7 +925,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final fileName = BookmarkGrouping.fileNameFromPath(bookmark.filePath);
 
     return AccessibleBookmarkTile(
-      contentPadding: EdgeInsets.only(left: 16 + (depth * 20.0), right: 16),
+      contentPadding: EdgeInsetsDirectional.only(
+        start: 16 + (depth * 20.0),
+        end: 16,
+      ),
       leading: bookmark.isFolder
           ? Icon(Icons.folder_outlined, color: Colors.amber[800], size: 20)
           : Icon(Icons.bookmark_outline, color: Colors.blue[700], size: 20),

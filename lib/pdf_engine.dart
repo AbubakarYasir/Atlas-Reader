@@ -1,6 +1,8 @@
 import 'dart:isolate';
+import 'dart:typed_data';
 import 'dart:ui' show Rect;
 import 'package:logging/logging.dart';
+import 'package:pdf_document/pdf_document.dart' as native_pdf;
 
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
@@ -19,6 +21,44 @@ class PdfOverwriteException implements Exception {
   String toString() => message;
 }
 
+/// A compact, searchable SQLite projection of one standard PDF /Ink annotation.
+/// The PDF remains authoritative; these rows are rebuilt after each save.
+class IndexedInkAnnotation {
+  const IndexedInkAnnotation({
+    required this.pageNumber,
+    required this.type,
+    required this.annotationName,
+    required this.colorHex,
+    required this.left,
+    required this.bottom,
+    required this.width,
+    required this.height,
+  });
+
+  final int pageNumber;
+  final String type;
+  final String? annotationName;
+  final String colorHex;
+  final double left;
+  final double bottom;
+  final double width;
+  final double height;
+}
+
+class _PdfIntegritySnapshot {
+  const _PdfIntegritySnapshot({
+    required this.pageCount,
+    required this.documentInfo,
+    required this.hasXmpMetadata,
+    required this.outlineKeys,
+  });
+
+  final int pageCount;
+  final Map<String, String> documentInfo;
+  final bool hasXmpMetadata;
+  final List<String> outlineKeys;
+}
+
 class PdfEngine {
   PdfEngine({DocumentFileSystem? fileSystem})
     : _fileSystem = fileSystem ?? const WindowsDocumentFileSystem(),
@@ -29,6 +69,71 @@ class PdfEngine {
   static final _log = Logger('PdfEngine');
   final DocumentFileSystem _fileSystem;
   final PdfSafeFileWriter _safeFileWriter;
+
+  /// Validates and persists a byte-backed editor revision without keeping an
+  /// operating-system file handle open. The incremental editor works entirely
+  /// from memory, so by the time the Windows rename starts both readers have
+  /// released the source file. Existing page count, nested outline structure,
+  /// document information, and XMP-metadata presence must survive unchanged.
+  Future<void> saveEditedPdfRevision(
+    String filePath,
+    Uint8List editedBytes,
+  ) async {
+    final originalBytes = await _fileSystem.readAsBytesInBackground(filePath);
+    final snapshots = await Future.wait([
+      Isolate.run(
+        () => _readIntegritySnapshot(Uint8List.fromList(originalBytes)),
+      ),
+      Isolate.run(() => _readIntegritySnapshot(editedBytes)),
+    ]);
+    final before = snapshots[0];
+    final after = snapshots[1];
+
+    if (before.pageCount != after.pageCount) {
+      throw PdfOverwriteException(
+        'The edited PDF changed its page count, so the original was left untouched.',
+      );
+    }
+    if (!_sameStrings(before.outlineKeys, after.outlineKeys)) {
+      throw PdfOverwriteException(
+        'The edited PDF did not preserve its nested chapter outline, so the original was left untouched.',
+      );
+    }
+    if (!_sameStringMap(before.documentInfo, after.documentInfo) ||
+        before.hasXmpMetadata != after.hasXmpMetadata) {
+      throw PdfOverwriteException(
+        'The edited PDF did not preserve its document metadata, so the original was left untouched.',
+      );
+    }
+
+    await _safeFileWriter.replacePdfFile(
+      filePath,
+      editedBytes,
+      expectedPageCount: before.pageCount,
+    );
+  }
+
+  /// Reads every standard /Ink annotation from [bytes]. Coordinates remain in
+  /// native PDF user space (72 points per inch, origin at bottom-left).
+  Future<List<IndexedInkAnnotation>> extractInkAnnotationIndex(
+    Uint8List bytes,
+  ) async {
+    final rows = await Isolate.run(() => _extractInkRows(bytes));
+    return rows
+        .map(
+          (row) => IndexedInkAnnotation(
+            pageNumber: row['pageNumber']! as int,
+            type: row['type']! as String,
+            annotationName: row['annotationName'] as String?,
+            colorHex: row['colorHex']! as String,
+            left: row['left']! as double,
+            bottom: row['bottom']! as double,
+            width: row['width']! as double,
+            height: row['height']! as double,
+          ),
+        )
+        .toList(growable: false);
+  }
 
   /// Get the page count of a PDF file
   Future<int?> getPageCount(String filePath) async {
@@ -658,5 +763,74 @@ class PdfEngine {
     final g = (val >> 8) & 0xFF;
     final b = val & 0xFF;
     return PdfColor(r, g, b);
+  }
+
+  static _PdfIntegritySnapshot _readIntegritySnapshot(Uint8List bytes) {
+    final document = native_pdf.PdfDocument.open(bytes);
+    final outlineKeys = <String>[];
+    for (final item in native_pdf.PdfOutline.of(document).items) {
+      _collectNativeOutlineKeys(item, const [], outlineKeys);
+    }
+    return _PdfIntegritySnapshot(
+      pageCount: document.pageCount,
+      documentInfo: Map<String, String>.from(document.info),
+      hasXmpMetadata: document.catalog.containsKey('Metadata'),
+      outlineKeys: outlineKeys,
+    );
+  }
+
+  static void _collectNativeOutlineKeys(
+    native_pdf.PdfOutlineItem item,
+    List<String> parentPath,
+    List<String> output,
+  ) {
+    final path = [...parentPath, item.title];
+    output.add(
+      '${path.join('\u001f')}\u001e${item.destination?.pageIndex ?? -1}',
+    );
+    for (final child in item.children) {
+      _collectNativeOutlineKeys(child, path, output);
+    }
+  }
+
+  static List<Map<String, Object?>> _extractInkRows(Uint8List bytes) {
+    final document = native_pdf.PdfDocument.open(bytes);
+    final rows = <Map<String, Object?>>[];
+    for (var pageIndex = 0; pageIndex < document.pageCount; pageIndex++) {
+      for (final annotation in document.page(pageIndex).annotations) {
+        if (annotation.subtype != 'Ink' || annotation.inkList == null) continue;
+        final rgb = annotation.color ?? 0x000000;
+        final opacity = annotation.appearanceOpacity;
+        final width = annotation.borderWidth ?? 1;
+        final isHighlighter = opacity < .75 && width >= 4;
+        rows.add({
+          'pageNumber': pageIndex + 1,
+          'type': isHighlighter ? 'ink_highlighter' : 'ink',
+          'annotationName': annotation.name,
+          'colorHex': '#${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}',
+          'left': annotation.rect.left,
+          'bottom': annotation.rect.bottom,
+          'width': annotation.rect.width,
+          'height': annotation.rect.height,
+        });
+      }
+    }
+    return rows;
+  }
+
+  static bool _sameStrings(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var index = 0; index < a.length; index++) {
+      if (a[index] != b[index]) return false;
+    }
+    return true;
+  }
+
+  static bool _sameStringMap(Map<String, String> a, Map<String, String> b) {
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      if (b[entry.key] != entry.value) return false;
+    }
+    return true;
   }
 }

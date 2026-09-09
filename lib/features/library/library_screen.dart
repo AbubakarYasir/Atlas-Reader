@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:dart_pdf_editor/dart_pdf_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -80,6 +81,7 @@ class _MyAppState extends State<MyApp> {
         builder: (_) => PdfReaderScreen(
           filePath: result.filePath,
           fileSystem: _fileSystem,
+          database: database,
           initialPageNumber: result.pageNumber ?? 1,
           onCreateBookmark: (draft) =>
               _createBookmarkFromReader(result.filePath, draft),
@@ -128,6 +130,7 @@ class _MyAppState extends State<MyApp> {
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [
         AppLocalizations.delegate,
+        DartPdfEditorLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
@@ -184,8 +187,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
       if (!mounted) return;
       setState(() {
         _status = report.foldersScanned == 0
-            ? 'Waiting — add a library folder in Settings to scan PDFs.'
-            : 'Library ready: ${report.filesFound} PDFs indexed.';
+            ? 'Waiting — add a library folder in Settings to scan books.'
+            : 'Library ready: ${report.filesFound} books indexed.';
       });
     });
   }
@@ -237,11 +240,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
       allowedExtensions: ['pdf'],
     );
 
-    if (result == null || result.files.single.path == null) {
+    if (result.isEmpty || result.single.path == null) {
       return null;
     }
 
-    final newPath = result.files.single.path!;
+    final newPath = result.single.path!;
     final updatedBookmarks = await database.updateFilePaths(oldPath, newPath);
 
     if (!mounted) {
@@ -274,11 +277,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
       allowedExtensions: ['pdf'],
     );
 
-    if (result == null || result.files.single.path == null) {
+    if (result.isEmpty || result.single.path == null) {
       return;
     }
 
-    final initialPath = result.files.single.path!;
+    final initialPath = result.single.path!;
     final resolvedPath = await _resolveMissingFile(initialPath);
     if (resolvedPath == null) {
       return;

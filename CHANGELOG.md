@@ -3,6 +3,42 @@
 All notable changes are documented here. This project follows a staged
 hardening approach rather than formal releases.
 
+## Focused core workflow — Library, bookmarks, and PDF ink (2026-09-09)
+
+### Added
+
+- A distraction-free **Write** mode with pressure-sensitive pen, freehand
+  highlighter, five standard colors, line sizes, area eraser, whole-stroke
+  selection/deletion, and `Ctrl+Z` / `Ctrl+Shift+Z` undo and redo.
+- Standard PDF `/Ink` persistence using native 72-point page coordinates,
+  bottom-left PDF origin conversion, and strict page-index isolation.
+- A `RepaintBoundary` around the writing surface and byte-backed editing so
+  live strokes do not repaint the normal reader or keep Windows file locks.
+- Local SQLite ink projection rebuilt from the authoritative PDF after saves.
+- In-book outline and bookmark search that preserves unlimited nested paths.
+
+### Changed
+
+- The primary reader now exposes only outline/bookmarks, display controls,
+  page navigation, bookmarking, and writing; research/speed controls are no
+  longer part of the focused reading surface.
+- Library scanning overlaps metadata work in bounded batches and global search
+  now matches book title and author as well as file name.
+- The visual library opens PDFs directly in the focused reader and labels its
+  third layout **Compact List**.
+- Updated `file_picker` for the current Windows dependency stack and added the
+  native PDF editor dependencies.
+
+### Safety and verification
+
+- Ink saves are rejected before replacement if page count, nested outline
+  path/destination structure, document information, or XMP presence changes.
+- Added deterministic tests for PDF-coordinate ink, page isolation, nested
+  Arabic/English outline preservation, metadata preservation, ink re-indexing,
+  unlimited outline construction, and title/author/file quick-open search.
+- Final full-suite and Windows UI verification will be recorded when this
+  milestone is signed off.
+
 ## Stage 11 — Speed reading and hands-free mode (2026-09-09)
 
 ### Added

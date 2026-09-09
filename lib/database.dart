@@ -714,15 +714,27 @@ class AppDatabase extends _$AppDatabase {
           )..where((tbl) => tbl.id.equals(existing.id))).write(
             LibraryFilesCompanion(
               fileName: Value(pdf.fileName),
-              title: pdf.title != null ? Value(pdf.title) : const Value.absent(),
-              author: pdf.author != null ? Value(pdf.author) : const Value.absent(),
+              title: pdf.title != null
+                  ? Value(pdf.title)
+                  : const Value.absent(),
+              author: pdf.author != null
+                  ? Value(pdf.author)
+                  : const Value.absent(),
               format: Value(pdf.format),
               bookmarkCount: Value(pdf.bookmarkCount),
-              pageCount: pdf.pageCount > 0 ? Value(pdf.pageCount) : const Value.absent(),
-              fileSizeBytes: pdf.fileSizeBytes > 0 ? Value(pdf.fileSizeBytes) : const Value.absent(),
-              coverPath: pdf.coverPath != null ? Value(pdf.coverPath) : const Value.absent(),
+              pageCount: pdf.pageCount > 0
+                  ? Value(pdf.pageCount)
+                  : const Value.absent(),
+              fileSizeBytes: pdf.fileSizeBytes > 0
+                  ? Value(pdf.fileSizeBytes)
+                  : const Value.absent(),
+              coverPath: pdf.coverPath != null
+                  ? Value(pdf.coverPath)
+                  : const Value.absent(),
               tags: pdf.tags != null ? Value(pdf.tags) : const Value.absent(),
-              series: pdf.series != null ? Value(pdf.series) : const Value.absent(),
+              series: pdf.series != null
+                  ? Value(pdf.series)
+                  : const Value.absent(),
               lastModified: Value(pdf.lastModified),
               lastScanned: Value(DateTime.now()),
             ),
@@ -746,14 +758,26 @@ class AppDatabase extends _$AppDatabase {
                 folderId: Value(folderId),
                 filePath: Value(pdf.filePath),
                 fileName: Value(pdf.fileName),
-                title: pdf.title != null ? Value(pdf.title) : const Value.absent(),
-                author: pdf.author != null ? Value(pdf.author) : const Value.absent(),
+                title: pdf.title != null
+                    ? Value(pdf.title)
+                    : const Value.absent(),
+                author: pdf.author != null
+                    ? Value(pdf.author)
+                    : const Value.absent(),
                 format: Value(pdf.format),
-                pageCount: pdf.pageCount > 0 ? Value(pdf.pageCount) : const Value.absent(),
-                fileSizeBytes: pdf.fileSizeBytes > 0 ? Value(pdf.fileSizeBytes) : const Value.absent(),
-                coverPath: pdf.coverPath != null ? Value(pdf.coverPath) : const Value.absent(),
+                pageCount: pdf.pageCount > 0
+                    ? Value(pdf.pageCount)
+                    : const Value.absent(),
+                fileSizeBytes: pdf.fileSizeBytes > 0
+                    ? Value(pdf.fileSizeBytes)
+                    : const Value.absent(),
+                coverPath: pdf.coverPath != null
+                    ? Value(pdf.coverPath)
+                    : const Value.absent(),
                 tags: pdf.tags != null ? Value(pdf.tags) : const Value.absent(),
-                series: pdf.series != null ? Value(pdf.series) : const Value.absent(),
+                series: pdf.series != null
+                    ? Value(pdf.series)
+                    : const Value.absent(),
                 lastScanned: Value(DateTime.now()),
               ),
             );
@@ -854,6 +878,22 @@ class AppDatabase extends _$AppDatabase {
     return paths;
   }
 
+  /// Finds books by title, author, or file name for global quick-open.
+  Future<List<LibraryFile>> searchLibraryFiles(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return const [];
+    final lower = trimmed.toLowerCase();
+    return (select(libraryFiles)
+          ..where(
+            (tbl) =>
+                tbl.fileName.lower().contains(lower) |
+                tbl.title.lower().contains(lower) |
+                tbl.author.lower().contains(lower),
+          )
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.fileName)]))
+        .get();
+  }
+
   /// Toggle favorite status of a book
   Future<bool> toggleFavorite(int fileId) async {
     final file = await (select(
@@ -861,9 +901,7 @@ class AppDatabase extends _$AppDatabase {
     )..where((tbl) => tbl.id.equals(fileId))).getSingleOrNull();
     if (file == null) return false;
     final nextFav = !file.isFavorite;
-    await (update(
-      libraryFiles,
-    )..where((tbl) => tbl.id.equals(fileId))).write(
+    await (update(libraryFiles)..where((tbl) => tbl.id.equals(fileId))).write(
       LibraryFilesCompanion(isFavorite: Value(nextFav)),
     );
     return nextFav;
@@ -902,9 +940,7 @@ class AppDatabase extends _$AppDatabase {
     String? tags,
     String? coverPath,
   }) async {
-    await (update(
-      libraryFiles,
-    )..where((tbl) => tbl.id.equals(fileId))).write(
+    await (update(libraryFiles)..where((tbl) => tbl.id.equals(fileId))).write(
       LibraryFilesCompanion(
         title: title != null ? Value(title) : const Value.absent(),
         author: author != null ? Value(author) : const Value.absent(),
@@ -1075,12 +1111,63 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  /// Rebuilds the local, searchable cache of standard PDF /Ink annotations.
+  /// The PDF stream is authoritative; replacing these rows prevents stale
+  /// strokes after an eraser action, undo, or an external file edit.
+  Future<void> replaceInkAnnotationIndex(
+    String filePath,
+    List<
+      ({
+        int pageNumber,
+        String type,
+        String? annotationName,
+        String colorHex,
+        double left,
+        double bottom,
+        double width,
+        double height,
+      })
+    >
+    entries,
+  ) async {
+    await transaction(() async {
+      await (delete(annotations)..where(
+            (tbl) =>
+                tbl.filePath.equals(filePath) &
+                tbl.type.isIn(const ['ink', 'ink_highlighter']),
+          ))
+          .go();
+
+      for (final entry in entries) {
+        await into(annotations).insert(
+          AnnotationsCompanion(
+            filePath: Value(filePath),
+            pageNumber: Value(entry.pageNumber),
+            type: Value(entry.type),
+            selectedText: Value(entry.annotationName),
+            note: Value(
+              entry.type == 'ink_highlighter'
+                  ? 'Freehand highlighter'
+                  : 'Freehand ink',
+            ),
+            colorHex: Value(entry.colorHex),
+            rectX: Value(entry.left),
+            rectY: Value(entry.bottom),
+            rectWidth: Value(entry.width),
+            rectHeight: Value(entry.height),
+          ),
+        );
+      }
+    });
+  }
+
   /// Get all annotations for a document, optionally scoped to a single page
   Future<List<DocumentAnnotation>> getAnnotationsForFile(
     String filePath, {
     int? pageNumber,
   }) async {
-    final q = select(annotations)..where((tbl) => tbl.filePath.equals(filePath));
+    final q = select(annotations)
+      ..where((tbl) => tbl.filePath.equals(filePath));
     if (pageNumber != null) {
       q.where((tbl) => tbl.pageNumber.equals(pageNumber));
     }
@@ -1174,11 +1261,4 @@ class AppDatabase extends _$AppDatabase {
   }
 }
 
-enum LibrarySortBy {
-  title,
-  author,
-  dateAdded,
-  lastOpened,
-  fileSize,
-  progress,
-}
+enum LibrarySortBy { title, author, dateAdded, lastOpened, fileSize, progress }

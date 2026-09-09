@@ -27,10 +27,15 @@ class LibraryFolderScanner {
     final paths = await _findDocumentPaths(folderPath);
     final results = <ScannedPdf>[];
 
-    for (final path in paths) {
-      final scanned = await _scanOne(path);
-      if (scanned != null) {
-        results.add(scanned);
+    // Keep disk pressure bounded while allowing metadata parsing and cover
+    // extraction to overlap. Four concurrent books is fast on SSDs without
+    // starving the reader's renderer or flooding slower drives.
+    const batchSize = 4;
+    for (var offset = 0; offset < paths.length; offset += batchSize) {
+      final end = (offset + batchSize).clamp(0, paths.length);
+      final batch = await Future.wait(paths.sublist(offset, end).map(_scanOne));
+      for (final scanned in batch) {
+        if (scanned != null) results.add(scanned);
       }
     }
 
@@ -71,7 +76,9 @@ class LibraryFolderScanner {
         String? coverPath;
         try {
           meta = await _epubEngine.extractMetadata(filePath);
-          coverPath = await CoverCacheManager.instance.extractAndCacheCover(filePath);
+          coverPath = await CoverCacheManager.instance.extractAndCacheCover(
+            filePath,
+          );
         } catch (_) {}
         return ScannedPdf(
           filePath: filePath,

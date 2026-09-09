@@ -6,11 +6,7 @@ import '../../database.dart';
 import '../reader/pdf_reader_screen.dart';
 import 'research_scratchpad.dart';
 
-enum WorkspaceSplitMode {
-  single,
-  sideBySideBooks,
-  bookAndScratchpad,
-}
+enum WorkspaceSplitMode { single, sideBySideBooks, bookAndScratchpad }
 
 class WorkspaceTabItem {
   WorkspaceTabItem({
@@ -36,7 +32,8 @@ class SplitReaderWorkspace extends StatefulWidget {
   final String initialFilePath;
   final AppDatabase database;
   final DocumentFileSystem fileSystem;
-  final Future<void> Function(String filePath, ReaderBookmarkDraft draft) onCreateBookmark;
+  final Future<void> Function(String filePath, ReaderBookmarkDraft draft)
+  onCreateBookmark;
 
   @override
   State<SplitReaderWorkspace> createState() => _SplitReaderWorkspaceState();
@@ -61,14 +58,22 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
       for (final t in savedTabs) {
         if (await widget.fileSystem.exists(t.filePath)) {
           final title = _titleFromPath(t.filePath);
-          _tabs.add(WorkspaceTabItem(filePath: t.filePath, title: title, currentPage: t.pageNumber));
+          _tabs.add(
+            WorkspaceTabItem(
+              filePath: t.filePath,
+              title: title,
+              currentPage: t.pageNumber,
+            ),
+          );
         }
       }
     }
 
     if (_tabs.isEmpty) {
       final title = _titleFromPath(widget.initialFilePath);
-      _tabs.add(WorkspaceTabItem(filePath: widget.initialFilePath, title: title));
+      _tabs.add(
+        WorkspaceTabItem(filePath: widget.initialFilePath, title: title),
+      );
     }
 
     if (mounted) {
@@ -101,8 +106,8 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
       type: FileType.custom,
       allowedExtensions: ['pdf', 'epub'],
     );
-    if (result != null && result.files.single.path != null) {
-      final path = result.files.single.path!;
+    if (result.isNotEmpty && result.single.path != null) {
+      final path = result.single.path!;
       final title = _titleFromPath(path);
       setState(() {
         final existingIndex = _tabs.indexWhere((t) => t.filePath == path);
@@ -133,9 +138,9 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
       type: FileType.custom,
       allowedExtensions: ['pdf', 'epub'],
     );
-    if (result != null && result.files.single.path != null) {
+    if (result.isNotEmpty && result.single.path != null) {
       setState(() {
-        _secondaryFilePath = result.files.single.path;
+        _secondaryFilePath = result.single.path;
       });
     }
   }
@@ -152,9 +157,7 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
       body: Column(
         children: [
           _buildTabBar(context),
-          Expanded(
-            child: _buildWorkspaceContent(activeTab),
-          ),
+          Expanded(child: _buildWorkspaceContent(activeTab)),
         ],
       ),
     );
@@ -164,8 +167,14 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
     return Container(
       height: 42,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(90),
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withAlpha(80))),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withAlpha(90),
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor.withAlpha(80),
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -185,11 +194,17 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: isActive ? Theme.of(context).colorScheme.surface : Colors.transparent,
+                      color: isActive
+                          ? Theme.of(context).colorScheme.surface
+                          : Colors.transparent,
                       border: Border(
-                        right: BorderSide(color: Theme.of(context).dividerColor.withAlpha(50)),
+                        right: BorderSide(
+                          color: Theme.of(context).dividerColor.withAlpha(50),
+                        ),
                         bottom: BorderSide(
-                          color: isActive ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                          color: isActive
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.transparent,
                           width: 2.5,
                         ),
                       ),
@@ -207,7 +222,9 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 12,
-                              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: isActive
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                         ),
@@ -254,7 +271,8 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
             onSelectionChanged: (set) {
               setState(() {
                 _splitMode = set.first;
-                if (_splitMode == WorkspaceSplitMode.sideBySideBooks && _secondaryFilePath == null) {
+                if (_splitMode == WorkspaceSplitMode.sideBySideBooks &&
+                    _secondaryFilePath == null) {
                   _pickSecondaryBook();
                 }
               });
@@ -275,7 +293,8 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
           fileSystem: widget.fileSystem,
           database: widget.database,
           initialPageNumber: activeTab.currentPage,
-          onCreateBookmark: (draft) => widget.onCreateBookmark(activeTab.filePath, draft),
+          onCreateBookmark: (draft) =>
+              widget.onCreateBookmark(activeTab.filePath, draft),
         );
 
       case WorkspaceSplitMode.sideBySideBooks:
@@ -288,7 +307,8 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
                 fileSystem: widget.fileSystem,
                 database: widget.database,
                 initialPageNumber: activeTab.currentPage,
-                onCreateBookmark: (draft) => widget.onCreateBookmark(activeTab.filePath, draft),
+                onCreateBookmark: (draft) =>
+                    widget.onCreateBookmark(activeTab.filePath, draft),
               ),
             ),
             const VerticalDivider(width: 1),
@@ -299,15 +319,22 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
                       filePath: _secondaryFilePath!,
                       fileSystem: widget.fileSystem,
                       database: widget.database,
-                      onCreateBookmark: (draft) => widget.onCreateBookmark(_secondaryFilePath!, draft),
+                      onCreateBookmark: (draft) =>
+                          widget.onCreateBookmark(_secondaryFilePath!, draft),
                     )
                   : Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.compare_arrows, size: 48, color: Colors.grey),
+                          const Icon(
+                            Icons.compare_arrows,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(height: 12),
-                          const Text('Select second book for side-by-side comparison'),
+                          const Text(
+                            'Select second book for side-by-side comparison',
+                          ),
                           const SizedBox(height: 12),
                           FilledButton.icon(
                             onPressed: _pickSecondaryBook,
@@ -331,7 +358,8 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
                 fileSystem: widget.fileSystem,
                 database: widget.database,
                 initialPageNumber: activeTab.currentPage,
-                onCreateBookmark: (draft) => widget.onCreateBookmark(activeTab.filePath, draft),
+                onCreateBookmark: (draft) =>
+                    widget.onCreateBookmark(activeTab.filePath, draft),
               ),
             ),
             ResearchScratchpad(
@@ -339,7 +367,8 @@ class _SplitReaderWorkspaceState extends State<SplitReaderWorkspace> {
               database: widget.database,
               currentPage: _primaryPage,
               onJumpToPage: (page) => setState(() => _primaryPage = page),
-              onClose: () => setState(() => _splitMode = WorkspaceSplitMode.single),
+              onClose: () =>
+                  setState(() => _splitMode = WorkspaceSplitMode.single),
             ),
           ],
         );

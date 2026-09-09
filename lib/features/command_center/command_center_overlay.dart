@@ -68,7 +68,11 @@ class _CommandCenterOverlayState extends State<CommandCenterOverlay> {
 
   Future<List<CommandCenterResult>> _findResults(String query) async {
     final matches = await widget.database.searchBookmarks(query);
-    final fileMatches = await widget.database.searchLibraryFileNames(query);
+    final fileMatches = await widget.database.searchLibraryFiles(query);
+    final libraryFiles = await widget.database.getLibraryFiles();
+    final libraryByPath = {
+      for (final file in libraryFiles) file.filePath: file,
+    };
     final allBookmarks = await widget.database.getAllBookmarks();
     final byId = BookmarkTree.indexById(allBookmarks);
 
@@ -82,7 +86,10 @@ class _CommandCenterOverlayState extends State<CommandCenterOverlay> {
         CommandCenterResult(
           bookmark: bookmark,
           filePath: bookmark.filePath,
-          bookTitle: BookmarkGrouping.fileNameFromPath(bookmark.filePath),
+          bookTitle:
+              libraryByPath[bookmark.filePath]?.title?.trim().isNotEmpty == true
+              ? libraryByPath[bookmark.filePath]!.title!
+              : BookmarkGrouping.fileNameFromPath(bookmark.filePath),
           breadcrumb: BookmarkTree.displayPath(path),
           pageNumber: bookmark.isFolder || bookmark.pageIndex == null
               ? null
@@ -91,14 +98,19 @@ class _CommandCenterOverlayState extends State<CommandCenterOverlay> {
       );
     }
 
-    for (final filePath in fileMatches) {
-      if (!coveredFilePaths.add(filePath)) continue;
-      final fileName = BookmarkGrouping.fileNameFromPath(filePath);
+    for (final file in fileMatches) {
+      if (!coveredFilePaths.add(file.filePath)) continue;
+      final fileName = file.title?.trim().isNotEmpty == true
+          ? file.title!
+          : BookmarkGrouping.fileNameFromPath(file.filePath);
       results.add(
         CommandCenterResult(
-          filePath: filePath,
+          filePath: file.filePath,
           bookTitle: fileName,
-          breadcrumb: filePath,
+          breadcrumb: [file.author, file.fileName]
+              .whereType<String>()
+              .where((value) => value.trim().isNotEmpty)
+              .join(' • '),
         ),
       );
     }

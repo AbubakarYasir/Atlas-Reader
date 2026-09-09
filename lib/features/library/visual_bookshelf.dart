@@ -5,13 +5,8 @@ import '../../core/accessibility/accessibility_announcer.dart';
 import '../../core/file_system/document_file_system.dart';
 import '../../database.dart';
 import '../reader/pdf_reader_screen.dart';
-import '../workspace/split_reader_workspace.dart';
 
-enum BookshelfViewMode {
-  coverGrid,
-  detailedList,
-  condensedList,
-}
+enum BookshelfViewMode { coverGrid, detailedList, condensedList }
 
 class VisualBookshelf extends StatefulWidget {
   const VisualBookshelf({
@@ -24,7 +19,8 @@ class VisualBookshelf extends StatefulWidget {
 
   final AppDatabase database;
   final DocumentFileSystem fileSystem;
-  final Future<void> Function(String filePath, ReaderBookmarkDraft draft) onCreateBookmark;
+  final Future<void> Function(String filePath, ReaderBookmarkDraft draft)
+  onCreateBookmark;
   final ValueChanged<String>? onSelectPdf;
 
   @override
@@ -86,7 +82,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
     setState(() {});
     AccessibilityAnnouncer.announce(
       context,
-      isFav ? '${book.fileName} added to favorites' : '${book.fileName} removed from favorites',
+      isFav
+          ? '${book.fileName} added to favorites'
+          : '${book.fileName} removed from favorites',
     );
   }
 
@@ -104,14 +102,28 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
 
     widget.onSelectPdf?.call(book.filePath);
 
+    if (book.format.toUpperCase() != 'PDF') {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'EPUB discovery and search are available. Page reading and ink currently require a PDF.',
+          ),
+        ),
+      );
+      return;
+    }
+
     if (!mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
-        builder: (_) => SplitReaderWorkspace(
-          initialFilePath: book.filePath,
+        builder: (_) => PdfReaderScreen(
+          filePath: book.filePath,
           fileSystem: widget.fileSystem,
           database: widget.database,
-          onCreateBookmark: (path, draft) => widget.onCreateBookmark(path, draft),
+          initialPageNumber: book.currentPage,
+          onCreateBookmark: (draft) =>
+              widget.onCreateBookmark(book.filePath, draft),
         ),
       ),
     );
@@ -151,14 +163,22 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
               const SizedBox(height: 12),
               TextField(
                 controller: tagsCtrl,
-                decoration: const InputDecoration(labelText: 'Tags (comma separated)'),
+                decoration: const InputDecoration(
+                  labelText: 'Tags (comma separated)',
+                ),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -197,7 +217,11 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.menu_book_outlined, size: 64, color: Colors.grey),
+                      const Icon(
+                        Icons.menu_book_outlined,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         _hasActiveFilters()
@@ -254,8 +278,14 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(80),
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withAlpha(60))),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withAlpha(80),
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor.withAlpha(60),
+          ),
+        ),
       ),
       child: Column(
         children: [
@@ -273,8 +303,13 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                           )
                         : null,
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   onChanged: (val) => setState(() => _searchQuery = val),
                 ),
@@ -295,11 +330,12 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                   ButtonSegment(
                     value: BookshelfViewMode.condensedList,
                     icon: Icon(Icons.table_rows_rounded, size: 18),
-                    tooltip: 'Condensed List',
+                    tooltip: 'Compact List',
                   ),
                 ],
                 selected: {_viewMode},
-                onSelectionChanged: (set) => setState(() => _viewMode = set.first),
+                onSelectionChanged: (set) =>
+                    setState(() => _viewMode = set.first),
               ),
             ],
           ),
@@ -311,12 +347,30 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                 tooltip: 'Sort by',
                 onSelected: (val) => setState(() => _sortBy = val),
                 itemBuilder: (ctx) => [
-                  const PopupMenuItem(value: LibrarySortBy.title, child: Text('Sort by Title')),
-                  const PopupMenuItem(value: LibrarySortBy.author, child: Text('Sort by Author')),
-                  const PopupMenuItem(value: LibrarySortBy.dateAdded, child: Text('Sort by Date Added')),
-                  const PopupMenuItem(value: LibrarySortBy.lastOpened, child: Text('Sort by Last Opened')),
-                  const PopupMenuItem(value: LibrarySortBy.fileSize, child: Text('Sort by File Size')),
-                  const PopupMenuItem(value: LibrarySortBy.progress, child: Text('Sort by Reading Progress')),
+                  const PopupMenuItem(
+                    value: LibrarySortBy.title,
+                    child: Text('Sort by Title'),
+                  ),
+                  const PopupMenuItem(
+                    value: LibrarySortBy.author,
+                    child: Text('Sort by Author'),
+                  ),
+                  const PopupMenuItem(
+                    value: LibrarySortBy.dateAdded,
+                    child: Text('Sort by Date Added'),
+                  ),
+                  const PopupMenuItem(
+                    value: LibrarySortBy.lastOpened,
+                    child: Text('Sort by Last Opened'),
+                  ),
+                  const PopupMenuItem(
+                    value: LibrarySortBy.fileSize,
+                    child: Text('Sort by File Size'),
+                  ),
+                  const PopupMenuItem(
+                    value: LibrarySortBy.progress,
+                    child: Text('Sort by Reading Progress'),
+                  ),
                 ],
                 child: Chip(
                   avatar: const Icon(Icons.sort, size: 16),
@@ -324,9 +378,13 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                 ),
               ),
               IconButton(
-                icon: Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 18),
+                icon: Icon(
+                  _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                  size: 18,
+                ),
                 tooltip: _sortAscending ? 'Ascending' : 'Descending',
-                onPressed: () => setState(() => _sortAscending = !_sortAscending),
+                onPressed: () =>
+                    setState(() => _sortAscending = !_sortAscending),
               ),
               const SizedBox(width: 4),
               FilterChip(
@@ -343,7 +401,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
               ActionChip(
                 avatar: const Icon(Icons.person_outline, size: 16),
                 label: Text('Authors (${_authors.length})'),
-                backgroundColor: _showAuthorIndex ? Theme.of(context).colorScheme.primaryContainer : null,
+                backgroundColor: _showAuthorIndex
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : null,
                 onPressed: () {
                   setState(() {
                     _showAuthorIndex = !_showAuthorIndex;
@@ -355,7 +415,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
               ActionChip(
                 avatar: const Icon(Icons.tag_outlined, size: 16),
                 label: Text('Tags & Series (${_tags.length + _series.length})'),
-                backgroundColor: _showTagIndex ? Theme.of(context).colorScheme.primaryContainer : null,
+                backgroundColor: _showTagIndex
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : null,
                 onPressed: () {
                   setState(() {
                     _showTagIndex = !_showTagIndex;
@@ -393,7 +455,10 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
       color: Theme.of(context).colorScheme.primary.withAlpha(20),
       child: Row(
         children: [
-          const Text('Active filters: ', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+          const Text(
+            'Active filters: ',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+          ),
           Expanded(
             child: Wrap(
               spacing: 6,
@@ -459,7 +524,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,7 +534,10 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Author Index', style: Theme.of(context).textTheme.titleSmall),
+              Text(
+                'Author Index',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
               IconButton(
                 icon: const Icon(Icons.close, size: 16),
                 onPressed: () => setState(() => _showAuthorIndex = false),
@@ -483,7 +553,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                     itemBuilder: (ctx, index) {
                       final author = sortedAuthors[index];
                       final count = _authors[author] ?? 0;
-                      final initial = author.isNotEmpty ? author.characters.first.toUpperCase() : '?';
+                      final initial = author.isNotEmpty
+                          ? author.characters.first.toUpperCase()
+                          : '?';
                       final isSelected = _selectedAuthor == author;
 
                       return Padding(
@@ -501,13 +573,19 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Theme.of(context).colorScheme.primaryContainer
-                                  : Theme.of(context).colorScheme.surfaceContainerHigh,
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.primaryContainer
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHigh,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: isSelected
                                     ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).dividerColor.withAlpha(40),
+                                    : Theme.of(
+                                        context,
+                                      ).dividerColor.withAlpha(40),
                               ),
                             ),
                             child: Column(
@@ -515,12 +593,16 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                               children: [
                                 CircleAvatar(
                                   radius: 18,
-                                  backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(40),
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withAlpha(40),
                                   child: Text(
                                     initial,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                     ),
                                   ),
                                 ),
@@ -530,12 +612,18 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '$count ${count == 1 ? 'book' : 'books'}',
-                                  style: TextStyle(fontSize: 10, color: Theme.of(context).hintColor),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Theme.of(context).hintColor,
+                                  ),
                                 ),
                               ],
                             ),
@@ -555,7 +643,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -563,7 +653,10 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Tags and Series', style: Theme.of(context).textTheme.titleSmall),
+              Text(
+                'Tags and Series',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
               IconButton(
                 icon: const Icon(Icons.close, size: 16),
                 onPressed: () => setState(() => _showTagIndex = false),
@@ -591,7 +684,10 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
               ..._series.entries.map((e) {
                 final isSelected = _selectedSeries == e.key;
                 return FilterChip(
-                  avatar: const Icon(Icons.collections_bookmark_outlined, size: 14),
+                  avatar: const Icon(
+                    Icons.collections_bookmark_outlined,
+                    size: 14,
+                  ),
                   label: Text('${e.key} (${e.value})'),
                   selected: isSelected,
                   onSelected: (val) {
@@ -633,7 +729,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
 
   Widget _buildBookCard(LibraryFile book) {
     final title = book.title ?? book.fileName;
-    final progress = book.pageCount > 0 ? (book.currentPage / book.pageCount).clamp(0.0, 1.0) : 0.0;
+    final progress = book.pageCount > 0
+        ? (book.currentPage / book.pageCount).clamp(0.0, 1.0)
+        : 0.0;
     final isPdf = book.format.toUpperCase() == 'PDF';
 
     return Card(
@@ -655,14 +753,23 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                     top: 6,
                     left: 6,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: isPdf ? Colors.indigo.withAlpha(220) : Colors.teal.withAlpha(220),
+                        color: isPdf
+                            ? Colors.indigo.withAlpha(220)
+                            : Colors.teal.withAlpha(220),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         book.format.toUpperCase(),
-                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -672,7 +779,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                     child: IconButton(
                       icon: Icon(
                         book.isFavorite ? Icons.star : Icons.star_border,
-                        color: book.isFavorite ? Colors.amber[400] : Colors.white70,
+                        color: book.isFavorite
+                            ? Colors.amber[400]
+                            : Colors.white70,
                         size: 20,
                       ),
                       tooltip: book.isFavorite ? 'Unfavorite' : 'Favorite',
@@ -684,14 +793,20 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                       bottom: 6,
                       right: 6,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withAlpha(180),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           '${book.pageCount}p',
-                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
                         ),
                       ),
                     ),
@@ -703,7 +818,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
               minHeight: 4,
               backgroundColor: Colors.black12,
               valueColor: AlwaysStoppedAnimation<Color>(
-                progress >= 1.0 ? Colors.green : Theme.of(context).colorScheme.primary,
+                progress >= 1.0
+                    ? Colors.green
+                    : Theme.of(context).colorScheme.primary,
               ),
             ),
             Padding(
@@ -715,14 +832,20 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     book.author ?? 'Unknown Author',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11, color: Theme.of(context).hintColor),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).hintColor,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -730,7 +853,10 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                     children: [
                       Text(
                         '${(progress * 100).round()}% read',
-                        style: TextStyle(fontSize: 10, color: Theme.of(context).hintColor),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Theme.of(context).hintColor,
+                        ),
                       ),
                       InkWell(
                         onTap: () => _editMetadata(book),
@@ -749,10 +875,7 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
 
   Widget _buildBookCoverVisual(LibraryFile book) {
     if (book.coverPath != null && File(book.coverPath!).existsSync()) {
-      return Image.file(
-        File(book.coverPath!),
-        fit: BoxFit.cover,
-      );
+      return Image.file(File(book.coverPath!), fit: BoxFit.cover);
     }
 
     final hash = book.filePath.hashCode.abs();
@@ -774,11 +897,7 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            height: 2,
-            width: 30,
-            color: Colors.amber.withAlpha(200),
-          ),
+          Container(height: 2, width: 30, color: Colors.amber.withAlpha(200)),
           const SizedBox(height: 10),
           Text(
             book.title ?? book.fileName,
@@ -815,11 +934,16 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
       itemBuilder: (context, index) {
         final book = books[index];
         final title = book.title ?? book.fileName;
-        final progress = book.pageCount > 0 ? (book.currentPage / book.pageCount).clamp(0.0, 1.0) : 0.0;
+        final progress = book.pageCount > 0
+            ? (book.currentPage / book.pageCount).clamp(0.0, 1.0)
+            : 0.0;
         final sizeMb = (book.fileSizeBytes / (1024 * 1024)).toStringAsFixed(1);
 
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 6,
+          ),
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: SizedBox(
@@ -842,7 +966,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                 margin: const EdgeInsets.symmetric(horizontal: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: book.format.toUpperCase() == 'PDF' ? Colors.indigo.withAlpha(30) : Colors.teal.withAlpha(30),
+                  color: book.format.toUpperCase() == 'PDF'
+                      ? Colors.indigo.withAlpha(30)
+                      : Colors.teal.withAlpha(30),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -850,7 +976,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: book.format.toUpperCase() == 'PDF' ? Colors.indigo : Colors.teal,
+                    color: book.format.toUpperCase() == 'PDF'
+                        ? Colors.indigo
+                        : Colors.teal,
                   ),
                 ),
               ),
@@ -878,7 +1006,10 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text('${(progress * 100).round()}%', style: const TextStyle(fontSize: 10)),
+                  Text(
+                    '${(progress * 100).round()}%',
+                    style: const TextStyle(fontSize: 10),
+                  ),
                 ],
               ),
             ],
@@ -913,12 +1044,16 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
       itemBuilder: (context, index) {
         final book = books[index];
         final title = book.title ?? book.fileName;
-        final progress = book.pageCount > 0 ? (book.currentPage / book.pageCount).clamp(0.0, 1.0) : 0.0;
+        final progress = book.pageCount > 0
+            ? (book.currentPage / book.pageCount).clamp(0.0, 1.0)
+            : 0.0;
 
         return ListTile(
           dense: true,
           leading: Icon(
-            book.format.toUpperCase() == 'PDF' ? Icons.picture_as_pdf_outlined : Icons.book_outlined,
+            book.format.toUpperCase() == 'PDF'
+                ? Icons.picture_as_pdf_outlined
+                : Icons.book_outlined,
             size: 18,
           ),
           title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),

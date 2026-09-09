@@ -107,6 +107,24 @@ void main() {
     expect(filtered.single.fileName, 'Intro to Islam.pdf');
   });
 
+  test('quick-open searches title, author, and file name', () async {
+    final folder = await db.addLibraryFolder(r'C:\Books');
+    await db.upsertLibraryFiles(folder.id, [
+      ScannedPdf(
+        filePath: r'C:\Books\usul.pdf',
+        fileName: 'usul.pdf',
+        title: 'أصول الفقه',
+        author: 'وليد السعيدان',
+        bookmarkCount: 3,
+        lastModified: DateTime(2026, 1, 1),
+      ),
+    ]);
+
+    expect(await db.searchLibraryFiles('أصول'), hasLength(1));
+    expect(await db.searchLibraryFiles('السعيدان'), hasLength(1));
+    expect(await db.searchLibraryFiles('USUL'), hasLength(1));
+  });
+
   test('removing a folder cascades its scanned files', () async {
     final folder = await db.addLibraryFolder(r'C:\Books');
     await db.upsertLibraryFiles(folder.id, [

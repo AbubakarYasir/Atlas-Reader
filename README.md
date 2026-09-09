@@ -1,21 +1,26 @@
 # Atlas Reader
 
-Atlas Reader is a private, offline-first tool for organizing the bookmarks in
-your PDF books. It keeps a fast local bookmark library on your computer and
-can write bookmark changes back into the PDF itself.
+Atlas Reader is a private, offline-first Windows reading app built around three
+jobs: finding books, jumping through deep bookmarks, and writing directly on
+PDF pages. It keeps a fast local index while saving portable bookmarks and ink
+back into the PDF itself.
 
 That means a bookmark you create in Atlas can also appear in compatible PDF
 readers such as Adobe Acrobat. Your books stay your books: Atlas does not need
 an account, cloud storage, or an internet connection to manage them.
 
-> **Project status:** Windows desktop application through Stage 11. PDF edits
-> use a verified temporary-file replacement workflow; keep independent backups
-> of irreplaceable research files as a normal precaution.
+> **Project status:** the focused library, bookmark, and PDF ink workflow is
+> implemented and under Windows release verification. PDF edits use a verified
+> temporary-file replacement workflow; keep independent backups of
+> irreplaceable files as a normal precaution.
 
 ## What you can do today
 
-- Select a PDF from your computer.
-- Open a PDF in a scrollable, zoomable reader with Basic and Research modes.
+- Add one or more library folders containing PDF and EPUB books.
+- Search instantly by title, author, or file name and sort by title, author,
+  date added, last opened, or reading progress.
+- Switch between Cover Grid, Detailed List, and Compact List.
+- Open a PDF in a fast, scrollable, zoomable reader.
 - See its existing outline/bookmarks, including chapters, sections, and deeper
   sub-sections.
 - Add a bookmark for a page, optional note, and comma-separated tags.
@@ -23,12 +28,10 @@ an account, cloud storage, or an internet connection to manage them.
 - Press `Ctrl+K` from anywhere in Atlas to search bookmarks and scanned books.
 - Use Atlas with a keyboard or screen reader, and switch the app between
   English and Arabic (right-to-left) from **Settings**.
-- Add one or more folders to your library; Atlas scans their PDFs and notices
-  additions, removals, and renames while the app is open.
-- Browse a visual bookshelf, annotate PDF text, compare two books, and keep a
-  linked research scratchpad beside your reading.
-- Use hands-free auto-advance and a 200–800 WPM speed reader for selectable
-  text on a PDF page.
+- Draw pressure-sensitive freehand pen strokes and translucent highlights,
+  choose standard colors and sizes, erase, and undo/redo.
+- Save writing as standard PDF `/Ink` annotations so it remains visible in
+  compatible external PDF readers.
 - Browse bookmarks by book, tag, or a flat indented list.
 - Edit or delete individual bookmarks, or remove all local bookmarks for a
   book.
@@ -94,14 +97,16 @@ Then run:
 
 ## Everyday use
 
-### Open a book
+### Build and search your library
 
 1. Start the app.
-2. Choose **Select PDF**.
-3. Pick a PDF file.
-4. Atlas checks the PDF and shows any bookmark changes waiting to be saved.
-5. Choose **Open reader** to read the PDF inside Atlas. Use the zoom controls,
-   mouse wheel/trackpad, or touch gestures to navigate it.
+2. Open **Settings** → **Library folders** → **Add folder**.
+3. Choose one or more folders containing PDFs or EPUBs. Subfolders are scanned
+   automatically in small background batches.
+4. Open **Library files**. Type in the search box to filter by title, author,
+   or file name; use the view and sort controls beside it.
+5. Select a PDF to read it. EPUBs are indexed and searchable today, but the
+   full reader, bookmark embedding, and ink workflow currently require PDF.
 
 ### Add a bookmark
 
@@ -125,6 +130,21 @@ worked.
 Atlas fills the page number from the page currently visible in the reader, so
 you do not need to enter it manually.
 
+### Write or highlight on a PDF
+
+1. Open a PDF and select **Write**.
+2. Choose **Pen** or **Highlighter**, then choose a color and thickness.
+3. Draw directly on the active page. While a drawing tool is selected, a drag
+   writes instead of scrolling; switch to **Select** to navigate normally.
+4. Use **Area eraser** to cut away marks, or select a whole stroke and press
+   `Delete`. Use `Ctrl+Z` and `Ctrl+Shift+Z` for undo and redo.
+5. Select **Save** or press `Ctrl+S`. Atlas validates a temporary PDF before it
+   replaces the original and refuses the save if chapters or metadata changed.
+
+Each stroke is stored only on the page where it was drawn. Atlas translates
+the display position into native PDF points, including the PDF bottom-left
+coordinate origin, so the saved writing stays aligned in other PDF readers.
+
 ### Import bookmarks from a PDF
 
 Use **Sync File** when the PDF was changed in Acrobat or another reader, or
@@ -142,12 +162,11 @@ from the local bookmark tree.
 - Press `Ctrl+K` from anywhere in the app to open the **Command Center**. Its
   results show the book, chapter/section path, and page number. Select a result
   to open that PDF at the saved page.
-- Open **Settings** → **Library folders** → **Add folder** to add folders that
-  contain your PDFs. Atlas scans subfolders too. Choose **Scan now** whenever
-  you want an immediate refresh; otherwise it refreshes after it notices a
-  PDF being added, changed, renamed, or removed.
-- Open **Library files** to see the PDFs Atlas has found. Select a file there
-  to begin reading it.
+- Open **Settings** → **Library folders** → **Add folder** to add PDF/EPUB
+  folders. Choose **Scan now** for an immediate refresh; Atlas also watches for
+  additions, changes, renames, and removals while it is open.
+- In **Library files**, choose Cover Grid, Detailed List, or Compact List and
+  sort by title, author, date added, last opened, or reading progress.
 - Change **Group by** to browse by book, tag, or a flat list.
 - Expand a book or section to reveal sub-bookmarks.
 - Use the edit and delete icons beside a bookmark for local changes.
@@ -171,15 +190,6 @@ changes only after **Commit Changes**.
 Atlas announces major save, sync, and error outcomes to Windows screen readers
 without moving your keyboard focus.
 
-### Research and speed-reading tools
-
-Switch to **Research Mode** in the reader to reveal the outline, annotations,
-citation, thumbnail, and display controls. Use the play-circle button for
-hands-free page advance; its floating controls set direction and reading speed.
-Use the speed icon to open the current page in the RSVP speed reader. It works
-with selectable PDF text, supports Arabic right-to-left words, and offers 200
-to 800 words per minute.
-
 ## Keeping your PDFs safe
 
 Atlas does not overwrite a PDF directly. Before replacing a file, it:
@@ -194,6 +204,18 @@ If the final replacement fails, Atlas restores the original where possible. If
 you see a message about a recovery file, do not delete it until you have checked
 your original PDF.
 
+## Back up Atlas data
+
+The portable information is in your book files, so back up the PDFs themselves
+after saving bookmarks or writing. Atlas's fast local library index is stored
+in `atlas_db.sqlite` inside the Windows Documents directory used by the app.
+To make a complete backup while Atlas is closed:
+
+1. Copy your library folders, including every edited PDF.
+2. Search your Documents folder for `atlas_db.sqlite` and copy that file too.
+3. If a `.pdf.atlas-backup` recovery file exists, keep it until you confirm the
+   matching PDF opens correctly.
+
 ## Current limits
 
 - Library indexing reads PDF filenames and outline/bookmark counts. It does not
@@ -203,7 +225,8 @@ your original PDF.
   and outline signature. If a file cannot be matched, it is indexed as new.
 - EPUB discovery is supported in the library; PDF remains the format currently
   available in the full reader and document-sync workflows.
-- Notes and tags are stored locally; PDF outline titles are the portable part.
+- Bookmark titles and hierarchy are portable in the PDF outline. Descriptions
+  and tags remain in the local index; freehand writing is portable `/Ink`.
 - The app is currently designed and tested primarily for Windows.
 
 ## For developers
@@ -215,11 +238,11 @@ flutter test
 flutter analyze
 ```
 
-The project currently has 41 test cases, including two opt-in real-file smoke
-tests. They cover bookmark-tree paths,
-mixed Arabic-English identifiers, snapshot compatibility, sync differences,
-Arabic PDF round trips, library data behavior, reader controls, research
-workspace state, widget startup, and isolate-backed PDF operations.
+The suite includes opt-in real-file smoke tests plus deterministic coverage for
+bookmark paths, mixed Arabic-English identifiers, snapshot compatibility, sync
+differences, Arabic PDF round trips, library search/sorting, native PDF ink
+coordinates, page isolation, outline/metadata preservation, widget startup,
+and isolate-backed PDF operations.
 
 To run the optional, read-only audit against personal Arabic and English PDF
 copies, set the paths only for the current PowerShell session:
@@ -252,11 +275,9 @@ lib/
 │   └── file_system/    # Platform-neutral document I/O + Windows adapter
 ├── features/
 │   ├── library/        # Workspace, folder manager, scanner, watcher, PDF list
-│   ├── reader/         # PDF reader and bookmark composer
+│   ├── reader/         # Fast PDF reader, outline search, bookmarks, PDF ink
 │   ├── bookmarks/      # Bookmark-management contracts
 │   ├── command_center/ # Ctrl+K global search overlay
-│   ├── research/       # PDF annotations and citation tools
-│   ├── speed_reading/  # Hands-free and RSVP reading modes
 │   ├── sync/           # Sync preview UI
 │   └── settings/       # Settings entry point
 ├── pdf_engine.dart     # PDF outline extraction and writing
@@ -269,15 +290,17 @@ All document reads, writes, renames, and deletions go through
 Android Storage Access Framework adapter can implement the same interface
 without changing PDF or synchronization logic.
 
-Large document-byte reads and generated-file writes use a background isolate on
-Windows. The reader uses a virtualized PDF viewer, which renders pages as they
-are needed instead of building every page in the Flutter widget tree at once.
+Large document-byte reads, generated-file writes, library discovery, PDF
+validation, and ink indexing run away from the UI isolate where practical. The
+normal reader is virtualized. Writing uses an isolated `RepaintBoundary` and a
+byte-backed editor so the Windows file is not held open during replacement.
 
 ## Roadmap and release notes
 
-The plain-English plan is simple: make bookmark management reliable first, add
-an accessible PDF reading experience next, then add library scanning, Android,
-Arabic/RTL support, and EPUB.
+The active plan is intentionally narrow: perfect library discovery, bookmark
+navigation, and responsive PDF writing on Windows; keep platform boundaries
+clean for Android later. Text-to-speech, speed-reading, and cloud services are
+explicitly deferred.
 
 For the detailed accessibility, architecture, and delivery roadmap, see
 [PLAN.md](PLAN.md). For the record of completed work, see [CHANGELOG.md](CHANGELOG.md).

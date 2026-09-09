@@ -1,7 +1,9 @@
 # Atlas Reader — Master Plan
 ## Universal Embedding Protocol · Maximum Accessibility · Production Quality
 
-**Status:** Stages 1–11 implemented on Windows; Stages 12–15 remain roadmap work
+**Status:** Core Workflow Milestone active; historical Stages 1–11 remain in
+the repository, but only library discovery, bookmarking, and PDF writing are
+in the current product surface. Stage 12 and later are deferred.
 
 **Last updated:** September 2026
 
@@ -568,6 +570,42 @@ Future: `(file_uuid, bookmark_uuid)` when XMP UUIDs land.
 | Beta feedback loop | A11y bug priority = P0 |
 
 **Phase 4 exit criteria:** WCAG 2.2 AA audit documented; beta users complete core tasks with assistive tech.
+
+---
+
+## Current Delivery Stage — Focused Library, Bookmarks, and PDF Ink
+
+This stage supersedes older roadmap priorities where they conflict. It does
+not start Stage 12, text-to-speech, cloud sync, or other secondary work.
+
+### Scope and implementation
+
+| Core workflow | Implemented behavior | Primary files | Verification |
+|---|---|---|---|
+| Library discovery | Multiple watched folders; recursive PDF/EPUB scan in bounded background batches; Cover Grid, Detailed List, Compact List; title/author/file search; five required sorts | `features/library/library_folder_scanner.dart`, `visual_bookshelf.dart`, `database.dart` | Automated database/search coverage; Windows runtime pass pending final milestone sign-off |
+| Deep bookmarks | Unlimited nested PDF outline; local title/description/tags; in-book outline search; global `Ctrl+K` with book, breadcrumb, and page; direct jump | `reader_outline_builder.dart`, `reader_outline_sidebar.dart`, `command_center_overlay.dart`, `pdf_engine.dart` | Hierarchy and Arabic/mixed-title tests passing |
+| Responsive reader | Virtualized normal reader with continuous scroll, page jump, zoom, themes, brightness, and margin controls | `pdf_reader_screen.dart`, `reader_settings_dialog.dart` | `flutter analyze` clean; runtime pass pending final milestone sign-off |
+| PDF writing | Pen, freehand highlighter, five colors, thicknesses, area eraser, select+Delete stroke removal, undo/redo, pressure input | `pdf_reader_screen.dart`, `ink_toolbar.dart` | Native ink round-trip tests passing |
+| Portable save | Screen points converted to 72-point PDF user space with Y-axis conversion; strokes isolated by page index; `/Ink` stream; byte-backed editing; `.tmp` validation; outline and metadata integrity gate | `pdf_engine.dart`, `pdf_safe_file_writer.dart`, `database.dart` | Page isolation, coordinates, metadata, and nested-outline tests passing |
+
+### Interaction and performance rules
+
+- The normal reader and writing editor never hold the source PDF open while a
+  Windows replacement begins; both operate from completed byte reads.
+- A `RepaintBoundary` isolates the writing surface from the PDF page beneath it.
+- Pen, highlighter, and eraser gestures consume drawing drags. The Select tool
+  restores normal mouse/touch page navigation.
+- Every ink annotation is keyed by its zero-based PDF page index. No stroke
+  overlay is shared between page widgets.
+- SQLite is a replaceable projection for fast lookup. The PDF outline and
+  standard annotation stream remain the portable source of truth.
+
+### Explicitly deferred
+
+- Text-to-speech and Stage 12+
+- Speed-reading and hands-free presentation in the primary UI
+- Cloud accounts, cloud synchronization, and hosted storage
+- EPUB page rendering or EPUB ink embedding (EPUB discovery remains supported)
 
 ---
 

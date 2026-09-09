@@ -11,6 +11,10 @@ hardening approach rather than formal releases.
   selection, active-page tracking, and `Ctrl+B` in-reader bookmarking.
 - Background document-byte loading through `DocumentFileSystem` before the
   reader viewer mounts.
+- Background-isolate document reads and generated-file writes for PDF engine
+  operations, including the temporary-file safety workflow.
+- Isolate-backed page-count and outline extraction, plus isolate-backed
+  single-bookmark PDF generation.
 
 ## Stage 2 — Architecture foundations (2026-09-09)
 

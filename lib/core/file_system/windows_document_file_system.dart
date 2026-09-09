@@ -34,4 +34,13 @@ class WindowsDocumentFileSystem implements DocumentFileSystem {
   }) async {
     await File(path).writeAsBytes(bytes, flush: flush);
   }
+
+  @override
+  Future<void> writeAsBytesInBackground(
+    String path,
+    List<int> bytes, {
+    bool flush = false,
+  }) {
+    return Isolate.run(() => File(path).writeAsBytes(bytes, flush: flush));
+  }
 }

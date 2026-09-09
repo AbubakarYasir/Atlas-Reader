@@ -12,6 +12,13 @@ abstract interface class DocumentFileSystem {
 
   Future<void> writeAsBytes(String path, List<int> bytes, {bool flush = false});
 
+  /// Writes generated document bytes without competing with UI work.
+  Future<void> writeAsBytesInBackground(
+    String path,
+    List<int> bytes, {
+    bool flush = false,
+  });
+
   Future<void> delete(String path);
 
   Future<void> rename(String fromPath, String toPath);

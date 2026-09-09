@@ -48,7 +48,7 @@ class PdfSafeFileWriter {
     }
 
     try {
-      await _fileSystem.writeAsBytes(tmpPath, bytes, flush: true);
+      await _fileSystem.writeAsBytesInBackground(tmpPath, bytes, flush: true);
       await _validateWrittenFile(tmpPath, expectedPageCount: expectedPageCount);
 
       // Windows does not reliably rename over an existing file. Move the
@@ -118,7 +118,7 @@ class PdfSafeFileWriter {
     String tmpPath, {
     int? expectedPageCount,
   }) async {
-    final written = await _fileSystem.readAsBytes(tmpPath);
+    final written = await _fileSystem.readAsBytesInBackground(tmpPath);
     _validatePdfBytes(written, expectedPageCount: expectedPageCount);
   }
 

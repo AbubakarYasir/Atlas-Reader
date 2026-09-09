@@ -512,6 +512,14 @@ Future: `(file_uuid, bookmark_uuid)` when XMP UUIDs land.
 
 ### Phase 2 — Reader & UEP Hardening (Weeks 9–16)
 
+**Completed in Stage 3:**
+
+- Windows PDF reader with on-demand page rendering, continuous scrolling, zoom,
+  text selection, active-page tracking, and `Ctrl+B` bookmarking.
+- Reader bookmark dialog that automatically uses the currently visible page.
+- Background-isolate document byte I/O plus page-count, outline-extraction, and
+  single-bookmark PDF generation work.
+
 | Deliverable | A11y gate |
 |-------------|-----------|
 | PDF viewer with page nav | Zoom, keyboard page flip, focus not trapped |

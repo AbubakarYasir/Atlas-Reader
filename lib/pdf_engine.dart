@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:isolate';
 import 'package:logging/logging.dart';
 
 import 'package:syncfusion_flutter_pdf/pdf.dart';
@@ -31,16 +31,12 @@ class PdfEngine {
 
   /// Get the page count of a PDF file
   Future<int?> getPageCount(String filePath) async {
-    PdfDocument? document;
     try {
-      final bytes = await _fileSystem.readAsBytes(filePath);
-      document = PdfDocument(inputBytes: bytes);
-      return document.pages.count;
+      final bytes = await _fileSystem.readAsBytesInBackground(filePath);
+      return Isolate.run(() => _pageCountFromBytes(bytes));
     } catch (e) {
       _log.warning('[PDF] Error reading page count: $e');
       return null;
-    } finally {
-      document?.dispose();
     }
   }
 
@@ -50,36 +46,17 @@ class PdfEngine {
     int pageIndex, {
     String? description,
   }) async {
-    PdfDocument? document;
     try {
       _log.info('[PDF] Starting bookmark injection for: $bookmarkTitle');
       _log.fine('[PDF] File: $filePath, Page: $pageIndex');
 
-      final bytes = await _fileSystem.readAsBytes(filePath);
-      document = PdfDocument(inputBytes: bytes);
-      final documentPageCount = document.pages.count;
-
-      // Verify page index is valid
-      if (pageIndex >= document.pages.count) {
-        throw Exception(
-          'Page index $pageIndex exceeds document pages (${document.pages.count})',
-        );
-      }
-
-      // Add bookmark with Unicode support
-      try {
-        final bookmark = document.bookmarks.add(bookmarkTitle);
-        bookmark.destination = PdfDestination(document.pages[pageIndex]);
-        _log.info('[PDF] Bookmark added successfully: $bookmarkTitle');
-        _log.fine('[PDF] Bookmarks count in PDF: ${document.bookmarks.count}');
-      } catch (e) {
-        _log.warning('[PDF] Error adding bookmark: $e');
-        _log.fine(
-          '[PDF] Attempted title (bytes): ${utf8.encode(bookmarkTitle)}',
-        );
-        _log.fine('[PDF] Attempted title (length): ${bookmarkTitle.length}');
-        rethrow;
-      }
+      final bytes = await _fileSystem.readAsBytesInBackground(filePath);
+      final generated = await Isolate.run(
+        () => _injectBookmarkIntoBytes(bytes, bookmarkTitle, pageIndex),
+      );
+      final outBytes = List<int>.from(generated['bytes']! as List);
+      final documentPageCount = generated['pageCount']! as int;
+      _log.info('[PDF] Bookmark added successfully: $bookmarkTitle');
 
       // Update descriptions in custom property if description is provided
       // Note: Syncfusion PDF doesn't support customProperties, so we skip this for now
@@ -89,10 +66,6 @@ class PdfEngine {
           "[PDF] Description provided but not saved (Syncfusion doesn't support customProperties)",
         );
       }
-
-      final outBytes = await document.save();
-      document.dispose();
-      document = null;
 
       _log.fine('[PDF] Document saved, size: ${outBytes.length} bytes');
 
@@ -109,8 +82,6 @@ class PdfEngine {
       _log.severe('[PDF] ERROR in injectBookmark: $e');
       _log.severe('[PDF] Stack trace: $stackTrace');
       return null;
-    } finally {
-      document?.dispose();
     }
   }
 
@@ -118,23 +89,13 @@ class PdfEngine {
   /// Each entry includes a hierarchical [path], [title], optional [pageIndex],
   /// [isFolder], [description], and [tags].
   Future<List<Map<String, dynamic>>> extractBookmarks(String filePath) async {
-    PdfDocument? document;
     try {
       _log.info('[PDF] Starting bookmark extraction from: $filePath');
 
-      final bytes = await _fileSystem.readAsBytes(filePath);
-      document = PdfDocument(inputBytes: bytes);
-
-      final bookmarksList = <Map<String, dynamic>>[];
-
-      for (int i = 0; i < document.bookmarks.count; i++) {
-        _collectBookmarkSubtree(
-          document.bookmarks[i],
-          document,
-          bookmarksList,
-          const [],
-        );
-      }
+      final bytes = await _fileSystem.readAsBytesInBackground(filePath);
+      final bookmarksList = await Isolate.run(
+        () => _extractBookmarksFromBytes(bytes),
+      );
 
       _log.info(
         '[PDF] Extraction complete. Found ${bookmarksList.length} bookmarks',
@@ -144,8 +105,56 @@ class PdfEngine {
       _log.severe('[PDF] ERROR in extractBookmarks: $e');
       _log.severe('[PDF] Stack trace: $stackTrace');
       return [];
+    }
+  }
+
+  static int _pageCountFromBytes(List<int> bytes) {
+    final document = PdfDocument(inputBytes: bytes);
+    try {
+      return document.pages.count;
     } finally {
-      document?.dispose();
+      document.dispose();
+    }
+  }
+
+  static Map<String, Object> _injectBookmarkIntoBytes(
+    List<int> bytes,
+    String bookmarkTitle,
+    int pageIndex,
+  ) {
+    final document = PdfDocument(inputBytes: bytes);
+    try {
+      final pageCount = document.pages.count;
+      if (pageIndex < 0 || pageIndex >= pageCount) {
+        throw StateError(
+          'Page index $pageIndex exceeds document pages ($pageCount)',
+        );
+      }
+      final bookmark = document.bookmarks.add(bookmarkTitle);
+      bookmark.destination = PdfDestination(document.pages[pageIndex]);
+      return {'bytes': document.saveSync(), 'pageCount': pageCount};
+    } finally {
+      document.dispose();
+    }
+  }
+
+  static List<Map<String, dynamic>> _extractBookmarksFromBytes(
+    List<int> bytes,
+  ) {
+    final document = PdfDocument(inputBytes: bytes);
+    try {
+      final bookmarksList = <Map<String, dynamic>>[];
+      for (var index = 0; index < document.bookmarks.count; index++) {
+        _collectBookmarkSubtree(
+          document.bookmarks[index],
+          document,
+          bookmarksList,
+          const [],
+        );
+      }
+      return bookmarksList;
+    } finally {
+      document.dispose();
     }
   }
 
@@ -230,7 +239,7 @@ class PdfEngine {
         '[PDF] Starting hierarchical bookmark overwrite for: $filePath',
       );
 
-      final bytes = await _fileSystem.readAsBytes(filePath);
+      final bytes = await _fileSystem.readAsBytesInBackground(filePath);
       document = PdfDocument(inputBytes: bytes);
       document.bookmarks.clear();
 
@@ -310,7 +319,7 @@ class PdfEngine {
       _log.info('[PDF] Starting batch bookmark injection for: $filePath');
       _log.fine('[PDF] Number of bookmarks to inject: ${newBookmarks.length}');
 
-      final bytes = await _fileSystem.readAsBytes(filePath);
+      final bytes = await _fileSystem.readAsBytesInBackground(filePath);
       document = PdfDocument(inputBytes: bytes);
 
       final pageCount = document.pages.count;
@@ -379,7 +388,7 @@ class PdfEngine {
       _log.info('[PDF] Starting bookmark overwrite for: $filePath');
       _log.fine('[PDF] Number of bookmarks to set: ${finalBookmarks.length}');
 
-      final bytes = await _fileSystem.readAsBytes(filePath);
+      final bytes = await _fileSystem.readAsBytesInBackground(filePath);
       document = PdfDocument(inputBytes: bytes);
 
       // Clear all existing bookmarks

@@ -169,9 +169,9 @@ flutter test
 flutter analyze
 ```
 
-The project currently has 15 automated tests. They cover bookmark-tree paths,
+The project currently has 16 automated tests. They cover bookmark-tree paths,
 snapshot compatibility, sync differences, widget startup, and Windows document
-file operations.
+file operations, including isolate-backed PDF bookmark processing.
 
 ### Project layout
 
@@ -196,6 +196,10 @@ All document reads, writes, renames, and deletions go through
 `DocumentFileSystem`. `WindowsDocumentFileSystem` is the current adapter. An
 Android Storage Access Framework adapter can implement the same interface
 without changing PDF or synchronization logic.
+
+Large document-byte reads and generated-file writes use a background isolate on
+Windows. The reader uses a virtualized PDF viewer, which renders pages as they
+are needed instead of building every page in the Flutter widget tree at once.
 
 ## Roadmap and release notes
 

@@ -21,6 +21,13 @@ void main() {
       expect(await fileSystem.exists(originalPath), isTrue);
       expect(await fileSystem.readAsBytes(originalPath), [1, 2, 3]);
 
+      await fileSystem.writeAsBytesInBackground(originalPath, [
+        4,
+        5,
+        6,
+      ], flush: true);
+      expect(await fileSystem.readAsBytesInBackground(originalPath), [4, 5, 6]);
+
       await fileSystem.rename(originalPath, movedPath);
       expect(await fileSystem.exists(originalPath), isFalse);
       expect(await fileSystem.exists(movedPath), isTrue);

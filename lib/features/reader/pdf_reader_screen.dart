@@ -31,11 +31,13 @@ class PdfReaderScreen extends StatefulWidget {
     required this.filePath,
     required this.fileSystem,
     required this.onCreateBookmark,
+    this.initialPageNumber = 1,
   });
 
   final String filePath;
   final DocumentFileSystem fileSystem;
   final Future<void> Function(ReaderBookmarkDraft draft) onCreateBookmark;
+  final int initialPageNumber;
 
   @override
   State<PdfReaderScreen> createState() => _PdfReaderScreenState();
@@ -44,7 +46,7 @@ class PdfReaderScreen extends StatefulWidget {
 class _PdfReaderScreenState extends State<PdfReaderScreen> {
   final PdfViewerController _viewerController = PdfViewerController();
   late final Future<List<int>> _documentBytes;
-  var _activePage = 1;
+  late var _activePage = widget.initialPageNumber;
   var _pageCount = 0;
   var _savingBookmark = false;
 
@@ -233,7 +235,15 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                     setState(() => _activePage = details.newPageNumber);
                   },
                   onDocumentLoaded: (details) {
-                    setState(() => _pageCount = details.document.pages.count);
+                    final targetPage = widget.initialPageNumber.clamp(
+                      1,
+                      details.document.pages.count,
+                    );
+                    _viewerController.jumpToPage(targetPage);
+                    setState(() {
+                      _activePage = targetPage;
+                      _pageCount = details.document.pages.count;
+                    });
                   },
                   onDocumentLoadFailed: (details) {
                     ScaffoldMessenger.of(context).showSnackBar(

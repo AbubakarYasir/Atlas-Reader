@@ -8,6 +8,8 @@ import '../../bookmark_tree.dart';
 import '../../core/file_system/windows_document_file_system.dart';
 import '../../database.dart';
 import '../../features/command_center/command_center_search_field.dart';
+import '../../features/command_center/command_center_overlay.dart';
+import '../../features/command_center/command_center_shortcuts.dart';
 import '../../features/reader/bookmark_composer.dart';
 import '../../features/reader/pdf_reader_screen.dart';
 import '../../features/settings/settings_screen.dart';
@@ -24,12 +26,93 @@ late final AppDatabase database;
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static final _navigatorKey = GlobalKey<NavigatorState>();
+  static const _fileSystem = WindowsDocumentFileSystem();
+
+  Future<void> _openCommandCenter() async {
+    final context = _navigatorKey.currentContext;
+    if (context == null) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => CommandCenterOverlay(
+        database: database,
+        onSelected: (result) {
+          Navigator.of(dialogContext).pop();
+          _openSearchResult(result);
+        },
+      ),
+    );
+  }
+
+  Future<void> _openSearchResult(CommandCenterResult result) async {
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) return;
+    final context = _navigatorKey.currentContext;
+    if (!await _fileSystem.exists(result.bookmark.filePath)) {
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('The PDF file could not be found.')),
+        );
+      }
+      return;
+    }
+
+    await navigator.push<void>(
+      MaterialPageRoute(
+        builder: (_) => PdfReaderScreen(
+          filePath: result.bookmark.filePath,
+          fileSystem: _fileSystem,
+          initialPageNumber: (result.bookmark.pageIndex ?? 0) + 1,
+          onCreateBookmark: (draft) =>
+              _createBookmarkFromReader(result.bookmark.filePath, draft),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _createBookmarkFromReader(
+    String filePath,
+    ReaderBookmarkDraft draft,
+  ) async {
+    final bookmarkId = await database.addBookmark(
+      filePath: filePath,
+      title: draft.title,
+      pageIndex: draft.pageNumber - 1,
+      description: draft.description?.isEmpty ?? true
+          ? null
+          : draft.description,
+    );
+    final tags = draft.tags?.split(',') ?? const <String>[];
+    for (final tag
+        in tags.map((tag) => tag.trim()).where((tag) => tag.isNotEmpty)) {
+      await database.addTagToBookmark(bookmarkId, tag);
+    }
+
+    final output = await PdfEngine(fileSystem: _fileSystem).injectBookmark(
+      filePath,
+      draft.title,
+      draft.pageNumber - 1,
+      description: draft.description,
+    );
+    if (output == null) {
+      throw StateError(
+        'The bookmark was saved locally but could not be written to the PDF.',
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'Atlas UEP PoC',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      ),
+      builder: (context, child) => CommandCenterShortcuts(
+        onOpen: _openCommandCenter,
+        child: child ?? const SizedBox.shrink(),
       ),
       home: const LibraryScreen(),
     );

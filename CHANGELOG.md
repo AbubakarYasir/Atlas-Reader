@@ -18,6 +18,8 @@ Versioning while it moves through pre-1.0 Windows beta releases.
 - Upgraded the beta-tag workflow to validate the tag against `pubspec.yaml`,
   run the quality suite, package the complete Windows runtime with a SHA-256
   checksum, and publish a documented GitHub prerelease automatically.
+- Pinned CI and release builds to Flutter 3.44.1/Dart 3.12.1 so formatting and
+  compilation use the same reproducible toolchain as the verified checkpoint.
 
 ### Planned product scope
 

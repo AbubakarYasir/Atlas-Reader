@@ -5,7 +5,7 @@
 
 | Release | Status | Formats | Primary platform |
 |---|---|---|---|
-| `0.8.0-beta.2` (build 4) | Corrected C1 candidate ready for owner test; latest published release is `0.8.0-beta.1` | PDF reader/editor; PDF and EPUB discovery | Windows 11 |
+| `0.8.0-beta.2` (build 4) | Corrected C1 prerelease candidate ready for owner test; latest accepted release is `0.8.0-beta.1` | PDF reader/editor; PDF and EPUB discovery | Windows 11 |
 
 Atlas Reader focuses on three jobs:
 

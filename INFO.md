@@ -2,7 +2,7 @@
 
 **Release candidate:** `0.8.0-beta.2` (build 4)
 
-**Latest published release:** `0.8.0-beta.1` (build 2)
+**Latest accepted release:** `0.8.0-beta.1` (build 2)
 
 **Verified target:** Windows 11
 

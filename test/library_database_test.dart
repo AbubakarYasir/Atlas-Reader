@@ -159,6 +159,24 @@ void main() {
     expect(bookmarks.single.title, 'Saved locally');
   });
 
+  test('academic page offsets persist for a scanned library file', () async {
+    final folder = await db.addLibraryFolder(r'C:\Books');
+    const filePath = r'C:\Books\scholarly-text.pdf';
+    await db.upsertLibraryFiles(folder.id, [
+      ScannedPdf(
+        filePath: filePath,
+        fileName: 'scholarly-text.pdf',
+        bookmarkCount: 4,
+        lastModified: DateTime(2026, 1, 1),
+      ),
+    ]);
+
+    await db.updatePageOffset(filePath, -12);
+
+    final files = await db.getLibraryFiles(folderId: folder.id);
+    expect(files.single.pageOffset, -12);
+  });
+
   test('renaming a folder preserves its folder state and page', () async {
     final folderId = await db.addBookmark(
       filePath: r'C:\Books\outline.pdf',

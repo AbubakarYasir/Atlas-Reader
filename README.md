@@ -8,13 +8,14 @@ That means a bookmark you create in Atlas can also appear in compatible PDF
 readers such as Adobe Acrobat. Your books stay your books: Atlas does not need
 an account, cloud storage, or an internet connection to manage them.
 
-> **Project status:** This is a Windows-focused proof of concept. Use it with
-> copies of important PDFs while it is being developed.
+> **Project status:** Windows desktop application through Stage 11. PDF edits
+> use a verified temporary-file replacement workflow; keep independent backups
+> of irreplaceable research files as a normal precaution.
 
 ## What you can do today
 
 - Select a PDF from your computer.
-- Open the PDF in a scrollable, zoomable reader.
+- Open a PDF in a scrollable, zoomable reader with Basic and Research modes.
 - See its existing outline/bookmarks, including chapters, sections, and deeper
   sub-sections.
 - Add a bookmark for a page, optional note, and comma-separated tags.
@@ -214,10 +215,20 @@ flutter test
 flutter analyze
 ```
 
-The project currently has 37 automated tests. They cover bookmark-tree paths,
-snapshot compatibility, sync differences, command and library data behavior,
-folder scanning, widget startup, and Windows document file operations,
-including isolate-backed PDF bookmark processing.
+The project currently has 41 test cases, including two opt-in real-file smoke
+tests. They cover bookmark-tree paths,
+mixed Arabic-English identifiers, snapshot compatibility, sync differences,
+Arabic PDF round trips, library data behavior, reader controls, research
+workspace state, widget startup, and isolate-backed PDF operations.
+
+To run the optional, read-only audit against personal Arabic and English PDF
+copies, set the paths only for the current PowerShell session:
+
+```powershell
+$env:ATLAS_AUDIT_ARABIC_PDF = 'C:\path\to\arabic-copy.pdf'
+$env:ATLAS_AUDIT_ENGLISH_PDF = 'C:\path\to\english-copy.pdf'
+flutter test test/runtime_pdf_audit_test.dart
+```
 
 ### Localization and accessibility
 
@@ -244,6 +255,8 @@ lib/
 │   ├── reader/         # PDF reader and bookmark composer
 │   ├── bookmarks/      # Bookmark-management contracts
 │   ├── command_center/ # Ctrl+K global search overlay
+│   ├── research/       # PDF annotations and citation tools
+│   ├── speed_reading/  # Hands-free and RSVP reading modes
 │   ├── sync/           # Sync preview UI
 │   └── settings/       # Settings entry point
 ├── pdf_engine.dart     # PDF outline extraction and writing

@@ -13,17 +13,55 @@ hardening approach rather than formal releases.
 - Background page-text extraction for the speed reader plus widget and engine
   regression tests.
 
-## Stages 6–10 — Arabic verification, research, and workspace (2026-09-09)
+## Stage 10 — Multi-document workspace (2026-09-09)
 
 ### Added
 
-- Arabic nested-outline round-trip coverage, safe bookmark injection, tag
-  persistence, and bi-directional PDF/database synchronization.
-- Visual bookshelf discovery, rich library metadata, covers, EPUB discovery,
-  filters, and reading-progress tracking.
-- Basic and Research reading modes, display themes, page controls, thumbnail
-  jumping, annotations, citations, split reading, tabbed sessions, and linked
-  research scratchpads.
+- Split reader workspace, tabbed reading sessions, persisted tab/page state,
+  and a linked Markdown research scratchpad.
+
+## Stage 9 — Research annotations and citations (2026-09-09)
+
+### Added
+
+- Standard PDF highlights, underlines, strikethrough, sticky notes, local
+  annotation indexing, annotations drawer, and citations.
+
+## Stage 8 — Advanced reading engine (2026-09-09)
+
+### Added
+
+- Basic/Research interface modes, reading layouts, display themes, margin
+  crop, brightness, page offset, outline sidebar, thumbnail jump grid, and
+  chapter-aware scrub bar.
+
+## Stage 7 — Library discovery and visual bookshelf (2026-09-09)
+
+### Added
+
+- Cover caching, visual grid and list presentations, rich library metadata,
+  favorites, reading progress, filters, EPUB discovery, and folder scanning.
+
+## Stage 6 — Arabic PDF round-trip verification (2026-09-09)
+
+### Added
+
+- A nested Arabic outline fixture that verifies safe PDF bookmark writes,
+  tag persistence, external-outline changes, and database synchronization.
+
+## Stabilization audit — Stages 1–11 (2026-09-09)
+
+### Fixed
+
+- Reader page-number offsets now persist when changed in Reader Settings;
+  previously the value was compared after state replacement and never saved.
+
+### Verified
+
+- `flutter analyze` with zero issues and the full automated test suite.
+- Mixed Arabic-English path-key regression coverage.
+- Read-only real-file smoke coverage for Arabic nested outlines and English
+  PDFs, configured without storing personal paths in source control.
 
 ## Stage 5 — Accessibility and Arabic language support (2026-09-09)
 
@@ -68,7 +106,7 @@ hardening approach rather than formal releases.
 - A safely matched in-folder PDF rename carries local bookmarks and the PDF
   snapshot to its new path instead of treating it as a separate book.
 
-## Stage 3 — PDF reader integration (in progress)
+## Stage 3 — PDF reader integration (completed)
 
 ### Added
 
@@ -126,5 +164,5 @@ hardening approach rather than formal releases.
 
 ### Verified
 
-- `flutter test` — 14 tests passing.
-- `flutter analyze` — no issues.
+- Initial tree, snapshot, diff, and widget coverage was added; current
+  verification status is recorded in the stabilization audit above.

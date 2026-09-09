@@ -1,11 +1,11 @@
 # Atlas Reader — Master Plan
 ## Universal Embedding Protocol · Maximum Accessibility · Production Quality
 
-**Status:** Phase 1 PoC → Phase 2 Hardening
+**Status:** Stages 1–11 implemented on Windows; Stages 12–15 remain roadmap work
 
 **Last updated:** September 2026
 
-**Platforms:** Windows (primary PoC), Android (target parity)
+**Platforms:** Windows (primary implementation), Android (target parity)
 
 **Accessibility target:** WCAG 2.2 Level AA minimum · AAA where feasible
 **Quality bar:** Every feature shippable only when accessible, localizable, and recoverable from failure
@@ -571,15 +571,81 @@ Future: `(file_uuid, bookmark_uuid)` when XMP UUIDs land.
 
 ---
 
+## X.A Delivered implementation stages (1–11)
+
+This delivery record reflects the Windows implementation through commit
+`f0d864f`. It distinguishes completed work from the later roadmap.
+
+### Stage 6 — Arabic PDF round-trip verification
+
+- **Delivered:** Nested Arabic outline extraction, database import, tagged
+  Arabic bookmark creation, safe outline rewrite, and external-outline sync.
+- **Files:** `test/arabic_pdf_roundtrip_test.dart`, `lib/pdf_engine.dart`,
+  `lib/sync_engine.dart`, and `lib/database.dart`.
+- **Verification:** The test creates a nested Arabic fixture, reopens its
+  written outline, simulates an external addition, calculates the diff, and
+  imports that change through `SyncEngine`.
+
+### Stage 7 — Library discovery and visual bookshelf
+
+- **Delivered:** PDF/EPUB discovery, cover caching, book metadata, favorites,
+  progress, sorting, filtering, and visual shelf/list layouts.
+- **Files:** `lib/core/covers/cover_cache_manager.dart`,
+  `lib/core/epub/epub_engine.dart`, `lib/features/library/visual_bookshelf.dart`,
+  `lib/features/library/library_folder_scanner.dart`, and `lib/database.dart`.
+- **Verification:** `test/stage7_visual_bookshelf_test.dart` covers metadata,
+  favorites, progress, sort order, and scan behavior.
+
+### Stage 8 — Advanced reading engine and page controls
+
+- **Delivered:** Basic/Research modes, single and continuous layouts,
+  two-page presentation controls, margin crop, themes, brightness, page
+  offsets, outline sidebar, thumbnail jump grid, and chapter scrub bar.
+- **Files:** `lib/features/reader/pdf_reader_screen.dart`,
+  `reader_models.dart`, `reader_outline_sidebar.dart`, `reader_scrub_bar.dart`,
+  `reader_settings_dialog.dart`, and `reader_thumbnail_jumper.dart`.
+- **Verification:** `test/stage8_reading_engine_test.dart` exercises the
+  thumbnail jumper, scrub bar, and display settings.
+
+### Stage 9 — Deep research and standard PDF markups
+
+- **Delivered:** Highlights, underlines, strikethrough, sticky notes, local
+  annotation index, standard PDF annotation streams, and citations.
+- **Files:** `lib/features/research/annotations_drawer.dart`,
+  `citation_generator.dart`, `research_selection_toolbar.dart`,
+  `lib/pdf_engine.dart`, and `lib/database.dart`.
+- **Verification:** `test/stage9_research_annotations_test.dart` reopens the
+  saved PDF and inspects annotation streams plus local research records.
+
+### Stage 10 — Multi-document workspace
+
+- **Delivered:** Tabbed sessions, split reader workspace, paired-book viewing,
+  linked Markdown scratchpad, and restored session/page state.
+- **Files:** `lib/features/workspace/split_reader_workspace.dart`,
+  `research_scratchpad.dart`, `lib/features/library/visual_bookshelf.dart`,
+  and `lib/database.dart`.
+- **Verification:** `test/stage10_split_workspace_test.dart` verifies restored
+  tabs and scratchpad formatting, quotations, and exact-page links.
+
+### Stage 11 — Speed reading and hands-free controls
+
+- **Delivered:** Hands-free reader overlay plus Arabic-aware RSVP display at
+  200–800 WPM, with current-page text extraction off the UI isolate.
+- **Files:** `lib/features/speed_reading/auto_scroll_overlay.dart`,
+  `rsvp_speed_reader.dart`, `lib/features/reader/pdf_reader_screen.dart`, and
+  `lib/pdf_engine.dart`.
+- **Verification:** `test/rsvp_speed_reader_test.dart` covers Arabic content
+  and controls; engine tests cover background page-text extraction.
+
+---
+
 ## XI. Known Issues → Planned Fixes
 
 | Issue | Root cause | Fix |
 |-------|------------|-----|
-| Full tree rewrite every commit | Simplicity in PoC | Incremental patch with fallback |
-| Descriptions not in PDF | Syncfusion limits | XMP sidecar or PDF annotation layer |
-| README outdated | Doc drift | Point README → this PLAN.md |
-| No reader | PoC scope | Phase 2 PDF viewer |
-| Monolithic main.dart | PoC velocity | Phase 1 module split |
+| Full tree rewrite every commit | Simplicity in current sync design | Incremental patch with fallback |
+| PDF text extraction unavailable on scanned pages | PDFs may contain only images | Show a clear RSVP empty-text message |
+| EPUB reader/sync not yet available | Current full reader targets PDF | Keep EPUB discovery separate until reader support lands |
 
 ---
 

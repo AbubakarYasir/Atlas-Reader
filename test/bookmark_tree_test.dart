@@ -37,6 +37,16 @@ void main() {
       final second = BookmarkTree.pathKey(['Volume 2', 'Index']);
       expect(first, isNot(equals(second)));
     });
+
+    test('preserves Arabic, Latin text, and punctuation in a path key', () {
+      const path = ['أصول الفقه', 'Chapter 2: الأدلة', 'Section (A)'];
+
+      expect(
+        BookmarkTree.pathKey(path),
+        'أصول الفقه${bookmarkPathSeparator}Chapter 2: الأدلة'
+        '${bookmarkPathSeparator}Section (A)',
+      );
+    });
   });
 
   group('BookmarkTree.pathForBookmark', () {

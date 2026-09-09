@@ -148,9 +148,10 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
         builder: (ctx, setDialogState) => ReaderSettingsDialog(
           preferences: _preferences,
           onChanged: (updated) {
+            final previousPageOffset = _preferences.pageOffset;
             setDialogState(() => _preferences = updated);
             setState(() => _preferences = updated);
-            if (updated.pageOffset != _preferences.pageOffset) {
+            if (updated.pageOffset != previousPageOffset) {
               _db.updatePageOffset(widget.filePath, updated.pageOffset);
             }
           },

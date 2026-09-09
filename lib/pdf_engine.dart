@@ -1,4 +1,5 @@
 import 'dart:isolate';
+import 'dart:ui' show Rect;
 import 'package:logging/logging.dart';
 
 import 'package:syncfusion_flutter_pdf/pdf.dart';
@@ -496,5 +497,142 @@ class PdfEngine {
     } finally {
       document?.dispose();
     }
+  }
+
+  /// Injects standard PDF highlight, underline, strikethrough, or note annotation.
+  /// Saved directly into standard PDF annotation streams so it opens in Adobe Acrobat.
+  Future<bool> addAnnotationToPdf(
+    String filePath, {
+    required int pageIndex,
+    required String type,
+    required String text,
+    String? note,
+    String colorHex = '#FFE066',
+    Rect? bounds,
+  }) async {
+    try {
+      final bytes = await _fileSystem.readAsBytesInBackground(filePath);
+      final outBytes = await Isolate.run(() {
+        final doc = PdfDocument(inputBytes: bytes);
+        try {
+          if (pageIndex < 0 || pageIndex >= doc.pages.count) {
+            return null;
+          }
+          final page = doc.pages[pageIndex];
+          final color = _hexToPdfColor(colorHex);
+          final rect = bounds ?? const Rect.fromLTWH(50, 50, 200, 20);
+
+          if (type == 'note') {
+            final popup = PdfPopupAnnotation(
+              rect,
+              note ?? text,
+              icon: PdfPopupIcon.note,
+            );
+            page.annotations.add(popup);
+          } else {
+            PdfTextMarkupAnnotationType markupType;
+            switch (type) {
+              case 'underline':
+                markupType = PdfTextMarkupAnnotationType.underline;
+                break;
+              case 'strikethrough':
+                markupType = PdfTextMarkupAnnotationType.strikethrough;
+                break;
+              case 'highlight':
+              default:
+                markupType = PdfTextMarkupAnnotationType.highlight;
+                break;
+            }
+
+            final markup = PdfTextMarkupAnnotation(
+              rect,
+              text,
+              color,
+              textMarkupAnnotationType: markupType,
+              subject: note,
+            );
+            page.annotations.add(markup);
+          }
+
+          final saved = doc.saveSync();
+          return saved;
+        } finally {
+          doc.dispose();
+        }
+      });
+
+      if (outBytes == null) return false;
+
+      await _safeFileWriter.replacePdfFile(filePath, outBytes);
+      return true;
+    } catch (e, st) {
+      _log.warning('[PDF] Failed to add annotation to PDF: $e\n$st');
+      return false;
+    }
+  }
+
+  /// Extracts standard PDF text markup and popup annotations from PDF stream
+  Future<List<Map<String, dynamic>>> extractAnnotationsFromPdf(
+    String filePath,
+  ) async {
+    try {
+      final bytes = await _fileSystem.readAsBytesInBackground(filePath);
+      return Isolate.run(() {
+        final doc = PdfDocument(inputBytes: bytes);
+        final results = <Map<String, dynamic>>[];
+        try {
+          for (var p = 0; p < doc.pages.count; p++) {
+            final page = doc.pages[p];
+            for (var a = 0; a < page.annotations.count; a++) {
+              final annot = page.annotations[a];
+              if (annot is PdfTextMarkupAnnotation) {
+                results.add({
+                  'pageIndex': p,
+                  'type': annot.textMarkupAnnotationType.name,
+                  'text': annot.text,
+                  'note': annot.subject,
+                  'bounds': [
+                    annot.bounds.left,
+                    annot.bounds.top,
+                    annot.bounds.width,
+                    annot.bounds.height,
+                  ],
+                });
+              } else if (annot is PdfPopupAnnotation) {
+                results.add({
+                  'pageIndex': p,
+                  'type': 'note',
+                  'text': annot.text,
+                  'note': annot.text,
+                  'bounds': [
+                    annot.bounds.left,
+                    annot.bounds.top,
+                    annot.bounds.width,
+                    annot.bounds.height,
+                  ],
+                });
+              }
+            }
+          }
+          return results;
+        } finally {
+          doc.dispose();
+        }
+      });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static PdfColor _hexToPdfColor(String hex) {
+    var clean = hex.replaceAll('#', '');
+    if (clean.length == 6) {
+      clean = 'FF$clean';
+    }
+    final val = int.tryParse(clean, radix: 16) ?? 0xFFFFEB3B;
+    final r = (val >> 16) & 0xFF;
+    final g = (val >> 8) & 0xFF;
+    final b = val & 0xFF;
+    return PdfColor(r, g, b);
   }
 }

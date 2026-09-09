@@ -79,9 +79,27 @@ class LibraryFiles extends Table {
   DateTimeColumn get lastOpened => dateTime().nullable()();
   TextColumn get series => text().nullable()();
   TextColumn get tags => text().nullable()();
+  IntColumn get pageOffset => integer().withDefault(const Constant(0))();
   DateTimeColumn get lastModified => dateTime()();
   DateTimeColumn get lastScanned =>
       dateTime().withDefault(currentDateAndTime)();
+}
+
+/// In-text highlights, notes, underlines, and strikethroughs
+@DataClassName('DocumentAnnotation')
+class Annotations extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get filePath => text()();
+  IntColumn get pageNumber => integer()();
+  TextColumn get type => text()(); // highlight, underline, strikethrough, note
+  TextColumn get selectedText => text().nullable()();
+  TextColumn get note => text().nullable()();
+  TextColumn get colorHex => text().withDefault(const Constant('#FFE066'))();
+  RealColumn get rectX => real().withDefault(const Constant(0.0))();
+  RealColumn get rectY => real().withDefault(const Constant(0.0))();
+  RealColumn get rectWidth => real().withDefault(const Constant(0.0))();
+  RealColumn get rectHeight => real().withDefault(const Constant(0.0))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
 /// AppDatabase class extending _$AppDatabase
@@ -93,6 +111,7 @@ class LibraryFiles extends Table {
     FileSnapshots,
     LibraryFolders,
     LibraryFiles,
+    Annotations,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -102,24 +121,22 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
       onCreate: (Migrator m) async {
         await m.createAll();
-        // Create FTS5 virtual table for full-text search
+        // Create FTS5 virtual table for bookmarks
         await customStatement('''
           CREATE VIRTUAL TABLE IF NOT EXISTS bookmarks_fts 
           USING fts5(title, content=bookmarks, content_rowid=id);
         ''');
-        // Populate FTS table with existing data
         await customStatement('''
           INSERT INTO bookmarks_fts(rowid, title)
           SELECT id, title FROM bookmarks;
         ''');
-        // Create triggers to keep FTS in sync
         await customStatement('''
           CREATE TRIGGER IF NOT EXISTS bookmarks_ai AFTER INSERT ON bookmarks BEGIN
             INSERT INTO bookmarks_fts(rowid, title) VALUES (new.id, new.title);
@@ -134,6 +151,32 @@ class AppDatabase extends _$AppDatabase {
           CREATE TRIGGER IF NOT EXISTS bookmarks_au AFTER UPDATE ON bookmarks BEGIN
             INSERT INTO bookmarks_fts(bookmarks_fts, rowid, title) VALUES('delete', old.id, old.title);
             INSERT INTO bookmarks_fts(rowid, title) VALUES (new.id, new.title);
+          END;
+        ''');
+
+        // Create FTS5 virtual table for annotations (highlights, notes)
+        await customStatement('''
+          CREATE VIRTUAL TABLE IF NOT EXISTS annotations_fts 
+          USING fts5(selected_text, note, content=annotations, content_rowid=id);
+        ''');
+        await customStatement('''
+          INSERT INTO annotations_fts(rowid, selected_text, note)
+          SELECT id, selected_text, note FROM annotations;
+        ''');
+        await customStatement('''
+          CREATE TRIGGER IF NOT EXISTS annotations_ai AFTER INSERT ON annotations BEGIN
+            INSERT INTO annotations_fts(rowid, selected_text, note) VALUES (new.id, new.selected_text, new.note);
+          END;
+        ''');
+        await customStatement('''
+          CREATE TRIGGER IF NOT EXISTS annotations_ad AFTER DELETE ON annotations BEGIN
+            INSERT INTO annotations_fts(annotations_fts, rowid, selected_text, note) VALUES('delete', old.id, old.selected_text, old.note);
+          END;
+        ''');
+        await customStatement('''
+          CREATE TRIGGER IF NOT EXISTS annotations_au AFTER UPDATE ON annotations BEGIN
+            INSERT INTO annotations_fts(annotations_fts, rowid, selected_text, note) VALUES('delete', old.id, old.selected_text, old.note);
+            INSERT INTO annotations_fts(rowid, selected_text, note) VALUES (new.id, new.selected_text, new.note);
           END;
         ''');
       },
@@ -159,6 +202,30 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(libraryFiles, libraryFiles.lastOpened);
           await m.addColumn(libraryFiles, libraryFiles.series);
           await m.addColumn(libraryFiles, libraryFiles.tags);
+        }
+        if (from < 7) {
+          await m.addColumn(libraryFiles, libraryFiles.pageOffset);
+          await m.createTable(annotations);
+          await customStatement('''
+            CREATE VIRTUAL TABLE IF NOT EXISTS annotations_fts 
+            USING fts5(selected_text, note, content=annotations, content_rowid=id);
+          ''');
+          await customStatement('''
+            CREATE TRIGGER IF NOT EXISTS annotations_ai AFTER INSERT ON annotations BEGIN
+              INSERT INTO annotations_fts(rowid, selected_text, note) VALUES (new.id, new.selected_text, new.note);
+            END;
+          ''');
+          await customStatement('''
+            CREATE TRIGGER IF NOT EXISTS annotations_ad AFTER DELETE ON annotations BEGIN
+              INSERT INTO annotations_fts(annotations_fts, rowid, selected_text, note) VALUES('delete', old.id, old.selected_text, old.note);
+            END;
+          ''');
+          await customStatement('''
+            CREATE TRIGGER IF NOT EXISTS annotations_au AFTER UPDATE ON annotations BEGIN
+              INSERT INTO annotations_fts(annotations_fts, rowid, selected_text, note) VALUES('delete', old.id, old.selected_text, old.note);
+              INSERT INTO annotations_fts(rowid, selected_text, note) VALUES (new.id, new.selected_text, new.note);
+            END;
+          ''');
         }
         // For PoC, we'll drop and recreate
         if (from < 3) {
@@ -952,6 +1019,87 @@ class AppDatabase extends _$AppDatabase {
     });
 
     return list;
+  }
+
+  /// Add a research annotation (highlight, underline, strikethrough, note)
+  Future<int> addAnnotation({
+    required String filePath,
+    required int pageNumber,
+    required String type,
+    String? selectedText,
+    String? note,
+    String colorHex = '#FFE066',
+    double rectX = 0.0,
+    double rectY = 0.0,
+    double rectWidth = 0.0,
+    double rectHeight = 0.0,
+  }) async {
+    return into(annotations).insert(
+      AnnotationsCompanion(
+        filePath: Value(filePath),
+        pageNumber: Value(pageNumber),
+        type: Value(type),
+        selectedText: Value(selectedText),
+        note: Value(note),
+        colorHex: Value(colorHex),
+        rectX: Value(rectX),
+        rectY: Value(rectY),
+        rectWidth: Value(rectWidth),
+        rectHeight: Value(rectHeight),
+      ),
+    );
+  }
+
+  /// Get all annotations for a document, optionally scoped to a single page
+  Future<List<DocumentAnnotation>> getAnnotationsForFile(
+    String filePath, {
+    int? pageNumber,
+  }) async {
+    final q = select(annotations)..where((tbl) => tbl.filePath.equals(filePath));
+    if (pageNumber != null) {
+      q.where((tbl) => tbl.pageNumber.equals(pageNumber));
+    }
+    q.orderBy([
+      (tbl) => OrderingTerm.asc(tbl.pageNumber),
+      (tbl) => OrderingTerm.asc(tbl.createdAt),
+    ]);
+    return q.get();
+  }
+
+  /// Delete an annotation by ID
+  Future<int> deleteAnnotation(int id) async {
+    return (delete(annotations)..where((tbl) => tbl.id.equals(id))).go();
+  }
+
+  /// Update the note of an annotation
+  Future<int> updateAnnotationNote(int id, String note) async {
+    return (update(annotations)..where((tbl) => tbl.id.equals(id))).write(
+      AnnotationsCompanion(note: Value(note)),
+    );
+  }
+
+  /// Update academic page offset for a library file
+  Future<void> updatePageOffset(String filePath, int pageOffset) async {
+    await (update(libraryFiles)..where((tbl) => tbl.filePath.equals(filePath)))
+        .write(LibraryFilesCompanion(pageOffset: Value(pageOffset)));
+  }
+
+  /// Full-text search across all highlights and notes
+  Future<List<DocumentAnnotation>> searchAnnotationsFts(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return const [];
+    final sanitized = trimmed.replaceAll("'", "''");
+    final rows = await customSelect(
+      '''
+      SELECT annotations.* FROM annotations
+      JOIN annotations_fts ON annotations.id = annotations_fts.rowid
+      WHERE annotations_fts MATCH '$sanitized*'
+      ORDER BY annotations.created_at DESC
+      ''',
+      readsFrom: {annotations},
+    ).get();
+
+    return rows.map((row) => annotations.map(row.data)).toList();
   }
 }
 

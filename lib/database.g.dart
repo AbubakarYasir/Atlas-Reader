@@ -1710,6 +1710,18 @@ class $LibraryFilesTable extends LibraryFiles
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _pageOffsetMeta = const VerificationMeta(
+    'pageOffset',
+  );
+  @override
+  late final GeneratedColumn<int> pageOffset = GeneratedColumn<int>(
+    'page_offset',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
     'lastModified',
   );
@@ -1751,6 +1763,7 @@ class $LibraryFilesTable extends LibraryFiles
     lastOpened,
     series,
     tags,
+    pageOffset,
     lastModified,
     lastScanned,
   ];
@@ -1874,6 +1887,12 @@ class $LibraryFilesTable extends LibraryFiles
         tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta),
       );
     }
+    if (data.containsKey('page_offset')) {
+      context.handle(
+        _pageOffsetMeta,
+        pageOffset.isAcceptableOrUnknown(data['page_offset']!, _pageOffsetMeta),
+      );
+    }
     if (data.containsKey('last_modified')) {
       context.handle(
         _lastModifiedMeta,
@@ -1967,6 +1986,10 @@ class $LibraryFilesTable extends LibraryFiles
         DriftSqlType.string,
         data['${effectivePrefix}tags'],
       ),
+      pageOffset: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_offset'],
+      )!,
       lastModified: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_modified'],
@@ -2001,6 +2024,7 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
   final DateTime? lastOpened;
   final String? series;
   final String? tags;
+  final int pageOffset;
   final DateTime lastModified;
   final DateTime lastScanned;
   const LibraryFile({
@@ -2020,6 +2044,7 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
     this.lastOpened,
     this.series,
     this.tags,
+    required this.pageOffset,
     required this.lastModified,
     required this.lastScanned,
   });
@@ -2054,6 +2079,7 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
     if (!nullToAbsent || tags != null) {
       map['tags'] = Variable<String>(tags);
     }
+    map['page_offset'] = Variable<int>(pageOffset);
     map['last_modified'] = Variable<DateTime>(lastModified);
     map['last_scanned'] = Variable<DateTime>(lastScanned);
     return map;
@@ -2087,6 +2113,7 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
           ? const Value.absent()
           : Value(series),
       tags: tags == null && nullToAbsent ? const Value.absent() : Value(tags),
+      pageOffset: Value(pageOffset),
       lastModified: Value(lastModified),
       lastScanned: Value(lastScanned),
     );
@@ -2114,6 +2141,7 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
       lastOpened: serializer.fromJson<DateTime?>(json['lastOpened']),
       series: serializer.fromJson<String?>(json['series']),
       tags: serializer.fromJson<String?>(json['tags']),
+      pageOffset: serializer.fromJson<int>(json['pageOffset']),
       lastModified: serializer.fromJson<DateTime>(json['lastModified']),
       lastScanned: serializer.fromJson<DateTime>(json['lastScanned']),
     );
@@ -2138,6 +2166,7 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
       'lastOpened': serializer.toJson<DateTime?>(lastOpened),
       'series': serializer.toJson<String?>(series),
       'tags': serializer.toJson<String?>(tags),
+      'pageOffset': serializer.toJson<int>(pageOffset),
       'lastModified': serializer.toJson<DateTime>(lastModified),
       'lastScanned': serializer.toJson<DateTime>(lastScanned),
     };
@@ -2160,6 +2189,7 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
     Value<DateTime?> lastOpened = const Value.absent(),
     Value<String?> series = const Value.absent(),
     Value<String?> tags = const Value.absent(),
+    int? pageOffset,
     DateTime? lastModified,
     DateTime? lastScanned,
   }) => LibraryFile(
@@ -2179,6 +2209,7 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
     lastOpened: lastOpened.present ? lastOpened.value : this.lastOpened,
     series: series.present ? series.value : this.series,
     tags: tags.present ? tags.value : this.tags,
+    pageOffset: pageOffset ?? this.pageOffset,
     lastModified: lastModified ?? this.lastModified,
     lastScanned: lastScanned ?? this.lastScanned,
   );
@@ -2210,6 +2241,9 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
           : this.lastOpened,
       series: data.series.present ? data.series.value : this.series,
       tags: data.tags.present ? data.tags.value : this.tags,
+      pageOffset: data.pageOffset.present
+          ? data.pageOffset.value
+          : this.pageOffset,
       lastModified: data.lastModified.present
           ? data.lastModified.value
           : this.lastModified,
@@ -2238,6 +2272,7 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
           ..write('lastOpened: $lastOpened, ')
           ..write('series: $series, ')
           ..write('tags: $tags, ')
+          ..write('pageOffset: $pageOffset, ')
           ..write('lastModified: $lastModified, ')
           ..write('lastScanned: $lastScanned')
           ..write(')'))
@@ -2262,6 +2297,7 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
     lastOpened,
     series,
     tags,
+    pageOffset,
     lastModified,
     lastScanned,
   );
@@ -2285,6 +2321,7 @@ class LibraryFile extends DataClass implements Insertable<LibraryFile> {
           other.lastOpened == this.lastOpened &&
           other.series == this.series &&
           other.tags == this.tags &&
+          other.pageOffset == this.pageOffset &&
           other.lastModified == this.lastModified &&
           other.lastScanned == this.lastScanned);
 }
@@ -2306,6 +2343,7 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
   final Value<DateTime?> lastOpened;
   final Value<String?> series;
   final Value<String?> tags;
+  final Value<int> pageOffset;
   final Value<DateTime> lastModified;
   final Value<DateTime> lastScanned;
   const LibraryFilesCompanion({
@@ -2325,6 +2363,7 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
     this.lastOpened = const Value.absent(),
     this.series = const Value.absent(),
     this.tags = const Value.absent(),
+    this.pageOffset = const Value.absent(),
     this.lastModified = const Value.absent(),
     this.lastScanned = const Value.absent(),
   });
@@ -2345,6 +2384,7 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
     this.lastOpened = const Value.absent(),
     this.series = const Value.absent(),
     this.tags = const Value.absent(),
+    this.pageOffset = const Value.absent(),
     required DateTime lastModified,
     this.lastScanned = const Value.absent(),
   }) : folderId = Value(folderId),
@@ -2368,6 +2408,7 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
     Expression<DateTime>? lastOpened,
     Expression<String>? series,
     Expression<String>? tags,
+    Expression<int>? pageOffset,
     Expression<DateTime>? lastModified,
     Expression<DateTime>? lastScanned,
   }) {
@@ -2388,6 +2429,7 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
       if (lastOpened != null) 'last_opened': lastOpened,
       if (series != null) 'series': series,
       if (tags != null) 'tags': tags,
+      if (pageOffset != null) 'page_offset': pageOffset,
       if (lastModified != null) 'last_modified': lastModified,
       if (lastScanned != null) 'last_scanned': lastScanned,
     });
@@ -2410,6 +2452,7 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
     Value<DateTime?>? lastOpened,
     Value<String?>? series,
     Value<String?>? tags,
+    Value<int>? pageOffset,
     Value<DateTime>? lastModified,
     Value<DateTime>? lastScanned,
   }) {
@@ -2430,6 +2473,7 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
       lastOpened: lastOpened ?? this.lastOpened,
       series: series ?? this.series,
       tags: tags ?? this.tags,
+      pageOffset: pageOffset ?? this.pageOffset,
       lastModified: lastModified ?? this.lastModified,
       lastScanned: lastScanned ?? this.lastScanned,
     );
@@ -2486,6 +2530,9 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
     if (tags.present) {
       map['tags'] = Variable<String>(tags.value);
     }
+    if (pageOffset.present) {
+      map['page_offset'] = Variable<int>(pageOffset.value);
+    }
     if (lastModified.present) {
       map['last_modified'] = Variable<DateTime>(lastModified.value);
     }
@@ -2514,8 +2561,693 @@ class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
           ..write('lastOpened: $lastOpened, ')
           ..write('series: $series, ')
           ..write('tags: $tags, ')
+          ..write('pageOffset: $pageOffset, ')
           ..write('lastModified: $lastModified, ')
           ..write('lastScanned: $lastScanned')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AnnotationsTable extends Annotations
+    with TableInfo<$AnnotationsTable, DocumentAnnotation> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AnnotationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _filePathMeta = const VerificationMeta(
+    'filePath',
+  );
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+    'file_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pageNumberMeta = const VerificationMeta(
+    'pageNumber',
+  );
+  @override
+  late final GeneratedColumn<int> pageNumber = GeneratedColumn<int>(
+    'page_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _selectedTextMeta = const VerificationMeta(
+    'selectedText',
+  );
+  @override
+  late final GeneratedColumn<String> selectedText = GeneratedColumn<String>(
+    'selected_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _colorHexMeta = const VerificationMeta(
+    'colorHex',
+  );
+  @override
+  late final GeneratedColumn<String> colorHex = GeneratedColumn<String>(
+    'color_hex',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('#FFE066'),
+  );
+  static const VerificationMeta _rectXMeta = const VerificationMeta('rectX');
+  @override
+  late final GeneratedColumn<double> rectX = GeneratedColumn<double>(
+    'rect_x',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _rectYMeta = const VerificationMeta('rectY');
+  @override
+  late final GeneratedColumn<double> rectY = GeneratedColumn<double>(
+    'rect_y',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _rectWidthMeta = const VerificationMeta(
+    'rectWidth',
+  );
+  @override
+  late final GeneratedColumn<double> rectWidth = GeneratedColumn<double>(
+    'rect_width',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _rectHeightMeta = const VerificationMeta(
+    'rectHeight',
+  );
+  @override
+  late final GeneratedColumn<double> rectHeight = GeneratedColumn<double>(
+    'rect_height',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    filePath,
+    pageNumber,
+    type,
+    selectedText,
+    note,
+    colorHex,
+    rectX,
+    rectY,
+    rectWidth,
+    rectHeight,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'annotations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DocumentAnnotation> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(
+        _filePathMeta,
+        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_filePathMeta);
+    }
+    if (data.containsKey('page_number')) {
+      context.handle(
+        _pageNumberMeta,
+        pageNumber.isAcceptableOrUnknown(data['page_number']!, _pageNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pageNumberMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('selected_text')) {
+      context.handle(
+        _selectedTextMeta,
+        selectedText.isAcceptableOrUnknown(
+          data['selected_text']!,
+          _selectedTextMeta,
+        ),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('color_hex')) {
+      context.handle(
+        _colorHexMeta,
+        colorHex.isAcceptableOrUnknown(data['color_hex']!, _colorHexMeta),
+      );
+    }
+    if (data.containsKey('rect_x')) {
+      context.handle(
+        _rectXMeta,
+        rectX.isAcceptableOrUnknown(data['rect_x']!, _rectXMeta),
+      );
+    }
+    if (data.containsKey('rect_y')) {
+      context.handle(
+        _rectYMeta,
+        rectY.isAcceptableOrUnknown(data['rect_y']!, _rectYMeta),
+      );
+    }
+    if (data.containsKey('rect_width')) {
+      context.handle(
+        _rectWidthMeta,
+        rectWidth.isAcceptableOrUnknown(data['rect_width']!, _rectWidthMeta),
+      );
+    }
+    if (data.containsKey('rect_height')) {
+      context.handle(
+        _rectHeightMeta,
+        rectHeight.isAcceptableOrUnknown(data['rect_height']!, _rectHeightMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DocumentAnnotation map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DocumentAnnotation(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      filePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_path'],
+      )!,
+      pageNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_number'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      selectedText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}selected_text'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      colorHex: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color_hex'],
+      )!,
+      rectX: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}rect_x'],
+      )!,
+      rectY: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}rect_y'],
+      )!,
+      rectWidth: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}rect_width'],
+      )!,
+      rectHeight: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}rect_height'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AnnotationsTable createAlias(String alias) {
+    return $AnnotationsTable(attachedDatabase, alias);
+  }
+}
+
+class DocumentAnnotation extends DataClass
+    implements Insertable<DocumentAnnotation> {
+  final int id;
+  final String filePath;
+  final int pageNumber;
+  final String type;
+  final String? selectedText;
+  final String? note;
+  final String colorHex;
+  final double rectX;
+  final double rectY;
+  final double rectWidth;
+  final double rectHeight;
+  final DateTime createdAt;
+  const DocumentAnnotation({
+    required this.id,
+    required this.filePath,
+    required this.pageNumber,
+    required this.type,
+    this.selectedText,
+    this.note,
+    required this.colorHex,
+    required this.rectX,
+    required this.rectY,
+    required this.rectWidth,
+    required this.rectHeight,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['file_path'] = Variable<String>(filePath);
+    map['page_number'] = Variable<int>(pageNumber);
+    map['type'] = Variable<String>(type);
+    if (!nullToAbsent || selectedText != null) {
+      map['selected_text'] = Variable<String>(selectedText);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['color_hex'] = Variable<String>(colorHex);
+    map['rect_x'] = Variable<double>(rectX);
+    map['rect_y'] = Variable<double>(rectY);
+    map['rect_width'] = Variable<double>(rectWidth);
+    map['rect_height'] = Variable<double>(rectHeight);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  AnnotationsCompanion toCompanion(bool nullToAbsent) {
+    return AnnotationsCompanion(
+      id: Value(id),
+      filePath: Value(filePath),
+      pageNumber: Value(pageNumber),
+      type: Value(type),
+      selectedText: selectedText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(selectedText),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      colorHex: Value(colorHex),
+      rectX: Value(rectX),
+      rectY: Value(rectY),
+      rectWidth: Value(rectWidth),
+      rectHeight: Value(rectHeight),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory DocumentAnnotation.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DocumentAnnotation(
+      id: serializer.fromJson<int>(json['id']),
+      filePath: serializer.fromJson<String>(json['filePath']),
+      pageNumber: serializer.fromJson<int>(json['pageNumber']),
+      type: serializer.fromJson<String>(json['type']),
+      selectedText: serializer.fromJson<String?>(json['selectedText']),
+      note: serializer.fromJson<String?>(json['note']),
+      colorHex: serializer.fromJson<String>(json['colorHex']),
+      rectX: serializer.fromJson<double>(json['rectX']),
+      rectY: serializer.fromJson<double>(json['rectY']),
+      rectWidth: serializer.fromJson<double>(json['rectWidth']),
+      rectHeight: serializer.fromJson<double>(json['rectHeight']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'filePath': serializer.toJson<String>(filePath),
+      'pageNumber': serializer.toJson<int>(pageNumber),
+      'type': serializer.toJson<String>(type),
+      'selectedText': serializer.toJson<String?>(selectedText),
+      'note': serializer.toJson<String?>(note),
+      'colorHex': serializer.toJson<String>(colorHex),
+      'rectX': serializer.toJson<double>(rectX),
+      'rectY': serializer.toJson<double>(rectY),
+      'rectWidth': serializer.toJson<double>(rectWidth),
+      'rectHeight': serializer.toJson<double>(rectHeight),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  DocumentAnnotation copyWith({
+    int? id,
+    String? filePath,
+    int? pageNumber,
+    String? type,
+    Value<String?> selectedText = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+    String? colorHex,
+    double? rectX,
+    double? rectY,
+    double? rectWidth,
+    double? rectHeight,
+    DateTime? createdAt,
+  }) => DocumentAnnotation(
+    id: id ?? this.id,
+    filePath: filePath ?? this.filePath,
+    pageNumber: pageNumber ?? this.pageNumber,
+    type: type ?? this.type,
+    selectedText: selectedText.present ? selectedText.value : this.selectedText,
+    note: note.present ? note.value : this.note,
+    colorHex: colorHex ?? this.colorHex,
+    rectX: rectX ?? this.rectX,
+    rectY: rectY ?? this.rectY,
+    rectWidth: rectWidth ?? this.rectWidth,
+    rectHeight: rectHeight ?? this.rectHeight,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  DocumentAnnotation copyWithCompanion(AnnotationsCompanion data) {
+    return DocumentAnnotation(
+      id: data.id.present ? data.id.value : this.id,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      pageNumber: data.pageNumber.present
+          ? data.pageNumber.value
+          : this.pageNumber,
+      type: data.type.present ? data.type.value : this.type,
+      selectedText: data.selectedText.present
+          ? data.selectedText.value
+          : this.selectedText,
+      note: data.note.present ? data.note.value : this.note,
+      colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
+      rectX: data.rectX.present ? data.rectX.value : this.rectX,
+      rectY: data.rectY.present ? data.rectY.value : this.rectY,
+      rectWidth: data.rectWidth.present ? data.rectWidth.value : this.rectWidth,
+      rectHeight: data.rectHeight.present
+          ? data.rectHeight.value
+          : this.rectHeight,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentAnnotation(')
+          ..write('id: $id, ')
+          ..write('filePath: $filePath, ')
+          ..write('pageNumber: $pageNumber, ')
+          ..write('type: $type, ')
+          ..write('selectedText: $selectedText, ')
+          ..write('note: $note, ')
+          ..write('colorHex: $colorHex, ')
+          ..write('rectX: $rectX, ')
+          ..write('rectY: $rectY, ')
+          ..write('rectWidth: $rectWidth, ')
+          ..write('rectHeight: $rectHeight, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    filePath,
+    pageNumber,
+    type,
+    selectedText,
+    note,
+    colorHex,
+    rectX,
+    rectY,
+    rectWidth,
+    rectHeight,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DocumentAnnotation &&
+          other.id == this.id &&
+          other.filePath == this.filePath &&
+          other.pageNumber == this.pageNumber &&
+          other.type == this.type &&
+          other.selectedText == this.selectedText &&
+          other.note == this.note &&
+          other.colorHex == this.colorHex &&
+          other.rectX == this.rectX &&
+          other.rectY == this.rectY &&
+          other.rectWidth == this.rectWidth &&
+          other.rectHeight == this.rectHeight &&
+          other.createdAt == this.createdAt);
+}
+
+class AnnotationsCompanion extends UpdateCompanion<DocumentAnnotation> {
+  final Value<int> id;
+  final Value<String> filePath;
+  final Value<int> pageNumber;
+  final Value<String> type;
+  final Value<String?> selectedText;
+  final Value<String?> note;
+  final Value<String> colorHex;
+  final Value<double> rectX;
+  final Value<double> rectY;
+  final Value<double> rectWidth;
+  final Value<double> rectHeight;
+  final Value<DateTime> createdAt;
+  const AnnotationsCompanion({
+    this.id = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.pageNumber = const Value.absent(),
+    this.type = const Value.absent(),
+    this.selectedText = const Value.absent(),
+    this.note = const Value.absent(),
+    this.colorHex = const Value.absent(),
+    this.rectX = const Value.absent(),
+    this.rectY = const Value.absent(),
+    this.rectWidth = const Value.absent(),
+    this.rectHeight = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  AnnotationsCompanion.insert({
+    this.id = const Value.absent(),
+    required String filePath,
+    required int pageNumber,
+    required String type,
+    this.selectedText = const Value.absent(),
+    this.note = const Value.absent(),
+    this.colorHex = const Value.absent(),
+    this.rectX = const Value.absent(),
+    this.rectY = const Value.absent(),
+    this.rectWidth = const Value.absent(),
+    this.rectHeight = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : filePath = Value(filePath),
+       pageNumber = Value(pageNumber),
+       type = Value(type);
+  static Insertable<DocumentAnnotation> custom({
+    Expression<int>? id,
+    Expression<String>? filePath,
+    Expression<int>? pageNumber,
+    Expression<String>? type,
+    Expression<String>? selectedText,
+    Expression<String>? note,
+    Expression<String>? colorHex,
+    Expression<double>? rectX,
+    Expression<double>? rectY,
+    Expression<double>? rectWidth,
+    Expression<double>? rectHeight,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (filePath != null) 'file_path': filePath,
+      if (pageNumber != null) 'page_number': pageNumber,
+      if (type != null) 'type': type,
+      if (selectedText != null) 'selected_text': selectedText,
+      if (note != null) 'note': note,
+      if (colorHex != null) 'color_hex': colorHex,
+      if (rectX != null) 'rect_x': rectX,
+      if (rectY != null) 'rect_y': rectY,
+      if (rectWidth != null) 'rect_width': rectWidth,
+      if (rectHeight != null) 'rect_height': rectHeight,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  AnnotationsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? filePath,
+    Value<int>? pageNumber,
+    Value<String>? type,
+    Value<String?>? selectedText,
+    Value<String?>? note,
+    Value<String>? colorHex,
+    Value<double>? rectX,
+    Value<double>? rectY,
+    Value<double>? rectWidth,
+    Value<double>? rectHeight,
+    Value<DateTime>? createdAt,
+  }) {
+    return AnnotationsCompanion(
+      id: id ?? this.id,
+      filePath: filePath ?? this.filePath,
+      pageNumber: pageNumber ?? this.pageNumber,
+      type: type ?? this.type,
+      selectedText: selectedText ?? this.selectedText,
+      note: note ?? this.note,
+      colorHex: colorHex ?? this.colorHex,
+      rectX: rectX ?? this.rectX,
+      rectY: rectY ?? this.rectY,
+      rectWidth: rectWidth ?? this.rectWidth,
+      rectHeight: rectHeight ?? this.rectHeight,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (pageNumber.present) {
+      map['page_number'] = Variable<int>(pageNumber.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (selectedText.present) {
+      map['selected_text'] = Variable<String>(selectedText.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (colorHex.present) {
+      map['color_hex'] = Variable<String>(colorHex.value);
+    }
+    if (rectX.present) {
+      map['rect_x'] = Variable<double>(rectX.value);
+    }
+    if (rectY.present) {
+      map['rect_y'] = Variable<double>(rectY.value);
+    }
+    if (rectWidth.present) {
+      map['rect_width'] = Variable<double>(rectWidth.value);
+    }
+    if (rectHeight.present) {
+      map['rect_height'] = Variable<double>(rectHeight.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AnnotationsCompanion(')
+          ..write('id: $id, ')
+          ..write('filePath: $filePath, ')
+          ..write('pageNumber: $pageNumber, ')
+          ..write('type: $type, ')
+          ..write('selectedText: $selectedText, ')
+          ..write('note: $note, ')
+          ..write('colorHex: $colorHex, ')
+          ..write('rectX: $rectX, ')
+          ..write('rectY: $rectY, ')
+          ..write('rectWidth: $rectWidth, ')
+          ..write('rectHeight: $rectHeight, ')
+          ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
@@ -2530,6 +3262,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $FileSnapshotsTable fileSnapshots = $FileSnapshotsTable(this);
   late final $LibraryFoldersTable libraryFolders = $LibraryFoldersTable(this);
   late final $LibraryFilesTable libraryFiles = $LibraryFilesTable(this);
+  late final $AnnotationsTable annotations = $AnnotationsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2541,6 +3274,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     fileSnapshots,
     libraryFolders,
     libraryFiles,
+    annotations,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -4081,6 +4815,7 @@ typedef $$LibraryFilesTableCreateCompanionBuilder =
       Value<DateTime?> lastOpened,
       Value<String?> series,
       Value<String?> tags,
+      Value<int> pageOffset,
       required DateTime lastModified,
       Value<DateTime> lastScanned,
     });
@@ -4102,6 +4837,7 @@ typedef $$LibraryFilesTableUpdateCompanionBuilder =
       Value<DateTime?> lastOpened,
       Value<String?> series,
       Value<String?> tags,
+      Value<int> pageOffset,
       Value<DateTime> lastModified,
       Value<DateTime> lastScanned,
     });
@@ -4211,6 +4947,11 @@ class $$LibraryFilesTableFilterComposer
 
   ColumnFilters<String> get tags => $composableBuilder(
     column: $table.tags,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pageOffset => $composableBuilder(
+    column: $table.pageOffset,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4332,6 +5073,11 @@ class $$LibraryFilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get pageOffset => $composableBuilder(
+    column: $table.pageOffset,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get lastModified => $composableBuilder(
     column: $table.lastModified,
     builder: (column) => ColumnOrderings(column),
@@ -4430,6 +5176,11 @@ class $$LibraryFilesTableAnnotationComposer
   GeneratedColumn<String> get tags =>
       $composableBuilder(column: $table.tags, builder: (column) => column);
 
+  GeneratedColumn<int> get pageOffset => $composableBuilder(
+    column: $table.pageOffset,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get lastModified => $composableBuilder(
     column: $table.lastModified,
     builder: (column) => column,
@@ -4508,6 +5259,7 @@ class $$LibraryFilesTableTableManager
                 Value<DateTime?> lastOpened = const Value.absent(),
                 Value<String?> series = const Value.absent(),
                 Value<String?> tags = const Value.absent(),
+                Value<int> pageOffset = const Value.absent(),
                 Value<DateTime> lastModified = const Value.absent(),
                 Value<DateTime> lastScanned = const Value.absent(),
               }) => LibraryFilesCompanion(
@@ -4527,6 +5279,7 @@ class $$LibraryFilesTableTableManager
                 lastOpened: lastOpened,
                 series: series,
                 tags: tags,
+                pageOffset: pageOffset,
                 lastModified: lastModified,
                 lastScanned: lastScanned,
               ),
@@ -4548,6 +5301,7 @@ class $$LibraryFilesTableTableManager
                 Value<DateTime?> lastOpened = const Value.absent(),
                 Value<String?> series = const Value.absent(),
                 Value<String?> tags = const Value.absent(),
+                Value<int> pageOffset = const Value.absent(),
                 required DateTime lastModified,
                 Value<DateTime> lastScanned = const Value.absent(),
               }) => LibraryFilesCompanion.insert(
@@ -4567,6 +5321,7 @@ class $$LibraryFilesTableTableManager
                 lastOpened: lastOpened,
                 series: series,
                 tags: tags,
+                pageOffset: pageOffset,
                 lastModified: lastModified,
                 lastScanned: lastScanned,
               ),
@@ -4637,6 +5392,343 @@ typedef $$LibraryFilesTableProcessedTableManager =
       LibraryFile,
       PrefetchHooks Function({bool folderId})
     >;
+typedef $$AnnotationsTableCreateCompanionBuilder =
+    AnnotationsCompanion Function({
+      Value<int> id,
+      required String filePath,
+      required int pageNumber,
+      required String type,
+      Value<String?> selectedText,
+      Value<String?> note,
+      Value<String> colorHex,
+      Value<double> rectX,
+      Value<double> rectY,
+      Value<double> rectWidth,
+      Value<double> rectHeight,
+      Value<DateTime> createdAt,
+    });
+typedef $$AnnotationsTableUpdateCompanionBuilder =
+    AnnotationsCompanion Function({
+      Value<int> id,
+      Value<String> filePath,
+      Value<int> pageNumber,
+      Value<String> type,
+      Value<String?> selectedText,
+      Value<String?> note,
+      Value<String> colorHex,
+      Value<double> rectX,
+      Value<double> rectY,
+      Value<double> rectWidth,
+      Value<double> rectHeight,
+      Value<DateTime> createdAt,
+    });
+
+class $$AnnotationsTableFilterComposer
+    extends Composer<_$AppDatabase, $AnnotationsTable> {
+  $$AnnotationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get selectedText => $composableBuilder(
+    column: $table.selectedText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colorHex => $composableBuilder(
+    column: $table.colorHex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get rectX => $composableBuilder(
+    column: $table.rectX,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get rectY => $composableBuilder(
+    column: $table.rectY,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get rectWidth => $composableBuilder(
+    column: $table.rectWidth,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get rectHeight => $composableBuilder(
+    column: $table.rectHeight,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AnnotationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AnnotationsTable> {
+  $$AnnotationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get selectedText => $composableBuilder(
+    column: $table.selectedText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colorHex => $composableBuilder(
+    column: $table.colorHex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get rectX => $composableBuilder(
+    column: $table.rectX,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get rectY => $composableBuilder(
+    column: $table.rectY,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get rectWidth => $composableBuilder(
+    column: $table.rectWidth,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get rectHeight => $composableBuilder(
+    column: $table.rectHeight,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AnnotationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AnnotationsTable> {
+  $$AnnotationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<int> get pageNumber => $composableBuilder(
+    column: $table.pageNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get selectedText => $composableBuilder(
+    column: $table.selectedText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<String> get colorHex =>
+      $composableBuilder(column: $table.colorHex, builder: (column) => column);
+
+  GeneratedColumn<double> get rectX =>
+      $composableBuilder(column: $table.rectX, builder: (column) => column);
+
+  GeneratedColumn<double> get rectY =>
+      $composableBuilder(column: $table.rectY, builder: (column) => column);
+
+  GeneratedColumn<double> get rectWidth =>
+      $composableBuilder(column: $table.rectWidth, builder: (column) => column);
+
+  GeneratedColumn<double> get rectHeight => $composableBuilder(
+    column: $table.rectHeight,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$AnnotationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AnnotationsTable,
+          DocumentAnnotation,
+          $$AnnotationsTableFilterComposer,
+          $$AnnotationsTableOrderingComposer,
+          $$AnnotationsTableAnnotationComposer,
+          $$AnnotationsTableCreateCompanionBuilder,
+          $$AnnotationsTableUpdateCompanionBuilder,
+          (
+            DocumentAnnotation,
+            BaseReferences<
+              _$AppDatabase,
+              $AnnotationsTable,
+              DocumentAnnotation
+            >,
+          ),
+          DocumentAnnotation,
+          PrefetchHooks Function()
+        > {
+  $$AnnotationsTableTableManager(_$AppDatabase db, $AnnotationsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AnnotationsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AnnotationsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AnnotationsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> filePath = const Value.absent(),
+                Value<int> pageNumber = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String?> selectedText = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String> colorHex = const Value.absent(),
+                Value<double> rectX = const Value.absent(),
+                Value<double> rectY = const Value.absent(),
+                Value<double> rectWidth = const Value.absent(),
+                Value<double> rectHeight = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => AnnotationsCompanion(
+                id: id,
+                filePath: filePath,
+                pageNumber: pageNumber,
+                type: type,
+                selectedText: selectedText,
+                note: note,
+                colorHex: colorHex,
+                rectX: rectX,
+                rectY: rectY,
+                rectWidth: rectWidth,
+                rectHeight: rectHeight,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String filePath,
+                required int pageNumber,
+                required String type,
+                Value<String?> selectedText = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String> colorHex = const Value.absent(),
+                Value<double> rectX = const Value.absent(),
+                Value<double> rectY = const Value.absent(),
+                Value<double> rectWidth = const Value.absent(),
+                Value<double> rectHeight = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => AnnotationsCompanion.insert(
+                id: id,
+                filePath: filePath,
+                pageNumber: pageNumber,
+                type: type,
+                selectedText: selectedText,
+                note: note,
+                colorHex: colorHex,
+                rectX: rectX,
+                rectY: rectY,
+                rectWidth: rectWidth,
+                rectHeight: rectHeight,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AnnotationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AnnotationsTable,
+      DocumentAnnotation,
+      $$AnnotationsTableFilterComposer,
+      $$AnnotationsTableOrderingComposer,
+      $$AnnotationsTableAnnotationComposer,
+      $$AnnotationsTableCreateCompanionBuilder,
+      $$AnnotationsTableUpdateCompanionBuilder,
+      (
+        DocumentAnnotation,
+        BaseReferences<_$AppDatabase, $AnnotationsTable, DocumentAnnotation>,
+      ),
+      DocumentAnnotation,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4652,4 +5744,6 @@ class $AppDatabaseManager {
       $$LibraryFoldersTableTableManager(_db, _db.libraryFolders);
   $$LibraryFilesTableTableManager get libraryFiles =>
       $$LibraryFilesTableTableManager(_db, _db.libraryFiles);
+  $$AnnotationsTableTableManager get annotations =>
+      $$AnnotationsTableTableManager(_db, _db.annotations);
 }

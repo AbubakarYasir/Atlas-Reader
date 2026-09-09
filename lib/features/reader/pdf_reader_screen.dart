@@ -4,8 +4,12 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../../core/accessibility/accessibility_announcer.dart';
 import '../../core/file_system/document_file_system.dart';
+import '../../database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../pdf_engine.dart';
+import '../research/annotations_drawer.dart';
+import '../research/citation_generator.dart';
+import '../research/research_selection_toolbar.dart';
 import 'reader_models.dart';
 import 'reader_outline_sidebar.dart';
 import 'reader_scrub_bar.dart';
@@ -31,8 +35,8 @@ class _CreateReaderBookmarkIntent extends Intent {
 }
 
 /// Full-screen PDF reader with continuous scrolling, dual interface (Basic vs
-/// Research mode), outline sidebar, visual thumbnail jumper, themes, and
-/// margin cropping.
+/// Research mode), outline sidebar, annotations drawer, visual thumbnail jumper,
+/// in-text markup (highlights, notes), citation generator, and margin cropping.
 class PdfReaderScreen extends StatefulWidget {
   const PdfReaderScreen({
     super.key,
@@ -40,12 +44,14 @@ class PdfReaderScreen extends StatefulWidget {
     required this.fileSystem,
     required this.onCreateBookmark,
     this.initialPageNumber = 1,
+    this.database,
   });
 
   final String filePath;
   final DocumentFileSystem fileSystem;
   final Future<void> Function(ReaderBookmarkDraft draft) onCreateBookmark;
   final int initialPageNumber;
+  final AppDatabase? database;
 
   @override
   State<PdfReaderScreen> createState() => _PdfReaderScreenState();
@@ -55,15 +61,21 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   final PdfViewerController _viewerController = PdfViewerController();
   late final Future<List<int>> _documentBytes;
   late final PdfEngine _pdfEngine;
+  AppDatabase? _localDatabase;
+
   late var _activePage = widget.initialPageNumber;
   var _pageCount = 0;
   var _savingBookmark = false;
   var _showOutlineSidebar = false;
+  var _showAnnotationsDrawer = false;
 
+  String? _selectedText;
   ReaderPreferences _preferences = const ReaderPreferences();
   List<ReaderOutlineItem> _outline = [];
   Set<int> _chapterPages = {};
   final Set<int> _bookmarkedPages = {};
+
+  AppDatabase get _db => widget.database ?? (_localDatabase ??= AppDatabase());
 
   @override
   void initState() {
@@ -99,6 +111,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   @override
   void dispose() {
     _viewerController.dispose();
+    _localDatabase?.close();
     super.dispose();
   }
 
@@ -107,6 +120,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     final target = pageNumber.clamp(1, _pageCount);
     _viewerController.jumpToPage(target);
     setState(() => _activePage = target);
+    _db.updateReadingProgress(widget.filePath, target, pageCount: _pageCount);
   }
 
   void _openThumbnailJumper() {
@@ -132,10 +146,94 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
           onChanged: (updated) {
             setDialogState(() => _preferences = updated);
             setState(() => _preferences = updated);
+            if (updated.pageOffset != _preferences.pageOffset) {
+              _db.updatePageOffset(widget.filePath, updated.pageOffset);
+            }
           },
         ),
       ),
     );
+  }
+
+  void _openCitationDialog() {
+    final printedPage = _activePage + _preferences.pageOffset;
+    final fileName = widget.filePath.split(RegExp(r'[/\\]')).last;
+    final title = fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
+    showDialog<void>(
+      context: context,
+      builder: (_) => CitationDialog(
+        title: title,
+        pageNumber: printedPage,
+      ),
+    );
+  }
+
+  Future<void> _createAnnotation({
+    required String type,
+    String? note,
+    String colorHex = '#FFE066',
+  }) async {
+    final text = _selectedText;
+    if (text == null || text.isEmpty) return;
+
+    await _db.addAnnotation(
+      filePath: widget.filePath,
+      pageNumber: _activePage,
+      type: type,
+      selectedText: text,
+      note: note,
+      colorHex: colorHex,
+    );
+
+    // Save directly into standard PDF annotation stream
+    await _pdfEngine.addAnnotationToPdf(
+      widget.filePath,
+      pageIndex: _activePage - 1,
+      type: type,
+      text: text,
+      note: note,
+      colorHex: colorHex,
+    );
+
+    setState(() {
+      _selectedText = null;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${type[0].toUpperCase()}${type.substring(1)} saved to PDF and database!'),
+        ),
+      );
+      AccessibilityAnnouncer.announce(context, '$type annotation saved');
+    }
+  }
+
+  Future<void> _promptAddNote() async {
+    final controller = TextEditingController();
+    final note = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Sticky Note'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Enter your research note...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Save')),
+        ],
+      ),
+    );
+
+    if (note != null && note.isNotEmpty) {
+      await _createAnnotation(type: 'note', note: note);
+    }
   }
 
   ColorFilter? _getColorFilter(ReaderThemeMode theme) {
@@ -326,7 +424,23 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                   IconButton(
                     tooltip: 'Table of Contents',
                     icon: Icon(_showOutlineSidebar ? Icons.format_list_bulleted : Icons.menu_book),
-                    onPressed: () => setState(() => _showOutlineSidebar = !_showOutlineSidebar),
+                    onPressed: () => setState(() {
+                      _showOutlineSidebar = !_showOutlineSidebar;
+                      if (_showOutlineSidebar) _showAnnotationsDrawer = false;
+                    }),
+                  ),
+                  IconButton(
+                    tooltip: 'Annotations & Notes',
+                    icon: Icon(_showAnnotationsDrawer ? Icons.draw : Icons.draw_outlined),
+                    onPressed: () => setState(() {
+                      _showAnnotationsDrawer = !_showAnnotationsDrawer;
+                      if (_showAnnotationsDrawer) _showOutlineSidebar = false;
+                    }),
+                  ),
+                  IconButton(
+                    tooltip: 'Cite Page',
+                    icon: const Icon(Icons.format_quote_rounded),
+                    onPressed: _openCitationDialog,
                   ),
                   IconButton(
                     tooltip: 'Go to page (Thumbnails)',
@@ -374,6 +488,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                       _preferences = _preferences.copyWith(isResearchMode: !isResearch);
                       if (!_preferences.isResearchMode) {
                         _showOutlineSidebar = false;
+                        _showAnnotationsDrawer = false;
                       }
                     });
                   },
@@ -430,8 +545,18 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                                         scrollDirection: isSingle
                                             ? PdfScrollDirection.horizontal
                                             : PdfScrollDirection.vertical,
+                                        onTextSelectionChanged: (details) {
+                                          setState(() {
+                                            _selectedText = details.selectedText?.trim();
+                                          });
+                                        },
                                         onPageChanged: (details) {
                                           setState(() => _activePage = details.newPageNumber);
+                                          _db.updateReadingProgress(
+                                            widget.filePath,
+                                            details.newPageNumber,
+                                            pageCount: _pageCount,
+                                          );
                                         },
                                         onDocumentLoaded: (details) {
                                           final targetPage = widget.initialPageNumber.clamp(
@@ -473,10 +598,42 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                                     ),
                                   ),
                                 ),
+                              if (_selectedText != null && _selectedText!.isNotEmpty)
+                                Positioned(
+                                  top: 16,
+                                  left: 0,
+                                  right: 0,
+                                  child: Center(
+                                    child: ResearchSelectionToolbar(
+                                      selectedText: _selectedText!,
+                                      onHighlight: (color) => _createAnnotation(type: 'highlight', colorHex: color),
+                                      onUnderline: () => _createAnnotation(type: 'underline', colorHex: '#74C0FC'),
+                                      onStrikethrough: () => _createAnnotation(type: 'strikethrough', colorHex: '#FFA8A8'),
+                                      onAddNote: _promptAddNote,
+                                      onCite: _openCitationDialog,
+                                      onCopy: () {
+                                        Clipboard.setData(ClipboardData(text: _selectedText!));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Selected text copied')),
+                                        );
+                                        setState(() => _selectedText = null);
+                                      },
+                                      onClose: () => setState(() => _selectedText = null),
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
                       ),
+                      if (isResearch && _showAnnotationsDrawer)
+                        AnnotationsDrawer(
+                          filePath: widget.filePath,
+                          database: _db,
+                          currentPage: _activePage,
+                          onJumpToPage: _jumpToPage,
+                          onClose: () => setState(() => _showAnnotationsDrawer = false),
+                        ),
                     ],
                   ),
                 ),

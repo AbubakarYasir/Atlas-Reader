@@ -1,35 +1,26 @@
 import 'database.dart';
 
 /// How bookmarks are sorted inside each group or flat list.
-enum BookmarkSort {
-  pageNumber,
-  dateCreated,
-  dateModified,
-  alphabetical,
-}
+enum BookmarkSort { pageNumber, dateCreated, dateModified, alphabetical }
 
 /// How bookmarks are grouped in the list UI.
-enum BookmarkViewGroup {
-  book,
-  tag,
-  flat,
-}
+enum BookmarkViewGroup { book, tag, flat }
 
 extension BookmarkSortLabel on BookmarkSort {
   String get label => switch (this) {
-        BookmarkSort.pageNumber => 'Page number',
-        BookmarkSort.dateCreated => 'Date created',
-        BookmarkSort.dateModified => 'Date modified',
-        BookmarkSort.alphabetical => 'Alphabetical (A–Z)',
-      };
+    BookmarkSort.pageNumber => 'Page number',
+    BookmarkSort.dateCreated => 'Date created',
+    BookmarkSort.dateModified => 'Date modified',
+    BookmarkSort.alphabetical => 'Alphabetical (A–Z)',
+  };
 }
 
 extension BookmarkViewGroupLabel on BookmarkViewGroup {
   String get label => switch (this) {
-        BookmarkViewGroup.book => 'By book',
-        BookmarkViewGroup.tag => 'By tag',
-        BookmarkViewGroup.flat => 'Flat list',
-      };
+    BookmarkViewGroup.book => 'By book',
+    BookmarkViewGroup.tag => 'By tag',
+    BookmarkViewGroup.flat => 'Flat list',
+  };
 }
 
 /// In-memory grouping and sorting helpers for bookmark list UI.

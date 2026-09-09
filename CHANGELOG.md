@@ -3,6 +3,25 @@
 All notable changes are documented here. This project follows a staged
 hardening approach rather than formal releases.
 
+## Stage 2 — Architecture foundations (2026-09-09)
+
+### Added
+
+- Feature-oriented folders for library, reader, bookmark management, command
+  center, sync preview, and settings UI components.
+- Reusable library document selector, bookmark composer, command-center search
+  field, sync preview, bookmark-management scope, and settings screen.
+- `DocumentFileSystem` interface and `WindowsDocumentFileSystem` adapter.
+- Core database connection factory, keeping filesystem setup out of database
+  and feature code.
+
+### Changed
+
+- `PdfEngine`, `PdfSafeFileWriter`, and missing-file resolution depend on the
+  document-file abstraction rather than opening user documents directly.
+- `SyncEngine` now receives the same injected `PdfEngine` instance used by the
+  workspace, keeping platform dependencies at the application edge.
+
 ## Stage 1 — Data safety and current-defect fixes (2026-09-09)
 
 ### Fixed

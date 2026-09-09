@@ -1,9 +1,5 @@
 /// Enum representing the sync action for a bookmark
-enum SyncAction {
-  add,
-  delete,
-  keep,
-}
+enum SyncAction { add, delete, keep }
 
 /// Class representing a bookmark difference for sync preview
 class BookmarkDiff {

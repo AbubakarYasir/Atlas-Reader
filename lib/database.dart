@@ -1,10 +1,7 @@
-import 'dart:io';
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
 
 import 'bookmark_tree.dart';
+import 'core/database/app_database_connection.dart';
 import 'file_snapshot_state.dart';
 
 part 'database.g.dart';
@@ -56,7 +53,7 @@ class FileSnapshots extends Table {
 /// AppDatabase class extending _$AppDatabase
 @DriftDatabase(tables: [Bookmarks, Tags, BookmarkTags, FileSnapshots])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase() : super(openAppDatabaseConnection());
 
   /// Creates an in-memory or otherwise caller-provided database for tests.
   AppDatabase.forTesting(super.executor);
@@ -490,13 +487,4 @@ class AppDatabase extends _$AppDatabase {
       }
     });
   }
-}
-
-/// Open connection to the SQLite database
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'atlas_db.sqlite'));
-    return NativeDatabase(file, logStatements: true);
-  });
 }

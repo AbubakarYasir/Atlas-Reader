@@ -1,12 +1,13 @@
-import 'dart:io';
-
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
+import 'core/file_system/document_file_system.dart';
 import 'pdf_engine.dart';
 
 /// Writes PDF bytes to disk using a temporary file, validation, and atomic replace.
 class PdfSafeFileWriter {
-  PdfSafeFileWriter._();
+  PdfSafeFileWriter(this._fileSystem);
+
+  final DocumentFileSystem _fileSystem;
 
   static const _pdfHeader = '%PDF';
   static const _minPdfBytes = 64;
@@ -19,7 +20,7 @@ class PdfSafeFileWriter {
   ///
   /// When [expectedPageCount] is supplied, the temporary PDF must have exactly
   /// that number of pages before it can replace the original.
-  static Future<void> replacePdfFile(
+  Future<void> replacePdfFile(
     String originalPath,
     List<int> bytes, {
     int? expectedPageCount,
@@ -28,21 +29,17 @@ class PdfSafeFileWriter {
 
     final tmpPath = '$originalPath.tmp';
     final backupPath = '$originalPath.atlas-backup';
-    final originalFile = File(originalPath);
-    final tmpFile = File(tmpPath);
-    final backupFile = File(backupPath);
-
-    if (await tmpFile.exists()) {
-      await tmpFile.delete();
+    if (await _fileSystem.exists(tmpPath)) {
+      await _fileSystem.delete(tmpPath);
     }
 
-    if (!await originalFile.exists()) {
+    if (!await _fileSystem.exists(originalPath)) {
       throw PdfOverwriteException(
         'The original PDF could not be found, so no changes were made.',
       );
     }
 
-    if (await backupFile.exists()) {
+    if (await _fileSystem.exists(backupPath)) {
       throw PdfOverwriteException(
         'A previous PDF recovery file already exists at "$backupPath". '
         'Your original file was not changed. Please recover or rename that '
@@ -51,20 +48,20 @@ class PdfSafeFileWriter {
     }
 
     try {
-      await tmpFile.writeAsBytes(bytes, flush: true);
+      await _fileSystem.writeAsBytes(tmpPath, bytes, flush: true);
       await _validateWrittenFile(tmpPath, expectedPageCount: expectedPageCount);
 
       // Windows does not reliably rename over an existing file. Move the
       // original aside first, then restore it if promotion fails.
-      await originalFile.rename(backupPath);
-      await tmpFile.rename(originalPath);
-      await backupFile.delete();
+      await _fileSystem.rename(originalPath, backupPath);
+      await _fileSystem.rename(tmpPath, originalPath);
+      await _fileSystem.delete(backupPath);
     } on PdfOverwriteException {
-      await _cleanupTempFile(tmpFile);
+      await _cleanupTempFile(tmpPath);
       rethrow;
     } catch (_) {
-      await _restoreOriginalIfNeeded(originalFile, backupFile);
-      await _cleanupTempFile(tmpFile);
+      await _restoreOriginalIfNeeded(originalPath, backupPath);
+      await _cleanupTempFile(tmpPath);
       throw PdfOverwriteException(
         'Could not safely replace the PDF. Your original file was restored '
         'when possible. Close the file in other applications and try again.',
@@ -117,26 +114,27 @@ class PdfSafeFileWriter {
     }
   }
 
-  static Future<void> _validateWrittenFile(
+  Future<void> _validateWrittenFile(
     String tmpPath, {
     int? expectedPageCount,
   }) async {
-    final written = await File(tmpPath).readAsBytes();
+    final written = await _fileSystem.readAsBytes(tmpPath);
     _validatePdfBytes(written, expectedPageCount: expectedPageCount);
   }
 
-  static Future<void> _cleanupTempFile(File tmpFile) async {
-    if (await tmpFile.exists()) {
-      await tmpFile.delete();
+  Future<void> _cleanupTempFile(String tmpPath) async {
+    if (await _fileSystem.exists(tmpPath)) {
+      await _fileSystem.delete(tmpPath);
     }
   }
 
-  static Future<void> _restoreOriginalIfNeeded(
-    File originalFile,
-    File backupFile,
+  Future<void> _restoreOriginalIfNeeded(
+    String originalPath,
+    String backupPath,
   ) async {
-    if (!await originalFile.exists() && await backupFile.exists()) {
-      await backupFile.rename(originalFile.path);
+    if (!await _fileSystem.exists(originalPath) &&
+        await _fileSystem.exists(backupPath)) {
+      await _fileSystem.rename(backupPath, originalPath);
     }
   }
 }

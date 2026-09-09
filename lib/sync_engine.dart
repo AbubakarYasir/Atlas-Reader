@@ -5,9 +5,11 @@ import 'pdf_engine.dart';
 import 'sync_diff.dart';
 
 class SyncEngine {
-  final AppDatabase database;
+  SyncEngine(this.database, {PdfEngine? pdfEngine})
+    : _pdfEngine = pdfEngine ?? PdfEngine();
 
-  SyncEngine(this.database);
+  final AppDatabase database;
+  final PdfEngine _pdfEngine;
   final _log = Logger('SyncEngine');
 
   /// Reconcile PDF bookmarks with database bookmarks incrementally
@@ -17,7 +19,7 @@ class SyncEngine {
       _log.info('[SYNC] Starting reconciliation for: $filePath');
 
       final currentBookmarks = await database.getBookmarksForFile(filePath);
-      final pdfBookmarks = await PdfEngine.extractBookmarks(filePath);
+      final pdfBookmarks = await _pdfEngine.extractBookmarks(filePath);
       final diff = SyncDiffCalculator.calculateFromSources(
         dbBookmarks: currentBookmarks,
         pdfExtracted: pdfBookmarks,
@@ -40,11 +42,13 @@ class SyncEngine {
         for (final bookmark in currentBookmarks) {
           final tags = await database.getTagsForBookmark(bookmark.id);
           if (tags.isNotEmpty) {
-            tagsByBookmarkId[bookmark.id] = tags.map((tag) => tag.name).toList();
+            tagsByBookmarkId[bookmark.id] = tags
+                .map((tag) => tag.name)
+                .toList();
           }
         }
 
-        final success = await PdfEngine.overwriteBookmarkTree(
+        final success = await _pdfEngine.overwriteBookmarkTree(
           filePath,
           currentBookmarks,
           tagsByBookmarkId: tagsByBookmarkId,
@@ -57,7 +61,9 @@ class SyncEngine {
 
       if (diff.toAddToDb.isNotEmpty) {
         final missingFromDb = pdfBookmarks.where((bookmark) {
-          final pathKey = SyncDiffCalculator.pathKeysFromPdfExtract([bookmark]).single;
+          final pathKey = SyncDiffCalculator.pathKeysFromPdfExtract([
+            bookmark,
+          ]).single;
           return diff.toAddToDb.contains(pathKey);
         }).toList();
 

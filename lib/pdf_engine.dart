@@ -1,10 +1,11 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:logging/logging.dart';
 
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 import 'bookmark_tree.dart';
+import 'core/file_system/document_file_system.dart';
+import 'core/file_system/windows_document_file_system.dart';
 import 'database.dart';
 import 'pdf_safe_file_writer.dart';
 
@@ -18,13 +19,21 @@ class PdfOverwriteException implements Exception {
 }
 
 class PdfEngine {
+  PdfEngine({DocumentFileSystem? fileSystem})
+    : _fileSystem = fileSystem ?? const WindowsDocumentFileSystem(),
+      _safeFileWriter = PdfSafeFileWriter(
+        fileSystem ?? const WindowsDocumentFileSystem(),
+      );
+
   static final _log = Logger('PdfEngine');
+  final DocumentFileSystem _fileSystem;
+  final PdfSafeFileWriter _safeFileWriter;
 
   /// Get the page count of a PDF file
   Future<int?> getPageCount(String filePath) async {
     PdfDocument? document;
     try {
-      final bytes = await File(filePath).readAsBytes();
+      final bytes = await _fileSystem.readAsBytes(filePath);
       document = PdfDocument(inputBytes: bytes);
       return document.pages.count;
     } catch (e) {
@@ -46,7 +55,7 @@ class PdfEngine {
       _log.info('[PDF] Starting bookmark injection for: $bookmarkTitle');
       _log.fine('[PDF] File: $filePath, Page: $pageIndex');
 
-      final bytes = await File(filePath).readAsBytes();
+      final bytes = await _fileSystem.readAsBytes(filePath);
       document = PdfDocument(inputBytes: bytes);
       final documentPageCount = document.pages.count;
 
@@ -87,7 +96,7 @@ class PdfEngine {
 
       _log.fine('[PDF] Document saved, size: ${outBytes.length} bytes');
 
-      await PdfSafeFileWriter.replacePdfFile(
+      await _safeFileWriter.replacePdfFile(
         filePath,
         outBytes,
         expectedPageCount: documentPageCount,
@@ -108,14 +117,12 @@ class PdfEngine {
   /// Extract all bookmarks from a PDF file, including nested sub-bookmarks.
   /// Each entry includes a hierarchical [path], [title], optional [pageIndex],
   /// [isFolder], [description], and [tags].
-  static Future<List<Map<String, dynamic>>> extractBookmarks(
-    String filePath,
-  ) async {
+  Future<List<Map<String, dynamic>>> extractBookmarks(String filePath) async {
     PdfDocument? document;
     try {
       _log.info('[PDF] Starting bookmark extraction from: $filePath');
 
-      final bytes = await File(filePath).readAsBytes();
+      final bytes = await _fileSystem.readAsBytes(filePath);
       document = PdfDocument(inputBytes: bytes);
 
       final bookmarksList = <Map<String, dynamic>>[];
@@ -212,7 +219,7 @@ class PdfEngine {
   }
 
   /// Replaces all PDF bookmarks with the hierarchical tree from the database.
-  static Future<bool> overwriteBookmarkTree(
+  Future<bool> overwriteBookmarkTree(
     String filePath,
     List<Bookmark> dbBookmarks, {
     Map<int, List<String>> tagsByBookmarkId = const {},
@@ -223,7 +230,7 @@ class PdfEngine {
         '[PDF] Starting hierarchical bookmark overwrite for: $filePath',
       );
 
-      final bytes = await File(filePath).readAsBytes();
+      final bytes = await _fileSystem.readAsBytes(filePath);
       document = PdfDocument(inputBytes: bytes);
       document.bookmarks.clear();
 
@@ -244,7 +251,7 @@ class PdfEngine {
       document.dispose();
       document = null;
 
-      await PdfSafeFileWriter.replacePdfFile(
+      await _safeFileWriter.replacePdfFile(
         filePath,
         outBytes,
         expectedPageCount: pageCount,
@@ -294,7 +301,7 @@ class PdfEngine {
 
   /// Inject multiple bookmarks into a PDF file in a single operation
   /// Returns true if successful, false if it fails
-  static Future<bool> injectBookmarksBatch(
+  Future<bool> injectBookmarksBatch(
     String filePath,
     List<Map<String, dynamic>> newBookmarks,
   ) async {
@@ -303,7 +310,7 @@ class PdfEngine {
       _log.info('[PDF] Starting batch bookmark injection for: $filePath');
       _log.fine('[PDF] Number of bookmarks to inject: ${newBookmarks.length}');
 
-      final bytes = await File(filePath).readAsBytes();
+      final bytes = await _fileSystem.readAsBytes(filePath);
       document = PdfDocument(inputBytes: bytes);
 
       final pageCount = document.pages.count;
@@ -339,7 +346,7 @@ class PdfEngine {
       document.dispose();
       document = null;
 
-      await PdfSafeFileWriter.replacePdfFile(
+      await _safeFileWriter.replacePdfFile(
         filePath,
         outBytes,
         expectedPageCount: pageCount,
@@ -360,7 +367,7 @@ class PdfEngine {
 
   /// Overwrite all bookmarks in a PDF file with a new set of bookmarks
   /// Returns true if successful, false if it fails
-  static Future<bool> overwriteAllBookmarks(
+  Future<bool> overwriteAllBookmarks(
     String filePath,
     List<Map<String, dynamic>> finalBookmarks, {
     List<String>? toRemove,
@@ -372,7 +379,7 @@ class PdfEngine {
       _log.info('[PDF] Starting bookmark overwrite for: $filePath');
       _log.fine('[PDF] Number of bookmarks to set: ${finalBookmarks.length}');
 
-      final bytes = await File(filePath).readAsBytes();
+      final bytes = await _fileSystem.readAsBytes(filePath);
       document = PdfDocument(inputBytes: bytes);
 
       // Clear all existing bookmarks
@@ -421,7 +428,7 @@ class PdfEngine {
       document.dispose();
       document = null;
 
-      await PdfSafeFileWriter.replacePdfFile(
+      await _safeFileWriter.replacePdfFile(
         filePath,
         outBytes,
         expectedPageCount: pageCount,

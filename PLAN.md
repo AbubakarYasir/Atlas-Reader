@@ -267,7 +267,9 @@ A feature is **done** only when all checkboxes pass:
 
 | Module | Today | Target |
 |--------|-------|--------|
-| `main.dart` | Monolithic ~1200 lines | Split into screens + `AccessibilityAnnouncer` |
+| `main.dart` | Bootstrap-only entry point | Split remaining library coordinator + `AccessibilityAnnouncer` |
+| `features/library/library_screen.dart` | Current workspace coordinator | Smaller library-specific controllers |
+| `core/file_system/` | Document I/O interface + Windows adapter | Android SAF adapter |
 | `database.dart` | Drift schema v4 + path snapshots | + migration discipline |
 | `pdf_engine.dart` | Syncfusion extract/inject | Evaluate PDFium; keep same interface |
 | `sync_engine.dart` | Path diff + full tree rewrite | Incremental patch + full rewrite fallback |

@@ -5,10 +5,8 @@ const bookmarkPathSeparator = '\x1e';
 
 /// A node in the bookmark hierarchy tree.
 class BookmarkTreeNode {
-  BookmarkTreeNode({
-    required this.bookmark,
-    List<BookmarkTreeNode>? children,
-  }) : children = children ?? [];
+  BookmarkTreeNode({required this.bookmark, List<BookmarkTreeNode>? children})
+    : children = children ?? [];
 
   final Bookmark bookmark;
   final List<BookmarkTreeNode> children;
@@ -89,8 +87,9 @@ class BookmarkTree {
     List<Bookmark> bookmarks,
     String filePath,
   ) {
-    final fileBookmarks =
-        bookmarks.where((bookmark) => bookmark.filePath == filePath).toList();
+    final fileBookmarks = bookmarks
+        .where((bookmark) => bookmark.filePath == filePath)
+        .toList();
     return buildForest(fileBookmarks);
   }
 

@@ -1,10 +1,13 @@
 # Atlas Reader — Master Plan
 ## Universal Embedding Protocol · Maximum Accessibility · Production Quality
 
-**Status:** Phase 1 PoC → Phase 2 Hardening  
-**Last updated:** September 2026  
-**Platforms:** Windows (primary PoC), Android (target parity)  
-**Accessibility target:** WCAG 2.2 Level AA minimum · AAA where feasible  
+**Status:** Phase 1 PoC → Phase 2 Hardening
+
+**Last updated:** September 2026
+
+**Platforms:** Windows (primary PoC), Android (target parity)
+
+**Accessibility target:** WCAG 2.2 Level AA minimum · AAA where feasible
 **Quality bar:** Every feature shippable only when accessible, localizable, and recoverable from failure
 
 ---

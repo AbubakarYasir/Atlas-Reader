@@ -629,12 +629,105 @@ not start Stage 12, text-to-speech, cloud sync, or other secondary work.
   `.codegraph/` data remains local and reproducible; shared MCP instructions are
   versioned in `.codex/config.toml` and `AGENTS.md`.
 
+### Desktop PDF workspace roadmap
+
+Atlas takes interaction inspiration from established desktop PDF readers and
+pen-first document applications: a centered page canvas, an intentional neutral
+workspace around the page, a collapsible navigation panel, a compact tool
+surface, and direct manipulation when writing. It does not copy their branding
+or turn the reader into a crowded office suite.
+
+| Area | Planned capabilities | Priority and acceptance evidence |
+|---|---|---|
+| Reading canvas | Fit page, fit width, explicit zoom percentage, zoom controls usable while writing, rotate view, single/continuous/two-page layouts, exact page navigation, clickable scrub bar, thumbnails, and persistent desktop gutters | P0. Keyboard, mouse, touch, pen, Arabic/RTL, resize, and 200% text-scale checks; no reader controls may cover page content. |
+| Navigation panel | Collapsible **Pages**, **Outline**, **Bookmarks**, and **Annotations** tabs; search within the active tab; selected-page state; keyboard traversal; persistent width on desktop | P0. A user can locate and open any page, outline entry, bookmark, or annotation without leaving the reader. |
+| Bookmark workspace | Read the existing PDF outline; add page bookmarks; create folders; rename, delete, move, reorder, and nest entries; filter/search; show page and hierarchy breadcrumbs; jump exactly to the stored page; preserve Unicode/Arabic titles and existing sibling order | P0. Reopen the saved PDF in Atlas and a standard reader, then verify hierarchy, order, pages, and titles. |
+| Annotation tools | Hand/select, pen, highlighter, eraser, undo/redo, color, opacity, stroke width, pressure where available, and page-isolated ink; text selection highlight/underline/strikeout; sticky note; free text/callout; line, arrow, rectangle, ellipse, and cloud shape tools; select, move, resize, edit, delete, and inspect properties | P1. Save/reopen standard annotation types without losing outlines, metadata, Arabic content, or annotations on unrelated pages. |
+| Annotation panel | List, search, filter, sort, and jump to annotations; show type, author, time, color, page, selected text, and note; bulk delete/export only after confirmation | P1. Every visible annotation is reachable from keyboard and screen reader, and selecting a list item focuses the exact PDF location. |
+| Print | Native printer selection and print preview; all/current/custom page ranges; page labels; odd/even pages; reverse order; copies and collation; orientation; paper size; fit, actual size, custom scale, shrink oversized pages, multiple pages per sheet, booklet, grayscale, and margins | P1. Atlas passes the chosen settings to the Windows print system, shows a clear range summary, and never modifies the source PDF to print. |
+| Covers and metadata | Prefer an embedded cover/thumbnail when the file has one; otherwise render PDF page one as the library cover. Show and edit title, authors/contributors, subject, description, keywords/tags, publisher, publication year/date, ISBN/identifiers, language, series, edition, rights, source, creator/producer, creation/modification dates, file size, page count, path, and reading/research status. | P0 for first-page cover fallback and read-only detail; P1 for editing. A rescan/reopen and a standard PDF metadata inspector must show the same portable core fields. |
+
+#### Deliberately excluded from the Atlas reader/editor roadmap
+
+- PDF-to-Word/Excel/PowerPoint conversion, raw PDF object editing, and document
+  optimizer workflows.
+- E-signatures, form authoring, OCR/recognition, JavaScript execution, and
+  certificate/security administration.
+- Cloud sharing, email, hosted collaboration, account systems, and AI web
+  search.
+- Attachments, audio/video, 3D content, and multimedia annotation.
+
+These can be revisited only when they directly serve the local reading,
+bookmarking, annotating, or printing workflow and have a clear offline design.
+
+### Portable cover and metadata contract
+
+Library details must travel with the reader's document rather than exist only in
+Atlas. Atlas will build this capability on the local PDF stack unless a library
+is shown to preserve the full document, standard metadata, XMP, outlines, and
+annotations during a safe replacement. No hosted service or account is part of
+this feature.
+
+| Data | Portable representation | Atlas behavior |
+|---|---|---|
+| Cover | Existing embedded document thumbnail/cover when available; otherwise a cached render of PDF page one | Page one is the deterministic fallback, so every readable PDF has a useful shelf image without modifying its content. A later explicit user cover can be embedded only after an interoperability review. |
+| Bibliographic fields | PDF document information dictionary plus standard XMP/Dublin Core fields where mapped | Read and display existing values; edit through a detailed metadata sheet; validate dates, identifiers, language tags, and Unicode; write only after explicit save. |
+| Research fields | Documented Atlas XMP extension namespace within the PDF: user tags, series, edition, research status, source/provenance, and user annotation summary | Preserve unknown XMP fields, avoid overwriting other applications' namespaces, and keep a local SQLite projection only for fast search. |
+| Technical fields | PDF metadata and file inspection: creator, producer, created/modified time, PDF version, page count, size, encryption/permissions where readable | Display as read-only facts unless a field is a portable editable metadata field. Machine path remains local-only and is never written into the PDF. |
+
+Metadata editing must offer field-level reset, a before/after summary, and an
+explicit **Save into PDF** action. The save path uses the same temporary-file,
+validation, backup, and Windows-lock handling as annotations. It must preserve
+the original outline, page content, annotation streams, Arabic/RTL text, and
+unrecognized metadata. The metadata panel will distinguish portable values from
+local-only values such as file path, last-opened time, progress, and favorites.
+
+### Competitor-informed product scope
+
+**Librera Reader** is the library and reading-workflow benchmark. **Noteful** is
+the handwriting, markup, page-management, tagging, and focused-writing
+benchmark. Atlas must be competitive in the useful workflows below while
+remaining a local, open-source Windows-first reader instead of becoming a copy
+of either product.
+
+| Benchmark insight | Atlas plan | Boundary |
+|---|---|---|
+| Librera: deep library controls, scan locations, cover grids/lists, metadata sheets, Recents/Favorites/Bookmarks, and user-controlled destinations | Folder scan rules, persistent Library/Recents/Bookmarks/Favorites/Folders/Settings destinations, configurable view density and cover size, first-page cover fallback, portable metadata, sort/filter/search, and folder/file management | Do not copy its overloaded preference screen. Keep common controls visible and place advanced controls in focused sections. |
+| Librera: quick discovery of large Arabic libraries | Arabic-aware title/author/file/metadata search, normalized optional search matching, RTL shelves and details, fast first-page thumbnails, and accessible Arabic metadata editing | Support only formats with a deliberate local implementation; do not promise a broad format matrix before readers and metadata round trips exist. |
+| Noteful: fluid high-resolution vector writing | Low-latency pen, fountain pen, highlighter, pressure-aware stroke options where supported, color/width presets, palm/gesture policy, undo/redo, and a compact movable-orientable writing toolbar | Store portable PDF `/Ink` and standard annotation data. Do not add cloud sync or account dependence. |
+| Noteful: lasso, object editing, and shape recognition | Lasso/select annotations; move, resize, duplicate, style, and delete; recognize line, arrow, rectangle, ellipse, and polygon/cloud intent and save standard PDF shape annotations | Shape recognition must be optional and reversible; freehand ink remains available at all times. |
+| Noteful: layers and page overview | Page thumbnail overview with selection, reorder/rotate/duplicate/delete only when PDF operations can be saved safely; annotation layers backed by standard PDF Optional Content Groups where feasible, with visibility/lock/reorder controls | Preserve the source document. If a PDF library cannot safely retain Optional Content Groups, layer changes remain unimplemented rather than app-only. |
+| Noteful: tags and notebook organization | Portable XMP tags, nested tag paths, tag browse/filter/rename/reassign, and reader/library tag views; later local PDF notebook creation from paper templates for research notes | Do not treat a proprietary local database as the source of truth for tags or notebooks. |
+
+Noteful features that are not planned for this product direction are Apple-only
+sync, iCloud accounts, audio recording/playback, Microsoft Office import, and
+consumer notebook templates that do not produce an interoperable PDF workflow.
+
+### Full Arabic and RTL release contract
+
+Arabic support is not complete until every user-facing Atlas workflow is usable
+in Arabic without English fallback or broken bidirectional layout. It is a
+release gate for the Windows beta, not a later visual polish item.
+
+| Requirement | Planned behavior and verification |
+|---|---|
+| Complete translation coverage | Every route, dialog, menu, button, tooltip, empty/loading/error message, validation message, setting, print control, annotation tool, bookmark action, and screen-reader label comes from Arabic localization resources. CI rejects newly introduced hard-coded user-facing strings. |
+| RTL layout | The application uses locale-aware directionality. Navigation rail/drawer placement, side panels, dialogs, alignment, paddings, list affordances, keyboard focus order, and directional icons mirror only when their meaning is directional. PDF page imagery, physical page order, tool symbols, filenames, identifiers, and mathematical/code content are not incorrectly mirrored. |
+| Mixed-script document data | Arabic, English, Urdu, Latin titles, filenames, citations, publisher names, ISBNs, page labels, paths, dates, and numbers remain readable together. Use Unicode bidi isolation around paths, identifiers, shortcut glyphs, and page references. |
+| Arabic search and sorting | Provide an explicit normalized-search option for common Arabic variants (alef forms, ya/alef maqsura, ta marbuta, and diacritics) while retaining exact search. Sort consistently with documented Arabic collation behavior and never alter original metadata to normalize it. |
+| Arabic metadata and PDF portability | Read and write Arabic/RTL title, author, subject, keywords, publisher, tags, and XMP fields as Unicode. Reopen in Atlas and inspect in a standard PDF reader; verify outline hierarchy, annotations, and metadata survive unchanged. |
+| Typography and scaling | Use a legible Arabic UI font fallback, respect Windows text scale and high contrast, avoid clipping ligatures or diacritics, support Arabic-Indic or Latin digit preference, and keep PDF content rendering independent from UI font changes. |
+| Accessibility | Narrator labels and announcements are localized, logical reading order matches the visual RTL order, focus is visible, and keyboard shortcuts retain discoverable Arabic descriptions. Test reader, library, bookmarks, metadata, annotation, and print flows at 100% and 200% scale. |
+| Regression evidence | Maintain Arabic-only and mixed Arabic/English widget tests, PDF round-trip fixtures, screenshot/golden coverage for wide and narrow desktop windows, and a manual Windows acceptance checklist. No Arabic release claim is made until this matrix passes. |
+
 ### Explicitly deferred
 
 - Text-to-speech and Stage 12+
 - Speed-reading and hands-free presentation in the primary UI
 - Cloud accounts, cloud synchronization, and hosted storage
 - EPUB page rendering or EPUB ink embedding (EPUB discovery remains supported)
+- Raw PDF content editing, conversion, forms, signatures, OCR, hosted sharing,
+  multimedia, and 3D content
 
 ---
 
@@ -748,13 +841,26 @@ This delivery record reflects the Windows implementation through
 
 ## XIII. Immediate Next Actions (Beta hardening only)
 
-1. Complete measured large-library and long-document performance profiling on
+1. Complete the desktop reader workspace: reliable Write-mode zoom and pan,
+   fit/percentage controls, a persistent tabbed navigation panel, and exact
+   page/thumbnail navigation.
+2. Finish full bookmark management: edit, reorder, nest, move, search, and
+   preserve the PDF outline with Arabic/RTL and standard-reader round trips.
+3. Expand standard PDF annotations in this order: text markup and notes, then
+   editable free text/callouts and shapes, then the searchable annotation panel.
+4. Add native Windows print preview and controls for printer, ranges, scaling,
+   paper, copies, odd/even, multi-up, booklet, grayscale, and margins.
+5. Add the portable library-detail workflow: embedded-thumbnail detection,
+   first-page PDF cover rendering fallback, detailed metadata display, and an
+   explicit XMP/PDF metadata editor with round-trip tests.
+6. Complete full Arabic localization and RTL acceptance: translation coverage,
+   mixed-script layout, Arabic metadata/search/sort behavior, Narrator, and
+   Arabic PDF round-trip verification.
+7. Complete measured large-library and long-document performance profiling on
    representative HDD, SSD, mouse, touch, and pen hardware.
-2. Add a packaged Windows installer and optional `.pdf` file association while
+8. Add a packaged Windows installer and optional `.pdf` file association while
    retaining explicit user control over defaults.
-3. Make bookmark descriptions and tags portable inside the document rather
-   than local-index-only, with a documented interoperable metadata format.
-4. Complete high-contrast, 200% text scale, Narrator, and Arabic RTL acceptance
+9. Complete high-contrast, 200% text scale, Narrator, and Arabic RTL acceptance
    passes before a stable `1.0` candidate.
 
 Text-to-speech, speed-reading, research lookup, cloud services, and other

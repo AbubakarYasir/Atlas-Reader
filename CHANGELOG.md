@@ -3,6 +3,23 @@
 All notable changes are documented here. Atlas Reader follows Semantic
 Versioning while it moves through pre-1.0 Windows beta releases.
 
+## [Unreleased]
+
+### Planned scope
+
+- Added a focused desktop PDF-reader roadmap informed by established reader and
+  pen-first editor workflows: centered page canvas, tabbed navigation panel,
+  comprehensive bookmark management, standard annotation tools and panel, and
+  native Windows print controls.
+- Added Librera Reader and Noteful as explicit workflow benchmarks for library
+  control, portable metadata, page management, handwriting, markup, layers,
+  tags, and local PDF notebooks.
+- Added a full Arabic/RTL release contract covering all translated UI states,
+  bidirectional layout, Arabic search/sort, portable metadata, accessibility,
+  and regression evidence.
+- Explicitly excluded unrelated office-suite capabilities such as conversion,
+  forms, signing, OCR, cloud sharing, multimedia, and 3D content.
+
 ## [0.8.0-beta.1] — 2026-09-09
 
 ### Beta scope and navigation

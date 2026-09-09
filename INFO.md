@@ -20,6 +20,16 @@ core workflows:
    or across the whole library.
 3. Read and write on PDFs with standard, page-isolated `/Ink` annotations.
 
+The next planned product layer is a fuller desktop PDF workspace: page/outline/
+bookmark/annotation navigation, complete bookmark management, standard markup
+and note tools, and local Windows printing with page-range and layout controls.
+Librera Reader and Noteful are workflow benchmarks for the library and writing
+surfaces. Full Arabic/RTL support is a release requirement, including localized
+errors and controls, mixed-script metadata, search, accessibility, and PDF
+round trips.
+The plan intentionally excludes conversion, signing, forms, OCR, cloud services,
+multimedia, and 3D features.
+
 The primary shell contains Library, Recents, Bookmarks, Favorites, Folders, and
 Settings. Any PDF can also be opened directly or supplied as a Windows launch
 argument without enrolling its parent directory.

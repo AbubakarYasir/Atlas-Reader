@@ -3,6 +3,27 @@
 All notable changes are documented here. This project follows a staged
 hardening approach rather than formal releases.
 
+## Stage 4 — Command Center and library management (2026-09-09)
+
+### Added
+
+- A global `Ctrl+K` Command Center overlay. Bookmark results show the book,
+  breadcrumb path, and page number; selecting one opens the PDF reader at the
+  matching page.
+- Library-folder settings for adding, removing, and manually rescanning one or
+  more folders.
+- Recursive, isolate-backed PDF folder scanning and a Library Files view for
+  opening discovered documents.
+- Directory change watching while Atlas is open, so added, changed, renamed,
+  and deleted PDFs refresh the local index.
+- Drift library-folder and library-file tables, plus tests for scan results,
+  searching, folder removal, and renamed-file reconciliation.
+
+### Changed
+
+- A safely matched in-folder PDF rename carries local bookmarks and the PDF
+  snapshot to its new path instead of treating it as a separate book.
+
 ## Stage 3 — PDF reader integration (in progress)
 
 ### Added

@@ -19,6 +19,9 @@ an account, cloud storage, or an internet connection to manage them.
   sub-sections.
 - Add a bookmark for a page, optional note, and comma-separated tags.
 - Search bookmarks across the local Atlas library.
+- Press `Ctrl+K` from anywhere in Atlas to search bookmarks and scanned books.
+- Add one or more folders to your library; Atlas scans their PDFs and notices
+  additions, removals, and renames while the app is open.
 - Browse bookmarks by book, tag, or a flat indented list.
 - Edit or delete individual bookmarks, or remove all local bookmarks for a
   book.
@@ -129,7 +132,15 @@ from the local bookmark tree.
 
 ### Search and organize
 
-- Use **Search all bookmarks** to find saved bookmarks by title.
+- Press `Ctrl+K` from anywhere in the app to open the **Command Center**. Its
+  results show the book, chapter/section path, and page number. Select a result
+  to open that PDF at the saved page.
+- Open **Settings** → **Library folders** → **Add folder** to add folders that
+  contain your PDFs. Atlas scans subfolders too. Choose **Scan now** whenever
+  you want an immediate refresh; otherwise it refreshes after it notices a
+  PDF being added, changed, renamed, or removed.
+- Open **Library files** to see the PDFs Atlas has found. Select a file there
+  to begin reading it.
 - Change **Group by** to browse by book, tag, or a flat list.
 - Expand a book or section to reveal sub-bookmarks.
 - Use the edit and delete icons beside a bookmark for local changes.
@@ -155,7 +166,11 @@ your original PDF.
 
 ## Current limits
 
-- Atlas manages PDF bookmarks; it is not yet a full PDF page reader.
+- Library indexing reads PDF filenames and outline/bookmark counts. It does not
+  upload or modify a PDF merely because it was scanned.
+- Rename reconciliation retains local bookmark links when Atlas can safely
+  match a renamed PDF within the same library folder by its modification time
+  and outline signature. If a file cannot be matched, it is indexed as new.
 - EPUB files are planned, but not supported yet.
 - Notes and tags are stored locally; PDF outline titles are the portable part.
 - The app is currently designed and tested primarily for Windows.
@@ -169,9 +184,10 @@ flutter test
 flutter analyze
 ```
 
-The project currently has 16 automated tests. They cover bookmark-tree paths,
-snapshot compatibility, sync differences, widget startup, and Windows document
-file operations, including isolate-backed PDF bookmark processing.
+The project currently has 24 automated tests. They cover bookmark-tree paths,
+snapshot compatibility, sync differences, command and library data behavior,
+folder scanning, widget startup, and Windows document file operations,
+including isolate-backed PDF bookmark processing.
 
 ### Project layout
 
@@ -181,10 +197,10 @@ lib/
 │   ├── database/       # SQLite connection infrastructure
 │   └── file_system/    # Platform-neutral document I/O + Windows adapter
 ├── features/
-│   ├── library/        # Current workspace and PDF selection
-│   ├── reader/         # Bookmark composer; future PDF reading UI
+│   ├── library/        # Workspace, folder manager, scanner, watcher, PDF list
+│   ├── reader/         # PDF reader and bookmark composer
 │   ├── bookmarks/      # Bookmark-management contracts
-│   ├── command_center/ # Global search UI
+│   ├── command_center/ # Ctrl+K global search overlay
 │   ├── sync/           # Sync preview UI
 │   └── settings/       # Settings entry point
 ├── pdf_engine.dart     # PDF outline extraction and writing

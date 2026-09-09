@@ -1275,6 +1275,723 @@ class FileSnapshotsCompanion extends UpdateCompanion<FileSnapshot> {
   }
 }
 
+class $LibraryFoldersTable extends LibraryFolders
+    with TableInfo<$LibraryFoldersTable, LibraryFolder> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LibraryFoldersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _pathMeta = const VerificationMeta('path');
+  @override
+  late final GeneratedColumn<String> path = GeneratedColumn<String>(
+    'path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _addedAtMeta = const VerificationMeta(
+    'addedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> addedAt = GeneratedColumn<DateTime>(
+    'added_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, path, addedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'library_folders';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LibraryFolder> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('path')) {
+      context.handle(
+        _pathMeta,
+        path.isAcceptableOrUnknown(data['path']!, _pathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pathMeta);
+    }
+    if (data.containsKey('added_at')) {
+      context.handle(
+        _addedAtMeta,
+        addedAt.isAcceptableOrUnknown(data['added_at']!, _addedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LibraryFolder map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LibraryFolder(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      path: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}path'],
+      )!,
+      addedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}added_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LibraryFoldersTable createAlias(String alias) {
+    return $LibraryFoldersTable(attachedDatabase, alias);
+  }
+}
+
+class LibraryFolder extends DataClass implements Insertable<LibraryFolder> {
+  final int id;
+  final String path;
+  final DateTime addedAt;
+  const LibraryFolder({
+    required this.id,
+    required this.path,
+    required this.addedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['path'] = Variable<String>(path);
+    map['added_at'] = Variable<DateTime>(addedAt);
+    return map;
+  }
+
+  LibraryFoldersCompanion toCompanion(bool nullToAbsent) {
+    return LibraryFoldersCompanion(
+      id: Value(id),
+      path: Value(path),
+      addedAt: Value(addedAt),
+    );
+  }
+
+  factory LibraryFolder.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LibraryFolder(
+      id: serializer.fromJson<int>(json['id']),
+      path: serializer.fromJson<String>(json['path']),
+      addedAt: serializer.fromJson<DateTime>(json['addedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'path': serializer.toJson<String>(path),
+      'addedAt': serializer.toJson<DateTime>(addedAt),
+    };
+  }
+
+  LibraryFolder copyWith({int? id, String? path, DateTime? addedAt}) =>
+      LibraryFolder(
+        id: id ?? this.id,
+        path: path ?? this.path,
+        addedAt: addedAt ?? this.addedAt,
+      );
+  LibraryFolder copyWithCompanion(LibraryFoldersCompanion data) {
+    return LibraryFolder(
+      id: data.id.present ? data.id.value : this.id,
+      path: data.path.present ? data.path.value : this.path,
+      addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LibraryFolder(')
+          ..write('id: $id, ')
+          ..write('path: $path, ')
+          ..write('addedAt: $addedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, path, addedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LibraryFolder &&
+          other.id == this.id &&
+          other.path == this.path &&
+          other.addedAt == this.addedAt);
+}
+
+class LibraryFoldersCompanion extends UpdateCompanion<LibraryFolder> {
+  final Value<int> id;
+  final Value<String> path;
+  final Value<DateTime> addedAt;
+  const LibraryFoldersCompanion({
+    this.id = const Value.absent(),
+    this.path = const Value.absent(),
+    this.addedAt = const Value.absent(),
+  });
+  LibraryFoldersCompanion.insert({
+    this.id = const Value.absent(),
+    required String path,
+    this.addedAt = const Value.absent(),
+  }) : path = Value(path);
+  static Insertable<LibraryFolder> custom({
+    Expression<int>? id,
+    Expression<String>? path,
+    Expression<DateTime>? addedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (path != null) 'path': path,
+      if (addedAt != null) 'added_at': addedAt,
+    });
+  }
+
+  LibraryFoldersCompanion copyWith({
+    Value<int>? id,
+    Value<String>? path,
+    Value<DateTime>? addedAt,
+  }) {
+    return LibraryFoldersCompanion(
+      id: id ?? this.id,
+      path: path ?? this.path,
+      addedAt: addedAt ?? this.addedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (path.present) {
+      map['path'] = Variable<String>(path.value);
+    }
+    if (addedAt.present) {
+      map['added_at'] = Variable<DateTime>(addedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LibraryFoldersCompanion(')
+          ..write('id: $id, ')
+          ..write('path: $path, ')
+          ..write('addedAt: $addedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LibraryFilesTable extends LibraryFiles
+    with TableInfo<$LibraryFilesTable, LibraryFile> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LibraryFilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _folderIdMeta = const VerificationMeta(
+    'folderId',
+  );
+  @override
+  late final GeneratedColumn<int> folderId = GeneratedColumn<int>(
+    'folder_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES library_folders (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _filePathMeta = const VerificationMeta(
+    'filePath',
+  );
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+    'file_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bookmarkCountMeta = const VerificationMeta(
+    'bookmarkCount',
+  );
+  @override
+  late final GeneratedColumn<int> bookmarkCount = GeneratedColumn<int>(
+    'bookmark_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
+    'lastModified',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastModified = GeneratedColumn<DateTime>(
+    'last_modified',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastScannedMeta = const VerificationMeta(
+    'lastScanned',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastScanned = GeneratedColumn<DateTime>(
+    'last_scanned',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    folderId,
+    filePath,
+    fileName,
+    bookmarkCount,
+    lastModified,
+    lastScanned,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'library_files';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LibraryFile> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('folder_id')) {
+      context.handle(
+        _folderIdMeta,
+        folderId.isAcceptableOrUnknown(data['folder_id']!, _folderIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folderIdMeta);
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(
+        _filePathMeta,
+        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_filePathMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('bookmark_count')) {
+      context.handle(
+        _bookmarkCountMeta,
+        bookmarkCount.isAcceptableOrUnknown(
+          data['bookmark_count']!,
+          _bookmarkCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_modified')) {
+      context.handle(
+        _lastModifiedMeta,
+        lastModified.isAcceptableOrUnknown(
+          data['last_modified']!,
+          _lastModifiedMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastModifiedMeta);
+    }
+    if (data.containsKey('last_scanned')) {
+      context.handle(
+        _lastScannedMeta,
+        lastScanned.isAcceptableOrUnknown(
+          data['last_scanned']!,
+          _lastScannedMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LibraryFile map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LibraryFile(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      folderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}folder_id'],
+      )!,
+      filePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_path'],
+      )!,
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      )!,
+      bookmarkCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bookmark_count'],
+      )!,
+      lastModified: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_modified'],
+      )!,
+      lastScanned: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_scanned'],
+      )!,
+    );
+  }
+
+  @override
+  $LibraryFilesTable createAlias(String alias) {
+    return $LibraryFilesTable(attachedDatabase, alias);
+  }
+}
+
+class LibraryFile extends DataClass implements Insertable<LibraryFile> {
+  final int id;
+  final int folderId;
+  final String filePath;
+  final String fileName;
+  final int bookmarkCount;
+  final DateTime lastModified;
+  final DateTime lastScanned;
+  const LibraryFile({
+    required this.id,
+    required this.folderId,
+    required this.filePath,
+    required this.fileName,
+    required this.bookmarkCount,
+    required this.lastModified,
+    required this.lastScanned,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['folder_id'] = Variable<int>(folderId);
+    map['file_path'] = Variable<String>(filePath);
+    map['file_name'] = Variable<String>(fileName);
+    map['bookmark_count'] = Variable<int>(bookmarkCount);
+    map['last_modified'] = Variable<DateTime>(lastModified);
+    map['last_scanned'] = Variable<DateTime>(lastScanned);
+    return map;
+  }
+
+  LibraryFilesCompanion toCompanion(bool nullToAbsent) {
+    return LibraryFilesCompanion(
+      id: Value(id),
+      folderId: Value(folderId),
+      filePath: Value(filePath),
+      fileName: Value(fileName),
+      bookmarkCount: Value(bookmarkCount),
+      lastModified: Value(lastModified),
+      lastScanned: Value(lastScanned),
+    );
+  }
+
+  factory LibraryFile.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LibraryFile(
+      id: serializer.fromJson<int>(json['id']),
+      folderId: serializer.fromJson<int>(json['folderId']),
+      filePath: serializer.fromJson<String>(json['filePath']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      bookmarkCount: serializer.fromJson<int>(json['bookmarkCount']),
+      lastModified: serializer.fromJson<DateTime>(json['lastModified']),
+      lastScanned: serializer.fromJson<DateTime>(json['lastScanned']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'folderId': serializer.toJson<int>(folderId),
+      'filePath': serializer.toJson<String>(filePath),
+      'fileName': serializer.toJson<String>(fileName),
+      'bookmarkCount': serializer.toJson<int>(bookmarkCount),
+      'lastModified': serializer.toJson<DateTime>(lastModified),
+      'lastScanned': serializer.toJson<DateTime>(lastScanned),
+    };
+  }
+
+  LibraryFile copyWith({
+    int? id,
+    int? folderId,
+    String? filePath,
+    String? fileName,
+    int? bookmarkCount,
+    DateTime? lastModified,
+    DateTime? lastScanned,
+  }) => LibraryFile(
+    id: id ?? this.id,
+    folderId: folderId ?? this.folderId,
+    filePath: filePath ?? this.filePath,
+    fileName: fileName ?? this.fileName,
+    bookmarkCount: bookmarkCount ?? this.bookmarkCount,
+    lastModified: lastModified ?? this.lastModified,
+    lastScanned: lastScanned ?? this.lastScanned,
+  );
+  LibraryFile copyWithCompanion(LibraryFilesCompanion data) {
+    return LibraryFile(
+      id: data.id.present ? data.id.value : this.id,
+      folderId: data.folderId.present ? data.folderId.value : this.folderId,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      bookmarkCount: data.bookmarkCount.present
+          ? data.bookmarkCount.value
+          : this.bookmarkCount,
+      lastModified: data.lastModified.present
+          ? data.lastModified.value
+          : this.lastModified,
+      lastScanned: data.lastScanned.present
+          ? data.lastScanned.value
+          : this.lastScanned,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LibraryFile(')
+          ..write('id: $id, ')
+          ..write('folderId: $folderId, ')
+          ..write('filePath: $filePath, ')
+          ..write('fileName: $fileName, ')
+          ..write('bookmarkCount: $bookmarkCount, ')
+          ..write('lastModified: $lastModified, ')
+          ..write('lastScanned: $lastScanned')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    folderId,
+    filePath,
+    fileName,
+    bookmarkCount,
+    lastModified,
+    lastScanned,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LibraryFile &&
+          other.id == this.id &&
+          other.folderId == this.folderId &&
+          other.filePath == this.filePath &&
+          other.fileName == this.fileName &&
+          other.bookmarkCount == this.bookmarkCount &&
+          other.lastModified == this.lastModified &&
+          other.lastScanned == this.lastScanned);
+}
+
+class LibraryFilesCompanion extends UpdateCompanion<LibraryFile> {
+  final Value<int> id;
+  final Value<int> folderId;
+  final Value<String> filePath;
+  final Value<String> fileName;
+  final Value<int> bookmarkCount;
+  final Value<DateTime> lastModified;
+  final Value<DateTime> lastScanned;
+  const LibraryFilesCompanion({
+    this.id = const Value.absent(),
+    this.folderId = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.bookmarkCount = const Value.absent(),
+    this.lastModified = const Value.absent(),
+    this.lastScanned = const Value.absent(),
+  });
+  LibraryFilesCompanion.insert({
+    this.id = const Value.absent(),
+    required int folderId,
+    required String filePath,
+    required String fileName,
+    this.bookmarkCount = const Value.absent(),
+    required DateTime lastModified,
+    this.lastScanned = const Value.absent(),
+  }) : folderId = Value(folderId),
+       filePath = Value(filePath),
+       fileName = Value(fileName),
+       lastModified = Value(lastModified);
+  static Insertable<LibraryFile> custom({
+    Expression<int>? id,
+    Expression<int>? folderId,
+    Expression<String>? filePath,
+    Expression<String>? fileName,
+    Expression<int>? bookmarkCount,
+    Expression<DateTime>? lastModified,
+    Expression<DateTime>? lastScanned,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (folderId != null) 'folder_id': folderId,
+      if (filePath != null) 'file_path': filePath,
+      if (fileName != null) 'file_name': fileName,
+      if (bookmarkCount != null) 'bookmark_count': bookmarkCount,
+      if (lastModified != null) 'last_modified': lastModified,
+      if (lastScanned != null) 'last_scanned': lastScanned,
+    });
+  }
+
+  LibraryFilesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? folderId,
+    Value<String>? filePath,
+    Value<String>? fileName,
+    Value<int>? bookmarkCount,
+    Value<DateTime>? lastModified,
+    Value<DateTime>? lastScanned,
+  }) {
+    return LibraryFilesCompanion(
+      id: id ?? this.id,
+      folderId: folderId ?? this.folderId,
+      filePath: filePath ?? this.filePath,
+      fileName: fileName ?? this.fileName,
+      bookmarkCount: bookmarkCount ?? this.bookmarkCount,
+      lastModified: lastModified ?? this.lastModified,
+      lastScanned: lastScanned ?? this.lastScanned,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (folderId.present) {
+      map['folder_id'] = Variable<int>(folderId.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (bookmarkCount.present) {
+      map['bookmark_count'] = Variable<int>(bookmarkCount.value);
+    }
+    if (lastModified.present) {
+      map['last_modified'] = Variable<DateTime>(lastModified.value);
+    }
+    if (lastScanned.present) {
+      map['last_scanned'] = Variable<DateTime>(lastScanned.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LibraryFilesCompanion(')
+          ..write('id: $id, ')
+          ..write('folderId: $folderId, ')
+          ..write('filePath: $filePath, ')
+          ..write('fileName: $fileName, ')
+          ..write('bookmarkCount: $bookmarkCount, ')
+          ..write('lastModified: $lastModified, ')
+          ..write('lastScanned: $lastScanned')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1282,6 +1999,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TagsTable tags = $TagsTable(this);
   late final $BookmarkTagsTable bookmarkTags = $BookmarkTagsTable(this);
   late final $FileSnapshotsTable fileSnapshots = $FileSnapshotsTable(this);
+  late final $LibraryFoldersTable libraryFolders = $LibraryFoldersTable(this);
+  late final $LibraryFilesTable libraryFiles = $LibraryFilesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1291,6 +2010,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     tags,
     bookmarkTags,
     fileSnapshots,
+    libraryFolders,
+    libraryFiles,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -1314,6 +2035,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('bookmark_tags', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'library_folders',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('library_files', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -2543,6 +3271,626 @@ typedef $$FileSnapshotsTableProcessedTableManager =
       FileSnapshot,
       PrefetchHooks Function()
     >;
+typedef $$LibraryFoldersTableCreateCompanionBuilder =
+    LibraryFoldersCompanion Function({
+      Value<int> id,
+      required String path,
+      Value<DateTime> addedAt,
+    });
+typedef $$LibraryFoldersTableUpdateCompanionBuilder =
+    LibraryFoldersCompanion Function({
+      Value<int> id,
+      Value<String> path,
+      Value<DateTime> addedAt,
+    });
+
+final class $$LibraryFoldersTableReferences
+    extends BaseReferences<_$AppDatabase, $LibraryFoldersTable, LibraryFolder> {
+  $$LibraryFoldersTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<$LibraryFilesTable, List<LibraryFile>>
+  _libraryFilesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.libraryFiles,
+    aliasName: $_aliasNameGenerator(
+      db.libraryFolders.id,
+      db.libraryFiles.folderId,
+    ),
+  );
+
+  $$LibraryFilesTableProcessedTableManager get libraryFilesRefs {
+    final manager = $$LibraryFilesTableTableManager(
+      $_db,
+      $_db.libraryFiles,
+    ).filter((f) => f.folderId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_libraryFilesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$LibraryFoldersTableFilterComposer
+    extends Composer<_$AppDatabase, $LibraryFoldersTable> {
+  $$LibraryFoldersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> libraryFilesRefs(
+    Expression<bool> Function($$LibraryFilesTableFilterComposer f) f,
+  ) {
+    final $$LibraryFilesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.libraryFiles,
+      getReferencedColumn: (t) => t.folderId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LibraryFilesTableFilterComposer(
+            $db: $db,
+            $table: $db.libraryFiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$LibraryFoldersTableOrderingComposer
+    extends Composer<_$AppDatabase, $LibraryFoldersTable> {
+  $$LibraryFoldersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LibraryFoldersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LibraryFoldersTable> {
+  $$LibraryFoldersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get path =>
+      $composableBuilder(column: $table.path, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => column);
+
+  Expression<T> libraryFilesRefs<T extends Object>(
+    Expression<T> Function($$LibraryFilesTableAnnotationComposer a) f,
+  ) {
+    final $$LibraryFilesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.libraryFiles,
+      getReferencedColumn: (t) => t.folderId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LibraryFilesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.libraryFiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$LibraryFoldersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LibraryFoldersTable,
+          LibraryFolder,
+          $$LibraryFoldersTableFilterComposer,
+          $$LibraryFoldersTableOrderingComposer,
+          $$LibraryFoldersTableAnnotationComposer,
+          $$LibraryFoldersTableCreateCompanionBuilder,
+          $$LibraryFoldersTableUpdateCompanionBuilder,
+          (LibraryFolder, $$LibraryFoldersTableReferences),
+          LibraryFolder,
+          PrefetchHooks Function({bool libraryFilesRefs})
+        > {
+  $$LibraryFoldersTableTableManager(
+    _$AppDatabase db,
+    $LibraryFoldersTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LibraryFoldersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LibraryFoldersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LibraryFoldersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> path = const Value.absent(),
+                Value<DateTime> addedAt = const Value.absent(),
+              }) =>
+                  LibraryFoldersCompanion(id: id, path: path, addedAt: addedAt),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String path,
+                Value<DateTime> addedAt = const Value.absent(),
+              }) => LibraryFoldersCompanion.insert(
+                id: id,
+                path: path,
+                addedAt: addedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$LibraryFoldersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({libraryFilesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (libraryFilesRefs) db.libraryFiles],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (libraryFilesRefs)
+                    await $_getPrefetchedData<
+                      LibraryFolder,
+                      $LibraryFoldersTable,
+                      LibraryFile
+                    >(
+                      currentTable: table,
+                      referencedTable: $$LibraryFoldersTableReferences
+                          ._libraryFilesRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$LibraryFoldersTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).libraryFilesRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.folderId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LibraryFoldersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LibraryFoldersTable,
+      LibraryFolder,
+      $$LibraryFoldersTableFilterComposer,
+      $$LibraryFoldersTableOrderingComposer,
+      $$LibraryFoldersTableAnnotationComposer,
+      $$LibraryFoldersTableCreateCompanionBuilder,
+      $$LibraryFoldersTableUpdateCompanionBuilder,
+      (LibraryFolder, $$LibraryFoldersTableReferences),
+      LibraryFolder,
+      PrefetchHooks Function({bool libraryFilesRefs})
+    >;
+typedef $$LibraryFilesTableCreateCompanionBuilder =
+    LibraryFilesCompanion Function({
+      Value<int> id,
+      required int folderId,
+      required String filePath,
+      required String fileName,
+      Value<int> bookmarkCount,
+      required DateTime lastModified,
+      Value<DateTime> lastScanned,
+    });
+typedef $$LibraryFilesTableUpdateCompanionBuilder =
+    LibraryFilesCompanion Function({
+      Value<int> id,
+      Value<int> folderId,
+      Value<String> filePath,
+      Value<String> fileName,
+      Value<int> bookmarkCount,
+      Value<DateTime> lastModified,
+      Value<DateTime> lastScanned,
+    });
+
+final class $$LibraryFilesTableReferences
+    extends BaseReferences<_$AppDatabase, $LibraryFilesTable, LibraryFile> {
+  $$LibraryFilesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $LibraryFoldersTable _folderIdTable(_$AppDatabase db) =>
+      db.libraryFolders.createAlias(
+        $_aliasNameGenerator(db.libraryFiles.folderId, db.libraryFolders.id),
+      );
+
+  $$LibraryFoldersTableProcessedTableManager get folderId {
+    final $_column = $_itemColumn<int>('folder_id')!;
+
+    final manager = $$LibraryFoldersTableTableManager(
+      $_db,
+      $_db.libraryFolders,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_folderIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$LibraryFilesTableFilterComposer
+    extends Composer<_$AppDatabase, $LibraryFilesTable> {
+  $$LibraryFilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bookmarkCount => $composableBuilder(
+    column: $table.bookmarkCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastScanned => $composableBuilder(
+    column: $table.lastScanned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$LibraryFoldersTableFilterComposer get folderId {
+    final $$LibraryFoldersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.folderId,
+      referencedTable: $db.libraryFolders,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LibraryFoldersTableFilterComposer(
+            $db: $db,
+            $table: $db.libraryFolders,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LibraryFilesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LibraryFilesTable> {
+  $$LibraryFilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bookmarkCount => $composableBuilder(
+    column: $table.bookmarkCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastScanned => $composableBuilder(
+    column: $table.lastScanned,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$LibraryFoldersTableOrderingComposer get folderId {
+    final $$LibraryFoldersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.folderId,
+      referencedTable: $db.libraryFolders,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LibraryFoldersTableOrderingComposer(
+            $db: $db,
+            $table: $db.libraryFolders,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LibraryFilesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LibraryFilesTable> {
+  $$LibraryFilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<int> get bookmarkCount => $composableBuilder(
+    column: $table.bookmarkCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastScanned => $composableBuilder(
+    column: $table.lastScanned,
+    builder: (column) => column,
+  );
+
+  $$LibraryFoldersTableAnnotationComposer get folderId {
+    final $$LibraryFoldersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.folderId,
+      referencedTable: $db.libraryFolders,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LibraryFoldersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.libraryFolders,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LibraryFilesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LibraryFilesTable,
+          LibraryFile,
+          $$LibraryFilesTableFilterComposer,
+          $$LibraryFilesTableOrderingComposer,
+          $$LibraryFilesTableAnnotationComposer,
+          $$LibraryFilesTableCreateCompanionBuilder,
+          $$LibraryFilesTableUpdateCompanionBuilder,
+          (LibraryFile, $$LibraryFilesTableReferences),
+          LibraryFile,
+          PrefetchHooks Function({bool folderId})
+        > {
+  $$LibraryFilesTableTableManager(_$AppDatabase db, $LibraryFilesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LibraryFilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LibraryFilesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LibraryFilesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> folderId = const Value.absent(),
+                Value<String> filePath = const Value.absent(),
+                Value<String> fileName = const Value.absent(),
+                Value<int> bookmarkCount = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
+                Value<DateTime> lastScanned = const Value.absent(),
+              }) => LibraryFilesCompanion(
+                id: id,
+                folderId: folderId,
+                filePath: filePath,
+                fileName: fileName,
+                bookmarkCount: bookmarkCount,
+                lastModified: lastModified,
+                lastScanned: lastScanned,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int folderId,
+                required String filePath,
+                required String fileName,
+                Value<int> bookmarkCount = const Value.absent(),
+                required DateTime lastModified,
+                Value<DateTime> lastScanned = const Value.absent(),
+              }) => LibraryFilesCompanion.insert(
+                id: id,
+                folderId: folderId,
+                filePath: filePath,
+                fileName: fileName,
+                bookmarkCount: bookmarkCount,
+                lastModified: lastModified,
+                lastScanned: lastScanned,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$LibraryFilesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({folderId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (folderId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.folderId,
+                                referencedTable: $$LibraryFilesTableReferences
+                                    ._folderIdTable(db),
+                                referencedColumn: $$LibraryFilesTableReferences
+                                    ._folderIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LibraryFilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LibraryFilesTable,
+      LibraryFile,
+      $$LibraryFilesTableFilterComposer,
+      $$LibraryFilesTableOrderingComposer,
+      $$LibraryFilesTableAnnotationComposer,
+      $$LibraryFilesTableCreateCompanionBuilder,
+      $$LibraryFilesTableUpdateCompanionBuilder,
+      (LibraryFile, $$LibraryFilesTableReferences),
+      LibraryFile,
+      PrefetchHooks Function({bool folderId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2554,4 +3902,8 @@ class $AppDatabaseManager {
       $$BookmarkTagsTableTableManager(_db, _db.bookmarkTags);
   $$FileSnapshotsTableTableManager get fileSnapshots =>
       $$FileSnapshotsTableTableManager(_db, _db.fileSnapshots);
+  $$LibraryFoldersTableTableManager get libraryFolders =>
+      $$LibraryFoldersTableTableManager(_db, _db.libraryFolders);
+  $$LibraryFilesTableTableManager get libraryFiles =>
+      $$LibraryFilesTableTableManager(_db, _db.libraryFiles);
 }

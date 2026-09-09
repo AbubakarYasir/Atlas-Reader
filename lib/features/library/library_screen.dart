@@ -18,6 +18,8 @@ import '../../sync_engine.dart';
 import '../../sync_diff.dart';
 import '../../sync_models.dart';
 import '../../widgets/accessible_bookmark_tile.dart';
+import 'library_files_screen.dart';
+import 'library_folder_manager.dart';
 import 'library_overview.dart';
 
 /// Global database instance
@@ -49,7 +51,7 @@ class MyApp extends StatelessWidget {
     final navigator = _navigatorKey.currentState;
     if (navigator == null) return;
     final context = _navigatorKey.currentContext;
-    if (!await _fileSystem.exists(result.bookmark.filePath)) {
+    if (!await _fileSystem.exists(result.filePath)) {
       if (context != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('The PDF file could not be found.')),
@@ -61,11 +63,11 @@ class MyApp extends StatelessWidget {
     await navigator.push<void>(
       MaterialPageRoute(
         builder: (_) => PdfReaderScreen(
-          filePath: result.bookmark.filePath,
+          filePath: result.filePath,
           fileSystem: _fileSystem,
-          initialPageNumber: (result.bookmark.pageIndex ?? 0) + 1,
+          initialPageNumber: result.pageNumber ?? 1,
           onCreateBookmark: (draft) =>
-              _createBookmarkFromReader(result.bookmark.filePath, draft),
+              _createBookmarkFromReader(result.filePath, draft),
         ),
       ),
     );
@@ -144,6 +146,24 @@ class _LibraryScreenState extends State<LibraryScreen> {
   final _fileSystem = const WindowsDocumentFileSystem();
   late final _pdfEngine = PdfEngine(fileSystem: _fileSystem);
   late final _syncEngine = SyncEngine(database, pdfEngine: _pdfEngine);
+  late final LibraryFolderManager _folderManager = LibraryFolderManager(
+    database: database,
+    fileSystem: _fileSystem,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _folderManager.startWatching();
+    _folderManager.rescanAll().then((report) {
+      if (!mounted) return;
+      setState(() {
+        _status = report.foldersScanned == 0
+            ? 'Waiting — add a library folder in Settings to scan PDFs.'
+            : 'Library ready: ${report.filesFound} PDFs indexed.';
+      });
+    });
+  }
 
   @override
   void dispose() {
@@ -151,6 +171,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     _pageNumberController.dispose();
     _descriptionController.dispose();
     _tagsController.dispose();
+    _folderManager.dispose();
     super.dispose();
   }
 
@@ -351,6 +372,42 @@ class _LibraryScreenState extends State<LibraryScreen> {
       if (!mounted) return;
       setState(() => _status = 'Error: $e');
     }
+  }
+
+  /// Dual-layer save for a bookmark created while browsing the library list.
+  Future<void> _createBookmarkFromLibrary(
+    String filePath,
+    ReaderBookmarkDraft draft,
+  ) async {
+    final bookmarkId = await database.addBookmark(
+      filePath: filePath,
+      title: draft.title,
+      pageIndex: draft.pageNumber - 1,
+      description: draft.description?.isEmpty ?? true
+          ? null
+          : draft.description,
+    );
+    for (final tag
+        in (draft.tags ?? '')
+            .split(',')
+            .map((t) => t.trim())
+            .where((t) => t.isNotEmpty)) {
+      await database.addTagToBookmark(bookmarkId, tag);
+    }
+
+    final output = await _pdfEngine.injectBookmark(
+      filePath,
+      draft.title,
+      draft.pageNumber - 1,
+      description: draft.description,
+    );
+    if (output == null) {
+      throw StateError(
+        'The bookmark was saved locally but could not be written to the PDF.',
+      );
+    }
+
+    if (mounted) await _calculateSyncDiff();
   }
 
   Future<void> _openReader() async {
@@ -997,10 +1054,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
         title: const Text('Atlas UEP PoC'),
         actions: [
           IconButton(
+            tooltip: 'Browse library',
+            icon: const Icon(Icons.menu_book_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => LibraryFilesScreen(
+                    database: database,
+                    fileSystem: _fileSystem,
+                    onCreateBookmark: _createBookmarkFromLibrary,
+                  ),
+                ),
+              );
+            },
+          ),
+          IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+              MaterialPageRoute<void>(
+                builder: (_) =>
+                    SettingsScreen(database: database, manager: _folderManager),
+              ),
             ),
           ),
         ],

@@ -14,6 +14,17 @@ class WindowsDocumentFileSystem implements DocumentFileSystem {
   Future<bool> exists(String path) => File(path).exists();
 
   @override
+  Future<List<String>> listDirectory(String path) async {
+    final directory = Directory(path);
+    if (!await directory.exists()) return const [];
+    try {
+      return await directory.list().map((entity) => entity.path).toList();
+    } catch (e) {
+      return const [];
+    }
+  }
+
+  @override
   Future<List<int>> readAsBytes(String path) => File(path).readAsBytes();
 
   @override

@@ -6,14 +6,22 @@ import '../../database.dart';
 
 class CommandCenterResult {
   const CommandCenterResult({
-    required this.bookmark,
+    this.bookmark,
+    required this.filePath,
     required this.bookTitle,
     required this.breadcrumb,
+    this.pageNumber,
   });
 
-  final Bookmark bookmark;
+  /// The matched bookmark, or null when the result matched only a PDF file.
+  final Bookmark? bookmark;
+  final String filePath;
   final String bookTitle;
   final String breadcrumb;
+
+  /// 1-based page number for bookmark matches; null for file matches or
+  /// folders (callers fall back to page 1).
+  final int? pageNumber;
 }
 
 /// A focused, global search dialog opened by Ctrl+K.
@@ -59,17 +67,42 @@ class _CommandCenterOverlayState extends State<CommandCenterOverlay> {
 
   Future<List<CommandCenterResult>> _findResults(String query) async {
     final matches = await widget.database.searchBookmarks(query);
+    final fileMatches = await widget.database.searchLibraryFileNames(query);
     final allBookmarks = await widget.database.getAllBookmarks();
     final byId = BookmarkTree.indexById(allBookmarks);
 
-    return matches.map((bookmark) {
+    final results = <CommandCenterResult>[];
+    final coveredFilePaths = <String>{};
+
+    for (final bookmark in matches) {
+      coveredFilePaths.add(bookmark.filePath);
       final path = BookmarkTree.pathForBookmark(bookmark, byId);
-      return CommandCenterResult(
-        bookmark: bookmark,
-        bookTitle: BookmarkGrouping.fileNameFromPath(bookmark.filePath),
-        breadcrumb: BookmarkTree.displayPath(path),
+      results.add(
+        CommandCenterResult(
+          bookmark: bookmark,
+          filePath: bookmark.filePath,
+          bookTitle: BookmarkGrouping.fileNameFromPath(bookmark.filePath),
+          breadcrumb: BookmarkTree.displayPath(path),
+          pageNumber: bookmark.isFolder || bookmark.pageIndex == null
+              ? null
+              : bookmark.pageIndex! + 1,
+        ),
       );
-    }).toList();
+    }
+
+    for (final filePath in fileMatches) {
+      if (!coveredFilePaths.add(filePath)) continue;
+      final fileName = BookmarkGrouping.fileNameFromPath(filePath);
+      results.add(
+        CommandCenterResult(
+          filePath: filePath,
+          bookTitle: fileName,
+          breadcrumb: filePath,
+        ),
+      );
+    }
+
+    return results;
   }
 
   @override
@@ -88,7 +121,7 @@ class _CommandCenterOverlayState extends State<CommandCenterOverlay> {
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.search),
                   labelText: 'Search all bookmarks',
-                  hintText: 'Type a bookmark title...',
+                  hintText: 'Bookmark title or PDF file name...',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -119,21 +152,28 @@ class _CommandCenterOverlayState extends State<CommandCenterOverlay> {
         }
         final results = snapshot.data ?? const [];
         if (results.isEmpty) {
-          return const Center(child: Text('No bookmarks found.'));
+          return const Center(child: Text('No matches found.'));
         }
 
         return ListView.builder(
           itemCount: results.length,
           itemBuilder: (context, index) {
             final result = results[index];
-            final page = result.bookmark.pageIndex == null
+            final isFileMatch = result.bookmark == null;
+            final page = isFileMatch
+                ? 'PDF file'
+                : result.pageNumber == null
                 ? 'Folder'
-                : 'Page ${result.bookmark.pageIndex! + 1}';
+                : 'Page ${result.pageNumber}';
             return ListTile(
-              leading: const Icon(Icons.bookmark_outline),
-              title: Text(result.bookmark.title),
-              subtitle: Text('${result.bookTitle}\n${result.breadcrumb}'),
-              isThreeLine: true,
+              leading: Icon(
+                isFileMatch ? Icons.menu_book_outlined : Icons.bookmark_outline,
+              ),
+              title: Text(result.bookTitle),
+              subtitle: Text(
+                isFileMatch ? result.breadcrumb : result.breadcrumb,
+              ),
+              isThreeLine: false,
               trailing: Text(page),
               onTap: () => widget.onSelected(result),
             );

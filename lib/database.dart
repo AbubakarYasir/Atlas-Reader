@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'bookmark_tree.dart';
 import 'core/database/app_database_connection.dart';
 import 'file_snapshot_state.dart';
+import 'scanned_pdf.dart';
 
 part 'database.g.dart';
 
@@ -50,8 +51,39 @@ class FileSnapshots extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// Registered library folders that are scanned for PDF files.
+@DataClassName('LibraryFolder')
+class LibraryFolders extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get path => text().unique()();
+  DateTimeColumn get addedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// A single PDF discovered by a library-folder scan, with outline metadata.
+@DataClassName('LibraryFile')
+class LibraryFiles extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get folderId =>
+      integer().references(LibraryFolders, #id, onDelete: KeyAction.cascade)();
+  TextColumn get filePath => text().unique()();
+  TextColumn get fileName => text()();
+  IntColumn get bookmarkCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get lastModified => dateTime()();
+  DateTimeColumn get lastScanned =>
+      dateTime().withDefault(currentDateAndTime)();
+}
+
 /// AppDatabase class extending _$AppDatabase
-@DriftDatabase(tables: [Bookmarks, Tags, BookmarkTags, FileSnapshots])
+@DriftDatabase(
+  tables: [
+    Bookmarks,
+    Tags,
+    BookmarkTags,
+    FileSnapshots,
+    LibraryFolders,
+    LibraryFiles,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openAppDatabaseConnection());
 
@@ -59,7 +91,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -99,6 +131,10 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(
             'ALTER TABLE bookmarks RENAME COLUMN modified_at TO updated_at',
           );
+        }
+        if (from < 5) {
+          await m.createTable(libraryFolders);
+          await m.createTable(libraryFiles);
         }
         // For PoC, we'll drop and recreate
         if (from < 3) {
@@ -486,5 +522,183 @@ class AppDatabase extends _$AppDatabase {
         );
       }
     });
+  }
+
+  // --- Library folder management ---
+
+  /// Registers [path] as a library folder to scan. Idempotent: an already
+  /// registered path returns the existing row without inserting a duplicate.
+  Future<LibraryFolder> addLibraryFolder(String path) async {
+    final existing = await (select(
+      libraryFolders,
+    )..where((tbl) => tbl.path.equals(path))).getSingleOrNull();
+    if (existing != null) {
+      return existing;
+    }
+    final id = await into(
+      libraryFolders,
+    ).insert(LibraryFoldersCompanion(path: Value(path)));
+    return (select(
+      libraryFolders,
+    )..where((tbl) => tbl.id.equals(id))).getSingle();
+  }
+
+  /// Returns every registered library folder, ordered by path.
+  Future<List<LibraryFolder>> getLibraryFolders() async {
+    return (select(
+      libraryFolders,
+    )..orderBy([(tbl) => OrderingTerm.asc(tbl.path)])).get();
+  }
+
+  /// Removes a library folder; its scanned files cascade away.
+  Future<int> removeLibraryFolder(int id) async {
+    return transaction(() async {
+      await (delete(
+        libraryFiles,
+      )..where((tbl) => tbl.folderId.equals(id))).go();
+      return (delete(libraryFolders)..where((tbl) => tbl.id.equals(id))).go();
+    });
+  }
+
+  /// Reconciles a scan result against the recorded files for [folderId].
+  /// Updates bookmark counts for known files, inserts new files, and removes
+  /// any tracked file that no longer exists on disk.
+  Future<void> upsertLibraryFiles(
+    int folderId,
+    List<ScannedPdf> scanned,
+  ) async {
+    await transaction(() async {
+      final tracked = await (select(
+        libraryFiles,
+      )..where((tbl) => tbl.folderId.equals(folderId))).get();
+      final livePaths = scanned.map((pdf) => pdf.filePath).toSet();
+      final missingTracked = tracked
+          .where((file) => !livePaths.contains(file.filePath))
+          .toList();
+      final reconciledIds = <int>{};
+
+      for (final pdf in scanned) {
+        final existing = await (select(
+          libraryFiles,
+        )..where((tbl) => tbl.filePath.equals(pdf.filePath))).getSingleOrNull();
+
+        if (existing != null) {
+          await (update(
+            libraryFiles,
+          )..where((tbl) => tbl.id.equals(existing.id))).write(
+            LibraryFilesCompanion(
+              fileName: Value(pdf.fileName),
+              bookmarkCount: Value(pdf.bookmarkCount),
+              lastModified: Value(pdf.lastModified),
+              lastScanned: Value(DateTime.now()),
+            ),
+          );
+        } else {
+          // A rename or move inside the same library folder produces a new
+          // path and a missing old path. Match the stable outline signature
+          // (bookmark count + modification time) to retain local bookmarks.
+          final moved = missingTracked.where((file) {
+            return !reconciledIds.contains(file.id) &&
+                file.bookmarkCount == pdf.bookmarkCount &&
+                file.lastModified.isAtSameMomentAs(pdf.lastModified);
+          }).firstOrNull;
+
+          if (moved != null) {
+            reconciledIds.add(moved.id);
+            await (update(
+              libraryFiles,
+            )..where((tbl) => tbl.id.equals(moved.id))).write(
+              LibraryFilesCompanion(
+                folderId: Value(folderId),
+                filePath: Value(pdf.filePath),
+                fileName: Value(pdf.fileName),
+                lastScanned: Value(DateTime.now()),
+              ),
+            );
+            await (update(bookmarks)
+                  ..where((tbl) => tbl.filePath.equals(moved.filePath)))
+                .write(BookmarksCompanion(filePath: Value(pdf.filePath)));
+            await (update(fileSnapshots)
+                  ..where((tbl) => tbl.filePath.equals(moved.filePath)))
+                .write(FileSnapshotsCompanion(filePath: Value(pdf.filePath)));
+            continue;
+          }
+
+          await into(libraryFiles).insert(
+            LibraryFilesCompanion(
+              folderId: Value(folderId),
+              filePath: Value(pdf.filePath),
+              fileName: Value(pdf.fileName),
+              bookmarkCount: Value(pdf.bookmarkCount),
+              lastModified: Value(pdf.lastModified),
+              lastScanned: Value(DateTime.now()),
+            ),
+          );
+        }
+      }
+
+      for (final file in tracked) {
+        if (!livePaths.contains(file.filePath) &&
+            !reconciledIds.contains(file.id)) {
+          await (delete(
+            libraryFiles,
+          )..where((tbl) => tbl.id.equals(file.id))).go();
+        }
+      }
+    });
+  }
+
+  /// Lists scanned library files, optionally filtered by [folderId] and a
+  /// case-insensitive [query] against the file name.
+  Future<List<LibraryFile>> getLibraryFiles({
+    int? folderId,
+    String? query,
+  }) async {
+    final q = select(libraryFiles)
+      ..orderBy([(tbl) => OrderingTerm.asc(tbl.fileName)]);
+
+    if (folderId != null) {
+      q.where((tbl) => tbl.folderId.equals(folderId));
+    }
+    final trimmedQuery = query?.trim() ?? '';
+    if (trimmedQuery.isNotEmpty) {
+      q.where(
+        (tbl) => tbl.fileName.lower().contains(trimmedQuery.toLowerCase()),
+      );
+    }
+
+    return q.get();
+  }
+
+  /// Returns the menu-book header path and bookmark-count stats for a folder's
+  /// scanned files (used by the library folders screen).
+  Future<({List<LibraryFile> files, int folderFileCount})> libraryFolderStats(
+    int folderId,
+  ) async {
+    final files = await getLibraryFiles(folderId: folderId);
+    return (files: files, folderFileCount: files.length);
+  }
+
+  /// Finds distinct PDF paths whose file name matches [query] (case-insensitive).
+  /// Used so the Command Center can surface matching books even without
+  /// bookmarks.
+  Future<List<String>> searchLibraryFileNames(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return const [];
+
+    final files =
+        await (select(libraryFiles)..where(
+              (tbl) => tbl.fileName.lower().contains(trimmed.toLowerCase()),
+            ))
+            .get();
+
+    final seen = <String>{};
+    final paths = <String>[];
+    for (final file in files) {
+      if (seen.add(file.filePath)) {
+        paths.add(file.filePath);
+      }
+    }
+    return paths;
   }
 }

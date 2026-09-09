@@ -270,7 +270,7 @@ A feature is **done** only when all checkboxes pass:
 | `main.dart` | Bootstrap-only entry point | Split remaining library coordinator + `AccessibilityAnnouncer` |
 | `features/library/library_screen.dart` | Current workspace coordinator | Smaller library-specific controllers |
 | `core/file_system/` | Document I/O interface + Windows adapter | Android SAF adapter |
-| `database.dart` | Drift schema v4 + path snapshots | + migration discipline |
+| `database.dart` | Drift schema v5 + path snapshots and library index | + migration discipline |
 | `pdf_engine.dart` | Syncfusion extract/inject | Evaluate PDFium; keep same interface |
 | `sync_engine.dart` | Path diff + full tree rewrite | Incremental patch + full rewrite fallback |
 | `bookmark_tree.dart` | Forest builder | + `SemanticsNode` metadata helpers |
@@ -535,6 +535,15 @@ Future: `(file_uuid, bookmark_uuid)` when XMP UUIDs land.
 
 ### Phase 3 — Library & Command Center (Weeks 17–24)
 
+**Completed in Stage 4:**
+
+- Global `Ctrl+K` Command Center with bookmark results that show book,
+  breadcrumb path, and target page, then open the selected PDF at that page.
+- Multiple library-folder selection, recursive background PDF scanning,
+  indexed library-files view, and change watching while Atlas is open.
+- Best-effort in-folder rename reconciliation that carries existing local
+  bookmark and snapshot associations to a safely matched new path.
+
 | Deliverable | A11y gate |
 |-------------|-----------|
 | Folder scanner isolate | Progress announced |
@@ -607,7 +616,7 @@ Future: `(file_uuid, bookmark_uuid)` when XMP UUIDs land.
 ## XIII. Immediate Next Actions (Priority)
 
 1. **Add `AccessibilityAnnouncer`** — wrap sync/commit/import outcomes.
-2. **Implement keyboard shortcuts** — `Ctrl+K`, `Ctrl+O`, tree arrows.
+2. **Implement remaining keyboard shortcuts** — `Ctrl+O` and tree arrows.
 3. **Add dark + high-contrast themes** — verify contrast ratios.
 4. **Add Arabic ARB + RTL test** — `flutter gen-l10n`, mirror layouts.
 5. **Split UI from `main.dart`** — Library, BookmarkManager, SyncReview.

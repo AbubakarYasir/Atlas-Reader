@@ -22,4 +22,8 @@ abstract interface class DocumentFileSystem {
   Future<void> delete(String path);
 
   Future<void> rename(String fromPath, String toPath);
+
+  /// Lists the immediate child paths of [path]. Missing or unreadable
+  /// directories yield an empty list instead of throwing.
+  Future<List<String>> listDirectory(String path);
 }

@@ -9,6 +9,7 @@ import '../../core/file_system/windows_document_file_system.dart';
 import '../../database.dart';
 import '../../features/command_center/command_center_search_field.dart';
 import '../../features/reader/bookmark_composer.dart';
+import '../../features/reader/pdf_reader_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../pdf_engine.dart';
 import '../../sync_engine.dart';
@@ -267,6 +268,32 @@ class _LibraryScreenState extends State<LibraryScreen> {
       if (!mounted) return;
       setState(() => _status = 'Error: $e');
     }
+  }
+
+  Future<void> _openReader() async {
+    final filePath = _selectedFilePath;
+    if (filePath == null) return;
+
+    final resolvedPath = await _resolveMissingFile(filePath);
+    if (resolvedPath == null || !mounted) return;
+
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => PdfReaderScreen(
+          filePath: resolvedPath,
+          fileSystem: _fileSystem,
+          onCreateBookmark: (draft) async {
+            _bookmarkTitleController.text = draft.title;
+            _pageNumberController.text = draft.pageNumber.toString();
+            _descriptionController.text = draft.description ?? '';
+            _tagsController.text = draft.tags ?? '';
+            await _injectBookmark();
+          },
+        ),
+      ),
+    );
+
+    if (mounted) await _calculateSyncDiff();
   }
 
   Future<void> _syncFile() async {
@@ -907,6 +934,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   LibraryOverview(
                     filePath: _selectedFilePath,
                     onSelectPdf: _pickPdf,
+                    onOpenReader: _openReader,
                   ),
                   const SizedBox(height: 24),
                   BookmarkComposer(

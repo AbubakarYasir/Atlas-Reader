@@ -3,6 +3,15 @@
 All notable changes are documented here. This project follows a staged
 hardening approach rather than formal releases.
 
+## Stage 3 — PDF reader integration (in progress)
+
+### Added
+
+- Windows PDF reader route with virtual page scrolling, zoom controls, text
+  selection, active-page tracking, and `Ctrl+B` in-reader bookmarking.
+- Background document-byte loading through `DocumentFileSystem` before the
+  reader viewer mounts.
+
 ## Stage 2 — Architecture foundations (2026-09-09)
 
 ### Added

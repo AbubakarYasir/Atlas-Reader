@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'document_file_system.dart';
 
@@ -14,6 +15,11 @@ class WindowsDocumentFileSystem implements DocumentFileSystem {
 
   @override
   Future<List<int>> readAsBytes(String path) => File(path).readAsBytes();
+
+  @override
+  Future<List<int>> readAsBytesInBackground(String path) {
+    return Isolate.run(() => File(path).readAsBytes());
+  }
 
   @override
   Future<void> rename(String fromPath, String toPath) async {

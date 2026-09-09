@@ -7,6 +7,9 @@ abstract interface class DocumentFileSystem {
 
   Future<List<int>> readAsBytes(String path);
 
+  /// Reads a document without competing with scrolling or animation work.
+  Future<List<int>> readAsBytesInBackground(String path);
+
   Future<void> writeAsBytes(String path, List<int> bytes, {bool flush = false});
 
   Future<void> delete(String path);

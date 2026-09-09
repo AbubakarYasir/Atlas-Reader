@@ -14,6 +14,7 @@ an account, cloud storage, or an internet connection to manage them.
 ## What you can do today
 
 - Select a PDF from your computer.
+- Open the PDF in a scrollable, zoomable reader.
 - See its existing outline/bookmarks, including chapters, sections, and deeper
   sub-sections.
 - Add a bookmark for a page, optional note, and comma-separated tags.
@@ -89,6 +90,8 @@ Then run:
 2. Choose **Select PDF**.
 3. Pick a PDF file.
 4. Atlas checks the PDF and shows any bookmark changes waiting to be saved.
+5. Choose **Open reader** to read the PDF inside Atlas. Use the zoom controls,
+   mouse wheel/trackpad, or touch gestures to navigate it.
 
 ### Add a bookmark
 
@@ -101,6 +104,16 @@ Then run:
 Atlas immediately stores the bookmark in its local library, then attempts to
 write it into the PDF. The status message tells you whether the PDF update
 worked.
+
+### Bookmark while reading
+
+1. Select a PDF and choose **Open reader**.
+2. Scroll to the page you want.
+3. Select the bookmark icon in the top-right corner, or press `Ctrl+B`.
+4. Enter a title, optional note, and optional tags, then save.
+
+Atlas fills the page number from the page currently visible in the reader, so
+you do not need to enter it manually.
 
 ### Import bookmarks from a PDF
 

@@ -6,17 +6,36 @@ class LibraryOverview extends StatelessWidget {
     super.key,
     required this.filePath,
     required this.onSelectPdf,
+    this.onOpenReader,
   });
 
   final String? filePath;
   final VoidCallback onSelectPdf;
+  final VoidCallback? onOpenReader;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ElevatedButton(onPressed: onSelectPdf, child: const Text('Select PDF')),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton(
+                onPressed: onSelectPdf,
+                child: const Text('Select PDF'),
+              ),
+            ),
+            if (filePath != null) ...[
+              const SizedBox(width: 8),
+              FilledButton.tonalIcon(
+                onPressed: onOpenReader,
+                icon: const Icon(Icons.menu_book_outlined),
+                label: const Text('Open reader'),
+              ),
+            ],
+          ],
+        ),
         if (filePath != null) ...[
           const SizedBox(height: 8),
           Text(

@@ -3,6 +3,28 @@
 All notable changes are documented here. This project follows a staged
 hardening approach rather than formal releases.
 
+## Stage 5 — Accessibility and Arabic language support (2026-09-09)
+
+### Added
+
+- English and Arabic Flutter localization resources, app-level locale choice,
+  and Material RTL layout support.
+- Keyboard outline controls: Up/Down traversal, Right/Left expansion,
+  `F2` edit, `Delete` removal, and `Ctrl+S` for saving pending PDF changes.
+- Semantic tree labels that report bookmark title, depth, type, and page,
+  including mixed Arabic-English titles.
+- Live screen-reader announcements for bookmark saves, sync outcomes, PDF
+  commits, reader errors, and visible status updates.
+- Accessibility test coverage for F2/Delete tree actions and mixed-direction
+  semantic labels.
+
+### Changed
+
+- Command Center results now expose explicit spoken actions, breadcrumb context,
+  and localized page/file/folder labels.
+- Settings has an English/Arabic language picker instead of a planned-feature
+  placeholder.
+
 ## Stage 4 — Command Center and library management (2026-09-09)
 
 ### Added

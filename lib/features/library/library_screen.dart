@@ -1,12 +1,15 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:logging/logging.dart';
 
 import '../../bookmark_grouping.dart';
 import '../../bookmark_tree.dart';
+import '../../core/accessibility/accessibility_announcer.dart';
 import '../../core/file_system/windows_document_file_system.dart';
 import '../../database.dart';
+import '../../l10n/app_localizations.dart';
 import '../../features/command_center/command_center_search_field.dart';
 import '../../features/command_center/command_center_overlay.dart';
 import '../../features/command_center/command_center_shortcuts.dart';
@@ -25,11 +28,23 @@ import 'library_overview.dart';
 /// Global database instance
 late final AppDatabase database;
 
-class MyApp extends StatelessWidget {
+class _CommitChangesIntent extends Intent {
+  const _CommitChangesIntent();
+}
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   static final _navigatorKey = GlobalKey<NavigatorState>();
   static const _fileSystem = WindowsDocumentFileSystem();
+  Locale? _locale;
+
+  void _setLocale(Locale locale) => setState(() => _locale = locale);
 
   Future<void> _openCommandCenter() async {
     final context = _navigatorKey.currentContext;
@@ -108,7 +123,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: _navigatorKey,
-      title: 'Atlas UEP PoC',
+      onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+      locale: _locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
@@ -116,13 +139,15 @@ class MyApp extends StatelessWidget {
         onOpen: _openCommandCenter,
         child: child ?? const SizedBox.shrink(),
       ),
-      home: const LibraryScreen(),
+      home: LibraryScreen(onLocaleChanged: _setLocale),
     );
   }
 }
 
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key});
+  const LibraryScreen({super.key, this.onLocaleChanged});
+
+  final ValueChanged<Locale>? onLocaleChanged;
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -340,6 +365,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         _descriptionController.clear();
         _tagsController.clear();
       });
+      AccessibilityAnnouncer.announce(context, 'Bookmark saved locally.');
 
       // STEP 2: Background injection
       _pdfEngine
@@ -355,11 +381,19 @@ class _LibraryScreenState extends State<LibraryScreen> {
               setState(() {
                 _status = '✓ Synced to PDF! Bookmark embedded.';
               });
+              AccessibilityAnnouncer.announce(
+                context,
+                'Bookmark saved and embedded in the PDF.',
+              );
             } else {
               setState(() {
                 _status =
                     '⚠ Local DB saved, but PDF injection failed. Check console.';
               });
+              AccessibilityAnnouncer.announce(
+                context,
+                'Bookmark was saved locally, but could not be written to the PDF.',
+              );
             }
           })
           .catchError((e) {
@@ -445,6 +479,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     }
 
     final resolvedPath = await _resolveMissingFile(filePath);
+    if (!mounted) return;
     if (resolvedPath == null) {
       setState(() {
         _isSyncing = false;
@@ -457,6 +492,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       _isSyncing = true;
       _status = 'Syncing bookmarks...';
     });
+    AccessibilityAnnouncer.announce(context, 'Syncing bookmarks.');
 
     try {
       final bookmarks = await _pdfEngine.extractBookmarks(resolvedPath);
@@ -470,6 +506,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
       setState(() {
         _status = 'Sync Complete: $newBookmarksCount new bookmarks found';
       });
+      AccessibilityAnnouncer.announce(
+        context,
+        'Sync complete: $newBookmarksCount new bookmarks found.',
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _status = 'Error: $e');
@@ -491,6 +531,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     }
 
     final resolvedPath = await _resolveMissingFile(filePath);
+    if (!mounted) return;
     if (resolvedPath == null) {
       setState(() {
         _isPushing = false;
@@ -503,6 +544,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       _isPushing = true;
       _status = 'Committing changes to PDF...';
     });
+    AccessibilityAnnouncer.announce(context, 'Saving bookmark changes to PDF.');
 
     // Show snackbar for sync progress
     if (mounted) {
@@ -526,6 +568,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
           _status = 'Successfully committed $adds adds and $deletes deletes';
           _syncDiffs = [];
         });
+        AccessibilityAnnouncer.announce(
+          context,
+          'Saved successfully: $adds additions and $deletes removals.',
+        );
 
         // Show success snackbar
         ScaffoldMessenger.of(context).showSnackBar(
@@ -540,6 +586,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
         setState(() {
           _status = 'Failed to sync bookmarks to PDF.';
         });
+        AccessibilityAnnouncer.announce(
+          context,
+          'Could not save bookmark changes to the PDF.',
+        );
 
         // Show error snackbar
         ScaffoldMessenger.of(context).showSnackBar(
@@ -552,6 +602,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _status = 'Error: $e');
+      AccessibilityAnnouncer.announce(context, 'Error saving changes: $e');
 
       // Show error snackbar
       ScaffoldMessenger.of(context).showSnackBar(
@@ -840,6 +891,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ? Icon(Icons.folder_outlined, color: Colors.amber[800], size: 20)
           : Icon(Icons.bookmark_outline, color: Colors.blue[700], size: 20),
       title: Text(titleOverride ?? bookmark.title),
+      semanticLabel: _bookmarkSemanticLabel(bookmark, depth),
+      semanticHint:
+          'Press Enter to open. Press F2 to rename. Press Delete to remove.',
+      onTap: bookmark.isFolder ? null : () => _showEditBookmarkDialog(bookmark),
+      onRename: () => _showEditBookmarkDialog(bookmark),
+      onDelete: () => _deleteBookmark(bookmark),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -886,13 +943,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ? IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: 'Remove folder and sub-bookmarks',
-              onPressed: () async {
-                await database.deleteBookmark(bookmark.id);
-                if (mounted) {
-                  await _calculateSyncDiff();
-                  setState(() {});
-                }
-              },
+              onPressed: () => _deleteBookmark(bookmark),
             )
           : Row(
               mainAxisSize: MainAxisSize.min,
@@ -905,13 +956,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete),
-                  onPressed: () async {
-                    await database.deleteBookmark(bookmark.id);
-                    if (mounted) {
-                      await _calculateSyncDiff();
-                      setState(() {});
-                    }
-                  },
+                  onPressed: () => _deleteBookmark(bookmark),
                 ),
               ],
             ),
@@ -945,6 +990,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
           size: 20,
         ),
         title: Text(bookmark.title),
+        semanticLabel: _bookmarkSemanticLabel(bookmark, depth),
+        semanticHint:
+            'Use Right and Left arrows to expand or collapse. Press F2 to rename. Press Delete to remove.',
+        onRename: () => _showEditBookmarkDialog(bookmark),
+        onDelete: () => _deleteBookmark(bookmark),
         subtitle: !bookmark.isFolder && bookmark.pageIndex != null
             ? Text('Page ${bookmark.pageIndex! + 1}')
             : null,
@@ -965,6 +1015,23 @@ class _LibraryScreenState extends State<LibraryScreen> {
         ],
       );
     }).toList();
+  }
+
+  String _bookmarkSemanticLabel(Bookmark bookmark, int depth) {
+    final kind = bookmark.isFolder ? 'folder' : 'bookmark';
+    final page = bookmark.pageIndex == null
+        ? 'no page'
+        : 'page ${bookmark.pageIndex! + 1}';
+    return '${bookmark.title}, level ${depth + 1}, $kind, $page';
+  }
+
+  Future<void> _deleteBookmark(Bookmark bookmark) async {
+    await database.deleteBookmark(bookmark.id);
+    if (!mounted) return;
+    await _calculateSyncDiff();
+    if (!mounted) return;
+    setState(() {});
+    AccessibilityAnnouncer.announce(context, '${bookmark.title} removed.');
   }
 
   Widget _buildGroupedBookmarksList(
@@ -1049,193 +1116,313 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Atlas UEP PoC'),
-        actions: [
-          IconButton(
-            tooltip: 'Browse library',
-            icon: const Icon(Icons.menu_book_outlined),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => LibraryFilesScreen(
-                    database: database,
-                    fileSystem: _fileSystem,
-                    onCreateBookmark: _createBookmarkFromLibrary,
-                  ),
-                ),
-              );
+    return Shortcuts(
+      shortcuts: const {
+        SingleActivator(LogicalKeyboardKey.keyS, control: true):
+            _CommitChangesIntent(),
+      },
+      child: Actions(
+        actions: {
+          _CommitChangesIntent: CallbackAction<_CommitChangesIntent>(
+            onInvoke: (_) {
+              _pushToFile();
+              return null;
             },
           ),
-          IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) =>
-                    SettingsScreen(database: database, manager: _folderManager),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  LibraryOverview(
-                    filePath: _selectedFilePath,
-                    onSelectPdf: _pickPdf,
-                    onOpenReader: _openReader,
-                  ),
-                  const SizedBox(height: 24),
-                  BookmarkComposer(
-                    titleController: _bookmarkTitleController,
-                    pageController: _pageNumberController,
-                    descriptionController: _descriptionController,
-                    tagsController: _tagsController,
-                    onInject: _injectBookmark,
-                    onSync: _syncFile,
-                    onCommit: _pushToFile,
-                    isSyncing: _isSyncing,
-                    isPushing: _isPushing,
-                    canCommit: _syncDiffs.isNotEmpty,
-                  ),
-                  const SizedBox(height: 32),
-                  // Sync Preview Section
-                  if (_selectedFilePath != null && _syncDiffs.isNotEmpty) ...[
-                    Material(
-                      color: Colors.grey[200],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: Colors.grey[400]!),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Atlas UEP PoC'),
+              actions: [
+                IconButton(
+                  tooltip: 'Browse library',
+                  icon: const Icon(Icons.menu_book_outlined),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => LibraryFilesScreen(
+                          database: database,
+                          fileSystem: _fileSystem,
+                          onCreateBookmark: _createBookmarkFromLibrary,
+                        ),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Sync Preview',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green[100],
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        'Pending Adds: ${_syncDiffs.where((d) => d.action == SyncAction.add).length}',
-                                        style: const TextStyle(
-                                          color: Colors.green,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red[100],
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        'Pending Deletions: ${_syncDiffs.where((d) => d.action == SyncAction.delete).length}',
-                                        style: const TextStyle(
-                                          color: Colors.red,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                    );
+                  },
+                ),
+                IconButton(
+                  tooltip: 'Settings',
+                  icon: const Icon(Icons.settings_outlined),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => SettingsScreen(
+                        database: database,
+                        manager: _folderManager,
+                        onLocaleChanged: widget.onLocaleChanged ?? (_) {},
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            body: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        LibraryOverview(
+                          filePath: _selectedFilePath,
+                          onSelectPdf: _pickPdf,
+                          onOpenReader: _openReader,
+                        ),
+                        const SizedBox(height: 24),
+                        BookmarkComposer(
+                          titleController: _bookmarkTitleController,
+                          pageController: _pageNumberController,
+                          descriptionController: _descriptionController,
+                          tagsController: _tagsController,
+                          onInject: _injectBookmark,
+                          onSync: _syncFile,
+                          onCommit: _pushToFile,
+                          isSyncing: _isSyncing,
+                          isPushing: _isPushing,
+                          canCommit: _syncDiffs.isNotEmpty,
+                        ),
+                        const SizedBox(height: 32),
+                        // Sync Preview Section
+                        if (_selectedFilePath != null &&
+                            _syncDiffs.isNotEmpty) ...[
+                          Material(
+                            color: Colors.grey[200],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(color: Colors.grey[400]!),
                             ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 150,
-                              child: Builder(
-                                builder: (context) {
-                                  final visibleDiffs = _syncDiffs
-                                      .where((d) => d.action != SyncAction.keep)
-                                      .toList();
-                                  return ListView.builder(
-                                    itemCount: visibleDiffs.length,
-                                    itemBuilder: (context, index) {
-                                      final diff = visibleDiffs[index];
-                                      Color textColor;
-                                      IconData icon;
-                                      String actionText;
-
-                                      switch (diff.action) {
-                                        case SyncAction.add:
-                                          textColor = Colors.green;
-                                          icon = Icons.add_circle;
-                                          actionText = 'ADD';
-                                          break;
-                                        case SyncAction.delete:
-                                          textColor = Colors.red;
-                                          icon = Icons.remove_circle;
-                                          actionText = 'REMOVE';
-                                          break;
-                                        case SyncAction.keep:
-                                          textColor = Colors.grey;
-                                          icon = Icons.check_circle;
-                                          actionText = 'KEEP';
-                                          break;
-                                      }
-
-                                      return AccessibleBookmarkTile(
-                                        dense: true,
-                                        leading: Icon(
-                                          icon,
-                                          color: textColor,
-                                          size: 20,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'Sync Preview',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                        title: Text(
-                                          diff.title.isNotEmpty
-                                              ? diff.title
-                                              : '/',
-                                          style: TextStyle(
-                                            color: textColor,
-                                            fontSize: 14,
+                                      ),
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green[100],
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              'Pending Adds: ${_syncDiffs.where((d) => d.action == SyncAction.add).length}',
+                                              style: const TextStyle(
+                                                color: Colors.green,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                        trailing: Text(
-                                          diff.pageIndex != null
-                                              ? 'Page ${diff.pageIndex! + 1}'
-                                              : 'No page',
-                                          style: const TextStyle(fontSize: 12),
-                                        ),
-                                        subtitle: Text(
-                                          actionText,
-                                          style: TextStyle(
-                                            color: textColor,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red[100],
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              'Pending Deletions: ${_syncDiffs.where((d) => d.action == SyncAction.delete).length}',
+                                              style: const TextStyle(
+                                                color: Colors.red,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    },
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    height: 150,
+                                    child: Builder(
+                                      builder: (context) {
+                                        final visibleDiffs = _syncDiffs
+                                            .where(
+                                              (d) =>
+                                                  d.action != SyncAction.keep,
+                                            )
+                                            .toList();
+                                        return ListView.builder(
+                                          itemCount: visibleDiffs.length,
+                                          itemBuilder: (context, index) {
+                                            final diff = visibleDiffs[index];
+                                            Color textColor;
+                                            IconData icon;
+                                            String actionText;
+
+                                            switch (diff.action) {
+                                              case SyncAction.add:
+                                                textColor = Colors.green;
+                                                icon = Icons.add_circle;
+                                                actionText = 'ADD';
+                                                break;
+                                              case SyncAction.delete:
+                                                textColor = Colors.red;
+                                                icon = Icons.remove_circle;
+                                                actionText = 'REMOVE';
+                                                break;
+                                              case SyncAction.keep:
+                                                textColor = Colors.grey;
+                                                icon = Icons.check_circle;
+                                                actionText = 'KEEP';
+                                                break;
+                                            }
+
+                                            return AccessibleBookmarkTile(
+                                              dense: true,
+                                              leading: Icon(
+                                                icon,
+                                                color: textColor,
+                                                size: 20,
+                                              ),
+                                              title: Text(
+                                                diff.title.isNotEmpty
+                                                    ? diff.title
+                                                    : '/',
+                                                style: TextStyle(
+                                                  color: textColor,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              trailing: Text(
+                                                diff.pageIndex != null
+                                                    ? 'Page ${diff.pageIndex! + 1}'
+                                                    : 'No page',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              subtitle: Text(
+                                                actionText,
+                                                style: TextStyle(
+                                                  color: textColor,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        AccessibilityStatus(message: _status),
+                      ],
+                    ),
+                  ),
+                ),
+                // Bookmarks ListView with FutureBuilder
+                Material(
+                  color: Colors.grey[100],
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: Row(
+                          children: [
+                            const Text(
+                              'Saved Bookmarks',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            Icon(Icons.sort, size: 18, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            DropdownButton<BookmarkSort>(
+                              value: _selectedSort,
+                              underline: const SizedBox.shrink(),
+                              items: BookmarkSort.values.map((sort) {
+                                return DropdownMenuItem(
+                                  value: sort,
+                                  child: Text(
+                                    sort.label,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setState(() => _selectedSort = value);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.view_list,
+                              size: 18,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Group by:',
+                              style: TextStyle(fontSize: 13),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: SegmentedButton<BookmarkViewGroup>(
+                                segments: BookmarkViewGroup.values.map((group) {
+                                  return ButtonSegment(
+                                    value: group,
+                                    label: Text(
+                                      group.label,
+                                      style: const TextStyle(fontSize: 11),
+                                    ),
+                                    icon: Icon(switch (group) {
+                                      BookmarkViewGroup.book => Icons.menu_book,
+                                      BookmarkViewGroup.tag => Icons.label,
+                                      BookmarkViewGroup.flat => Icons.list,
+                                    }, size: 16),
+                                  );
+                                }).toList(),
+                                selected: {_selectedViewGroup},
+                                onSelectionChanged: (selection) {
+                                  setState(
+                                    () => _selectedViewGroup = selection.first,
                                   );
                                 },
                               ),
@@ -1243,151 +1430,71 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  Text(_status, textAlign: TextAlign.center),
-                ],
-              ),
-            ),
-          ),
-          // Bookmarks ListView with FutureBuilder
-          Material(
-            color: Colors.grey[100],
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Row(
-                    children: [
-                      const Text(
-                        'Saved Bookmarks',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      // Command Center Search Bar
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: CommandCenterSearchField(
+                          value: _searchQuery,
+                          onChanged: (value) =>
+                              setState(() => _searchQuery = value),
                         ),
                       ),
-                      const Spacer(),
-                      Icon(Icons.sort, size: 18, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      DropdownButton<BookmarkSort>(
-                        value: _selectedSort,
-                        underline: const SizedBox.shrink(),
-                        items: BookmarkSort.values.map((sort) {
-                          return DropdownMenuItem(
-                            value: sort,
-                            child: Text(
-                              sort.label,
-                              style: const TextStyle(fontSize: 13),
+                      SizedBox(
+                        height: 300,
+                        child:
+                            FutureBuilder<
+                              ({
+                                List<Bookmark> bookmarks,
+                                Map<int, List<Tag>> tagsByBookmarkId,
+                              })
+                            >(
+                              future: _loadBookmarksWithTags(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
+
+                                if (snapshot.hasError) {
+                                  return Center(
+                                    child: Text('Error: ${snapshot.error}'),
+                                  );
+                                }
+
+                                final data = snapshot.data;
+                                final bookmarks = data?.bookmarks ?? [];
+                                final tagsByBookmarkId =
+                                    data?.tagsByBookmarkId ?? {};
+
+                                if (bookmarks.isEmpty) {
+                                  return Center(
+                                    child: Text(
+                                      _searchQuery.isEmpty
+                                          ? 'No bookmarks yet'
+                                          : 'No bookmarks match "$_searchQuery"',
+                                    ),
+                                  );
+                                }
+
+                                return _buildGroupedBookmarksList(
+                                  bookmarks,
+                                  tagsByBookmarkId,
+                                );
+                              },
                             ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setState(() => _selectedSort = value);
-                        },
                       ),
                     ],
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.view_list, size: 18, color: Colors.grey[600]),
-                      const SizedBox(width: 8),
-                      const Text('Group by:', style: TextStyle(fontSize: 13)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: SegmentedButton<BookmarkViewGroup>(
-                          segments: BookmarkViewGroup.values.map((group) {
-                            return ButtonSegment(
-                              value: group,
-                              label: Text(
-                                group.label,
-                                style: const TextStyle(fontSize: 11),
-                              ),
-                              icon: Icon(switch (group) {
-                                BookmarkViewGroup.book => Icons.menu_book,
-                                BookmarkViewGroup.tag => Icons.label,
-                                BookmarkViewGroup.flat => Icons.list,
-                              }, size: 16),
-                            );
-                          }).toList(),
-                          selected: {_selectedViewGroup},
-                          onSelectionChanged: (selection) {
-                            setState(
-                              () => _selectedViewGroup = selection.first,
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Command Center Search Bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: CommandCenterSearchField(
-                    value: _searchQuery,
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                  ),
-                ),
-                SizedBox(
-                  height: 300,
-                  child:
-                      FutureBuilder<
-                        ({
-                          List<Bookmark> bookmarks,
-                          Map<int, List<Tag>> tagsByBookmarkId,
-                        })
-                      >(
-                        future: _loadBookmarksWithTags(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-
-                          if (snapshot.hasError) {
-                            return Center(
-                              child: Text('Error: ${snapshot.error}'),
-                            );
-                          }
-
-                          final data = snapshot.data;
-                          final bookmarks = data?.bookmarks ?? [];
-                          final tagsByBookmarkId = data?.tagsByBookmarkId ?? {};
-
-                          if (bookmarks.isEmpty) {
-                            return Center(
-                              child: Text(
-                                _searchQuery.isEmpty
-                                    ? 'No bookmarks yet'
-                                    : 'No bookmarks match "$_searchQuery"',
-                              ),
-                            );
-                          }
-
-                          return _buildGroupedBookmarksList(
-                            bookmarks,
-                            tagsByBookmarkId,
-                          );
-                        },
-                      ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

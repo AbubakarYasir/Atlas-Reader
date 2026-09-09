@@ -615,12 +615,12 @@ Future: `(file_uuid, bookmark_uuid)` when XMP UUIDs land.
 
 ## XIII. Immediate Next Actions (Priority)
 
-1. **Add `AccessibilityAnnouncer`** — wrap sync/commit/import outcomes.
-2. **Implement remaining keyboard shortcuts** — `Ctrl+O` and tree arrows.
-3. **Add dark + high-contrast themes** — verify contrast ratios.
-4. **Add Arabic ARB + RTL test** — `flutter gen-l10n`, mirror layouts.
-5. **Split UI from `main.dart`** — Library, BookmarkManager, SyncReview.
-6. **Golden-file sync tests** — including Arabic nested PDF fixture.
+1. **Add `Ctrl+O` and tree parent/child navigation** — complete the remaining
+   desktop shortcut map.
+2. **Add dark + high-contrast themes** — verify contrast ratios.
+3. **Add Arabic RTL widget test** — exercise mirrored layouts at 200% text.
+4. **Split UI from `main.dart`** — Library, BookmarkManager, SyncReview.
+5. **Golden-file sync tests** — including Arabic nested PDF fixture.
 
 ---
 

@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../../core/file_system/document_file_system.dart';
+import '../../core/accessibility/accessibility_announcer.dart';
+import '../../l10n/app_localizations.dart';
 
 class ReaderBookmarkDraft {
   const ReaderBookmarkDraft({
@@ -145,6 +147,10 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Bookmark saved for page ${draft.pageNumber}.')),
       );
+      AccessibilityAnnouncer.announce(
+        context,
+        'Bookmark saved for page ${draft.pageNumber}.',
+      );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -153,6 +159,10 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
           backgroundColor: Colors.red,
         ),
       );
+      AccessibilityAnnouncer.announce(
+        context,
+        'Could not save bookmark: $error',
+      );
     } finally {
       if (mounted) setState(() => _savingBookmark = false);
     }
@@ -160,6 +170,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context)!;
     return Shortcuts(
       shortcuts: const {
         SingleActivator(LogicalKeyboardKey.keyB, control: true):
@@ -180,7 +191,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
           child: Scaffold(
             appBar: AppBar(
               title: Text(
-                'Reader - page $_activePage${_pageCount == 0 ? '' : ' of $_pageCount'}',
+                _pageCount == 0
+                    ? strings.pageNumber(_activePage)
+                    : strings.pageNumberOf(_activePage, _pageCount),
               ),
               actions: [
                 IconButton(
@@ -246,6 +259,10 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                     });
                   },
                   onDocumentLoadFailed: (details) {
+                    AccessibilityAnnouncer.announce(
+                      context,
+                      'Could not render PDF: ${details.description}',
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(

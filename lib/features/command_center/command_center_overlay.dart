@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../bookmark_grouping.dart';
 import '../../bookmark_tree.dart';
 import '../../database.dart';
+import '../../l10n/app_localizations.dart';
 
 class CommandCenterResult {
   const CommandCenterResult({
@@ -107,6 +108,7 @@ class _CommandCenterOverlayState extends State<CommandCenterOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context)!;
     return Dialog(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720, maxHeight: 560),
@@ -118,17 +120,17 @@ class _CommandCenterOverlayState extends State<CommandCenterOverlay> {
                 controller: _controller,
                 focusNode: _focusNode,
                 onChanged: _search,
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.search),
-                  labelText: 'Search all bookmarks',
-                  hintText: 'Bookmark title or PDF file name...',
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  labelText: strings.searchBookmarks,
+                  hintText: strings.searchHint,
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
-              Expanded(child: _buildResults()),
+              Expanded(child: _buildResults(strings)),
               const SizedBox(height: 8),
-              const Text('Enter a search term. Press Esc to close.'),
+              Text(strings.commandCenterHint),
             ],
           ),
         ),
@@ -136,9 +138,9 @@ class _CommandCenterOverlayState extends State<CommandCenterOverlay> {
     );
   }
 
-  Widget _buildResults() {
+  Widget _buildResults(AppLocalizations strings) {
     if (_results == null) {
-      return const Center(child: Text('Search bookmarks across your library.'));
+      return Center(child: Text(strings.searchLibrary));
     }
 
     return FutureBuilder<List<CommandCenterResult>>(
@@ -148,11 +150,13 @@ class _CommandCenterOverlayState extends State<CommandCenterOverlay> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Center(child: Text('Search failed: ${snapshot.error}'));
+          return Center(
+            child: Text(strings.saveError(snapshot.error.toString())),
+          );
         }
         final results = snapshot.data ?? const [];
         if (results.isEmpty) {
-          return const Center(child: Text('No matches found.'));
+          return Center(child: Text(strings.noMatches));
         }
 
         return ListView.builder(
@@ -161,21 +165,33 @@ class _CommandCenterOverlayState extends State<CommandCenterOverlay> {
             final result = results[index];
             final isFileMatch = result.bookmark == null;
             final page = isFileMatch
-                ? 'PDF file'
+                ? strings.pdfFile
                 : result.pageNumber == null
-                ? 'Folder'
-                : 'Page ${result.pageNumber}';
-            return ListTile(
-              leading: Icon(
-                isFileMatch ? Icons.menu_book_outlined : Icons.bookmark_outline,
+                ? strings.folder
+                : strings.pageNumber(result.pageNumber!);
+            return Semantics(
+              button: true,
+              label: isFileMatch
+                  ? strings.openFile(result.bookTitle)
+                  : strings.openAtPage(
+                      result.bookTitle,
+                      result.pageNumber?.toString() ?? '1',
+                    ),
+              hint: result.breadcrumb,
+              child: ListTile(
+                leading: ExcludeSemantics(
+                  child: Icon(
+                    isFileMatch
+                        ? Icons.menu_book_outlined
+                        : Icons.bookmark_outline,
+                  ),
+                ),
+                title: Text(result.bookTitle),
+                subtitle: Text(result.breadcrumb),
+                isThreeLine: false,
+                trailing: Text(page),
+                onTap: () => widget.onSelected(result),
               ),
-              title: Text(result.bookTitle),
-              subtitle: Text(
-                isFileMatch ? result.breadcrumb : result.breadcrumb,
-              ),
-              isThreeLine: false,
-              trailing: Text(page),
-              onTap: () => widget.onSelected(result),
             );
           },
         );

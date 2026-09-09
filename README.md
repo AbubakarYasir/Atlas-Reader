@@ -20,6 +20,8 @@ an account, cloud storage, or an internet connection to manage them.
 - Add a bookmark for a page, optional note, and comma-separated tags.
 - Search bookmarks across the local Atlas library.
 - Press `Ctrl+K` from anywhere in Atlas to search bookmarks and scanned books.
+- Use Atlas with a keyboard or screen reader, and switch the app between
+  English and Arabic (right-to-left) from **Settings**.
 - Add one or more folders to your library; Atlas scans their PDFs and notices
   additions, removals, and renames while the app is open.
 - Browse bookmarks by book, tag, or a flat indented list.
@@ -150,6 +152,20 @@ from the local bookmark tree.
 Removing a book from the local list does not immediately alter the PDF. A PDF
 changes only after **Commit Changes**.
 
+### Keyboard and Arabic support
+
+- Press `Ctrl+K` to open the Command Center, `Ctrl+B` to bookmark the active
+  reader page, and `Ctrl+S` to commit pending bookmark changes.
+- In the saved-bookmarks outline, use `Up`/`Down` to move, `Right`/`Left` to
+  expand or collapse a branch, `Enter` to select it, `F2` to edit it, and
+  `Delete` to remove it.
+- Open **Settings** → **Language** and choose **Arabic** for an RTL interface.
+  Arabic titles and mixed Arabic-English bookmark names retain their original
+  Unicode text in the tree and Command Center.
+
+Atlas announces major save, sync, and error outcomes to Windows screen readers
+without moving your keyboard focus.
+
 ## Keeping your PDFs safe
 
 Atlas does not overwrite a PDF directly. Before replacing a file, it:
@@ -188,6 +204,19 @@ The project currently has 24 automated tests. They cover bookmark-tree paths,
 snapshot compatibility, sync differences, command and library data behavior,
 folder scanning, widget startup, and Windows document file operations,
 including isolate-backed PDF bookmark processing.
+
+### Localization and accessibility
+
+User-facing translations live in `lib/l10n/app_en.arb` and
+`lib/l10n/app_ar.arb`. After changing them, run:
+
+```powershell
+flutter gen-l10n
+```
+
+Reusable tree rows live in `lib/widgets/accessible_bookmark_tile.dart`. They
+centralize focus traversal, outline shortcuts, and screen-reader semantics;
+new bookmark-tree UI should use them rather than raw `ListTile` widgets.
 
 ### Project layout
 

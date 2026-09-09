@@ -119,6 +119,22 @@ class ReadingSessionTabs extends Table {
   IntColumn get pageNumber => integer().withDefault(const Constant(1))();
   IntColumn get tabOrder => integer()();
   BoolColumn get isActive => boolean().withDefault(const Constant(false))();
+  RealColumn get zoomPercent => real().withDefault(const Constant(100.0))();
+  TextColumn get zoomPreset => text().withDefault(const Constant('fitWidth'))();
+  TextColumn get readerMode => text().withDefault(const Constant('read'))();
+  TextColumn get navigationPanel =>
+      text().withDefault(const Constant('outline'))();
+  TextColumn get viewport => text().nullable()();
+}
+
+@DataClassName('AtlasSettings')
+class AppSettings extends Table {
+  IntColumn get id => integer().withDefault(const Constant(1))();
+  BoolColumn get restoreDocumentTabs =>
+      boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
 }
 
 /// AppDatabase class extending _$AppDatabase
@@ -133,6 +149,7 @@ class ReadingSessionTabs extends Table {
     Annotations,
     ScratchpadNotes,
     ReadingSessionTabs,
+    AppSettings,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -144,7 +161,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -308,6 +325,39 @@ class AppDatabase extends _$AppDatabase {
           if (!await tableExists('reading_session_tabs')) {
             await m.createTable(readingSessionTabs);
           }
+        }
+        if (from < 9) {
+          final columns = await tableColumns('reading_session_tabs');
+          if (!columns.contains('zoom_percent')) {
+            await m.addColumn(
+              readingSessionTabs,
+              readingSessionTabs.zoomPercent,
+            );
+          }
+          if (!columns.contains('zoom_preset')) {
+            await m.addColumn(
+              readingSessionTabs,
+              readingSessionTabs.zoomPreset,
+            );
+          }
+          if (!columns.contains('reader_mode')) {
+            await m.addColumn(
+              readingSessionTabs,
+              readingSessionTabs.readerMode,
+            );
+          }
+          if (!columns.contains('navigation_panel')) {
+            await m.addColumn(
+              readingSessionTabs,
+              readingSessionTabs.navigationPanel,
+            );
+          }
+          if (!columns.contains('viewport')) {
+            await m.addColumn(readingSessionTabs, readingSessionTabs.viewport);
+          }
+        }
+        if (from < 10 && !await tableExists('app_settings')) {
+          await m.createTable(appSettings);
         }
         // For PoC, we'll drop and recreate
         if (from < 3) {
@@ -1030,6 +1080,11 @@ class AppDatabase extends _$AppDatabase {
     return nextFav;
   }
 
+  Future<void> updateLibraryCover(String filePath, String? coverPath) async {
+    await (update(libraryFiles)..where((tbl) => tbl.filePath.equals(filePath)))
+        .write(LibraryFilesCompanion(coverPath: Value(coverPath)));
+  }
+
   /// Update active reading progress
   Future<void> updateReadingProgress(
     String filePath,
@@ -1363,8 +1418,20 @@ class AppDatabase extends _$AppDatabase {
   }
 
   /// Persist open reading session tabs
-  Future<void> saveReadingSessionTabs(
-    List<({String filePath, int pageNumber, bool isActive})> tabs,
+  Future<void> saveReadingSessionTabStates(
+    List<
+      ({
+        String filePath,
+        int pageNumber,
+        bool isActive,
+        double zoomPercent,
+        String zoomPreset,
+        String readerMode,
+        String navigationPanel,
+        String? viewport,
+      })
+    >
+    tabs,
   ) async {
     await transaction(() async {
       await delete(readingSessionTabs).go();
@@ -1376,10 +1443,33 @@ class AppDatabase extends _$AppDatabase {
             pageNumber: Value(t.pageNumber),
             tabOrder: Value(i),
             isActive: Value(t.isActive),
+            zoomPercent: Value(t.zoomPercent),
+            zoomPreset: Value(t.zoomPreset),
+            readerMode: Value(t.readerMode),
+            navigationPanel: Value(t.navigationPanel),
+            viewport: Value(t.viewport),
           ),
         );
       }
     });
+  }
+
+  Future<void> saveReadingSessionTabs(
+    List<({String filePath, int pageNumber, bool isActive})> tabs,
+  ) {
+    return saveReadingSessionTabStates([
+      for (final tab in tabs)
+        (
+          filePath: tab.filePath,
+          pageNumber: tab.pageNumber,
+          isActive: tab.isActive,
+          zoomPercent: 100.0,
+          zoomPreset: 'fitWidth',
+          readerMode: 'read',
+          navigationPanel: 'outline',
+          viewport: null,
+        ),
+    ]);
   }
 
   /// Load persisted reading session tabs
@@ -1387,6 +1477,27 @@ class AppDatabase extends _$AppDatabase {
     final q = select(readingSessionTabs)
       ..orderBy([(tbl) => OrderingTerm.asc(tbl.tabOrder)]);
     return q.get();
+  }
+
+  /// Whether the document workspace should reopen tabs from the last session.
+  ///
+  /// This is deliberately opt-in so opening a document starts a clean
+  /// workspace unless the reader chooses otherwise.
+  Future<bool> getRestoreDocumentTabs() async {
+    final settings = await select(appSettings).getSingleOrNull();
+    return settings?.restoreDocumentTabs ?? false;
+  }
+
+  Future<void> setRestoreDocumentTabs(bool enabled) async {
+    await into(appSettings).insertOnConflictUpdate(
+      AppSettingsCompanion(
+        id: const Value(1),
+        restoreDocumentTabs: Value(enabled),
+      ),
+    );
+    if (!enabled) {
+      await delete(readingSessionTabs).go();
+    }
   }
 }
 

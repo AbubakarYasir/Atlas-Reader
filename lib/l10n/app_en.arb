@@ -57,5 +57,22 @@
   "fitWidth": "Fit width",
   "write": "Write",
   "openDocumentTab": "Open document tab",
-  "closeDocumentTab": "Close {title}"
+  "closeDocumentTab": "Close {title}",
+  "customZoom": "Custom zoom…",
+  "zoomRange": "Zoom (10–6400)",
+  "apply": "Apply",
+  "open": "Open",
+  "addToFavorites": "Add to favorites",
+  "removeFromFavorites": "Remove from favorites",
+  "editLibraryDetails": "Edit library details",
+  "refreshCover": "Refresh cover",
+  "showInFileExplorer": "Show in File Explorer",
+  "copyFullPath": "Copy full path",
+  "close": "Close",
+  "closeOtherTabs": "Close other tabs",
+  "closeTabsToRight": "Close tabs to the right",
+  "filePathCopied": "File path copied.",
+  "couldNotShowFile": "Could not show the file: {error}",
+  "restoreDocumentTabs": "Restore document tabs on restart",
+  "restoreDocumentTabsDescription": "Off by default. When disabled, Atlas opens only the document you requested."
 }

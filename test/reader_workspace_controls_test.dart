@@ -77,6 +77,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('Introduction مقدمة'), findsOneWidget);
+    await tester.tap(find.text('Pages'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('reader-page-thumbnail-4')));
     expect(selectedPages, [4]);
 
@@ -145,7 +148,18 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('reader-zoom-menu')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Fit page'));
+    await tester.pumpAndSettle();
     expect(selections.last, (ReaderZoomPreset.fitPage, null));
+
+    await tester.tap(find.byKey(const ValueKey('reader-zoom-menu')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Custom zoom…'));
+    await tester.tap(find.text('Custom zoom…'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '37');
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+    expect(selections.last, (ReaderZoomPreset.custom, 37));
   });
 
   testWidgets('reader navigation remains usable in Arabic at 200% scale', (
@@ -181,6 +195,8 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('الصفحات'), findsOneWidget);
+    await tester.tap(find.text('الصفحات'));
+    await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('reader-page-thumbnail-1')),
       findsOneWidget,

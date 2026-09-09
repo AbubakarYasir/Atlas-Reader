@@ -210,4 +210,59 @@ class AppLocalizationsAr extends AppLocalizations {
   String closeDocumentTab(Object title) {
     return 'إغلاق $title';
   }
+
+  @override
+  String get customZoom => 'تكبير مخصص…';
+
+  @override
+  String get zoomRange => 'التكبير (10–6400)';
+
+  @override
+  String get apply => 'تطبيق';
+
+  @override
+  String get open => 'فتح';
+
+  @override
+  String get addToFavorites => 'إضافة إلى المفضلة';
+
+  @override
+  String get removeFromFavorites => 'إزالة من المفضلة';
+
+  @override
+  String get editLibraryDetails => 'تحرير تفاصيل المكتبة';
+
+  @override
+  String get refreshCover => 'تحديث الغلاف';
+
+  @override
+  String get showInFileExplorer => 'إظهار في مستكشف الملفات';
+
+  @override
+  String get copyFullPath => 'نسخ المسار الكامل';
+
+  @override
+  String get close => 'إغلاق';
+
+  @override
+  String get closeOtherTabs => 'إغلاق علامات التبويب الأخرى';
+
+  @override
+  String get closeTabsToRight => 'إغلاق علامات التبويب إلى اليمين';
+
+  @override
+  String get filePathCopied => 'تم نسخ مسار الملف.';
+
+  @override
+  String couldNotShowFile(Object error) {
+    return 'تعذر إظهار الملف: $error';
+  }
+
+  @override
+  String get restoreDocumentTabs =>
+      'استعادة علامات تبويب المستندات عند إعادة التشغيل';
+
+  @override
+  String get restoreDocumentTabsDescription =>
+      'متوقفة افتراضياً. عند تعطيلها، يفتح أطلس المستند الذي طلبته فقط.';
 }

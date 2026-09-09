@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/accessibility/accessibility_announcer.dart';
+import '../../core/covers/cover_cache_manager.dart';
 import '../../core/file_system/document_file_system.dart';
 import '../../database.dart';
+import '../../l10n/app_localizations.dart';
 import '../reader/pdf_reader_screen.dart';
 import '../workspace/split_reader_workspace.dart';
 
@@ -34,6 +37,61 @@ class VisualBookshelf extends StatefulWidget {
 
   @override
   State<VisualBookshelf> createState() => _VisualBookshelfState();
+}
+
+enum _BookMenuAction { open, favorite, edit, refreshCover, reveal, copyPath }
+
+class _ContextMenuRegion extends StatefulWidget {
+  const _ContextMenuRegion({
+    required this.semanticLabel,
+    required this.onRequested,
+    required this.child,
+  });
+
+  final String semanticLabel;
+  final ValueChanged<Offset> onRequested;
+  final Widget child;
+
+  @override
+  State<_ContextMenuRegion> createState() => _ContextMenuRegionState();
+}
+
+class _ContextMenuRegionState extends State<_ContextMenuRegion> {
+  final GlobalKey _key = GlobalKey();
+
+  void _showFromKeyboard() {
+    final box = _key.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    widget.onRequested(box.localToGlobal(box.size.center(Offset.zero)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusableActionDetector(
+      shortcuts: const {
+        SingleActivator(LogicalKeyboardKey.f10, shift: true): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.contextMenu): ActivateIntent(),
+      },
+      actions: {
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            _showFromKeyboard();
+            return null;
+          },
+        ),
+      },
+      child: Semantics(
+        label: widget.semanticLabel,
+        child: GestureDetector(
+          key: _key,
+          behavior: HitTestBehavior.translucent,
+          onSecondaryTapUp: (details) =>
+              widget.onRequested(details.globalPosition),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
 }
 
 class _VisualBookshelfState extends State<VisualBookshelf> {
@@ -142,6 +200,100 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  Future<void> _refreshCover(LibraryFile book) async {
+    final path = await CoverCacheManager.instance.enqueueCover(
+      book.filePath,
+      refresh: true,
+    );
+    await widget.database.updateLibraryCover(book.filePath, path);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _revealBook(LibraryFile book) async {
+    try {
+      if (!Platform.isWindows) throw UnsupportedError('Windows only');
+      await Process.run('explorer.exe', ['/select,${book.filePath}']);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not show the file: $error')),
+      );
+    }
+  }
+
+  Future<void> _copyBookPath(LibraryFile book) async {
+    await Clipboard.setData(ClipboardData(text: book.filePath));
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('File path copied.')));
+  }
+
+  Future<void> _showBookMenu(LibraryFile book, Offset position) async {
+    final strings = AppLocalizations.of(context)!;
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final action = await showMenu<_BookMenuAction>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(position.dx, position.dy, 0, 0),
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        PopupMenuItem(value: _BookMenuAction.open, child: Text(strings.open)),
+        PopupMenuItem(
+          value: _BookMenuAction.favorite,
+          child: Text(
+            book.isFavorite
+                ? strings.removeFromFavorites
+                : strings.addToFavorites,
+          ),
+        ),
+        PopupMenuItem(
+          value: _BookMenuAction.edit,
+          child: Text(strings.editLibraryDetails),
+        ),
+        PopupMenuItem(
+          value: _BookMenuAction.refreshCover,
+          child: Text(strings.refreshCover),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: _BookMenuAction.reveal,
+          child: Text(strings.showInFileExplorer),
+        ),
+        PopupMenuItem(
+          value: _BookMenuAction.copyPath,
+          child: Text(strings.copyFullPath),
+        ),
+      ],
+    );
+    switch (action) {
+      case _BookMenuAction.open:
+        await _openBook(book);
+      case _BookMenuAction.favorite:
+        await _toggleFavorite(book);
+      case _BookMenuAction.edit:
+        await _editMetadata(book);
+      case _BookMenuAction.refreshCover:
+        await _refreshCover(book);
+      case _BookMenuAction.reveal:
+        await _revealBook(book);
+      case _BookMenuAction.copyPath:
+        await _copyBookPath(book);
+      case null:
+        break;
+    }
+  }
+
+  Widget _withBookContextMenu(LibraryFile book, Widget child) {
+    return _ContextMenuRegion(
+      semanticLabel: book.title ?? book.fileName,
+      onRequested: (position) => _showBookMenu(book, position),
+      child: child,
+    );
   }
 
   Future<void> _editMetadata(LibraryFile book) async {
@@ -772,140 +924,146 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
         : 0.0;
     final isPdf = book.format.toUpperCase() == 'PDF';
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: InkWell(
-        onTap: () => _openBook(book),
-        onLongPress: () => _editMetadata(book),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _buildBookCoverVisual(book),
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isPdf
-                            ? Colors.indigo.withAlpha(220)
-                            : Colors.teal.withAlpha(220),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        book.format.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 2,
-                    right: 2,
-                    child: IconButton(
-                      icon: Icon(
-                        book.isFavorite ? Icons.star : Icons.star_border,
-                        color: book.isFavorite
-                            ? Colors.amber[400]
-                            : Colors.white70,
-                        size: 20,
-                      ),
-                      tooltip: book.isFavorite ? 'Unfavorite' : 'Favorite',
-                      onPressed: () => _toggleFavorite(book),
-                    ),
-                  ),
-                  if (book.pageCount > 0)
+    return _withBookContextMenu(
+      book,
+      Card(
+        clipBehavior: Clip.antiAlias,
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: InkWell(
+          onTap: () => _openBook(book),
+          onLongPress: () => _editMetadata(book),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _buildBookCoverVisual(book),
                     Positioned(
-                      bottom: 6,
-                      right: 6,
+                      top: 6,
+                      left: 6,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(180),
+                          color: isPdf
+                              ? Colors.indigo.withAlpha(220)
+                              : Colors.teal.withAlpha(220),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '${book.pageCount}p',
+                          book.format.toUpperCase(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
-            LinearProgressIndicator(
-              value: progress,
-              minHeight: 4,
-              backgroundColor: Colors.black12,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                progress >= 1.0
-                    ? Colors.green
-                    : Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                    Positioned(
+                      top: 2,
+                      right: 2,
+                      child: IconButton(
+                        icon: Icon(
+                          book.isFavorite ? Icons.star : Icons.star_border,
+                          color: book.isFavorite
+                              ? Colors.amber[400]
+                              : Colors.white70,
+                          size: 20,
+                        ),
+                        tooltip: book.isFavorite ? 'Unfavorite' : 'Favorite',
+                        onPressed: () => _toggleFavorite(book),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    book.author ?? 'Unknown Author',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Theme.of(context).hintColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    if (book.pageCount > 0)
+                      Positioned(
+                        bottom: 6,
+                        right: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withAlpha(180),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '${book.pageCount}p',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              LinearProgressIndicator(
+                value: progress,
+                minHeight: 4,
+                backgroundColor: Colors.black12,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  progress >= 1.0
+                      ? Colors.green
+                      : Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              SizedBox(
+                height: 88,
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${(progress * 100).round()}% read',
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        book.author ?? 'Unknown Author',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 11,
                           color: Theme.of(context).hintColor,
                         ),
                       ),
-                      InkWell(
-                        onTap: () => _editMetadata(book),
-                        child: const Icon(Icons.more_vert, size: 14),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${(progress * 100).round()}% read',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Theme.of(context).hintColor,
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => _editMetadata(book),
+                            child: const Icon(Icons.more_vert, size: 14),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -913,7 +1071,15 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
 
   Widget _buildBookCoverVisual(LibraryFile book) {
     if (book.coverPath != null && File(book.coverPath!).existsSync()) {
-      return Image.file(File(book.coverPath!), fit: BoxFit.cover);
+      return ColoredBox(
+        color: const Color(0xFFE7E8ED),
+        child: Image.file(
+          File(book.coverPath!),
+          fit: book.format.toUpperCase() == 'PDF'
+              ? BoxFit.contain
+              : BoxFit.cover,
+        ),
+      );
     }
 
     final hash = book.filePath.hashCode.abs();
@@ -977,100 +1143,106 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
             : 0.0;
         final sizeMb = (book.fileSizeBytes / (1024 * 1024)).toStringAsFixed(1);
 
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 6,
-          ),
-          leading: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: SizedBox(
-              width: 44,
-              height: 60,
-              child: _buildBookCoverVisual(book),
+        return _withBookContextMenu(
+          book,
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 6,
             ),
-          ),
-          title: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: SizedBox(
+                width: 44,
+                height: 60,
+                child: _buildBookCoverVisual(book),
               ),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: book.format.toUpperCase() == 'PDF'
-                      ? Colors.indigo.withAlpha(30)
-                      : Colors.teal.withAlpha(30),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  book.format.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: book.format.toUpperCase() == 'PDF'
-                        ? Colors.indigo
-                        : Colors.teal,
+            ),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ],
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 2),
-              Text(
-                '${book.author ?? 'Unknown Author'} · ${book.pageCount} pages · $sizeMb MB · ${book.bookmarkCount} bookmarks',
-                style: const TextStyle(fontSize: 11),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 4,
-                        backgroundColor: Colors.black12,
-                      ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: book.format.toUpperCase() == 'PDF'
+                        ? Colors.indigo.withAlpha(30)
+                        : Colors.teal.withAlpha(30),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    book.format.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: book.format.toUpperCase() == 'PDF'
+                          ? Colors.indigo
+                          : Colors.teal,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${(progress * 100).round()}%',
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: Icon(
-                  book.isFavorite ? Icons.star : Icons.star_border,
-                  color: book.isFavorite ? Colors.amber[700] : null,
                 ),
-                tooltip: 'Favorite',
-                onPressed: () => _toggleFavorite(book),
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                tooltip: 'Edit Metadata',
-                onPressed: () => _editMetadata(book),
-              ),
-            ],
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 2),
+                Text(
+                  '${book.author ?? 'Unknown Author'} · ${book.pageCount} pages · $sizeMb MB · ${book.bookmarkCount} bookmarks',
+                  style: const TextStyle(fontSize: 11),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 4,
+                          backgroundColor: Colors.black12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${(progress * 100).round()}%',
+                      style: const TextStyle(fontSize: 10),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    book.isFavorite ? Icons.star : Icons.star_border,
+                    color: book.isFavorite ? Colors.amber[700] : null,
+                  ),
+                  tooltip: 'Favorite',
+                  onPressed: () => _toggleFavorite(book),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  tooltip: 'Edit Metadata',
+                  onPressed: () => _editMetadata(book),
+                ),
+              ],
+            ),
+            onTap: () => _openBook(book),
           ),
-          onTap: () => _openBook(book),
         );
       },
     );
@@ -1086,28 +1258,31 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
             ? (book.currentPage / book.pageCount).clamp(0.0, 1.0)
             : 0.0;
 
-        return ListTile(
-          dense: true,
-          leading: Icon(
-            book.format.toUpperCase() == 'PDF'
-                ? Icons.picture_as_pdf_outlined
-                : Icons.book_outlined,
-            size: 18,
-          ),
-          title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-          subtitle: Text(
-            '${book.author ?? 'Unknown'} · ${book.pageCount}p · ${(progress * 100).round()}%',
-            style: const TextStyle(fontSize: 10),
-          ),
-          trailing: IconButton(
-            icon: Icon(
-              book.isFavorite ? Icons.star : Icons.star_border,
-              size: 16,
-              color: book.isFavorite ? Colors.amber[700] : null,
+        return _withBookContextMenu(
+          book,
+          ListTile(
+            dense: true,
+            leading: Icon(
+              book.format.toUpperCase() == 'PDF'
+                  ? Icons.picture_as_pdf_outlined
+                  : Icons.book_outlined,
+              size: 18,
             ),
-            onPressed: () => _toggleFavorite(book),
+            title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text(
+              '${book.author ?? 'Unknown'} · ${book.pageCount}p · ${(progress * 100).round()}%',
+              style: const TextStyle(fontSize: 10),
+            ),
+            trailing: IconButton(
+              icon: Icon(
+                book.isFavorite ? Icons.star : Icons.star_border,
+                size: 16,
+                color: book.isFavorite ? Colors.amber[700] : null,
+              ),
+              onPressed: () => _toggleFavorite(book),
+            ),
+            onTap: () => _openBook(book),
           ),
-          onTap: () => _openBook(book),
         );
       },
     );

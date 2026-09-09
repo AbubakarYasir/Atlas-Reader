@@ -5,7 +5,28 @@ Versioning while it moves through pre-1.0 Windows beta releases.
 
 ## [Unreleased]
 
-### C1 reader workspace candidate (`0.8.0-beta.2+3`)
+### C1 corrective candidate (`0.8.0-beta.2+4`)
+
+- Replaced separate Read/Write PDF surfaces with one shared viewer session and
+  lazy three-session LRU retention to reduce book-open and tab-switch stalls.
+- Added Foxit-style 10–6400% custom zoom below Fit Page/Fit Width while keeping
+  the viewport and annotation coordinates stable between Read and Write.
+- Made Outline the first/default panel and deferred real page previews until
+  Pages is selected.
+- Added queued first-page PDF cover generation, metadata-aware invalidation,
+  equal card geometry, and refresh/retry behavior.
+- Added localized pointer and keyboard context menus for books and tabs,
+  including safe dirty-document close handling.
+- Added a Settings switch for restoring document tabs after restart. It is off
+  by default, and disabling it clears saved tab-restoration state.
+- Verified zero analyzer issues, 56 passing unit/widget tests, and 3 passing
+  native Windows scenarios. Two personal-PDF audits remain opt-in and skipped.
+
+### Superseded C1 candidate (`0.8.0-beta.2+3`)
+
+Build 3 was not released. Owner testing found opening/tab lag, constrained
+zoom, missing covers, unequal cards, Pages-first navigation, and no context
+menus; build 4 supersedes it.
 
 - Routed every PDF entry point into one persistent multi-document workspace;
   open tabs keep their reader state mounted and restore saved pages on restart.

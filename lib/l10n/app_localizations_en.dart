@@ -212,4 +212,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String closeDocumentTab(Object title) {
     return 'Close $title';
   }
+
+  @override
+  String get customZoom => 'Custom zoom…';
+
+  @override
+  String get zoomRange => 'Zoom (10–6400)';
+
+  @override
+  String get apply => 'Apply';
+
+  @override
+  String get open => 'Open';
+
+  @override
+  String get addToFavorites => 'Add to favorites';
+
+  @override
+  String get removeFromFavorites => 'Remove from favorites';
+
+  @override
+  String get editLibraryDetails => 'Edit library details';
+
+  @override
+  String get refreshCover => 'Refresh cover';
+
+  @override
+  String get showInFileExplorer => 'Show in File Explorer';
+
+  @override
+  String get copyFullPath => 'Copy full path';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get closeOtherTabs => 'Close other tabs';
+
+  @override
+  String get closeTabsToRight => 'Close tabs to the right';
+
+  @override
+  String get filePathCopied => 'File path copied.';
+
+  @override
+  String couldNotShowFile(Object error) {
+    return 'Could not show the file: $error';
+  }
+
+  @override
+  String get restoreDocumentTabs => 'Restore document tabs on restart';
+
+  @override
+  String get restoreDocumentTabsDescription =>
+      'Off by default. When disabled, Atlas opens only the document you requested.';
 }

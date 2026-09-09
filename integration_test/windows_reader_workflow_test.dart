@@ -69,6 +69,7 @@ void main() {
     final pdfPath =
         '${tempDirectory.path}${Platform.pathSeparator}reader-roundtrip.pdf';
     final database = AppDatabase.forTesting(NativeDatabase.memory());
+    final viewerController = editor.PdfViewerController();
     addTearDown(() async {
       await database.close();
       if (await tempDirectory.exists()) {
@@ -103,28 +104,42 @@ void main() {
           filePath: pdfPath,
           fileSystem: const WindowsDocumentFileSystem(),
           database: database,
+          viewerController: viewerController,
           onCreateBookmark: (_) async {},
         ),
       ),
     );
     await _pumpFor(tester, const Duration(seconds: 4));
     expect(find.text('Write'), findsOneWidget);
+    expect(find.text('المجلد الأول Volume 1'), findsOneWidget);
+    await tester.tap(find.text('Pages'));
+    await _pumpFor(tester, const Duration(seconds: 1));
     expect(
       find.byKey(const ValueKey('reader-page-thumbnail-1')),
       findsOneWidget,
     );
     expect(find.byType(editor.PdfPageView), findsWidgets);
 
+    await tester.tap(find.byKey(const ValueKey('reader-zoom-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Zoom 10%'));
+    await _pumpFor(tester, const Duration(seconds: 1));
+    expect(viewerController.zoom, closeTo(.1, .001));
+    await tester.tap(find.byKey(const ValueKey('reader-zoom-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Fit width'));
+    await _pumpFor(tester, const Duration(seconds: 1));
+
     await tester.tap(find.text('Write'));
-    await _pumpFor(tester, const Duration(seconds: 5));
+    await _pumpFor(tester, const Duration(seconds: 1));
     expect(
-      find.byKey(const ValueKey('ink-canvas-repaint-boundary')),
+      find.byKey(const ValueKey('pdf-canvas-repaint-boundary')),
       findsOneWidget,
     );
     expect(find.byTooltip('Pen'), findsOneWidget);
 
     final writingPages = find.descendant(
-      of: find.byKey(const ValueKey('ink-canvas-repaint-boundary')),
+      of: find.byKey(const ValueKey('pdf-canvas-repaint-boundary')),
       matching: find.byType(editor.PdfPageView),
     );
     expect(writingPages, findsWidgets);
@@ -234,6 +249,12 @@ void main() {
       await _pumpFor(tester, const Duration(seconds: 2));
       expect(find.text('أصول الفقه'), findsWidgets);
       expect(find.text('A Short History'), findsWidgets);
+      final covered = await database.getLibraryFiles();
+      expect(covered.every((book) => book.coverPath != null), isTrue);
+      expect(
+        covered.every((book) => File(book.coverPath!).existsSync()),
+        isTrue,
+      );
 
       await tester.enterText(find.byType(TextField).first, 'السعيدان');
       await _pumpFor(tester, const Duration(seconds: 1));

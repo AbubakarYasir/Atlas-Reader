@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:logging/logging.dart';
 
+import '../../core/covers/cover_cache_manager.dart';
 import '../../core/file_system/document_file_system.dart';
 import '../../core/file_system/windows_document_file_system.dart';
 import '../../database.dart';
+import '../../scanned_pdf.dart';
 import 'library_file_watcher.dart';
 import 'library_folder_scanner.dart';
 
@@ -121,6 +125,8 @@ class LibraryFolderManager {
             ),
           );
           onChanged?.call();
+          unawaited(_generateMissingCovers(batch));
+          _queueMissingCovers(batch);
         },
       );
       filesFound += scanned.length;
@@ -134,6 +140,33 @@ class LibraryFolderManager {
       foldersScanned: folders.length,
       filesFound: filesFound,
     );
+  }
+
+  Future<void> _generateMissingCovers(List<ScannedPdf> books) async {
+    for (final book in books) {
+      if (book.coverPath != null) continue;
+      final cover = await CoverCacheManager.instance.enqueueCover(
+        book.filePath,
+      );
+      if (cover == null) continue;
+      await _database.updateLibraryCover(book.filePath, cover);
+      onChanged?.call();
+    }
+  }
+
+  void _queueMissingCovers(List<ScannedPdf> scanned) {
+    for (final book in scanned) {
+      if (book.coverPath != null) continue;
+      unawaited(
+        CoverCacheManager.instance.enqueueCover(book.filePath).then((
+          path,
+        ) async {
+          if (path == null) return;
+          await _database.updateLibraryCover(book.filePath, path);
+          onChanged?.call();
+        }),
+      );
+    }
   }
 
   void _onWatchChange() {

@@ -4,7 +4,7 @@ import '../../database.dart';
 import '../../l10n/app_localizations.dart';
 import 'reader_outline_sidebar.dart';
 
-enum ReaderNavigationTab { pages, outline, bookmarks, annotations }
+enum ReaderNavigationTab { outline, pages, bookmarks, annotations }
 
 class ReaderNavigationPanel extends StatefulWidget {
   const ReaderNavigationPanel({
@@ -22,6 +22,8 @@ class ReaderNavigationPanel extends StatefulWidget {
     this.annotationRevision = 0,
     this.pagePreviewBuilder,
     this.width = 336,
+    this.initialTab = ReaderNavigationTab.outline,
+    this.onTabChanged,
   });
 
   final String filePath;
@@ -38,6 +40,8 @@ class ReaderNavigationPanel extends StatefulWidget {
   final Widget Function(BuildContext context, int pageNumber)?
   pagePreviewBuilder;
   final double width;
+  final ReaderNavigationTab initialTab;
+  final ValueChanged<ReaderNavigationTab>? onTabChanged;
 
   @override
   State<ReaderNavigationPanel> createState() => _ReaderNavigationPanelState();
@@ -56,6 +60,7 @@ class _ReaderNavigationPanelState extends State<ReaderNavigationPanel>
     _tabController = TabController(
       length: ReaderNavigationTab.values.length,
       vsync: this,
+      initialIndex: ReaderNavigationTab.values.indexOf(widget.initialTab),
     )..addListener(_handleTabChanged);
     _searchController = TextEditingController();
     _annotations = widget.database.getAnnotationsForFile(widget.filePath);
@@ -83,6 +88,7 @@ class _ReaderNavigationPanelState extends State<ReaderNavigationPanel>
     if (_tabController.indexIsChanging) return;
     _searchController.clear();
     if (mounted) setState(() => _query = '');
+    widget.onTabChanged?.call(ReaderNavigationTab.values[_tabController.index]);
   }
 
   @override
@@ -103,11 +109,11 @@ class _ReaderNavigationPanelState extends State<ReaderNavigationPanel>
                 isScrollable: true,
                 tabAlignment: TabAlignment.start,
                 tabs: [
-                  Tab(icon: const Icon(Icons.grid_view), text: strings.pages),
                   Tab(
                     icon: const Icon(Icons.account_tree),
                     text: strings.outline,
                   ),
+                  Tab(icon: const Icon(Icons.grid_view), text: strings.pages),
                   Tab(
                     icon: const Icon(Icons.bookmarks_outlined),
                     text: strings.bookmarks,
@@ -146,7 +152,6 @@ class _ReaderNavigationPanelState extends State<ReaderNavigationPanel>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _PagesTab(widget: widget, query: _query),
                     _OutlineTab(
                       items: widget.outline,
                       currentPage: widget.currentPage,
@@ -154,6 +159,7 @@ class _ReaderNavigationPanelState extends State<ReaderNavigationPanel>
                       bookmarksOnly: false,
                       onSelectPage: widget.onSelectPage,
                     ),
+                    _PagesTab(widget: widget, query: _query),
                     _OutlineTab(
                       items: widget.outline,
                       currentPage: widget.currentPage,

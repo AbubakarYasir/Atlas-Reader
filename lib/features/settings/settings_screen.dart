@@ -5,8 +5,8 @@ import '../../l10n/app_localizations.dart';
 import '../library/library_folder_manager.dart';
 import '../library/library_folders_screen.dart';
 
-/// Settings entry point. Persisted preferences arrive in a later stage.
-class SettingsScreen extends StatelessWidget {
+/// Settings entry point.
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     required this.database,
@@ -17,6 +17,25 @@ class SettingsScreen extends StatelessWidget {
   final AppDatabase database;
   final LibraryFolderManager manager;
   final ValueChanged<Locale> onLocaleChanged;
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late Future<bool> _restoreTabsPreference;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreTabsPreference = widget.database.getRestoreDocumentTabs();
+  }
+
+  Future<void> _setRestoreTabs(bool enabled) async {
+    await widget.database.setRestoreDocumentTabs(enabled);
+    if (!mounted) return;
+    setState(() => _restoreTabsPreference = Future.value(enabled));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +51,10 @@ class SettingsScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) =>
-                    LibraryFoldersScreen(database: database, manager: manager),
+                builder: (_) => LibraryFoldersScreen(
+                  database: widget.database,
+                  manager: widget.manager,
+                ),
               ),
             ),
           ),
@@ -48,6 +69,18 @@ class SettingsScreen extends StatelessWidget {
             subtitle: Text(strings.languageDescription),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showLanguagePicker(context, strings),
+          ),
+          FutureBuilder<bool>(
+            future: _restoreTabsPreference,
+            builder: (context, snapshot) => SwitchListTile(
+              secondary: const Icon(Icons.restore_page_outlined),
+              title: Text(strings.restoreDocumentTabs),
+              subtitle: Text(strings.restoreDocumentTabsDescription),
+              value: snapshot.data ?? false,
+              onChanged: snapshot.connectionState == ConnectionState.waiting
+                  ? null
+                  : _setRestoreTabs,
+            ),
           ),
         ],
       ),
@@ -77,6 +110,6 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
-    if (locale != null) onLocaleChanged(locale);
+    if (locale != null) widget.onLocaleChanged(locale);
   }
 }

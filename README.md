@@ -5,7 +5,7 @@
 
 | Release | Status | Formats | Primary platform |
 |---|---|---|---|
-| `0.8.0-beta.2` (build 3) | C1 reader workspace ready for owner test; latest published release is `0.8.0-beta.1` | PDF reader/editor; PDF and EPUB discovery | Windows 11 |
+| `0.8.0-beta.2` (build 4) | Corrected C1 candidate ready for owner test; latest published release is `0.8.0-beta.1` | PDF reader/editor; PDF and EPUB discovery | Windows 11 |
 
 Atlas Reader focuses on three jobs:
 
@@ -279,11 +279,11 @@ the SQLite backup.
 
 ## Verification status
 
-Verified on Windows on 2026-09-09:
+Verified on Windows on 2026-09-10:
 
 ```text
 flutter analyze                                            0 issues
-flutter test                                               53 passed, 2 opt-in audits skipped
+flutter test                                               56 passed, 2 opt-in audits skipped
 flutter test integration_test/windows_reader_workflow_test.dart -d windows
                                                            3 passed
 flutter build windows --release                            succeeded
@@ -311,7 +311,7 @@ stops for the numbered owner test; the next checkpoint does not start until the
 owner explicitly records a PASS.
 
 The owner accepted **C0 — Baseline acceptance** on 2026-09-09. **C1 — Reader
-workspace** is verified and stopped at **Ready for owner test**; C2 will not
+workspace** build 4 is verified and stopped at **Ready for owner test**; C2 will not
 start until the owner records an explicit PASS.
 
 ## Developer guide
@@ -320,8 +320,8 @@ start until the owner records an explicit PASS.
 
 - Flutter and Dart
 - Drift + SQLite/FTS5 for local indexing
-- Syncfusion PDF viewer/writer for reading and outline operations
-- `dart_pdf_editor` + `pdf_document` for standard PDF editing and inspection
+- `dart_pdf_editor` for a shared Read/Write viewer and standard PDF editing
+- `pdf_document` for outline operations and PDF inspection
 - Platform-neutral `DocumentFileSystem` with a Windows implementation
 
 ### Project structure

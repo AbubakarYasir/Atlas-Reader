@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:dart_pdf_editor/dart_pdf_editor.dart' as editor;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart' as syncfusion;
 
 import '../../bookmark_tree.dart';
 import '../../core/accessibility/accessibility_announcer.dart';
@@ -38,6 +37,34 @@ class _CreateReaderBookmarkIntent extends Intent {
   const _CreateReaderBookmarkIntent();
 }
 
+class ReaderSessionSnapshot {
+  const ReaderSessionSnapshot({
+    required this.pageNumber,
+    required this.zoomPercent,
+    required this.zoomPreset,
+    required this.isWriting,
+    required this.navigationPanel,
+    this.viewport,
+    this.hasUnsavedChanges = false,
+  });
+
+  final int pageNumber;
+  final double zoomPercent;
+  final ReaderZoomPreset zoomPreset;
+  final bool isWriting;
+  final ReaderNavigationTab navigationPanel;
+  final String? viewport;
+  final bool hasUnsavedChanges;
+}
+
+class ReaderSessionController {
+  ReaderSessionSnapshot? _snapshot;
+  Future<bool> Function()? _requestClose;
+
+  ReaderSessionSnapshot? get snapshot => _snapshot;
+  Future<bool> requestClose() => _requestClose?.call() ?? Future.value(true);
+}
+
 /// Focused PDF reader with a fast read-only surface and a separate byte-backed
 /// writing surface. The editor maps pointer input to PDF points (72/inch),
 /// flips Flutter's top-left Y axis into PDF bottom-left user space, and commits
@@ -51,6 +78,14 @@ class PdfReaderScreen extends StatefulWidget {
     this.initialPageNumber = 1,
     this.database,
     this.onPageChanged,
+    this.initialZoomPercent = 100,
+    this.initialZoomPreset = ReaderZoomPreset.fitWidth,
+    this.initialWriting = false,
+    this.initialNavigationPanel = ReaderNavigationTab.outline,
+    this.initialViewport,
+    this.sessionController,
+    this.onSessionChanged,
+    this.viewerController,
   });
 
   final String filePath;
@@ -59,6 +94,14 @@ class PdfReaderScreen extends StatefulWidget {
   final int initialPageNumber;
   final AppDatabase? database;
   final ValueChanged<int>? onPageChanged;
+  final double initialZoomPercent;
+  final ReaderZoomPreset initialZoomPreset;
+  final bool initialWriting;
+  final ReaderNavigationTab initialNavigationPanel;
+  final String? initialViewport;
+  final ReaderSessionController? sessionController;
+  final ValueChanged<ReaderSessionSnapshot>? onSessionChanged;
+  final editor.PdfViewerController? viewerController;
 
   @override
   State<PdfReaderScreen> createState() => _PdfReaderScreenState();
@@ -66,15 +109,12 @@ class PdfReaderScreen extends StatefulWidget {
 
 class _PdfReaderScreenState extends State<PdfReaderScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final syncfusion.PdfViewerController _viewerController =
-      syncfusion.PdfViewerController();
+  late final editor.PdfViewerController _viewerController;
   late Future<List<int>> _documentBytes;
   late final PdfEngine _pdfEngine;
   AppDatabase? _localDatabase;
 
   editor.PdfEditingController? _editingController;
-  editor.PdfViewerController? _editingViewerController;
-  editor.PdfDocument? _thumbnailDocument;
   int _savedEditingRevision = 0;
   bool _savingInk = false;
 
@@ -83,9 +123,13 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   bool _savingBookmark = false;
   bool _showNavigationPanel = true;
   int _annotationRevision = 0;
-  int _zoomPercent = 100;
-  int _writingViewGeneration = 0;
-  ReaderZoomPreset _zoomPreset = ReaderZoomPreset.fitWidth;
+  late int _zoomPercent = widget.initialZoomPercent.clamp(10, 6400).round();
+  int _viewerGeneration = 0;
+  late ReaderZoomPreset _zoomPreset = widget.initialZoomPreset;
+  late ReaderNavigationTab _selectedNavigationTab =
+      widget.initialNavigationPanel;
+  bool _deferredIndexesStarted = false;
+  final Stopwatch _openStopwatch = Stopwatch();
 
   ReaderPreferences _preferences = const ReaderPreferences();
   List<ReaderOutlineItem> _outline = [];
@@ -93,24 +137,30 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   final Set<int> _bookmarkedPages = {};
 
   AppDatabase get _db => widget.database ?? (_localDatabase ??= AppDatabase());
-  bool get _isWriting => _editingController != null;
+  bool _isWriting = false;
 
   @override
   void initState() {
     super.initState();
     _pdfEngine = PdfEngine(fileSystem: widget.fileSystem);
+    _viewerController = widget.viewerController ?? editor.PdfViewerController();
+    _openStopwatch.start();
     _documentBytes = widget.fileSystem.readAsBytesInBackground(widget.filePath);
-    _viewerController.addListener(_handleReadViewport);
-    unawaited(_loadThumbnailDocument());
-    unawaited(_loadOutline());
-    unawaited(_indexExistingInk());
+    _viewerController.addListener(_handleViewerViewport);
+    _viewerController.pageRenderActivity.addListener(_handleRenderActivity);
+    widget.sessionController?._requestClose = _requestClose;
+    unawaited(_loadDocument());
   }
 
   @override
   void dispose() {
-    _viewerController.removeListener(_handleReadViewport);
+    _publishSession();
+    widget.sessionController?._requestClose = null;
+    _viewerController.removeListener(_handleViewerViewport);
+    _viewerController.pageRenderActivity.removeListener(_handleRenderActivity);
     _viewerController.dispose();
-    _disposeEditingSession();
+    _editingController?.removeListener(_handleEditingRevision);
+    _editingController?.dispose();
     _localDatabase?.close();
     super.dispose();
   }
@@ -180,18 +230,40 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     }
   }
 
-  Future<void> _loadThumbnailDocument() async {
+  Future<void> _loadDocument() async {
     try {
       final bytes = Uint8List.fromList(await _documentBytes);
-      final document = editor.PdfDocument.open(bytes);
+      final controller = editor.PdfEditingController(bytes);
+      controller.preferences.fingerDrawsInk = true;
+      controller.tool = null;
+      controller.addListener(_handleEditingRevision);
       if (!mounted) return;
       setState(() {
-        _thumbnailDocument = document;
-        if (_pageCount == 0) _pageCount = document.pageCount;
+        _editingController = controller;
+        _savedEditingRevision = controller.revisionId;
+        _pageCount = controller.document.pageCount;
+        _isWriting = widget.initialWriting;
+        controller.tool = _isWriting ? editor.PdfEditTool.ink : null;
+      });
+      debugPrint(
+        '[READER] ${widget.filePath} parsed in ${_openStopwatch.elapsedMilliseconds}ms',
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_zoomPreset == ReaderZoomPreset.custom) {
+          _viewerController.setZoom(_zoomPercent / 100);
+        }
+        final saved = widget.initialViewport;
+        if (saved != null) {
+          final viewport = editor.PdfViewport.decode(saved);
+          if (viewport != null) _viewerController.restoreViewport(viewport);
+        } else {
+          unawaited(_viewerController.jumpToPage(_activePage - 1));
+        }
+        _publishSession();
       });
     } catch (_) {
-      // Page navigation remains available with lightweight placeholders when
-      // a malformed document cannot be parsed by the thumbnail renderer.
+      if (mounted) setState(() {});
     }
   }
 
@@ -229,11 +301,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   void _jumpToPage(int pageNumber) {
     if (_pageCount <= 0) return;
     final target = pageNumber.clamp(1, _pageCount);
-    if (_isWriting) {
-      unawaited(_editingViewerController?.jumpToPage(target - 1));
-    } else {
-      _viewerController.jumpToPage(target);
-    }
+    unawaited(_viewerController.jumpToPage(target - 1));
     setState(() => _activePage = target);
     widget.onPageChanged?.call(target);
     unawaited(
@@ -241,25 +309,46 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     );
   }
 
-  void _handleReadViewport() {
-    if (!mounted || _isWriting) return;
-    final percent = (_viewerController.zoomLevel * 100).round();
-    if (percent != _zoomPercent) setState(() => _zoomPercent = percent);
+  void _handleViewerViewport() {
+    if (!mounted || _viewerController.pageCount == 0) return;
+    final page = _viewerController.currentPage + 1;
+    final percent = (_viewerController.zoom * 100).clamp(10, 6400).round();
+    final changed = page != _activePage || percent != _zoomPercent;
+    if (changed) {
+      setState(() {
+        _activePage = page;
+        _pageCount = _viewerController.pageCount;
+        _zoomPercent = percent;
+      });
+      widget.onPageChanged?.call(page);
+      unawaited(
+        _db.updateReadingProgress(widget.filePath, page, pageCount: _pageCount),
+      );
+      _publishSession();
+    }
+  }
+
+  void _handleRenderActivity() {
+    if (_pageCount <= 0) return;
+    final pageIndex = (_activePage - 1).clamp(0, _pageCount - 1);
+    if (!_deferredIndexesStarted &&
+        _viewerController.isPageRasterReady(pageIndex)) {
+      _deferredIndexesStarted = true;
+      debugPrint(
+        '[READER] ${widget.filePath} first page ready in ${_openStopwatch.elapsedMilliseconds}ms',
+      );
+      unawaited(_loadOutline());
+      unawaited(_indexExistingInk());
+    }
+  }
+
+  void _handleEditingRevision() {
+    _publishSession();
   }
 
   void _changeZoom(double delta) {
-    final editingViewer = _editingViewerController;
-    if (_isWriting && editingViewer != null) {
-      final zoom = (editingViewer.zoom + delta).clamp(.5, 4).toDouble();
-      editingViewer.setZoom(zoom);
-      setState(() {
-        _zoomPreset = ReaderZoomPreset.custom;
-        _zoomPercent = (zoom * 100).round();
-      });
-      return;
-    }
-    final zoom = (_viewerController.zoomLevel + delta).clamp(1, 4).toDouble();
-    _viewerController.zoomLevel = zoom;
+    final zoom = (_viewerController.zoom + delta).clamp(.1, 64).toDouble();
+    _viewerController.setZoom(zoom);
     setState(() {
       _zoomPreset = ReaderZoomPreset.custom;
       _zoomPercent = (zoom * 100).round();
@@ -269,14 +358,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   void _applyZoomSelection((ReaderZoomPreset, int?) selection) {
     final (preset, requestedPercent) = selection;
     if (preset == ReaderZoomPreset.custom && requestedPercent != null) {
-      final minimum = _isWriting ? 50 : 100;
-      final percent = requestedPercent.clamp(minimum, 400).toInt();
+      final percent = requestedPercent.clamp(10, 6400).toInt();
       final zoom = percent / 100;
-      if (_isWriting) {
-        _editingViewerController?.setZoom(zoom);
-      } else {
-        _viewerController.zoomLevel = zoom;
-      }
+      _viewerController.setZoom(zoom);
       setState(() {
         _zoomPreset = ReaderZoomPreset.custom;
         _zoomPercent = percent;
@@ -287,15 +371,13 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     setState(() {
       _zoomPreset = preset;
       _zoomPercent = 100;
-      if (_isWriting) _writingViewGeneration++;
+      _viewerGeneration++;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (!_isWriting) {
-        _viewerController.zoomLevel = 1;
-        _viewerController.jumpToPage(_activePage);
-      }
+      unawaited(_viewerController.jumpToPage(_activePage - 1));
     });
+    _publishSession();
   }
 
   void _openThumbnailJumper() {
@@ -335,48 +417,11 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
 
   Future<void> _enterWritingMode() async {
     if (_isWriting) return;
-    try {
-      final bytes = Uint8List.fromList(await _documentBytes);
-      if (!mounted) return;
-      final editingController = editor.PdfEditingController(bytes);
-      final editingViewer = editor.PdfViewerController();
-      editingController.preferences.fingerDrawsInk = true;
-      editingController.tool = editor.PdfEditTool.ink;
-      editingViewer.addListener(_handleEditingViewport);
-      setState(() {
-        _editingController = editingController;
-        _editingViewerController = editingViewer;
-        _savedEditingRevision = editingController.revisionId;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        unawaited(editingViewer.jumpToPage(_activePage - 1));
-        if (_zoomPreset == ReaderZoomPreset.custom) {
-          editingViewer.setZoom(_zoomPercent / 100);
-        }
-      });
-    } catch (error) {
-      if (mounted) _showError('Could not start writing mode: $error');
-    }
-  }
-
-  void _handleEditingViewport() {
-    final viewer = _editingViewerController;
-    if (viewer == null || !mounted || viewer.pageCount == 0) return;
-    final page = viewer.currentPage + 1;
-    if (page == _activePage && viewer.pageCount == _pageCount) return;
-    setState(() {
-      _activePage = page;
-      _pageCount = viewer.pageCount;
-      _zoomPercent = (viewer.zoom * 100).round();
-    });
-    widget.onPageChanged?.call(page);
-    unawaited(
-      _db.updateReadingProgress(
-        widget.filePath,
-        page,
-        pageCount: viewer.pageCount,
-      ),
-    );
+    final controller = _editingController;
+    if (controller == null) return;
+    controller.tool = editor.PdfEditTool.ink;
+    setState(() => _isWriting = true);
+    _publishSession();
   }
 
   Future<bool> _saveInk() async {
@@ -438,16 +483,58 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
       if (action == 'save' && !await _saveInk()) return;
     }
 
-    _disposeEditingSession();
-    if (mounted) setState(() {});
+    controller.tool = null;
+    if (mounted) setState(() => _isWriting = false);
+    _publishSession();
   }
 
-  void _disposeEditingSession() {
-    _editingViewerController?.removeListener(_handleEditingViewport);
-    _editingViewerController?.dispose();
-    _editingController?.dispose();
-    _editingViewerController = null;
-    _editingController = null;
+  Future<bool> _requestClose() async {
+    final controller = _editingController;
+    if (controller == null) return true;
+    controller.finishInk();
+    if (controller.revisionId == _savedEditingRevision) return true;
+    final action = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Save your writing?'),
+        content: const Text(
+          'This document has pen or highlighter changes that are not saved.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancel'),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'discard'),
+            child: const Text('Discard'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'save'),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (action == 'discard') return true;
+    if (action == 'save') return _saveInk();
+    return false;
+  }
+
+  void _publishSession() {
+    final snapshot = ReaderSessionSnapshot(
+      pageNumber: _activePage,
+      zoomPercent: _zoomPercent.toDouble(),
+      zoomPreset: _zoomPreset,
+      isWriting: _isWriting,
+      navigationPanel: _selectedNavigationTab,
+      viewport: _viewerController.captureViewport()?.encode(),
+      hasUnsavedChanges:
+          _editingController != null &&
+          _editingController!.revisionId != _savedEditingRevision,
+    );
+    widget.sessionController?._snapshot = snapshot;
+    widget.onSessionChanged?.call(snapshot);
   }
 
   void _showError(String message) {
@@ -635,6 +722,11 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
       pageOffset: _preferences.pageOffset,
       annotationRevision: _annotationRevision,
       pagePreviewBuilder: _buildPagePreview,
+      initialTab: _selectedNavigationTab,
+      onTabChanged: (tab) {
+        _selectedNavigationTab = tab;
+        _publishSession();
+      },
       width: width,
       onSelectPage: onSelectPage ?? _jumpToPage,
       onClose: onClose,
@@ -642,7 +734,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   }
 
   Widget _buildPagePreview(BuildContext context, int pageNumber) {
-    final document = _thumbnailDocument;
+    final document = _editingController?.document;
     if (document == null || pageNumber < 1 || pageNumber > document.pageCount) {
       return const SizedBox.shrink();
     }
@@ -694,7 +786,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     final canvas = Expanded(
       child: Container(
         color: _backgroundColor(_preferences.theme),
-        child: _isWriting ? _buildWritingSurface() : _buildReadingSurface(),
+        child: _buildReadingSurface(),
       ),
     );
     if (!persistentNavigation || !_showNavigationPanel) {
@@ -766,8 +858,8 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                   percent: _zoomPercent,
                   preset: _zoomPreset,
                   compact: compactActions,
-                  onZoomOut: () => _changeZoom(-.25),
-                  onZoomIn: () => _changeZoom(.25),
+                  onZoomOut: () => _changeZoom(-.1),
+                  onZoomIn: () => _changeZoom(.1),
                   onPresetSelected: _applyZoomSelection,
                 ),
                 if (!_isWriting) ...[
@@ -834,58 +926,6 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     );
   }
 
-  Widget _buildWritingSurface() {
-    return _withDesktopPageGutters(
-      RepaintBoundary(
-        key: const ValueKey('ink-canvas-repaint-boundary'),
-        child: editor.PdfEditorView(
-          key: ValueKey('writing-${_zoomPreset.name}-$_writingViewGeneration'),
-          controller: _editingController!,
-          viewerController: _editingViewerController!,
-          documentId: widget.filePath,
-          showSaveButton: false,
-          onSave: (_) => unawaited(_saveInk()),
-          backgroundColor: _backgroundColor(_preferences.theme),
-          pageLayout: const editor.PdfPageLayout.verticalContinuous(),
-          initialFit: _zoomPreset == ReaderZoomPreset.fitPage
-              ? editor.PdfViewerFit.page
-              : editor.PdfViewerFit.width,
-          features: const editor.PdfEditorFeatures(
-            headerBar: false,
-            search: false,
-            searchResultsPanel: false,
-            pageNumber: false,
-            author: false,
-            authorEditable: false,
-            viewOptions: false,
-            reflowView: false,
-            pageColorEditable: false,
-            thumbnails: false,
-            bookmarks: false,
-            pageEditing: false,
-            annotationSidebar: false,
-            annotationLibrary: false,
-            propertiesPanel: false,
-            toolbar: false,
-            markup: false,
-            undoRedo: true,
-            colorControls: true,
-            styleControls: true,
-            flatten: false,
-            colorProcessing: false,
-            pencilEraserToggle: false,
-            tools: {
-              editor.PdfEditTool.select,
-              editor.PdfEditTool.ink,
-              editor.PdfEditTool.highlight,
-              editor.PdfEditTool.eraser,
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildReadingSurface() {
     return _withDesktopPageGutters(
       Stack(
@@ -896,68 +936,28 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
               colorFilter:
                   _colorFilter(_preferences.theme) ??
                   const ColorFilter.mode(Colors.transparent, BlendMode.dst),
-              child: FutureBuilder<List<int>>(
-                future: _documentBytes,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError || !snapshot.hasData) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          'Could not open this PDF: ${snapshot.error}',
-                        ),
+              child: _editingController == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : RepaintBoundary(
+                      key: const ValueKey('pdf-canvas-repaint-boundary'),
+                      child: editor.PdfViewer(
+                        key: ValueKey('reader-$_viewerGeneration'),
+                        editing: _editingController,
+                        controller: _viewerController,
+                        documentId: widget.filePath,
+                        minZoom: .01,
+                        maxZoom: 128,
+                        initialFit: _zoomPreset == ReaderZoomPreset.fitPage
+                            ? editor.PdfViewerFit.page
+                            : editor.PdfViewerFit.width,
+                        pageLayout: _preferences.mode == ReadingMode.singlePage
+                            ? const editor.PdfPageLayout.horizontalContinuous()
+                            : const editor.PdfPageLayout.verticalContinuous(),
+                        backgroundColor: _backgroundColor(_preferences.theme),
+                        pagePreviews: true,
+                        contextMenuEnabled: true,
                       ),
-                    );
-                  }
-                  final single =
-                      _zoomPreset == ReaderZoomPreset.fitPage ||
-                      _preferences.mode == ReadingMode.singlePage;
-                  return syncfusion.SfPdfViewer.memory(
-                    Uint8List.fromList(snapshot.data!),
-                    controller: _viewerController,
-                    enableDoubleTapZooming: true,
-                    enableTextSelection: true,
-                    maxZoomLevel: 4,
-                    pageLayoutMode: single
-                        ? syncfusion.PdfPageLayoutMode.single
-                        : syncfusion.PdfPageLayoutMode.continuous,
-                    scrollDirection: single
-                        ? syncfusion.PdfScrollDirection.horizontal
-                        : syncfusion.PdfScrollDirection.vertical,
-                    onPageChanged: (details) {
-                      setState(() => _activePage = details.newPageNumber);
-                      widget.onPageChanged?.call(details.newPageNumber);
-                      unawaited(
-                        _db.updateReadingProgress(
-                          widget.filePath,
-                          details.newPageNumber,
-                          pageCount: _pageCount,
-                        ),
-                      );
-                    },
-                    onDocumentLoaded: (details) {
-                      final target = widget.initialPageNumber.clamp(
-                        1,
-                        details.document.pages.count,
-                      );
-                      _viewerController.jumpToPage(target);
-                      setState(() {
-                        _activePage = target;
-                        _pageCount = details.document.pages.count;
-                      });
-                      widget.onPageChanged?.call(target);
-                    },
-                    onDocumentLoadFailed: (details) {
-                      _showError(
-                        'Could not render PDF: ${details.description}',
-                      );
-                    },
-                  );
-                },
-              ),
+                    ),
             ),
           ),
           if (_preferences.brightness < 1)

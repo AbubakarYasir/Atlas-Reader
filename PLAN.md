@@ -1,7 +1,7 @@
 # Atlas Reader — Master Plan
 ## Universal Embedding Protocol · Maximum Accessibility · Production Quality
 
-**Status:** `0.8.0-beta.2` reader-workspace candidate verified (53 tests passed,
+**Status:** `0.8.0-beta.2+4` corrected reader-workspace candidate verified (56 tests passed,
 2 optional personal-file audits skipped, 3 native Windows integration scenarios
 passed, and the release build succeeded); C0 was owner-accepted on 2026-09-09
 and C1 is ready for owner testing.
@@ -782,7 +782,7 @@ hardware requirements, and stop conditions are maintained in
 informal or historical sequence elsewhere in this document.
 
 The owner accepted **C0 — Baseline acceptance** at `0.8.0-beta.1` (build 2) on
-2026-09-09. **C1 — Reader workspace** is ready for owner testing and must
+2026-09-09. **C1 — Reader workspace** build 4 is ready for owner testing and must
 stop for its numbered owner test before C2 begins.
 
 Text-to-speech, speed-reading in the primary UI, research lookup, cloud

@@ -57,5 +57,22 @@
   "fitWidth": "ملاءمة العرض",
   "write": "كتابة",
   "openDocumentTab": "فتح علامة تبويب لمستند",
-  "closeDocumentTab": "إغلاق {title}"
+  "closeDocumentTab": "إغلاق {title}",
+  "customZoom": "تكبير مخصص…",
+  "zoomRange": "التكبير (10–6400)",
+  "apply": "تطبيق",
+  "open": "فتح",
+  "addToFavorites": "إضافة إلى المفضلة",
+  "removeFromFavorites": "إزالة من المفضلة",
+  "editLibraryDetails": "تحرير تفاصيل المكتبة",
+  "refreshCover": "تحديث الغلاف",
+  "showInFileExplorer": "إظهار في مستكشف الملفات",
+  "copyFullPath": "نسخ المسار الكامل",
+  "close": "إغلاق",
+  "closeOtherTabs": "إغلاق علامات التبويب الأخرى",
+  "closeTabsToRight": "إغلاق علامات التبويب إلى اليمين",
+  "filePathCopied": "تم نسخ مسار الملف.",
+  "couldNotShowFile": "تعذر إظهار الملف: {error}",
+  "restoreDocumentTabs": "استعادة علامات تبويب المستندات عند إعادة التشغيل",
+  "restoreDocumentTabsDescription": "متوقفة افتراضياً. عند تعطيلها، يفتح أطلس المستند الذي طلبته فقط."
 }

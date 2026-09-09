@@ -5,6 +5,7 @@ import '../../bookmark_grouping.dart';
 import '../../bookmark_tree.dart';
 import '../../core/file_system/document_file_system.dart';
 import '../../database.dart';
+import '../../l10n/app_localizations.dart';
 import '../reader/pdf_reader_screen.dart';
 import 'library_folder_manager.dart';
 import 'visual_bookshelf.dart';
@@ -58,11 +59,13 @@ class _LibraryHubScreenState extends State<LibraryHubScreen> {
   String _bookmarkQuery = '';
   LibraryScanProgress? _scanProgress;
   bool _scanning = false;
+  late Future<bool> _restoreTabsPreference;
 
   @override
   void initState() {
     super.initState();
     widget.folderManager.onProgress = _handleScanProgress;
+    _restoreTabsPreference = widget.database.getRestoreDocumentTabs();
   }
 
   @override
@@ -73,6 +76,12 @@ class _LibraryHubScreenState extends State<LibraryHubScreen> {
 
   void _handleScanProgress(LibraryScanProgress progress) {
     if (mounted) setState(() => _scanProgress = progress);
+  }
+
+  Future<void> _setRestoreTabs(bool enabled) async {
+    await widget.database.setRestoreDocumentTabs(enabled);
+    if (!mounted) return;
+    setState(() => _restoreTabsPreference = Future.value(enabled));
   }
 
   String get _title => switch (_destination) {
@@ -554,19 +563,33 @@ class _LibraryHubScreenState extends State<LibraryHubScreen> {
         _settingsSection(
           'Reader & writing',
           'Per-document controls stay in the reader so each book can be tuned.',
-          const [
+          [
+            FutureBuilder<bool>(
+              future: _restoreTabsPreference,
+              builder: (context, snapshot) => SwitchListTile(
+                secondary: const Icon(Icons.restore_page_outlined),
+                title: Text(AppLocalizations.of(context)!.restoreDocumentTabs),
+                subtitle: Text(
+                  AppLocalizations.of(context)!.restoreDocumentTabsDescription,
+                ),
+                value: snapshot.data ?? false,
+                onChanged: snapshot.connectionState == ConnectionState.waiting
+                    ? null
+                    : _setRestoreTabs,
+              ),
+            ),
             ListTile(
-              leading: Icon(Icons.chrome_reader_mode_outlined),
-              title: Text('Display controls'),
-              subtitle: Text(
+              leading: const Icon(Icons.chrome_reader_mode_outlined),
+              title: const Text('Display controls'),
+              subtitle: const Text(
                 'Day, Night, OLED, Warm Parchment, brightness, margin crop, '
                 'zoom, continuous scrolling, and page navigation',
               ),
             ),
             ListTile(
-              leading: Icon(Icons.draw_outlined),
-              title: Text('Pen and highlighter'),
-              subtitle: Text(
+              leading: const Icon(Icons.draw_outlined),
+              title: const Text('Pen and highlighter'),
+              subtitle: const Text(
                 'Colors, thickness, stroke/area eraser, undo, redo, and safe PDF save',
               ),
             ),

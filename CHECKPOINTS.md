@@ -9,9 +9,9 @@ is implemented, verified, handed to the owner, and accepted.
 | Field | Value |
 |---|---|
 | Checkpoint | **C1 — Reader workspace** |
-| Target release | `0.8.0-beta.2` (build 3) |
+| Target release | `0.8.0-beta.2` (build 4) |
 | Status | **Ready for owner test** |
-| Automated evidence | `dart format`: clean; `flutter analyze`: 0 issues; `flutter test`: 53 passed and 2 optional audits skipped; Windows integration: 3 passed; Windows release build: succeeded |
+| Automated evidence | `dart format`: clean; `flutter analyze`: 0 issues; `flutter test`: 56 passed and 2 optional audits skipped; Windows integration: 3 passed; Windows release build: succeeded |
 | Build | `build\windows\x64\runner\Release\atlas_poc.exe` |
 | Hardware still required before 1.0 | Pen, touch, representative HDD, and physical printer |
 | Previous owner decision | C0 accepted on 2026-09-09 |
@@ -112,15 +112,12 @@ failure under the template below. Do not start C1 before explicit PASS.
 desktop reading surface.
 
 **Implementation exit:** The reader has a persistent, collapsible
-**Pages/Outline/Bookmarks/Annotations** panel with search and selected-page
-state; fit-page, fit-width, explicit percentage, zoom, Write-mode pan/zoom,
-exact page entry, thumbnails, responsive gutters, and restored tabs/pages all
-work without controls covering document content.
+**Outline/Pages/Bookmarks/Annotations** panel with search and selected-page
+state; lazy real thumbnails; 10–6400% free zoom plus fit-page and fit-width;
+Write-mode pan/zoom; equal library cards with generated PDF covers; accessible
+book/tab context menus; and optional tab restoration (off by default).
 
-**Owner test:** Open three PDFs; switch, close, and restore tabs; navigate using
-every panel; search and jump to exact pages; zoom and pan in **Write** mode;
-resize between wide and compact layouts; repeat the workflow at 200% Windows
-text scale using mouse and keyboard.
+**Owner test:** Follow the numbered corrective C1 checklist in this record.
 
 **Stop gate:** All navigation paths land on the requested page, session state
 restores, no control obscures content, and the workflow passes at 200% scale.
@@ -129,23 +126,38 @@ restores, no control obscures content, and the workflow passes at 200% scale.
 
 - Status: Ready for owner test
 - Commit: C1 reader-workspace candidate on `main`
-- Version/build: `0.8.0-beta.2+3`
+- Version/build: `0.8.0-beta.2+4`
 - Executable: `build\windows\x64\runner\Release\atlas_poc.exe`
-- Automated commands and results: formatting clean; analysis 0 issues; 53
+- Automated commands and results: formatting clean; analysis 0 issues; 56
   unit/widget tests passed; 2 personal-file audits skipped; 3 Windows
   integration scenarios passed; release build succeeded
-- Focused tests: panel search and exact jumps, fit/percentage zoom selection,
-  Arabic navigation at 200% scale, rendered page previews, and ink drawing in
-  the reduced workspace viewport
+- Focused tests: 10% under-fit zoom, fit/custom transitions, Outline-first
+  navigation, real page previews and PDF covers, fixed card geometry, lazy tab
+  sessions, context actions, Arabic UI, and opt-in tab restoration
 - Fixture copies required: three PDFs, including one mixed Arabic/English PDF
   with an outline and one writable PDF copy for Write-mode testing
 - Known limitations: PDF is the only readable/writable format; the two
   personal-file audits remain unrun without owner-supplied fixture copies
 - Hardware evidence supplied: desktop mouse/keyboard only; pen, touch, HDD,
   and physical printer remain required at C9
-- Owner result: Pending
-- Defects found: None open
+- Owner result: Pending corrective build retest
+- Defects found: Build 3 lag, constrained zoom, missing covers, uneven cards,
+  Pages-first navigation, and missing context actions were corrected in build 4
 - Approval date: Pending
+
+### Corrective owner checklist
+
+1. Open the previously lagging book and confirm the interface stays responsive.
+2. Open three PDFs and switch repeatedly without pauses or lost state.
+3. Confirm Outline is first and selected by default; Pages shows real previews.
+4. Zoom below Fit down to 10%, enter custom values, and switch Read/Write modes.
+5. Right-click books in every library view and use each available action.
+6. Right-click active/inactive tabs; test Close, Close others, and Close right.
+7. Create unsaved ink and confirm closing cannot silently discard it.
+8. Test Shift+F10/Menu-key menus and Arabic layout.
+9. Rescan and confirm covers appear without freezing and cards remain equal.
+10. In Settings, verify tab restoration is off by default, then enable it and
+    confirm tabs return after restarting Atlas.
 
 ## C2 — Complete bookmarks
 

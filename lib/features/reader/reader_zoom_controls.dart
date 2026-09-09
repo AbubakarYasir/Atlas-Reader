@@ -27,7 +27,13 @@ class ReaderZoomControls extends StatelessWidget {
     final menu = PopupMenuButton<(ReaderZoomPreset, int?)>(
       key: const ValueKey('reader-zoom-menu'),
       tooltip: strings.zoomPercent(percent),
-      onSelected: onPresetSelected,
+      onSelected: (selection) {
+        if (selection.$1 == ReaderZoomPreset.custom && selection.$2 == null) {
+          _promptCustomZoom(context);
+        } else {
+          onPresetSelected(selection);
+        }
+      },
       padding: EdgeInsets.zero,
       itemBuilder: (context) => [
         PopupMenuItem(
@@ -47,7 +53,7 @@ class ReaderZoomControls extends StatelessWidget {
           ),
         ),
         const PopupMenuDivider(),
-        for (final value in const [100, 125, 150, 200, 300, 400])
+        for (final value in const [10, 25, 50, 75, 100, 125, 200, 400, 800])
           PopupMenuItem(
             value: (ReaderZoomPreset.custom, value),
             child: _MenuChoice(
@@ -56,6 +62,15 @@ class ReaderZoomControls extends StatelessWidget {
               label: strings.zoomPercent(value),
             ),
           ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: const (ReaderZoomPreset.custom, null),
+          child: _MenuChoice(
+            selected: false,
+            icon: Icons.edit_outlined,
+            label: strings.customZoom,
+          ),
+        ),
       ],
       icon: Semantics(
         label: strings.zoomPercent(percent),
@@ -90,6 +105,52 @@ class ReaderZoomControls extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _promptCustomZoom(BuildContext context) async {
+    final strings = AppLocalizations.of(context)!;
+    var value = '$percent';
+    final selected = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(strings.customZoom),
+        content: TextFormField(
+          initialValue: value,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: strings.zoomRange,
+            suffixText: '%',
+            border: const OutlineInputBorder(),
+          ),
+          onFieldSubmitted: (value) {
+            final parsed = int.tryParse(value);
+            if (parsed != null && parsed >= 10 && parsed <= 6400) {
+              Navigator.pop(context, parsed);
+            }
+          },
+          onChanged: (updated) => value = updated,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () {
+              final parsed = int.tryParse(value);
+              if (parsed != null && parsed >= 10 && parsed <= 6400) {
+                Navigator.pop(context, parsed);
+              }
+            },
+            child: Text(strings.apply),
+          ),
+        ],
+      ),
+    );
+    if (selected != null) {
+      onPresetSelected((ReaderZoomPreset.custom, selected));
+    }
   }
 }
 

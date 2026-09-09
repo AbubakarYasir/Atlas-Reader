@@ -445,6 +445,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close {title}'**
   String closeDocumentTab(Object title);
+
+  /// No description provided for @customZoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom zoom…'**
+  String get customZoom;
+
+  /// No description provided for @zoomRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom (10–6400)'**
+  String get zoomRange;
+
+  /// No description provided for @apply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get apply;
+
+  /// No description provided for @open.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get open;
+
+  /// No description provided for @addToFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favorites'**
+  String get addToFavorites;
+
+  /// No description provided for @removeFromFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favorites'**
+  String get removeFromFavorites;
+
+  /// No description provided for @editLibraryDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit library details'**
+  String get editLibraryDetails;
+
+  /// No description provided for @refreshCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh cover'**
+  String get refreshCover;
+
+  /// No description provided for @showInFileExplorer.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in File Explorer'**
+  String get showInFileExplorer;
+
+  /// No description provided for @copyFullPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy full path'**
+  String get copyFullPath;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @closeOtherTabs.
+  ///
+  /// In en, this message translates to:
+  /// **'Close other tabs'**
+  String get closeOtherTabs;
+
+  /// No description provided for @closeTabsToRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Close tabs to the right'**
+  String get closeTabsToRight;
+
+  /// No description provided for @filePathCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'File path copied.'**
+  String get filePathCopied;
+
+  /// No description provided for @couldNotShowFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not show the file: {error}'**
+  String couldNotShowFile(Object error);
+
+  /// No description provided for @restoreDocumentTabs.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore document tabs on restart'**
+  String get restoreDocumentTabs;
+
+  /// No description provided for @restoreDocumentTabsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Off by default. When disabled, Atlas opens only the document you requested.'**
+  String get restoreDocumentTabsDescription;
 }
 
 class _AppLocalizationsDelegate

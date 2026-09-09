@@ -3620,6 +3620,65 @@ class $ReadingSessionTabsTable extends ReadingSessionTabs
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _zoomPercentMeta = const VerificationMeta(
+    'zoomPercent',
+  );
+  @override
+  late final GeneratedColumn<double> zoomPercent = GeneratedColumn<double>(
+    'zoom_percent',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(100.0),
+  );
+  static const VerificationMeta _zoomPresetMeta = const VerificationMeta(
+    'zoomPreset',
+  );
+  @override
+  late final GeneratedColumn<String> zoomPreset = GeneratedColumn<String>(
+    'zoom_preset',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('fitWidth'),
+  );
+  static const VerificationMeta _readerModeMeta = const VerificationMeta(
+    'readerMode',
+  );
+  @override
+  late final GeneratedColumn<String> readerMode = GeneratedColumn<String>(
+    'reader_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('read'),
+  );
+  static const VerificationMeta _navigationPanelMeta = const VerificationMeta(
+    'navigationPanel',
+  );
+  @override
+  late final GeneratedColumn<String> navigationPanel = GeneratedColumn<String>(
+    'navigation_panel',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('outline'),
+  );
+  static const VerificationMeta _viewportMeta = const VerificationMeta(
+    'viewport',
+  );
+  @override
+  late final GeneratedColumn<String> viewport = GeneratedColumn<String>(
+    'viewport',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3627,6 +3686,11 @@ class $ReadingSessionTabsTable extends ReadingSessionTabs
     pageNumber,
     tabOrder,
     isActive,
+    zoomPercent,
+    zoomPreset,
+    readerMode,
+    navigationPanel,
+    viewport,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3671,6 +3735,42 @@ class $ReadingSessionTabsTable extends ReadingSessionTabs
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
       );
     }
+    if (data.containsKey('zoom_percent')) {
+      context.handle(
+        _zoomPercentMeta,
+        zoomPercent.isAcceptableOrUnknown(
+          data['zoom_percent']!,
+          _zoomPercentMeta,
+        ),
+      );
+    }
+    if (data.containsKey('zoom_preset')) {
+      context.handle(
+        _zoomPresetMeta,
+        zoomPreset.isAcceptableOrUnknown(data['zoom_preset']!, _zoomPresetMeta),
+      );
+    }
+    if (data.containsKey('reader_mode')) {
+      context.handle(
+        _readerModeMeta,
+        readerMode.isAcceptableOrUnknown(data['reader_mode']!, _readerModeMeta),
+      );
+    }
+    if (data.containsKey('navigation_panel')) {
+      context.handle(
+        _navigationPanelMeta,
+        navigationPanel.isAcceptableOrUnknown(
+          data['navigation_panel']!,
+          _navigationPanelMeta,
+        ),
+      );
+    }
+    if (data.containsKey('viewport')) {
+      context.handle(
+        _viewportMeta,
+        viewport.isAcceptableOrUnknown(data['viewport']!, _viewportMeta),
+      );
+    }
     return context;
   }
 
@@ -3700,6 +3800,26 @@ class $ReadingSessionTabsTable extends ReadingSessionTabs
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      zoomPercent: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}zoom_percent'],
+      )!,
+      zoomPreset: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}zoom_preset'],
+      )!,
+      readerMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reader_mode'],
+      )!,
+      navigationPanel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}navigation_panel'],
+      )!,
+      viewport: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}viewport'],
+      ),
     );
   }
 
@@ -3716,12 +3836,22 @@ class ReadingSessionTab extends DataClass
   final int pageNumber;
   final int tabOrder;
   final bool isActive;
+  final double zoomPercent;
+  final String zoomPreset;
+  final String readerMode;
+  final String navigationPanel;
+  final String? viewport;
   const ReadingSessionTab({
     required this.id,
     required this.filePath,
     required this.pageNumber,
     required this.tabOrder,
     required this.isActive,
+    required this.zoomPercent,
+    required this.zoomPreset,
+    required this.readerMode,
+    required this.navigationPanel,
+    this.viewport,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3731,6 +3861,13 @@ class ReadingSessionTab extends DataClass
     map['page_number'] = Variable<int>(pageNumber);
     map['tab_order'] = Variable<int>(tabOrder);
     map['is_active'] = Variable<bool>(isActive);
+    map['zoom_percent'] = Variable<double>(zoomPercent);
+    map['zoom_preset'] = Variable<String>(zoomPreset);
+    map['reader_mode'] = Variable<String>(readerMode);
+    map['navigation_panel'] = Variable<String>(navigationPanel);
+    if (!nullToAbsent || viewport != null) {
+      map['viewport'] = Variable<String>(viewport);
+    }
     return map;
   }
 
@@ -3741,6 +3878,13 @@ class ReadingSessionTab extends DataClass
       pageNumber: Value(pageNumber),
       tabOrder: Value(tabOrder),
       isActive: Value(isActive),
+      zoomPercent: Value(zoomPercent),
+      zoomPreset: Value(zoomPreset),
+      readerMode: Value(readerMode),
+      navigationPanel: Value(navigationPanel),
+      viewport: viewport == null && nullToAbsent
+          ? const Value.absent()
+          : Value(viewport),
     );
   }
 
@@ -3755,6 +3899,11 @@ class ReadingSessionTab extends DataClass
       pageNumber: serializer.fromJson<int>(json['pageNumber']),
       tabOrder: serializer.fromJson<int>(json['tabOrder']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      zoomPercent: serializer.fromJson<double>(json['zoomPercent']),
+      zoomPreset: serializer.fromJson<String>(json['zoomPreset']),
+      readerMode: serializer.fromJson<String>(json['readerMode']),
+      navigationPanel: serializer.fromJson<String>(json['navigationPanel']),
+      viewport: serializer.fromJson<String?>(json['viewport']),
     );
   }
   @override
@@ -3766,6 +3915,11 @@ class ReadingSessionTab extends DataClass
       'pageNumber': serializer.toJson<int>(pageNumber),
       'tabOrder': serializer.toJson<int>(tabOrder),
       'isActive': serializer.toJson<bool>(isActive),
+      'zoomPercent': serializer.toJson<double>(zoomPercent),
+      'zoomPreset': serializer.toJson<String>(zoomPreset),
+      'readerMode': serializer.toJson<String>(readerMode),
+      'navigationPanel': serializer.toJson<String>(navigationPanel),
+      'viewport': serializer.toJson<String?>(viewport),
     };
   }
 
@@ -3775,12 +3929,22 @@ class ReadingSessionTab extends DataClass
     int? pageNumber,
     int? tabOrder,
     bool? isActive,
+    double? zoomPercent,
+    String? zoomPreset,
+    String? readerMode,
+    String? navigationPanel,
+    Value<String?> viewport = const Value.absent(),
   }) => ReadingSessionTab(
     id: id ?? this.id,
     filePath: filePath ?? this.filePath,
     pageNumber: pageNumber ?? this.pageNumber,
     tabOrder: tabOrder ?? this.tabOrder,
     isActive: isActive ?? this.isActive,
+    zoomPercent: zoomPercent ?? this.zoomPercent,
+    zoomPreset: zoomPreset ?? this.zoomPreset,
+    readerMode: readerMode ?? this.readerMode,
+    navigationPanel: navigationPanel ?? this.navigationPanel,
+    viewport: viewport.present ? viewport.value : this.viewport,
   );
   ReadingSessionTab copyWithCompanion(ReadingSessionTabsCompanion data) {
     return ReadingSessionTab(
@@ -3791,6 +3955,19 @@ class ReadingSessionTab extends DataClass
           : this.pageNumber,
       tabOrder: data.tabOrder.present ? data.tabOrder.value : this.tabOrder,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      zoomPercent: data.zoomPercent.present
+          ? data.zoomPercent.value
+          : this.zoomPercent,
+      zoomPreset: data.zoomPreset.present
+          ? data.zoomPreset.value
+          : this.zoomPreset,
+      readerMode: data.readerMode.present
+          ? data.readerMode.value
+          : this.readerMode,
+      navigationPanel: data.navigationPanel.present
+          ? data.navigationPanel.value
+          : this.navigationPanel,
+      viewport: data.viewport.present ? data.viewport.value : this.viewport,
     );
   }
 
@@ -3801,13 +3978,29 @@ class ReadingSessionTab extends DataClass
           ..write('filePath: $filePath, ')
           ..write('pageNumber: $pageNumber, ')
           ..write('tabOrder: $tabOrder, ')
-          ..write('isActive: $isActive')
+          ..write('isActive: $isActive, ')
+          ..write('zoomPercent: $zoomPercent, ')
+          ..write('zoomPreset: $zoomPreset, ')
+          ..write('readerMode: $readerMode, ')
+          ..write('navigationPanel: $navigationPanel, ')
+          ..write('viewport: $viewport')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, filePath, pageNumber, tabOrder, isActive);
+  int get hashCode => Object.hash(
+    id,
+    filePath,
+    pageNumber,
+    tabOrder,
+    isActive,
+    zoomPercent,
+    zoomPreset,
+    readerMode,
+    navigationPanel,
+    viewport,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3816,7 +4009,12 @@ class ReadingSessionTab extends DataClass
           other.filePath == this.filePath &&
           other.pageNumber == this.pageNumber &&
           other.tabOrder == this.tabOrder &&
-          other.isActive == this.isActive);
+          other.isActive == this.isActive &&
+          other.zoomPercent == this.zoomPercent &&
+          other.zoomPreset == this.zoomPreset &&
+          other.readerMode == this.readerMode &&
+          other.navigationPanel == this.navigationPanel &&
+          other.viewport == this.viewport);
 }
 
 class ReadingSessionTabsCompanion extends UpdateCompanion<ReadingSessionTab> {
@@ -3825,12 +4023,22 @@ class ReadingSessionTabsCompanion extends UpdateCompanion<ReadingSessionTab> {
   final Value<int> pageNumber;
   final Value<int> tabOrder;
   final Value<bool> isActive;
+  final Value<double> zoomPercent;
+  final Value<String> zoomPreset;
+  final Value<String> readerMode;
+  final Value<String> navigationPanel;
+  final Value<String?> viewport;
   const ReadingSessionTabsCompanion({
     this.id = const Value.absent(),
     this.filePath = const Value.absent(),
     this.pageNumber = const Value.absent(),
     this.tabOrder = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.zoomPercent = const Value.absent(),
+    this.zoomPreset = const Value.absent(),
+    this.readerMode = const Value.absent(),
+    this.navigationPanel = const Value.absent(),
+    this.viewport = const Value.absent(),
   });
   ReadingSessionTabsCompanion.insert({
     this.id = const Value.absent(),
@@ -3838,6 +4046,11 @@ class ReadingSessionTabsCompanion extends UpdateCompanion<ReadingSessionTab> {
     this.pageNumber = const Value.absent(),
     required int tabOrder,
     this.isActive = const Value.absent(),
+    this.zoomPercent = const Value.absent(),
+    this.zoomPreset = const Value.absent(),
+    this.readerMode = const Value.absent(),
+    this.navigationPanel = const Value.absent(),
+    this.viewport = const Value.absent(),
   }) : filePath = Value(filePath),
        tabOrder = Value(tabOrder);
   static Insertable<ReadingSessionTab> custom({
@@ -3846,6 +4059,11 @@ class ReadingSessionTabsCompanion extends UpdateCompanion<ReadingSessionTab> {
     Expression<int>? pageNumber,
     Expression<int>? tabOrder,
     Expression<bool>? isActive,
+    Expression<double>? zoomPercent,
+    Expression<String>? zoomPreset,
+    Expression<String>? readerMode,
+    Expression<String>? navigationPanel,
+    Expression<String>? viewport,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3853,6 +4071,11 @@ class ReadingSessionTabsCompanion extends UpdateCompanion<ReadingSessionTab> {
       if (pageNumber != null) 'page_number': pageNumber,
       if (tabOrder != null) 'tab_order': tabOrder,
       if (isActive != null) 'is_active': isActive,
+      if (zoomPercent != null) 'zoom_percent': zoomPercent,
+      if (zoomPreset != null) 'zoom_preset': zoomPreset,
+      if (readerMode != null) 'reader_mode': readerMode,
+      if (navigationPanel != null) 'navigation_panel': navigationPanel,
+      if (viewport != null) 'viewport': viewport,
     });
   }
 
@@ -3862,6 +4085,11 @@ class ReadingSessionTabsCompanion extends UpdateCompanion<ReadingSessionTab> {
     Value<int>? pageNumber,
     Value<int>? tabOrder,
     Value<bool>? isActive,
+    Value<double>? zoomPercent,
+    Value<String>? zoomPreset,
+    Value<String>? readerMode,
+    Value<String>? navigationPanel,
+    Value<String?>? viewport,
   }) {
     return ReadingSessionTabsCompanion(
       id: id ?? this.id,
@@ -3869,6 +4097,11 @@ class ReadingSessionTabsCompanion extends UpdateCompanion<ReadingSessionTab> {
       pageNumber: pageNumber ?? this.pageNumber,
       tabOrder: tabOrder ?? this.tabOrder,
       isActive: isActive ?? this.isActive,
+      zoomPercent: zoomPercent ?? this.zoomPercent,
+      zoomPreset: zoomPreset ?? this.zoomPreset,
+      readerMode: readerMode ?? this.readerMode,
+      navigationPanel: navigationPanel ?? this.navigationPanel,
+      viewport: viewport ?? this.viewport,
     );
   }
 
@@ -3890,6 +4123,21 @@ class ReadingSessionTabsCompanion extends UpdateCompanion<ReadingSessionTab> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (zoomPercent.present) {
+      map['zoom_percent'] = Variable<double>(zoomPercent.value);
+    }
+    if (zoomPreset.present) {
+      map['zoom_preset'] = Variable<String>(zoomPreset.value);
+    }
+    if (readerMode.present) {
+      map['reader_mode'] = Variable<String>(readerMode.value);
+    }
+    if (navigationPanel.present) {
+      map['navigation_panel'] = Variable<String>(navigationPanel.value);
+    }
+    if (viewport.present) {
+      map['viewport'] = Variable<String>(viewport.value);
+    }
     return map;
   }
 
@@ -3900,7 +4148,220 @@ class ReadingSessionTabsCompanion extends UpdateCompanion<ReadingSessionTab> {
           ..write('filePath: $filePath, ')
           ..write('pageNumber: $pageNumber, ')
           ..write('tabOrder: $tabOrder, ')
-          ..write('isActive: $isActive')
+          ..write('isActive: $isActive, ')
+          ..write('zoomPercent: $zoomPercent, ')
+          ..write('zoomPreset: $zoomPreset, ')
+          ..write('readerMode: $readerMode, ')
+          ..write('navigationPanel: $navigationPanel, ')
+          ..write('viewport: $viewport')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AppSettingsTable extends AppSettings
+    with TableInfo<$AppSettingsTable, AtlasSettings> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AppSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _restoreDocumentTabsMeta =
+      const VerificationMeta('restoreDocumentTabs');
+  @override
+  late final GeneratedColumn<bool> restoreDocumentTabs = GeneratedColumn<bool>(
+    'restore_document_tabs',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("restore_document_tabs" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, restoreDocumentTabs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'app_settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AtlasSettings> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('restore_document_tabs')) {
+      context.handle(
+        _restoreDocumentTabsMeta,
+        restoreDocumentTabs.isAcceptableOrUnknown(
+          data['restore_document_tabs']!,
+          _restoreDocumentTabsMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AtlasSettings map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AtlasSettings(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      restoreDocumentTabs: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}restore_document_tabs'],
+      )!,
+    );
+  }
+
+  @override
+  $AppSettingsTable createAlias(String alias) {
+    return $AppSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class AtlasSettings extends DataClass implements Insertable<AtlasSettings> {
+  final int id;
+  final bool restoreDocumentTabs;
+  const AtlasSettings({required this.id, required this.restoreDocumentTabs});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['restore_document_tabs'] = Variable<bool>(restoreDocumentTabs);
+    return map;
+  }
+
+  AppSettingsCompanion toCompanion(bool nullToAbsent) {
+    return AppSettingsCompanion(
+      id: Value(id),
+      restoreDocumentTabs: Value(restoreDocumentTabs),
+    );
+  }
+
+  factory AtlasSettings.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AtlasSettings(
+      id: serializer.fromJson<int>(json['id']),
+      restoreDocumentTabs: serializer.fromJson<bool>(
+        json['restoreDocumentTabs'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'restoreDocumentTabs': serializer.toJson<bool>(restoreDocumentTabs),
+    };
+  }
+
+  AtlasSettings copyWith({int? id, bool? restoreDocumentTabs}) => AtlasSettings(
+    id: id ?? this.id,
+    restoreDocumentTabs: restoreDocumentTabs ?? this.restoreDocumentTabs,
+  );
+  AtlasSettings copyWithCompanion(AppSettingsCompanion data) {
+    return AtlasSettings(
+      id: data.id.present ? data.id.value : this.id,
+      restoreDocumentTabs: data.restoreDocumentTabs.present
+          ? data.restoreDocumentTabs.value
+          : this.restoreDocumentTabs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AtlasSettings(')
+          ..write('id: $id, ')
+          ..write('restoreDocumentTabs: $restoreDocumentTabs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, restoreDocumentTabs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AtlasSettings &&
+          other.id == this.id &&
+          other.restoreDocumentTabs == this.restoreDocumentTabs);
+}
+
+class AppSettingsCompanion extends UpdateCompanion<AtlasSettings> {
+  final Value<int> id;
+  final Value<bool> restoreDocumentTabs;
+  const AppSettingsCompanion({
+    this.id = const Value.absent(),
+    this.restoreDocumentTabs = const Value.absent(),
+  });
+  AppSettingsCompanion.insert({
+    this.id = const Value.absent(),
+    this.restoreDocumentTabs = const Value.absent(),
+  });
+  static Insertable<AtlasSettings> custom({
+    Expression<int>? id,
+    Expression<bool>? restoreDocumentTabs,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (restoreDocumentTabs != null)
+        'restore_document_tabs': restoreDocumentTabs,
+    });
+  }
+
+  AppSettingsCompanion copyWith({
+    Value<int>? id,
+    Value<bool>? restoreDocumentTabs,
+  }) {
+    return AppSettingsCompanion(
+      id: id ?? this.id,
+      restoreDocumentTabs: restoreDocumentTabs ?? this.restoreDocumentTabs,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (restoreDocumentTabs.present) {
+      map['restore_document_tabs'] = Variable<bool>(restoreDocumentTabs.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AppSettingsCompanion(')
+          ..write('id: $id, ')
+          ..write('restoreDocumentTabs: $restoreDocumentTabs')
           ..write(')'))
         .toString();
   }
@@ -3921,6 +4382,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $ReadingSessionTabsTable readingSessionTabs =
       $ReadingSessionTabsTable(this);
+  late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3935,6 +4397,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     annotations,
     scratchpadNotes,
     readingSessionTabs,
+    appSettings,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -6577,6 +7040,11 @@ typedef $$ReadingSessionTabsTableCreateCompanionBuilder =
       Value<int> pageNumber,
       required int tabOrder,
       Value<bool> isActive,
+      Value<double> zoomPercent,
+      Value<String> zoomPreset,
+      Value<String> readerMode,
+      Value<String> navigationPanel,
+      Value<String?> viewport,
     });
 typedef $$ReadingSessionTabsTableUpdateCompanionBuilder =
     ReadingSessionTabsCompanion Function({
@@ -6585,6 +7053,11 @@ typedef $$ReadingSessionTabsTableUpdateCompanionBuilder =
       Value<int> pageNumber,
       Value<int> tabOrder,
       Value<bool> isActive,
+      Value<double> zoomPercent,
+      Value<String> zoomPreset,
+      Value<String> readerMode,
+      Value<String> navigationPanel,
+      Value<String?> viewport,
     });
 
 class $$ReadingSessionTabsTableFilterComposer
@@ -6618,6 +7091,31 @@ class $$ReadingSessionTabsTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get zoomPercent => $composableBuilder(
+    column: $table.zoomPercent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get zoomPreset => $composableBuilder(
+    column: $table.zoomPreset,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get readerMode => $composableBuilder(
+    column: $table.readerMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get navigationPanel => $composableBuilder(
+    column: $table.navigationPanel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get viewport => $composableBuilder(
+    column: $table.viewport,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -6655,6 +7153,31 @@ class $$ReadingSessionTabsTableOrderingComposer
     column: $table.isActive,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<double> get zoomPercent => $composableBuilder(
+    column: $table.zoomPercent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get zoomPreset => $composableBuilder(
+    column: $table.zoomPreset,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get readerMode => $composableBuilder(
+    column: $table.readerMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get navigationPanel => $composableBuilder(
+    column: $table.navigationPanel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get viewport => $composableBuilder(
+    column: $table.viewport,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ReadingSessionTabsTableAnnotationComposer
@@ -6682,6 +7205,29 @@ class $$ReadingSessionTabsTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<double> get zoomPercent => $composableBuilder(
+    column: $table.zoomPercent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get zoomPreset => $composableBuilder(
+    column: $table.zoomPreset,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get readerMode => $composableBuilder(
+    column: $table.readerMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get navigationPanel => $composableBuilder(
+    column: $table.navigationPanel,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get viewport =>
+      $composableBuilder(column: $table.viewport, builder: (column) => column);
 }
 
 class $$ReadingSessionTabsTableTableManager
@@ -6729,12 +7275,22 @@ class $$ReadingSessionTabsTableTableManager
                 Value<int> pageNumber = const Value.absent(),
                 Value<int> tabOrder = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<double> zoomPercent = const Value.absent(),
+                Value<String> zoomPreset = const Value.absent(),
+                Value<String> readerMode = const Value.absent(),
+                Value<String> navigationPanel = const Value.absent(),
+                Value<String?> viewport = const Value.absent(),
               }) => ReadingSessionTabsCompanion(
                 id: id,
                 filePath: filePath,
                 pageNumber: pageNumber,
                 tabOrder: tabOrder,
                 isActive: isActive,
+                zoomPercent: zoomPercent,
+                zoomPreset: zoomPreset,
+                readerMode: readerMode,
+                navigationPanel: navigationPanel,
+                viewport: viewport,
               ),
           createCompanionCallback:
               ({
@@ -6743,12 +7299,22 @@ class $$ReadingSessionTabsTableTableManager
                 Value<int> pageNumber = const Value.absent(),
                 required int tabOrder,
                 Value<bool> isActive = const Value.absent(),
+                Value<double> zoomPercent = const Value.absent(),
+                Value<String> zoomPreset = const Value.absent(),
+                Value<String> readerMode = const Value.absent(),
+                Value<String> navigationPanel = const Value.absent(),
+                Value<String?> viewport = const Value.absent(),
               }) => ReadingSessionTabsCompanion.insert(
                 id: id,
                 filePath: filePath,
                 pageNumber: pageNumber,
                 tabOrder: tabOrder,
                 isActive: isActive,
+                zoomPercent: zoomPercent,
+                zoomPreset: zoomPreset,
+                readerMode: readerMode,
+                navigationPanel: navigationPanel,
+                viewport: viewport,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -6779,6 +7345,145 @@ typedef $$ReadingSessionTabsTableProcessedTableManager =
       ReadingSessionTab,
       PrefetchHooks Function()
     >;
+typedef $$AppSettingsTableCreateCompanionBuilder =
+    AppSettingsCompanion Function({
+      Value<int> id,
+      Value<bool> restoreDocumentTabs,
+    });
+typedef $$AppSettingsTableUpdateCompanionBuilder =
+    AppSettingsCompanion Function({
+      Value<int> id,
+      Value<bool> restoreDocumentTabs,
+    });
+
+class $$AppSettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $AppSettingsTable> {
+  $$AppSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get restoreDocumentTabs => $composableBuilder(
+    column: $table.restoreDocumentTabs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AppSettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AppSettingsTable> {
+  $$AppSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get restoreDocumentTabs => $composableBuilder(
+    column: $table.restoreDocumentTabs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AppSettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AppSettingsTable> {
+  $$AppSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<bool> get restoreDocumentTabs => $composableBuilder(
+    column: $table.restoreDocumentTabs,
+    builder: (column) => column,
+  );
+}
+
+class $$AppSettingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AppSettingsTable,
+          AtlasSettings,
+          $$AppSettingsTableFilterComposer,
+          $$AppSettingsTableOrderingComposer,
+          $$AppSettingsTableAnnotationComposer,
+          $$AppSettingsTableCreateCompanionBuilder,
+          $$AppSettingsTableUpdateCompanionBuilder,
+          (
+            AtlasSettings,
+            BaseReferences<_$AppDatabase, $AppSettingsTable, AtlasSettings>,
+          ),
+          AtlasSettings,
+          PrefetchHooks Function()
+        > {
+  $$AppSettingsTableTableManager(_$AppDatabase db, $AppSettingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AppSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AppSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AppSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<bool> restoreDocumentTabs = const Value.absent(),
+              }) => AppSettingsCompanion(
+                id: id,
+                restoreDocumentTabs: restoreDocumentTabs,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<bool> restoreDocumentTabs = const Value.absent(),
+              }) => AppSettingsCompanion.insert(
+                id: id,
+                restoreDocumentTabs: restoreDocumentTabs,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AppSettingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AppSettingsTable,
+      AtlasSettings,
+      $$AppSettingsTableFilterComposer,
+      $$AppSettingsTableOrderingComposer,
+      $$AppSettingsTableAnnotationComposer,
+      $$AppSettingsTableCreateCompanionBuilder,
+      $$AppSettingsTableUpdateCompanionBuilder,
+      (
+        AtlasSettings,
+        BaseReferences<_$AppDatabase, $AppSettingsTable, AtlasSettings>,
+      ),
+      AtlasSettings,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6800,4 +7505,6 @@ class $AppDatabaseManager {
       $$ScratchpadNotesTableTableManager(_db, _db.scratchpadNotes);
   $$ReadingSessionTabsTableTableManager get readingSessionTabs =>
       $$ReadingSessionTabsTableTableManager(_db, _db.readingSessionTabs);
+  $$AppSettingsTableTableManager get appSettings =>
+      $$AppSettingsTableTableManager(_db, _db.appSettings);
 }

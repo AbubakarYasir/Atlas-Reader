@@ -1,6 +1,6 @@
 # Atlas Reader — Current Project Notes
 
-**Release candidate:** `0.8.0-beta.2` (build 3)
+**Release candidate:** `0.8.0-beta.2` (build 4)
 
 **Latest published release:** `0.8.0-beta.1` (build 2)
 
@@ -34,8 +34,8 @@ The plan intentionally excludes conversion, signing, forms, OCR, cloud services,
 multimedia, and 3D features.
 
 The owner accepted **C0 — Baseline acceptance** on 2026-09-09. Execution is now
-limited to **C1 — Reader workspace**, with status **Ready for owner test**.
-Work is stopped until the owner records PASS or reports defects.
+limited to **C1 — Reader workspace**, with corrected build 4 at **Ready for
+owner test**. Work stops until the owner records PASS or reports defects.
 
 The primary shell contains Library, Recents, Bookmarks, Favorites, Folders, and
 Settings. Any PDF can also be opened directly or supplied as a Windows launch
@@ -88,7 +88,7 @@ argument without enrolling its parent directory.
 
 ## Verification
 
-Analysis passed with zero issues and the full unit/widget suite passed 53 tests
+Analysis passed with zero issues and the full unit/widget suite passed 56 tests
 with 2 optional personal-file audits skipped. The native Windows integration
 suite passed all 3 scenarios, and the Windows release build succeeded. The two
 skipped audits still require copied personal Arabic and English PDFs and do not

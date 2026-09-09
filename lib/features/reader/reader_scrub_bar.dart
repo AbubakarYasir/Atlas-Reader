@@ -46,7 +46,10 @@ class ReaderScrubBar extends StatelessWidget {
               onTap: onTapJumper,
               child: Text(
                 '$currentPage / $pageCount',
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -58,7 +61,9 @@ class ReaderScrubBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border(top: BorderSide(color: Theme.of(context).dividerColor.withAlpha(50))),
+        border: Border(
+          top: BorderSide(color: Theme.of(context).dividerColor.withAlpha(50)),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -68,7 +73,9 @@ class ReaderScrubBar extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.navigate_before, size: 20),
                 tooltip: 'Previous Page',
-                onPressed: currentPage > 1 ? () => onPageChanged(currentPage - 1) : null,
+                onPressed: currentPage > 1
+                    ? () => onPageChanged(currentPage - 1)
+                    : null,
               ),
               Expanded(
                 child: Stack(
@@ -77,11 +84,18 @@ class ReaderScrubBar extends StatelessWidget {
                     SliderTheme(
                       data: SliderTheme.of(context).copyWith(
                         trackHeight: 4,
-                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 6,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 12,
+                        ),
                       ),
                       child: Slider(
-                        value: currentPage.toDouble().clamp(1.0, pageCount.toDouble()),
+                        value: currentPage.toDouble().clamp(
+                          1.0,
+                          pageCount.toDouble(),
+                        ),
                         min: 1.0,
                         max: pageCount.toDouble(),
                         onChanged: (val) => onPageChanged(val.round()),
@@ -94,7 +108,9 @@ class ReaderScrubBar extends StatelessWidget {
                             painter: _ChapterTicksPainter(
                               chapterPages: chapterPages,
                               pageCount: pageCount,
-                              color: Theme.of(context).colorScheme.primary.withAlpha(120),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withAlpha(120),
                             ),
                           ),
                         ),
@@ -105,16 +121,24 @@ class ReaderScrubBar extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.navigate_next, size: 20),
                 tooltip: 'Next Page',
-                onPressed: currentPage < pageCount ? () => onPageChanged(currentPage + 1) : null,
+                onPressed: currentPage < pageCount
+                    ? () => onPageChanged(currentPage + 1)
+                    : null,
               ),
               InkWell(
                 onTap: onTapJumper,
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
                   child: Text(
                     '$currentPage / $pageCount (${(progress * 100).round()}%)',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -148,7 +172,11 @@ class _ChapterTicksPainter extends CustomPainter {
       if (page >= 1 && page <= pageCount) {
         final fraction = (page - 1) / (pageCount - 1);
         final dx = fraction * size.width;
-        canvas.drawLine(Offset(dx, size.height / 2 - 4), Offset(dx, size.height / 2 + 4), paint);
+        canvas.drawLine(
+          Offset(dx, size.height / 2 - 4),
+          Offset(dx, size.height / 2 + 4),
+          paint,
+        );
       }
     }
   }

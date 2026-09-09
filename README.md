@@ -1,251 +1,421 @@
 # Atlas Reader
 
-Atlas Reader is a private, offline-first Windows reading app built around three
-jobs: finding books, jumping through deep bookmarks, and writing directly on
-PDF pages. It keeps a fast local index while saving portable bookmarks and ink
-back into the PDF itself.
+> Fast, offline-first book discovery, deep PDF bookmarks, and pen writing for
+> Windows—without the crowded interface or a cloud account.
 
-That means a bookmark you create in Atlas can also appear in compatible PDF
-readers such as Adobe Acrobat. Your books stay your books: Atlas does not need
-an account, cloud storage, or an internet connection to manage them.
+| Release | Status | Formats | Primary platform |
+|---|---|---|---|
+| `0.8.0-beta.1` (build 2) | Beta source checkpoint; release build pending | PDF reader/editor; PDF and EPUB discovery | Windows 11 |
 
-> **Project status:** the focused library, bookmark, and PDF ink workflow is
-> implemented and under Windows release verification. PDF edits use a verified
-> temporary-file replacement workflow; keep independent backups of
-> irreplaceable files as a normal precaution.
+Atlas Reader focuses on three jobs:
 
-## What you can do today
+1. Find books quickly across one or more folders.
+2. Create detailed bookmarks and jump directly to the right book and page.
+3. Read, highlight, and write on PDFs with responsive pen tools.
 
-- Add one or more library folders containing PDF and EPUB books.
-- Search instantly by title, author, or file name and sort by title, author,
-  date added, last opened, or reading progress.
-- Switch between Cover Grid, Detailed List, and Compact List.
-- Open a PDF in a fast, scrollable, zoomable reader.
-- See its existing outline/bookmarks, including chapters, sections, and deeper
-  sub-sections.
-- Add a bookmark for a page, optional note, and comma-separated tags.
-- Search bookmarks across the local Atlas library.
-- Press `Ctrl+K` from anywhere in Atlas to search bookmarks and scanned books.
-- Use Atlas with a keyboard or screen reader, and switch the app between
-  English and Arabic (right-to-left) from **Settings**.
-- Draw pressure-sensitive freehand pen strokes and translucent highlights,
-  choose standard colors and sizes, erase, and undo/redo.
-- Save writing as standard PDF `/Ink` annotations so it remains visible in
-  compatible external PDF readers.
-- Browse bookmarks by book, tag, or a flat indented list.
-- Edit or delete individual bookmarks, or remove all local bookmarks for a
-  book.
-- Import bookmarks already stored in a PDF with **Sync File**.
-- Review pending changes and save them into the PDF with **Commit Changes**.
+The guiding rule is **the document is the database**. PDF outline bookmarks and
+standard `/Ink` annotations are written back into the PDF, while a local SQLite
+index makes browsing and search fast. Atlas works offline and does not require
+an account.
 
-## Windows 11: install and run
+> Atlas is beta software that modifies local PDFs. Saves are validated and use
+> recoverable temporary replacement, but irreplaceable books should still have
+> an independent backup.
 
-### 1. Install the tools once
+## Highlights
 
-1. Install [Git for Windows](https://git-scm.com/download/win).
-2. Install the [Flutter SDK for Windows](https://docs.flutter.dev/get-started/install/windows/desktop).
-3. Open PowerShell and confirm Flutter is ready:
+- Open any PDF directly—no library folder required.
+- Scan multiple folders recursively for PDF and EPUB books.
+- See books progressively while a long scan is still running.
+- Search by title, author, file name, bookmark, and nested breadcrumb.
+- Use Cover Grid, Detailed List, or Compact List.
+- Sort by title, author, date added, last opened, or reading progress.
+- Use Library, Recents, Bookmarks, Favorites, Folders, and Settings from one
+  compact desktop shell.
+- Read PDFs with continuous scrolling, zoom, page jump, margin crop,
+  brightness, and Day, Night, OLED, or Warm Parchment display themes.
+- Browse and search unlimited nested PDF outlines and local bookmarks.
+- Add a bookmark to the active page with a title, description, and tags.
+- Press `Ctrl+K` to find a book or bookmark and jump to the exact page.
+- Draw pressure-sensitive pen strokes and translucent highlights; choose five
+  standard colors and line sizes; erase; undo; and redo.
+- Save interoperable PDF `/Ink` annotations with correct 72-point coordinates,
+  page isolation, and PDF bottom-left coordinate conversion.
+- Use an English or Arabic interface with RTL layout and mixed-script titles.
+- Operate core bookmark and save workflows from a keyboard or screen reader.
 
-   ```powershell
-   flutter doctor
-   ```
+## Install on Windows 11
 
-   Follow any instructions shown by Flutter, especially for Visual Studio's
-   **Desktop development with C++** workload, which is needed to run Windows
-   Flutter applications.
+Atlas does not yet publish a signed installer. The current beta is built from
+source.
 
-### 2. Download the project
+### Prerequisites
 
-In PowerShell, choose where you keep code and run:
+- [Git for Windows](https://git-scm.com/download/win)
+- [Flutter SDK](https://docs.flutter.dev/get-started/install/windows/desktop)
+- Visual Studio 2022 with **Desktop development with C++**
+
+Confirm the Windows toolchain in PowerShell:
+
+```powershell
+flutter doctor
+```
+
+Resolve every Windows desktop item reported by Flutter before continuing.
+
+### Clone and run
 
 ```powershell
 git clone git@github.com:AbubakarYasir/Atlas-Reader.git
 cd Atlas-Reader\atlas_poc
-```
-
-If you do not use SSH keys with GitHub, download the repository from GitHub as
-a ZIP file, extract it, then open PowerShell in the extracted `atlas_poc`
-folder instead.
-
-### 3. Install app dependencies
-
-```powershell
 flutter pub get
-```
-
-### 4. Start Atlas Reader
-
-```powershell
 flutter run -d windows
 ```
 
-The first build can take a few minutes. Later launches are normally faster.
-Leave the PowerShell window open while the app is running; press `q` there to
-stop it.
+If GitHub SSH is not configured, download the repository ZIP, extract it, open
+PowerShell inside `atlas_poc`, and run the final two commands.
 
-### 5. Optional: build a standalone Windows app
-
-```powershell
-flutter build windows
-```
-
-Then run:
+### Build the release executable
 
 ```powershell
+flutter build windows --release
 .\build\windows\x64\runner\Release\atlas_poc.exe
 ```
 
-## Everyday use
+The executable and its adjacent runtime files must remain together. A packaged
+installer and optional PDF file association are pre-1.0 work.
 
-### Build and search your library
+## Quick start
 
-1. Start the app.
-2. Open **Settings** → **Library folders** → **Add folder**.
-3. Choose one or more folders containing PDFs or EPUBs. Subfolders are scanned
-   automatically in small background batches.
-4. Open **Library files**. Type in the search box to filter by title, author,
-   or file name; use the view and sort controls beside it.
-5. Select a PDF to read it. EPUBs are indexed and searchable today, but the
-   full reader, bookmark embedding, and ink workflow currently require PDF.
+### Open one PDF immediately
+
+Choose **Open PDF** from the top of the main window. The file does not need to
+be under a library folder. Atlas remembers it in **Recents** without silently
+registering or scanning its parent folder.
+
+You can also pass a PDF path when launching Atlas:
+
+```powershell
+.\build\windows\x64\runner\Release\atlas_poc.exe "C:\Books\My Book.pdf"
+```
+
+This command can be selected from Windows Explorer's **Open with** dialog.
+Atlas does not change the system's default PDF application automatically.
+
+### Build a library
+
+1. Open **Folders**.
+2. Choose **Add folder** and select a location containing PDF or EPUB books.
+3. Add more locations if needed.
+4. Watch the indexed count update while books appear in **Library**.
+5. Use **Scan now** whenever you want an immediate full refresh.
+
+Atlas watches registered locations for additions, changes, renames, moves, and
+removals while it is running. Removing a folder from Atlas deletes only its
+local index records; it never deletes the folder or its books.
+
+### Find and organize books
+
+- **Library** shows all indexed and directly opened books.
+- **Recents** shows opened books, newest first.
+- **Favorites** shows starred books.
+- **Folders** provides an explorer-style view of registered roots and files.
+- Type in the Library search box to match title, author, or file name instantly.
+- Choose Cover Grid, Detailed List, or Compact List.
+- Sort by Title, Author, Date Added, Last Opened, or Reading Progress; reverse
+  the order with the adjacent arrow.
+
+EPUB files can be discovered, indexed, searched, sorted, and favorited. The
+full reader, bookmarks embedded into the document, and pen writing currently
+require PDF.
+
+## Reader and bookmarks
+
+### Read and navigate
+
+Open a PDF from any main destination, `Ctrl+K`, **Open PDF**, Explorer, or a
+launch command. The normal reader is byte-backed and virtualized so Windows can
+release the source file before a save.
+
+- Scroll continuously with a wheel, trackpad, touch, or keyboard.
+- Zoom with the reader controls.
+- Jump by page number or the chapter-aware scrubber.
+- Open the outline drawer to expand and search chapters, sections, deeper
+  descendants, and local bookmarks.
+- Change display theme, reading mode, margin crop, brightness, and academic
+  page offset from the reader settings button.
 
 ### Add a bookmark
 
-1. Select a PDF.
-2. Enter a clear **Bookmark Title**.
-3. Enter the PDF page number, starting at `1`.
-4. Optionally add a note and tags such as `study, important`.
-5. Choose **Inject Bookmark**.
+1. Go to the target page.
+2. Select the bookmark button or press `Ctrl+B`.
+3. Enter a title and, if useful, a description and comma-separated tags.
+4. Save.
 
-Atlas immediately stores the bookmark in its local library, then attempts to
-write it into the PDF. The status message tells you whether the PDF update
-worked.
+Atlas safely commits the authoritative PDF outline first, then updates SQLite.
+This order prevents a Windows file-lock or replacement failure from leaving a
+misleading local-only bookmark. The active page number is filled automatically.
 
-### Bookmark while reading
+### Find a bookmark and jump to it
 
-1. Select a PDF and choose **Open reader**.
-2. Scroll to the page you want.
-3. Select the bookmark icon in the top-right corner, or press `Ctrl+B`.
-4. Enter a title, optional note, and optional tags, then save.
+- Open **Bookmarks** to browse or filter all local bookmarks.
+- Select a result to open its PDF at the exact saved page.
+- Press `Ctrl+K` from anywhere for quick open. Results include the book title,
+  full nested breadcrumb, and page number.
+- Use **Organize & sync** for tree editing, tags, importing external outline
+  changes, diff preview, and committing local tree changes.
 
-Atlas fills the page number from the page currently visible in the reader, so
-you do not need to enter it manually.
+The outline supports sub-bookmarks at arbitrary depth. Identical section names
+under different parents remain distinct because sync identity uses the full
+hierarchical path, not only the visible title.
 
-### Write or highlight on a PDF
+## Pen, highlighter, and PDF save
 
-1. Open a PDF and select **Write**.
-2. Choose **Pen** or **Highlighter**, then choose a color and thickness.
-3. Draw directly on the active page. While a drawing tool is selected, a drag
-   writes instead of scrolling; switch to **Select** to navigate normally.
-4. Use **Area eraser** to cut away marks, or select a whole stroke and press
-   `Delete`. Use `Ctrl+Z` and `Ctrl+Shift+Z` for undo and redo.
-5. Select **Save** or press `Ctrl+S`. Atlas validates a temporary PDF before it
-   replaces the original and refuses the save if chapters or metadata changed.
+1. Open a PDF and choose **Write**.
+2. Choose **Pen** or **Highlighter**, a color, and a thickness.
+3. Draw on the active page. Drawing gestures are separated from navigation, so
+   a pen drag does not scroll or flip the page.
+4. Use **Area eraser**, or choose **Select** and delete a complete stroke.
+5. Use `Ctrl+Z` and `Ctrl+Shift+Z` for undo and redo.
+6. Choose **Save** or press `Ctrl+S`.
 
-Each stroke is stored only on the page where it was drawn. Atlas translates
-the display position into native PDF points, including the PDF bottom-left
-coordinate origin, so the saved writing stays aligned in other PDF readers.
+Each stroke is bound to one zero-based PDF page index. The editor converts
+screen positions to native PDF points (72 points per inch), accounts for the
+top-left versus bottom-left origin difference, and stores standard `/Ink`
+annotations. A `RepaintBoundary` isolates live drawing from the underlying PDF
+render, and Select mode restores normal scrolling.
 
-### Import bookmarks from a PDF
+Before Atlas replaces the source PDF, it verifies page count, nested outline
+paths and destinations, document information, and XMP presence. It then:
 
-Use **Sync File** when the PDF was changed in Acrobat or another reader, or
-when you open a PDF that already contains bookmarks. Atlas imports newly found
-outline entries, preserving their full chapter/section hierarchy.
+1. Writes `<book>.pdf.tmp`.
+2. Opens and validates the temporary PDF.
+3. Moves the original to `<book>.pdf.atlas-backup`.
+4. Promotes the validated file.
+5. Restores the original when replacement fails, where possible.
 
-### Save local edits into the PDF
+The normal reader and writing editor use completed byte reads rather than an
+open source-file handle, avoiding common Windows sharing errors (`errno 32`).
 
-When the **Sync Preview** shows pending additions or removals, choose
-**Commit Changes**. Atlas shows what will change, then rebuilds the PDF outline
-from the local bookmark tree.
+## Keyboard and accessibility
 
-### Search and organize
+| Action | Shortcut |
+|---|---|
+| Quick open and global bookmark search | `Ctrl+K` |
+| Bookmark the active reader page | `Ctrl+B` |
+| Save/commit current PDF changes | `Ctrl+S` |
+| Undo ink action | `Ctrl+Z` |
+| Redo ink action | `Ctrl+Shift+Z` |
+| Rename a focused bookmark | `F2` |
+| Remove a focused bookmark | `Delete` |
+| Open/select focused tree item | `Enter` |
+| Move or expand/collapse outline focus | Arrow keys |
 
-- Press `Ctrl+K` from anywhere in the app to open the **Command Center**. Its
-  results show the book, chapter/section path, and page number. Select a result
-  to open that PDF at the saved page.
-- Open **Settings** → **Library folders** → **Add folder** to add PDF/EPUB
-  folders. Choose **Scan now** for an immediate refresh; Atlas also watches for
-  additions, changes, renames, and removals while it is open.
-- In **Library files**, choose Cover Grid, Detailed List, or Compact List and
-  sort by title, author, date added, last opened, or reading progress.
-- Change **Group by** to browse by book, tag, or a flat list.
-- Expand a book or section to reveal sub-bookmarks.
-- Use the edit and delete icons beside a bookmark for local changes.
-- In the **By book** view, expand a book and select **Remove all bookmarks for
-  this book** to clear that book from the local Atlas list.
+Interactive controls provide semantic labels. Save, sync, and error outcomes
+are announced without moving keyboard focus. Arabic mode mirrors Material
+layout, and Arabic, English, numbers, punctuation, and mixed-script bookmark
+titles retain their Unicode content.
 
-Removing a book from the local list does not immediately alter the PDF. A PDF
-changes only after **Commit Changes**.
+## Settings and user control
 
-### Keyboard and Arabic support
+Settings is organized into clear categories:
 
-- Press `Ctrl+K` to open the Command Center, `Ctrl+B` to bookmark the active
-  reader page, and `Ctrl+S` to commit pending bookmark changes.
-- In the saved-bookmarks outline, use `Up`/`Down` to move, `Right`/`Left` to
-  expand or collapse a branch, `Enter` to select it, `F2` to edit it, and
-  `Delete` to remove it.
-- Open **Settings** → **Language** and choose **Arabic** for an RTL interface.
-  Arabic titles and mixed Arabic-English bookmark names retain their original
-  Unicode text in the tree and Command Center.
+- **Library & Storage:** open an external PDF or manage indexed folders.
+- **Appearance & Language:** System, Light, or Dark app theme; English or
+  Arabic interface.
+- **Reader & Writing:** discover all per-document display and ink controls.
+- **Accessibility & Keyboard:** shortcuts and assistive-technology behavior.
+- **Data & Safety:** document-authority and local-index guidance.
 
-Atlas announces major save, sync, and error outcomes to Windows screen readers
-without moving your keyboard focus.
+Per-document reading controls stay inside the reader, where their effect is
+visible immediately. Folder addition, removal, and rescanning remain explicit;
+Atlas never enrolls an entire directory just because one PDF was opened.
 
-## Keeping your PDFs safe
+## Back up and recover data
 
-Atlas does not overwrite a PDF directly. Before replacing a file, it:
+Close Atlas before copying its database.
 
-1. Validates the newly generated PDF.
-2. Writes it to a temporary `.pdf.tmp` file.
-3. Opens and validates that temporary file again.
-4. Moves the original aside as `.pdf.atlas-backup`.
-5. Promotes the validated temporary file, then removes the backup.
+1. Back up every edited PDF. Portable outlines and `/Ink` live in those files.
+2. Back up `atlas_db.sqlite` from the Windows application Documents directory.
+   The typical location is under your user Documents folder; search for the
+   exact filename if Windows has redirected Documents through OneDrive.
+3. Keep any `.pdf.atlas-backup` file until the corresponding PDF has been
+   opened and checked.
 
-If the final replacement fails, Atlas restores the original where possible. If
-you see a message about a recovery file, do not delete it until you have checked
-your original PDF.
+To restore, return the PDFs to accessible paths and copy `atlas_db.sqlite` back
+while Atlas is closed. A rebuilt local index can rediscover PDF outlines and
+ink, but local-only descriptions, tags, favorites, and reading progress require
+the SQLite backup.
 
-## Back up Atlas data
+## Privacy and data ownership
 
-The portable information is in your book files, so back up the PDFs themselves
-after saving bookmarks or writing. Atlas's fast local library index is stored
-in `atlas_db.sqlite` inside the Windows Documents directory used by the app.
-To make a complete backup while Atlas is closed:
+- Offline by default; no Atlas account is required.
+- No cloud upload or hosted synchronization in this beta.
+- Folder scanning reads metadata and outlines but does not modify a book.
+- A PDF changes only after an explicit bookmark, annotation, or sync save.
+- Source document operations pass through a platform-neutral file-system
+  interface; Windows is the current adapter.
 
-1. Copy your library folders, including every edited PDF.
-2. Search your Documents folder for `atlas_db.sqlite` and copy that file too.
-3. If a `.pdf.atlas-backup` recovery file exists, keep it until you confirm the
-   matching PDF opens correctly.
+## Current beta limitations
 
-## Current limits
+- PDF is the only full reading and writing format. EPUB is discovery-only.
+- Bookmark titles and hierarchy are portable through the standard PDF outline.
+  Descriptions and tags remain in SQLite; a portable interoperable metadata
+  format is a known pre-1.0 gap.
+- Directly opened PDFs are remembered in Library/Recents, but their parent
+  folder is not watched unless the user adds it explicitly.
+- PDF cover thumbnails are not yet rendered for every scanned PDF; EPUB cover
+  extraction and a clean generated fallback are available.
+- There is no signed installer or automatic Windows file association yet.
+- The current automated and native-runtime target is Windows. Android storage
+  and input adapters are planned after the Windows core is stable.
+- Historical research, split-workspace, speed-reading, and hands-free modules
+  remain in the repository but are intentionally absent from the focused main
+  reader. TTS, cloud services, and other secondary stages are not in scope.
 
-- Library indexing reads PDF filenames and outline/bookmark counts. It does not
-  upload or modify a PDF merely because it was scanned.
-- Rename reconciliation retains local bookmark links when Atlas can safely
-  match a renamed PDF within the same library folder by its modification time
-  and outline signature. If a file cannot be matched, it is indexed as new.
-- EPUB discovery is supported in the library; PDF remains the format currently
-  available in the full reader and document-sync workflows.
-- Bookmark titles and hierarchy are portable in the PDF outline. Descriptions
-  and tags remain in the local index; freehand writing is portable `/Ink`.
-- The app is currently designed and tested primarily for Windows.
+## Verification status
 
-## For developers
+Verified on Windows on 2026-09-09:
+
+```text
+flutter analyze                                            0 issues
+flutter test                                               50 passed, 2 opt-in audits skipped
+flutter test integration_test/windows_reader_workflow_test.dart -d windows
+                                                           previous run: 3 passed; latest rerun blocked by MSVC C1041
+flutter build windows --release                            pending final beta build
+```
+
+The native integration runner covers these scenarios; rerun it after the MSVC fix before distributing this checkpoint:
+
+- A launch-argument PDF outside all library folders opens and enters Recents.
+- A mouse stroke saves as standard `/Ink`, stays on its source page, and is
+  visible after reopening.
+- Existing nested Arabic/English outline structure and document metadata remain
+  intact after ink save.
+- Two folders scan and index Arabic and English metadata.
+- Library filtering and Command Center bookmark selection return the expected
+  file and exact page.
+
+The two skipped unit tests are read-only smoke tests that require personal
+Arabic and English PDF paths supplied through environment variables.
+
+## Developer guide
+
+### Technology
+
+- Flutter and Dart
+- Drift + SQLite/FTS5 for local indexing
+- Syncfusion PDF viewer/writer for reading and outline operations
+- `dart_pdf_editor` + `pdf_document` for standard PDF editing and inspection
+- Platform-neutral `DocumentFileSystem` with a Windows implementation
+
+### Project structure
+
+```text
+lib/
+├── core/
+│   ├── database/       SQLite connection infrastructure
+│   ├── epub/           EPUB metadata and cover discovery
+│   ├── covers/         Local cover cache
+│   └── file_system/    Platform-neutral I/O and Windows adapter
+├── features/
+│   ├── library/        Main shell, shelf, folders, scanner, watcher
+│   ├── reader/         PDF reader, outline, page controls, bookmark, ink
+│   ├── bookmarks/      Bookmark-management contracts
+│   ├── command_center/ Global Ctrl+K search
+│   ├── sync/           Diff preview UI
+│   └── settings/       Settings surfaces
+├── database.dart       Drift tables and repository operations
+├── pdf_engine.dart     PDF outlines, annotations, metadata integrity
+├── pdf_safe_file_writer.dart
+└── sync_engine.dart    PDF ↔ SQLite reconciliation
+```
+
+Library discovery runs in bounded concurrent batches. Each finished batch is
+committed without removing paths the scanner has not reached; only the final
+reconciliation removes missing files and matches safe renames. PDF reads,
+writes, validation, and ink indexing run away from the UI isolate where
+practical.
 
 ### Run checks
 
 ```powershell
-flutter test
+flutter pub get
 flutter analyze
+flutter test
+flutter test integration_test/windows_reader_workflow_test.dart -d windows
+flutter build windows --release
 ```
 
-The suite includes opt-in real-file smoke tests plus deterministic coverage for
-bookmark paths, mixed Arabic-English identifiers, snapshot compatibility, sync
-differences, Arabic PDF round trips, library search/sorting, native PDF ink
-coordinates, page isolation, outline/metadata preservation, widget startup,
-and isolate-backed PDF operations.
+### Local CodeGraph knowledge base
 
-To run the optional, read-only audit against personal Arabic and English PDF
-copies, set the paths only for the current PowerShell session:
+The repository includes project-local Codex MCP configuration and an
+`AGENTS.md` marker section for
+[CodeGraph](https://colbymchenry.github.io/codegraph/getting-started/quickstart/).
+CodeGraph supports Dart and resolves symbols, callers, callees, and impact from
+a local SQLite graph before an agent falls back to repeated text searches.
+
+Install the CLI once, then initialize this checkout:
+
+```powershell
+npm install --global @colbymchenry/codegraph
+codegraph telemetry off
+codegraph init
+codegraph status
+```
+
+Restart Codex after installation so `.codex/config.toml` loads the MCP server.
+Codex must trust this project before project-local MCP configuration is active.
+The generated `.codegraph/codegraph.db` is intentionally ignored by Git: it
+contains machine-local paths, stays on the local computer, and is reproducible
+with `codegraph init`. Commit the `.codex/config.toml`, `AGENTS.md`, and any
+future `codegraph.json` configuration changes, but never the local database.
+
+Useful commands:
+
+```powershell
+codegraph sync
+codegraph index
+codegraph explore "how do PDF ink saves preserve the outline?"
+codegraph query PdfEngine
+codegraph callers saveEditedPdfRevision
+codegraph impact LibraryFolderManager
+```
+
+The graph for this checkout currently contains 85 indexed files, 1,749 symbols,
+and 4,007 relationships. It is machine-local and can be rebuilt in seconds.
+
+### Lean GitHub automation
+
+Only automation that directly reduces local work and log noise is enabled:
+
+- `.github/workflows/test.yml` runs formatting, analysis, tests, and produces a
+  coverage artifact on pushes and pull requests.
+- `.github/workflows/build-windows.yml` builds and zips the complete Windows
+  runtime bundle for beta tags or a manual dispatch. Flutter, Pub, and native
+  Windows build caches reduce repeated compilation time.
+- Project-local GitHub MCP configuration uses GitHub's hosted **read-only**
+  endpoint, allowing agents to request focused repository, diff, and CI data.
+
+To activate GitHub MCP, create a least-privilege token, store it in the user
+environment (never in this repository), then restart Codex:
+
+```powershell
+[Environment]::SetEnvironmentVariable('GITHUB_PAT_TOKEN', 'YOUR_TOKEN', 'User')
+```
+
+After restarting, use the MCP panel to confirm both `codegraph` and `github`.
+The repository ignores `.env`, keys, certificates, the local CodeGraph database,
+and generated Repomix outputs to reduce accidental credential or machine-data
+commits.
+
+Greptile and Repomix are intentionally not configured because they duplicate
+the local CodeGraph index. Release Drafter is deferred until changes flow
+through consistently labelled pull requests. External review, refactoring,
+dependency, secret-scanning, and documentation apps can be added later when
+their permissions and signal justify the extra maintenance.
+
+Run the opt-in personal-file audit on copies only:
 
 ```powershell
 $env:ATLAS_AUDIT_ARABIC_PDF = 'C:\path\to\arabic-copy.pdf'
@@ -253,54 +423,40 @@ $env:ATLAS_AUDIT_ENGLISH_PDF = 'C:\path\to\english-copy.pdf'
 flutter test test/runtime_pdf_audit_test.dart
 ```
 
-### Localization and accessibility
+### Localization
 
-User-facing translations live in `lib/l10n/app_en.arb` and
-`lib/l10n/app_ar.arb`. After changing them, run:
+Translations live in `lib/l10n/app_en.arb` and `lib/l10n/app_ar.arb`.
 
 ```powershell
 flutter gen-l10n
 ```
 
-Reusable tree rows live in `lib/widgets/accessible_bookmark_tile.dart`. They
-centralize focus traversal, outline shortcuts, and screen-reader semantics;
-new bookmark-tree UI should use them rather than raw `ListTile` widgets.
+New interactive tree rows should reuse
+`lib/widgets/accessible_bookmark_tile.dart` so keyboard traversal, focus, and
+screen-reader semantics remain consistent.
 
-### Project layout
+## Versioning and release policy
 
-```text
-lib/
-├── core/
-│   ├── database/       # SQLite connection infrastructure
-│   └── file_system/    # Platform-neutral document I/O + Windows adapter
-├── features/
-│   ├── library/        # Workspace, folder manager, scanner, watcher, PDF list
-│   ├── reader/         # Fast PDF reader, outline search, bookmarks, PDF ink
-│   ├── bookmarks/      # Bookmark-management contracts
-│   ├── command_center/ # Ctrl+K global search overlay
-│   ├── sync/           # Sync preview UI
-│   └── settings/       # Settings entry point
-├── pdf_engine.dart     # PDF outline extraction and writing
-├── sync_engine.dart    # PDF/database reconciliation
-└── database.dart       # Drift models and repository operations
-```
+Atlas follows [Semantic Versioning](https://semver.org/):
 
-All document reads, writes, renames, and deletions go through
-`DocumentFileSystem`. `WindowsDocumentFileSystem` is the current adapter. An
-Android Storage Access Framework adapter can implement the same interface
-without changing PDF or synchronization logic.
+- `0.x` means storage contracts and APIs can still change before stable `1.0`.
+- `0.8.0-beta.1` is the first consolidated beta of library/search, portable
+  bookmarks, and PDF reading/ink.
+- A new beta suffix is a compatible hardening build; a new minor version adds a
+  material core capability.
+- Flutter build metadata (`+2`) identifies the packaged build and increases for
+  each distributable beta build.
 
-Large document-byte reads, generated-file writes, library discovery, PDF
-validation, and ink indexing run away from the UI isolate where practical. The
-normal reader is virtualized. Writing uses an isolated `RepaintBoundary` and a
-byte-backed editor so the Windows file is not held open during replacement.
+The version is defined in `pubspec.yaml`. Release changes belong in
+`CHANGELOG.md`, and engineering scope and acceptance criteria belong in
+`PLAN.md`.
 
-## Roadmap and release notes
+## Documentation
 
-The active plan is intentionally narrow: perfect library discovery, bookmark
-navigation, and responsive PDF writing on Windows; keep platform boundaries
-clean for Android later. Text-to-speech, speed-reading, and cloud services are
-explicitly deferred.
+- [Engineering and accessibility plan](PLAN.md)
+- [Release history](CHANGELOG.md)
+- [Additional project notes](INFO.md)
 
-For the detailed accessibility, architecture, and delivery roadmap, see
-[PLAN.md](PLAN.md). For the record of completed work, see [CHANGELOG.md](CHANGELOG.md).
+## License
+
+Atlas Reader is open-source software released under the [MIT License](LICENSE).

@@ -91,31 +91,51 @@ class EpubEngine {
       final opfXml = utf8.decode(opfFile.content as List<int>);
       final opfDoc = XmlDocument.parse(opfXml);
 
-      final title = opfDoc.findAllElements('dc:title').firstOrNull?.innerText.trim();
-      final author = opfDoc.findAllElements('dc:creator').firstOrNull?.innerText.trim();
-      final publisher = opfDoc.findAllElements('dc:publisher').firstOrNull?.innerText.trim();
-      final language = opfDoc.findAllElements('dc:language').firstOrNull?.innerText.trim();
+      final title = opfDoc
+          .findAllElements('dc:title')
+          .firstOrNull
+          ?.innerText
+          .trim();
+      final author = opfDoc
+          .findAllElements('dc:creator')
+          .firstOrNull
+          ?.innerText
+          .trim();
+      final publisher = opfDoc
+          .findAllElements('dc:publisher')
+          .firstOrNull
+          ?.innerText
+          .trim();
+      final language = opfDoc
+          .findAllElements('dc:language')
+          .firstOrNull
+          ?.innerText
+          .trim();
 
       final opfDir = opfPath.contains('/')
           ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1)
           : '';
 
       String? coverHref;
-      final metaCoverElem = opfDoc.findAllElements('meta').firstWhereOrNull(
-        (e) => e.getAttribute('name')?.toLowerCase() == 'cover',
-      );
+      final metaCoverElem = opfDoc
+          .findAllElements('meta')
+          .firstWhereOrNull(
+            (e) => e.getAttribute('name')?.toLowerCase() == 'cover',
+          );
       if (metaCoverElem != null) {
         final coverId = metaCoverElem.getAttribute('content');
         if (coverId != null) {
-          final manifestItem = opfDoc.findAllElements('item').firstWhereOrNull(
-            (e) => e.getAttribute('id') == coverId,
-          );
+          final manifestItem = opfDoc
+              .findAllElements('item')
+              .firstWhereOrNull((e) => e.getAttribute('id') == coverId);
           coverHref = manifestItem?.getAttribute('href');
         }
       }
 
       if (coverHref == null) {
-        final manifestItem = opfDoc.findAllElements('item').firstWhereOrNull((e) {
+        final manifestItem = opfDoc.findAllElements('item').firstWhereOrNull((
+          e,
+        ) {
           final props = e.getAttribute('properties') ?? '';
           final id = e.getAttribute('id')?.toLowerCase() ?? '';
           final href = e.getAttribute('href')?.toLowerCase() ?? '';
@@ -135,7 +155,8 @@ class EpubEngine {
           if (f.name == fullCoverPath ||
               f.name.toLowerCase() == fullCoverPath.toLowerCase()) {
             coverBytes = Uint8List.fromList(f.content as List<int>);
-            coverExt = fullCoverPath.split('.').lastOrNull?.toLowerCase() ?? 'jpg';
+            coverExt =
+                fullCoverPath.split('.').lastOrNull?.toLowerCase() ?? 'jpg';
             break;
           }
         }
@@ -162,7 +183,11 @@ class EpubEngine {
             final ncxXml = utf8.decode(ncxFile.content as List<int>);
             final ncxDoc = XmlDocument.parse(ncxXml);
             for (final navPoint in ncxDoc.findAllElements('navPoint')) {
-              final text = navPoint.findAllElements('text').firstOrNull?.innerText.trim();
+              final text = navPoint
+                  .findAllElements('text')
+                  .firstOrNull
+                  ?.innerText
+                  .trim();
               if (text != null && text.isNotEmpty) {
                 chapters.add(EpubChapter(title: text, content: ''));
               }

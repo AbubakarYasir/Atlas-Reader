@@ -7,12 +7,19 @@ export 'features/library/library_screen.dart'
 
 import 'features/library/library_screen.dart';
 
-void main() async {
+void main(List<String> arguments) async {
   WidgetsFlutterBinding.ensureInitialized();
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen((record) {
     debugPrint('${record.level.name}: ${record.loggerName}: ${record.message}');
   });
   database = AppDatabase();
-  runApp(const MyApp());
+  String? initialPdf;
+  for (final argument in arguments) {
+    if (argument.toLowerCase().endsWith('.pdf')) {
+      initialPdf = argument;
+      break;
+    }
+  }
+  runApp(MyApp(initialFilePath: initialPdf));
 }

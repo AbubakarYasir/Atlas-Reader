@@ -1,9 +1,10 @@
 # Atlas Reader — Master Plan
 ## Universal Embedding Protocol · Maximum Accessibility · Production Quality
 
-**Status:** Core Workflow Milestone active; historical Stages 1–11 remain in
-the repository, but only library discovery, bookmarking, and PDF writing are
-in the current product surface. Stage 12 and later are deferred.
+**Status:** `0.8.0-beta.1` source checkpoint (50 tests passed; native rerun and
+release build pending); historical Stages 1–11 remain in
+the repository, but only library discovery, bookmarking, PDF reading, and PDF
+writing are in the primary product surface. Stage 12 and later are deferred.
 
 **Last updated:** September 2026
 
@@ -11,6 +12,12 @@ in the current product surface. Stage 12 and later are deferred.
 
 **Accessibility target:** WCAG 2.2 Level AA minimum · AAA where feasible
 **Quality bar:** Every feature shippable only when accessible, localizable, and recoverable from failure
+
+**Developer acceleration:** A local CodeGraph index is the primary repository
+knowledge base. Read-only GitHub MCP handles focused remote metadata, while
+cloud workflows handle formatting, analysis, tests, coverage output, and beta
+Windows compilation. Overlapping AI indexing/review services are deliberately
+excluded until they add measurable value beyond this small trusted toolchain.
 
 ---
 
@@ -582,11 +589,29 @@ not start Stage 12, text-to-speech, cloud sync, or other secondary work.
 
 | Core workflow | Implemented behavior | Primary files | Verification |
 |---|---|---|---|
-| Library discovery | Multiple watched folders; recursive PDF/EPUB scan in bounded background batches; Cover Grid, Detailed List, Compact List; title/author/file search; five required sorts | `features/library/library_folder_scanner.dart`, `visual_bookshelf.dart`, `database.dart` | Automated database/search coverage; Windows runtime pass pending final milestone sign-off |
+| Library discovery | Multiple watched folders; progressive recursive PDF/EPUB scan in six-book background batches; direct external PDF opening; Cover Grid, Detailed List, Compact List; title/author/file search; five required sorts | `library_hub_screen.dart`, `library_folder_scanner.dart`, `visual_bookshelf.dart`, `database.dart` | Unit/widget coverage and native Windows multi-folder Arabic/English scan/search pass |
 | Deep bookmarks | Unlimited nested PDF outline; local title/description/tags; in-book outline search; global `Ctrl+K` with book, breadcrumb, and page; direct jump | `reader_outline_builder.dart`, `reader_outline_sidebar.dart`, `command_center_overlay.dart`, `pdf_engine.dart` | Hierarchy and Arabic/mixed-title tests passing |
-| Responsive reader | Virtualized normal reader with continuous scroll, page jump, zoom, themes, brightness, and margin controls | `pdf_reader_screen.dart`, `reader_settings_dialog.dart` | `flutter analyze` clean; runtime pass pending final milestone sign-off |
+| Responsive reader | Virtualized normal reader with continuous scroll, page jump, zoom, themes, brightness, and margin controls | `pdf_reader_screen.dart`, `reader_settings_dialog.dart` | Native Windows direct-open and render pass; `flutter analyze` clean |
 | PDF writing | Pen, freehand highlighter, five colors, thicknesses, area eraser, select+Delete stroke removal, undo/redo, pressure input | `pdf_reader_screen.dart`, `ink_toolbar.dart` | Native ink round-trip tests passing |
 | Portable save | Screen points converted to 72-point PDF user space with Y-axis conversion; strokes isolated by page index; `/Ink` stream; byte-backed editing; `.tmp` validation; outline and metadata integrity gate | `pdf_engine.dart`, `pdf_safe_file_writer.dart`, `database.dart` | Page isolation, coordinates, metadata, and nested-outline tests passing |
+
+### Beta navigation and control surface
+
+- The desktop shell exposes exactly six primary destinations: **Library**,
+  **Recents**, **Bookmarks**, **Favorites**, **Folders**, and **Settings**.
+- Wide Windows layouts use a persistent labeled rail; compact layouts use an
+  accessible navigation drawer. The reader drops this chrome while a book is
+  open to preserve focus.
+- **Open PDF** is global. A file does not need to be inside a registered folder,
+  and a directly opened file is remembered in Recents without silently adding
+  its parent folder.
+- Folders is both an explorer and an index-control surface: current roots,
+  indexed files, add/remove, scan-now, and live per-folder progress.
+- Settings groups actual controls and discoverability into Library & Storage,
+  Appearance & Language, Reader & Writing, Accessibility & Keyboard, and Data
+  & Safety.
+- Library scans inspect up to six books concurrently and commit each completed
+  batch. Final reconciliation alone removes missing paths and resolves renames.
 
 ### Interaction and performance rules
 
@@ -599,6 +624,10 @@ not start Stage 12, text-to-speech, cloud sync, or other secondary work.
   overlay is shared between page widgets.
 - SQLite is a replaceable projection for fast lookup. The PDF outline and
   standard annotation stream remain the portable source of truth.
+- Repository agents use the local CodeGraph SQLite knowledge graph for symbol,
+  call-path, and impact discovery before repeated broad text scans. Generated
+  `.codegraph/` data remains local and reproducible; shared MCP instructions are
+  versioned in `.codex/config.toml` and `AGENTS.md`.
 
 ### Explicitly deferred
 
@@ -611,8 +640,8 @@ not start Stage 12, text-to-speech, cloud sync, or other secondary work.
 
 ## X.A Delivered implementation stages (1–11)
 
-This delivery record reflects the Windows implementation through commit
-`f0d864f`. It distinguishes completed work from the later roadmap.
+This delivery record reflects the Windows implementation through
+`0.8.0-beta.1`. It distinguishes historical work from the focused beta surface.
 
 ### Stage 6 — Arabic PDF round-trip verification
 
@@ -717,15 +746,20 @@ This delivery record reflects the Windows implementation through commit
 
 ---
 
-## XIII. Immediate Next Actions (Priority)
+## XIII. Immediate Next Actions (Beta hardening only)
 
-1. **Stage 12 — TTS Studio** — Narrator-compatible playback and page tracking.
-2. **Stage 13 — Research lookup** — FTS snippets, dictionary, translation,
-   and footnote previews.
-3. **Stage 14 — Backup and export** — Markdown export, safe backups, and open
-   sync protocols.
-4. **Stage 15 — release polish** — complete shortcut map, high-contrast
-   verification, Arabic normalization, and accessibility acceptance testing.
+1. Complete measured large-library and long-document performance profiling on
+   representative HDD, SSD, mouse, touch, and pen hardware.
+2. Add a packaged Windows installer and optional `.pdf` file association while
+   retaining explicit user control over defaults.
+3. Make bookmark descriptions and tags portable inside the document rather
+   than local-index-only, with a documented interoperable metadata format.
+4. Complete high-contrast, 200% text scale, Narrator, and Arabic RTL acceptance
+   passes before a stable `1.0` candidate.
+
+Text-to-speech, speed-reading, research lookup, cloud services, and other
+secondary stages remain explicitly deferred until the three core workflows
+meet the stable-release quality bar.
 
 ---
 

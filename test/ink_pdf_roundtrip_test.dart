@@ -5,6 +5,8 @@ import 'package:atlas_poc/core/file_system/windows_document_file_system.dart';
 import 'package:atlas_poc/database.dart';
 import 'package:atlas_poc/pdf_engine.dart';
 import 'package:drift/native.dart';
+import 'package:dart_pdf_editor/dart_pdf_editor.dart' as editor_view;
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf_document/pdf_document.dart' as native_pdf;
 import 'package:syncfusion_flutter_pdf/pdf.dart' as syncfusion;
@@ -14,6 +16,21 @@ void main() {
   late String pdfPath;
   late AppDatabase database;
   const fileSystem = WindowsDocumentFileSystem();
+
+  test(
+    'screen pixels map to 72-point PDF coordinates with a flipped Y axis',
+    () {
+      const geometry = editor_view.PdfPageGeometry(
+        cropBox: native_pdf.PdfRect(0, 0, 612, 792),
+        rotation: 0,
+        viewSize: Size(1224, 1584),
+      );
+
+      expect(geometry.scale, 2);
+      expect(geometry.toPagePoint(const Offset(144, 180)), (72.0, 702.0));
+      expect(geometry.toViewOffset(72, 702), const Offset(144, 180));
+    },
+  );
 
   setUp(() async {
     tempDirectory = await Directory.systemTemp.createTemp('atlas_ink_test_');

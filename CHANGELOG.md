@@ -1,7 +1,70 @@
 # Changelog
 
-All notable changes are documented here. This project follows a staged
-hardening approach rather than formal releases.
+All notable changes are documented here. Atlas Reader follows Semantic
+Versioning while it moves through pre-1.0 Windows beta releases.
+
+## [0.8.0-beta.1] — 2026-09-09
+
+### Beta scope and navigation
+
+- Promoted the focused library, bookmark, PDF reader, and standard ink workflow
+  to the first consolidated Windows beta (`build 2`).
+- Added first-class **Library**, **Recents**, **Bookmarks**, **Favorites**,
+  **Folders**, and **Settings** destinations with a desktop navigation rail and
+  compact-window drawer.
+- Added direct **Open PDF** support for files outside every library folder and
+  Windows launch-argument support for Explorer/command-line opening.
+- Directly opened PDFs are remembered in Recents and global search through a
+  hidden local bucket; their parent directories are never silently registered.
+
+### Library and settings
+
+- Folder scans publish six-book batches into SQLite as soon as they finish, so
+  the shelf updates progressively during long scans.
+- Consolidated PDF page count, title, author, and outline inspection into one
+  read/parse operation per file.
+- Added an explorer-style Folders destination with current locations, indexed
+  files, add/remove controls, explicit scan progress, and manual rescan.
+- Removing a library location now requires a clear confirmation and never
+  deletes source documents or embedded annotations.
+- Organized Settings into Library & Storage, Appearance & Language, Reader &
+  Writing, Accessibility & Keyboard, and Data & Safety categories.
+- Added app-level System, Light, and Dark appearance controls.
+- Added project-local CodeGraph MCP/agent configuration, ignored its generated
+  SQLite database, disabled optional telemetry, and documented reproducible
+  initialization and graph queries for Dart repository navigation.
+- Added read-only GitHub MCP configuration plus lean cloud quality and Windows
+  beta-build workflows with dependency and native-build caching.
+
+### Fixed and hardened
+
+- Fixed bookmark FTS row conversion that treated SQLite integer booleans as
+  Dart booleans and crashed Arabic/English Command Center searches.
+- Progressive batches no longer remove files that have not been reached yet,
+  and final rename reconciliation preserves progress, favorites, bookmarks,
+  and snapshots.
+- Bookmark creation now commits the authoritative PDF outline before the local
+  projection, preventing local-only ghosts after Windows replacement failures.
+- Fixed narrow-window shelf control overflow while preserving the user's
+  active query during progressive refreshes.
+- Fixed intermittent MSVC `C1041` program-database collisions by serializing
+  runner PDB writes with `/FS`.
+- Made schema upgrades idempotent when a beta database already contains newer
+  library columns, fixing bookmark saves and external-PDF Recent entries that
+  failed on a duplicate `title` column.
+- Restored click/drag page scrubbing, added responsive desktop page gutters and
+  a default outline/bookmark panel, and made zoom controls work in Write mode.
+- Declared the project open source under the MIT License.
+
+### Verification
+
+- `flutter analyze`: zero issues.
+- `flutter test`: 50 passed, 2 opt-in personal-file audits skipped.
+- Previous native Windows integration: 3 passed—external PDF launch and Recents,
+  pen `/Ink` round-trip with page isolation/outline/metadata preservation, and
+  two-folder Arabic/English library plus bookmark search.
+- Latest native rerun hit MSVC C1041; the `/FS` build fix is included but a
+  successful rerun and Windows release build remain pending.
 
 ## Focused core workflow — Library, bookmarks, and PDF ink (2026-09-09)
 

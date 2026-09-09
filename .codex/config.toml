@@ -1,0 +1,10 @@
+[mcp_servers.codegraph]
+command = "codegraph"
+args = ["serve", "--mcp"]
+
+# GitHub's hosted MCP server. Keep the PAT in the GITHUB_PAT_TOKEN environment
+# variable; never place credentials in this repository. Read-only mode keeps
+# ordinary repository lookup and CI inspection from mutating GitHub state.
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/readonly"
+bearer_token_env_var = "GITHUB_PAT_TOKEN"

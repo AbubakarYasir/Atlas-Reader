@@ -49,14 +49,23 @@ class _AnnotationsDrawerState extends State<AnnotationsDrawer> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
 
     if (updated == true) {
-      await widget.database.updateAnnotationNote(annot.id, controller.text.trim());
+      await widget.database.updateAnnotationNote(
+        annot.id,
+        controller.text.trim(),
+      );
       if (mounted) setState(() {});
     }
   }
@@ -86,14 +95,23 @@ class _AnnotationsDrawerState extends State<AnnotationsDrawer> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(80),
-              border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withAlpha(60))),
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withAlpha(80),
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).dividerColor.withAlpha(60),
+                ),
+              ),
             ),
             child: Row(
               children: [
                 const Icon(Icons.draw_outlined, size: 20),
                 const SizedBox(width: 8),
-                Text('Annotations & Notes', style: Theme.of(context).textTheme.titleSmall),
+                Text(
+                  'Annotations & Notes',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close, size: 18),
@@ -113,10 +131,16 @@ class _AnnotationsDrawerState extends State<AnnotationsDrawer> {
                       hintText: 'Search notes...',
                       prefixIcon: const Icon(Icons.search, size: 18),
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                    onChanged: (val) => setState(() => _search = val.trim().toLowerCase()),
+                    onChanged: (val) =>
+                        setState(() => _search = val.trim().toLowerCase()),
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -171,7 +195,9 @@ class _AnnotationsDrawerState extends State<AnnotationsDrawer> {
                       child: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHigh.withAlpha(120),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHigh.withAlpha(120),
                           borderRadius: BorderRadius.circular(8),
                           border: Border(
                             left: BorderSide(color: color, width: 4),
@@ -196,24 +222,35 @@ class _AnnotationsDrawerState extends State<AnnotationsDrawer> {
                                   children: [
                                     InkWell(
                                       onTap: () => _editNote(item),
-                                      child: const Icon(Icons.edit_outlined, size: 14),
+                                      child: const Icon(
+                                        Icons.edit_outlined,
+                                        size: 14,
+                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     InkWell(
                                       onTap: () => _deleteAnnotation(item),
-                                      child: const Icon(Icons.delete_outline, size: 14, color: Colors.red),
+                                      child: const Icon(
+                                        Icons.delete_outline,
+                                        size: 14,
+                                        color: Colors.red,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ],
                             ),
-                            if (item.selectedText != null && item.selectedText!.isNotEmpty) ...[
+                            if (item.selectedText != null &&
+                                item.selectedText!.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
                                 '"${item.selectedText}"',
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                ),
                               ),
                             ],
                             if (item.note != null && item.note!.isNotEmpty) ...[
@@ -226,12 +263,19 @@ class _AnnotationsDrawerState extends State<AnnotationsDrawer> {
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.sticky_note_2_outlined, size: 12, color: Colors.amber),
+                                    const Icon(
+                                      Icons.sticky_note_2_outlined,
+                                      size: 12,
+                                      color: Colors.amber,
+                                    ),
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
                                         item.note!,
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ],

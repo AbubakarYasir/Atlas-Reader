@@ -20,6 +20,11 @@ add_executable(${BINARY_NAME} WIN32
 # that need different build settings.
 apply_standard_settings(${BINARY_NAME})
 
+# MSVC can compile the runner and generated plugin registrant in parallel. The
+# /FS switch serializes writes to the shared program database and prevents
+# intermittent C1041 failures on local and GitHub-hosted Windows builds.
+target_compile_options(${BINARY_NAME} PRIVATE /FS)
+
 # Add preprocessor definitions for the build version.
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION=\"${FLUTTER_VERSION}\"")
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_MAJOR=${FLUTTER_VERSION_MAJOR}")

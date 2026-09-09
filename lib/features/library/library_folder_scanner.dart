@@ -23,19 +23,30 @@ class LibraryFolderScanner {
   static const _epubEngine = EpubEngine();
 
   /// Walks [folderPath] for supported book files and extracts metadata.
-  Future<List<ScannedPdf>> scanFolder(String folderPath) async {
+  Future<List<ScannedPdf>> scanFolder(
+    String folderPath, {
+    Future<void> Function(List<ScannedPdf> batch, int indexed, int total)?
+    onBatch,
+  }) async {
     final paths = await _findDocumentPaths(folderPath);
     final results = <ScannedPdf>[];
 
     // Keep disk pressure bounded while allowing metadata parsing and cover
-    // extraction to overlap. Four concurrent books is fast on SSDs without
+    // extraction to overlap. Six concurrent books is fast on SSDs without
     // starving the reader's renderer or flooding slower drives.
-    const batchSize = 4;
+    const batchSize = 6;
     for (var offset = 0; offset < paths.length; offset += batchSize) {
       final end = (offset + batchSize).clamp(0, paths.length);
       final batch = await Future.wait(paths.sublist(offset, end).map(_scanOne));
+      final completed = <ScannedPdf>[];
       for (final scanned in batch) {
-        if (scanned != null) results.add(scanned);
+        if (scanned != null) {
+          results.add(scanned);
+          completed.add(scanned);
+        }
+      }
+      if (onBatch != null && completed.isNotEmpty) {
+        await onBatch(completed, results.length, paths.length);
       }
     }
 
@@ -94,21 +105,15 @@ class LibraryFolderScanner {
         );
       }
 
-      var bookmarkCount = 0;
+      ({int pageCount, int bookmarkCount, String? title, String? author})? meta;
       try {
-        final extracted = await _pdfEngine.extractBookmarks(filePath);
-        bookmarkCount = extracted.length;
-      } catch (_) {}
-
-      ({int pageCount, String? title, String? author})? meta;
-      try {
-        meta = await _pdfEngine.getDocumentMetadata(filePath);
+        meta = await _pdfEngine.inspectForLibrary(filePath);
       } catch (_) {}
 
       return ScannedPdf(
         filePath: filePath,
         fileName: BookmarkGrouping.fileNameFromPath(filePath),
-        bookmarkCount: bookmarkCount,
+        bookmarkCount: meta?.bookmarkCount ?? 0,
         lastModified: stat.modified,
         title: meta?.title,
         author: meta?.author,

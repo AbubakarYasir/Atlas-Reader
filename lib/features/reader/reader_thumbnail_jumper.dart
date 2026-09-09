@@ -33,10 +33,15 @@ class _ReaderThumbnailJumperState extends State<ReaderThumbnailJumper> {
     _scrollController = ScrollController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients && widget.pageCount > 0) {
-        final targetIndex = (widget.currentPage - 1).clamp(0, widget.pageCount - 1);
+        final targetIndex = (widget.currentPage - 1).clamp(
+          0,
+          widget.pageCount - 1,
+        );
         final itemWidth = 100.0;
         final targetOffset = (targetIndex * itemWidth) - 150.0;
-        _scrollController.jumpTo(targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent));
+        _scrollController.jumpTo(
+          targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+        );
       }
     });
   }
@@ -72,7 +77,9 @@ class _ReaderThumbnailJumperState extends State<ReaderThumbnailJumper> {
                 children: [
                   Text(
                     'Go to Page',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -89,7 +96,8 @@ class _ReaderThumbnailJumperState extends State<ReaderThumbnailJumper> {
                       keyboardType: TextInputType.number,
                       autofocus: true,
                       decoration: InputDecoration(
-                        labelText: 'Enter page number (1 - ${widget.pageCount})',
+                        labelText:
+                            'Enter page number (1 - ${widget.pageCount})',
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.arrow_forward),
@@ -111,7 +119,9 @@ class _ReaderThumbnailJumperState extends State<ReaderThumbnailJumper> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Surrounding Pages',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).hintColor),
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Theme.of(context).hintColor,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -120,18 +130,23 @@ class _ReaderThumbnailJumperState extends State<ReaderThumbnailJumper> {
                     ? const Center(child: Text('No pages available'))
                     : GridView.builder(
                         controller: _scrollController,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 5,
-                          childAspectRatio: 0.72,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 5,
+                              childAspectRatio: 0.72,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                            ),
                         itemCount: widget.pageCount,
                         itemBuilder: (context, index) {
                           final pageNum = index + 1;
                           final isCurrent = pageNum == widget.currentPage;
-                          final isBookmarked = widget.bookmarkedPages.contains(pageNum);
-                          final isChapter = widget.chapterPages.contains(pageNum);
+                          final isBookmarked = widget.bookmarkedPages.contains(
+                            pageNum,
+                          );
+                          final isChapter = widget.chapterPages.contains(
+                            pageNum,
+                          );
                           final printedNum = pageNum + widget.pageOffset;
 
                           return InkWell(
@@ -143,15 +158,21 @@ class _ReaderThumbnailJumperState extends State<ReaderThumbnailJumper> {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: isCurrent
-                                    ? Theme.of(context).colorScheme.primaryContainer
-                                    : Theme.of(context).colorScheme.surfaceContainerHigh,
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.primaryContainer
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHigh,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: isCurrent
                                       ? Theme.of(context).colorScheme.primary
                                       : isChapter
-                                          ? Colors.amber
-                                          : Theme.of(context).dividerColor.withAlpha(50),
+                                      ? Colors.amber
+                                      : Theme.of(
+                                          context,
+                                        ).dividerColor.withAlpha(50),
                                   width: isCurrent ? 2 : 1,
                                 ),
                               ),
@@ -159,27 +180,37 @@ class _ReaderThumbnailJumperState extends State<ReaderThumbnailJumper> {
                                 children: [
                                   Center(
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.article_outlined,
                                           size: 28,
                                           color: isCurrent
-                                              ? Theme.of(context).colorScheme.primary
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.primary
                                               : Theme.of(context).hintColor,
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           '$pageNum',
                                           style: TextStyle(
-                                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                                            fontWeight: isCurrent
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
                                             fontSize: 13,
                                           ),
                                         ),
                                         if (widget.pageOffset != 0)
                                           Text(
                                             '($printedNum)',
-                                            style: TextStyle(fontSize: 10, color: Theme.of(context).hintColor),
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Theme.of(
+                                                context,
+                                              ).hintColor,
+                                            ),
                                           ),
                                       ],
                                     ),
@@ -188,13 +219,21 @@ class _ReaderThumbnailJumperState extends State<ReaderThumbnailJumper> {
                                     const Positioned(
                                       top: 4,
                                       right: 4,
-                                      child: Icon(Icons.bookmark, size: 14, color: Colors.blueAccent),
+                                      child: Icon(
+                                        Icons.bookmark,
+                                        size: 14,
+                                        color: Colors.blueAccent,
+                                      ),
                                     ),
                                   if (isChapter)
                                     const Positioned(
                                       top: 4,
                                       left: 4,
-                                      child: Icon(Icons.flag_outlined, size: 12, color: Colors.amber),
+                                      child: Icon(
+                                        Icons.flag_outlined,
+                                        size: 12,
+                                        color: Colors.amber,
+                                      ),
                                     ),
                                 ],
                               ),

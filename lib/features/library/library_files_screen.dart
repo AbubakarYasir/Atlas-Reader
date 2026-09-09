@@ -14,6 +14,8 @@ class LibraryFilesScreen extends StatelessWidget {
     required this.fileSystem,
     required this.onCreateBookmark,
     this.onSelectPdf,
+    this.onOpenSettings,
+    this.onOpenBookmarks,
   });
 
   final AppDatabase database;
@@ -21,11 +23,30 @@ class LibraryFilesScreen extends StatelessWidget {
   final Future<void> Function(String filePath, ReaderBookmarkDraft draft)
   onCreateBookmark;
   final ValueChanged<String>? onSelectPdf;
+  final VoidCallback? onOpenSettings;
+  final VoidCallback? onOpenBookmarks;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Library Bookshelf')),
+      appBar: AppBar(
+        title: const Text('Atlas Reader'),
+        actions: [
+          if (onOpenBookmarks != null)
+            IconButton(
+              tooltip: 'Browse all bookmarks and sync',
+              onPressed: onOpenBookmarks,
+              icon: const Icon(Icons.bookmarks_outlined),
+            ),
+          if (onOpenSettings != null)
+            IconButton(
+              tooltip: 'Settings and library folders',
+              onPressed: onOpenSettings,
+              icon: const Icon(Icons.settings_outlined),
+            ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: VisualBookshelf(
         database: database,
         fileSystem: fileSystem,

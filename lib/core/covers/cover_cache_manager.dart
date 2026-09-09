@@ -21,7 +21,9 @@ class CoverCacheManager {
       return _cacheDir!;
     }
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
-      final dir = Directory(p.join(Directory.systemTemp.path, 'atlas_covers_test'));
+      final dir = Directory(
+        p.join(Directory.systemTemp.path, 'atlas_covers_test'),
+      );
       if (!await dir.exists()) {
         await dir.create(recursive: true);
       }
@@ -81,7 +83,11 @@ class CoverCacheManager {
     return null;
   }
 
-  Future<String?> saveCoverBytes(String filePath, Uint8List bytes, {String extension = 'jpg'}) async {
+  Future<String?> saveCoverBytes(
+    String filePath,
+    Uint8List bytes, {
+    String extension = 'jpg',
+  }) async {
     try {
       final cacheDir = await _getCacheDirectory();
       final hash = _hashPath(filePath);

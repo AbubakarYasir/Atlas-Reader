@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:dart_pdf_editor/dart_pdf_editor.dart';
 import 'package:flutter/material.dart';
@@ -18,11 +21,13 @@ import '../../features/reader/bookmark_composer.dart';
 import '../../features/reader/pdf_reader_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../pdf_engine.dart';
+import '../../scanned_pdf.dart';
 import '../../sync_engine.dart';
 import '../../sync_diff.dart';
 import '../../sync_models.dart';
 import '../../widgets/accessible_bookmark_tile.dart';
 import 'library_files_screen.dart';
+import 'library_hub_screen.dart';
 import 'library_folder_manager.dart';
 import 'library_overview.dart';
 
@@ -34,7 +39,10 @@ class _CommitChangesIntent extends Intent {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.initialFilePath});
+
+  /// Optional Windows launch argument used by Explorer's "Open with" flow.
+  final String? initialFilePath;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -44,8 +52,126 @@ class _MyAppState extends State<MyApp> {
   static final _navigatorKey = GlobalKey<NavigatorState>();
   static const _fileSystem = WindowsDocumentFileSystem();
   Locale? _locale;
+  ThemeMode _themeMode = ThemeMode.system;
+  late final LibraryFolderManager _libraryManager = LibraryFolderManager(
+    database: database,
+    fileSystem: _fileSystem,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _libraryManager.onChanged = () {
+      if (mounted) setState(() {});
+    };
+    unawaited(_libraryManager.startWatching());
+    unawaited(_libraryManager.rescanAll());
+    if (widget.initialFilePath != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_openPdfPath(widget.initialFilePath!));
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_libraryManager.dispose());
+    super.dispose();
+  }
 
   void _setLocale(Locale locale) => setState(() => _locale = locale);
+
+  void _setThemeMode(ThemeMode mode) => setState(() => _themeMode = mode);
+
+  Future<void> _openPdfPicker() async {
+    final selection = await FilePicker.pickFile(
+      dialogTitle: 'Open a PDF',
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+    );
+    final path = selection?.path;
+    if (path != null) await _openPdfPath(path);
+  }
+
+  Future<void> _openPdfPath(String filePath, {int pageNumber = 1}) async {
+    final navigator = _navigatorKey.currentState;
+    final context = _navigatorKey.currentContext;
+    if (navigator == null) return;
+    if (!filePath.toLowerCase().endsWith('.pdf') ||
+        !await _fileSystem.exists(filePath)) {
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('The selected PDF could not be opened.'),
+          ),
+        );
+      }
+      return;
+    }
+
+    unawaited(_rememberExternalPdf(filePath, pageNumber));
+
+    await navigator.push<void>(
+      MaterialPageRoute(
+        builder: (_) => PdfReaderScreen(
+          filePath: filePath,
+          fileSystem: _fileSystem,
+          database: database,
+          initialPageNumber: pageNumber,
+          onCreateBookmark: (draft) =>
+              _createBookmarkFromReader(filePath, draft),
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _rememberExternalPdf(String filePath, int pageNumber) async {
+    try {
+      final results = await Future.wait<Object?>([
+        FileStat.stat(filePath),
+        PdfEngine(fileSystem: _fileSystem).inspectForLibrary(filePath),
+      ]);
+      final stat = results[0]! as FileStat;
+      final metadata =
+          results[1]
+              as ({
+                int pageCount,
+                int bookmarkCount,
+                String? title,
+                String? author,
+              })?;
+      await database.rememberExternalFile(
+        ScannedPdf(
+          filePath: filePath,
+          fileName: BookmarkGrouping.fileNameFromPath(filePath),
+          title: metadata?.title,
+          author: metadata?.author,
+          format: 'PDF',
+          bookmarkCount: metadata?.bookmarkCount ?? 0,
+          pageCount: metadata?.pageCount ?? 0,
+          fileSizeBytes: stat.size,
+          lastModified: stat.modified,
+        ),
+        currentPage: pageNumber,
+      );
+      if (mounted) setState(() {});
+    } catch (_) {
+      // Direct reading remains available even if the optional recent index
+      // cannot inspect a damaged or access-restricted file.
+    }
+  }
+
+  Future<void> _openBookmarkLibrary() async {
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) return;
+    await navigator.push<void>(
+      MaterialPageRoute(
+        builder: (_) => LibraryScreen(onLocaleChanged: _setLocale),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
 
   Future<void> _openCommandCenter() async {
     final context = _navigatorKey.currentContext;
@@ -64,8 +190,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _openSearchResult(CommandCenterResult result) async {
-    final navigator = _navigatorKey.currentState;
-    if (navigator == null) return;
     final context = _navigatorKey.currentContext;
     if (!await _fileSystem.exists(result.filePath)) {
       if (context != null && context.mounted) {
@@ -75,25 +199,26 @@ class _MyAppState extends State<MyApp> {
       }
       return;
     }
-
-    await navigator.push<void>(
-      MaterialPageRoute(
-        builder: (_) => PdfReaderScreen(
-          filePath: result.filePath,
-          fileSystem: _fileSystem,
-          database: database,
-          initialPageNumber: result.pageNumber ?? 1,
-          onCreateBookmark: (draft) =>
-              _createBookmarkFromReader(result.filePath, draft),
-        ),
-      ),
-    );
+    await _openPdfPath(result.filePath, pageNumber: result.pageNumber ?? 1);
   }
 
   Future<void> _createBookmarkFromReader(
     String filePath,
     ReaderBookmarkDraft draft,
   ) async {
+    // The PDF is authoritative. Commit its outline safely first so a file
+    // replacement failure can never leave a local-only bookmark that appears
+    // saved but disappears in every external reader.
+    final output = await PdfEngine(fileSystem: _fileSystem).injectBookmark(
+      filePath,
+      draft.title,
+      draft.pageNumber - 1,
+      description: draft.description,
+    );
+    if (output == null) {
+      throw StateError('The bookmark could not be written to the PDF.');
+    }
+
     final bookmarkId = await database.addBookmark(
       filePath: filePath,
       title: draft.title,
@@ -106,18 +231,6 @@ class _MyAppState extends State<MyApp> {
     for (final tag
         in tags.map((tag) => tag.trim()).where((tag) => tag.isNotEmpty)) {
       await database.addTagToBookmark(bookmarkId, tag);
-    }
-
-    final output = await PdfEngine(fileSystem: _fileSystem).injectBookmark(
-      filePath,
-      draft.title,
-      draft.pageNumber - 1,
-      description: draft.description,
-    );
-    if (output == null) {
-      throw StateError(
-        'The bookmark was saved locally but could not be written to the PDF.',
-      );
     }
   }
 
@@ -138,11 +251,31 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
+      ),
+      themeMode: _themeMode,
       builder: (context, child) => CommandCenterShortcuts(
         onOpen: _openCommandCenter,
         child: child ?? const SizedBox.shrink(),
       ),
-      home: LibraryScreen(onLocaleChanged: _setLocale),
+      home: LibraryHubScreen(
+        database: database,
+        fileSystem: _fileSystem,
+        folderManager: _libraryManager,
+        onCreateBookmark: _createBookmarkFromReader,
+        onOpenPdf: _openPdfPicker,
+        onOpenFile: _openPdfPath,
+        onOpenAdvancedBookmarks: _openBookmarkLibrary,
+        onOpenCommandCenter: _openCommandCenter,
+        themeMode: _themeMode,
+        onThemeModeChanged: _setThemeMode,
+        onLocaleChanged: _setLocale,
+      ),
     );
   }
 }
@@ -1179,7 +1312,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           autofocus: true,
           child: Scaffold(
             appBar: AppBar(
-              title: const Text('Atlas UEP PoC'),
+              title: const Text('Bookmarks & PDF Sync'),
               actions: [
                 IconButton(
                   tooltip: 'Browse library',

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:atlas_poc/database.dart';
 import 'package:atlas_poc/scanned_pdf.dart';
 import 'package:drift/native.dart';
@@ -79,6 +81,107 @@ void main() {
     expect(await db.getLibraryFiles(folderId: folder2.id), isEmpty);
   });
 
+  test('progressive scan batches never remove books not reached yet', () async {
+    final folder = await db.addLibraryFolder(r'C:\Books');
+    final modified = DateTime(2026, 1, 1);
+    await db.upsertLibraryFiles(folder.id, [
+      ScannedPdf(
+        filePath: r'C:\Books\a.pdf',
+        fileName: 'a.pdf',
+        bookmarkCount: 1,
+        fileSizeBytes: 100,
+        lastModified: modified,
+      ),
+      ScannedPdf(
+        filePath: r'C:\Books\b.pdf',
+        fileName: 'b.pdf',
+        bookmarkCount: 1,
+        fileSizeBytes: 200,
+        lastModified: modified,
+      ),
+    ]);
+
+    await db.upsertLibraryFiles(
+      folder.id,
+      [
+        ScannedPdf(
+          filePath: r'C:\Books\a.pdf',
+          fileName: 'a.pdf',
+          bookmarkCount: 1,
+          fileSizeBytes: 100,
+          lastModified: modified,
+        ),
+      ],
+      removeMissing: false,
+      reconcileRenames: false,
+    );
+
+    expect(await db.getLibraryFiles(folderId: folder.id), hasLength(2));
+  });
+
+  test(
+    'directly opened PDFs appear in recents without a visible folder',
+    () async {
+      final modified = DateTime(2026, 1, 1);
+      await db.rememberExternalFile(
+        ScannedPdf(
+          filePath: r'C:\Downloads\outside.pdf',
+          fileName: 'outside.pdf',
+          title: 'Outside the Library',
+          author: 'Direct Open',
+          bookmarkCount: 2,
+          pageCount: 40,
+          fileSizeBytes: 500,
+          lastModified: modified,
+        ),
+        currentPage: 7,
+      );
+
+      expect(await db.getLibraryFolders(), isEmpty);
+      final recents = await db.getFilteredLibraryFiles(
+        onlyOpened: true,
+        sortBy: LibrarySortBy.lastOpened,
+        ascending: false,
+      );
+      expect(recents.single.title, 'Outside the Library');
+      expect(recents.single.currentPage, 7);
+    },
+  );
+
+  test(
+    'upgrade tolerates columns already present in an older-version DB',
+    () async {
+      final file = File(
+        '${Directory.systemTemp.path}${Platform.pathSeparator}'
+        'atlas-reader-migration-${DateTime.now().microsecondsSinceEpoch}.sqlite',
+      );
+      final current = AppDatabase.forTesting(NativeDatabase(file));
+      await current.getLibraryFolders();
+      await current.customStatement('PRAGMA user_version = 5');
+      await current.close();
+
+      final upgraded = AppDatabase.forTesting(NativeDatabase(file));
+      addTearDown(() async {
+        await upgraded.close();
+        if (await file.exists()) await file.delete();
+      });
+
+      await upgraded.rememberExternalFile(
+        ScannedPdf(
+          filePath: r'C:\Downloads\migration-safe.pdf',
+          fileName: 'migration-safe.pdf',
+          bookmarkCount: 0,
+          lastModified: DateTime(2026, 1, 1),
+        ),
+      );
+
+      expect(
+        await upgraded.getFilteredLibraryFiles(onlyOpened: true),
+        hasLength(1),
+      );
+    },
+  );
+
   test('file name query is case-insensitive and filters by folder', () async {
     final folder = await db.addLibraryFolder(r'C:\Books');
     await db.upsertLibraryFiles(folder.id, [
@@ -123,6 +226,20 @@ void main() {
     expect(await db.searchLibraryFiles('أصول'), hasLength(1));
     expect(await db.searchLibraryFiles('السعيدان'), hasLength(1));
     expect(await db.searchLibraryFiles('USUL'), hasLength(1));
+  });
+
+  test('bookmark FTS maps SQLite bools and timestamps safely', () async {
+    await db.addBookmark(
+      filePath: r'C:\Books\usul.pdf',
+      title: 'مبحث القياس Analogy',
+      pageIndex: 4,
+    );
+
+    final results = await db.searchBookmarks('القياس');
+    expect(results, hasLength(1));
+    expect(results.single.isFolder, isFalse);
+    expect(results.single.pageIndex, 4);
+    expect(results.single.createdAt, isA<DateTime>());
   });
 
   test('removing a folder cascades its scanned files', () async {

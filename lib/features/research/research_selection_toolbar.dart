@@ -39,7 +39,9 @@ class ResearchSelectionToolbar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Theme.of(context).dividerColor.withAlpha(60)),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withAlpha(60),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

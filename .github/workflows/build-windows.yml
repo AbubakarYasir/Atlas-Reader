@@ -1,0 +1,52 @@
+name: Windows beta build
+
+on:
+  push:
+    tags: ['v*-beta.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-beta-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Restore Windows native build cache
+        uses: actions/cache@v4
+        with:
+          path: build/windows
+          key: windows-flutter-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'windows/**') }}
+          restore-keys: |
+            windows-flutter-${{ runner.os }}-
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      - name: Package complete runtime bundle
+        shell: pwsh
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath atlas-reader-windows-${{ github.ref_name }}.zip -Force
+
+      - name: Upload Windows beta
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-windows-${{ github.ref_name }}
+          path: atlas-reader-windows-${{ github.ref_name }}.zip
+          retention-days: 30

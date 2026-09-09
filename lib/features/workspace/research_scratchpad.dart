@@ -76,20 +76,28 @@ class _ResearchScratchpadState extends State<ResearchScratchpad> {
 
     _controller.value = TextEditingValue(
       text: newText,
-      selection: TextSelection.collapsed(offset: start + prefix.length + selected.length),
+      selection: TextSelection.collapsed(
+        offset: start + prefix.length + selected.length,
+      ),
     );
     _onTextChanged(newText);
   }
 
   void _insertQuote() {
     final quoteText = widget.selectedText?.trim();
-    final quote = (quoteText != null && quoteText.isNotEmpty) ? quoteText : 'Scholarly excerpt';
+    final quote = (quoteText != null && quoteText.isNotEmpty)
+        ? quoteText
+        : 'Scholarly excerpt';
     final fileName = widget.filePath.split(RegExp(r'[/\\]')).last;
     final bookTitle = fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
 
-    final snippet = '\n> "$quote"\n> — *$bookTitle*, [Page ${widget.currentPage}](atlas://page/${widget.currentPage})\n\n';
+    final snippet =
+        '\n> "$quote"\n> — *$bookTitle*, [Page ${widget.currentPage}](atlas://page/${widget.currentPage})\n\n';
     _insertFormatting(snippet);
-    AccessibilityAnnouncer.announce(context, 'Quote inserted from page ${widget.currentPage}');
+    AccessibilityAnnouncer.announce(
+      context,
+      'Quote inserted from page ${widget.currentPage}',
+    );
   }
 
   @override
@@ -105,8 +113,14 @@ class _ResearchScratchpadState extends State<ResearchScratchpad> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(90),
-              border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withAlpha(60))),
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withAlpha(90),
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).dividerColor.withAlpha(60),
+                ),
+              ),
             ),
             child: Row(
               children: [
@@ -119,23 +133,35 @@ class _ResearchScratchpadState extends State<ResearchScratchpad> {
                         child: Text(
                           'Research Scratchpad',
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
                       const SizedBox(width: 4),
                       if (!_saved)
-                        const SizedBox.square(dimension: 10, child: CircularProgressIndicator(strokeWidth: 1.5))
+                        const SizedBox.square(
+                          dimension: 10,
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        )
                       else
                         const Icon(Icons.check, size: 14, color: Colors.green),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: Icon(_previewMode ? Icons.edit_outlined : Icons.remove_red_eye_outlined, size: 18),
+                  icon: Icon(
+                    _previewMode
+                        ? Icons.edit_outlined
+                        : Icons.remove_red_eye_outlined,
+                    size: 18,
+                  ),
                   tooltip: _previewMode ? 'Edit' : 'Preview',
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                   onPressed: () => setState(() => _previewMode = !_previewMode),
                 ),
                 if (widget.onClose != null)
@@ -144,7 +170,10 @@ class _ResearchScratchpadState extends State<ResearchScratchpad> {
                     tooltip: 'Close scratchpad',
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
                     onPressed: widget.onClose,
                   ),
               ],
@@ -153,7 +182,11 @@ class _ResearchScratchpadState extends State<ResearchScratchpad> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withAlpha(40))),
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).dividerColor.withAlpha(40),
+                ),
+              ),
             ),
             child: Wrap(
               spacing: 2,
@@ -192,11 +225,17 @@ class _ResearchScratchpadState extends State<ResearchScratchpad> {
                 ),
                 FilledButton.tonalIcon(
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     visualDensity: VisualDensity.compact,
                   ),
                   icon: const Icon(Icons.format_quote, size: 14),
-                  label: Text('Quote p.${widget.currentPage}', style: const TextStyle(fontSize: 11)),
+                  label: Text(
+                    'Quote p.${widget.currentPage}',
+                    style: const TextStyle(fontSize: 11),
+                  ),
                   onPressed: _insertQuote,
                 ),
               ],
@@ -212,9 +251,14 @@ class _ResearchScratchpadState extends State<ResearchScratchpad> {
                       maxLines: null,
                       expands: true,
                       onChanged: _onTextChanged,
-                      style: const TextStyle(fontFamily: 'Courier', fontSize: 13, height: 1.45),
+                      style: const TextStyle(
+                        fontFamily: 'Courier',
+                        fontSize: 13,
+                        height: 1.45,
+                      ),
                       decoration: const InputDecoration(
-                        hintText: 'Record research notes, quotes, and reflections here (Markdown supported)...',
+                        hintText:
+                            'Record research notes, quotes, and reflections here (Markdown supported)...',
                         border: InputBorder.none,
                       ),
                     ),
@@ -229,7 +273,9 @@ class _ResearchScratchpadState extends State<ResearchScratchpad> {
     final text = _controller.text;
     if (text.trim().isEmpty) {
       return const Center(
-        child: Text('Empty note. Switch back to edit and write your research notes.'),
+        child: Text(
+          'Empty note. Switch back to edit and write your research notes.',
+        ),
       );
     }
 
@@ -272,7 +318,12 @@ class _ResearchScratchpadState extends State<ResearchScratchpad> {
             margin: const EdgeInsets.symmetric(vertical: 4),
             padding: const EdgeInsets.only(left: 10, top: 4, bottom: 4),
             decoration: BoxDecoration(
-              border: Border(left: BorderSide(color: Theme.of(context).colorScheme.primary, width: 3)),
+              border: Border(
+                left: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 3,
+                ),
+              ),
               color: Theme.of(context).colorScheme.primary.withAlpha(15),
             ),
             child: _buildRichLine(line.substring(2)),

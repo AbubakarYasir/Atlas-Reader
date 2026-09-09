@@ -49,4 +49,21 @@ void main() {
     expect(scanned, hasLength(1));
     expect(scanned.single.bookmarkCount, 0);
   });
+
+  test('publishes bounded batches while a folder is still indexing', () async {
+    for (var index = 0; index < 7; index++) {
+      File('${tempDir.path}/book-$index.pdf').writeAsStringSync('test');
+    }
+    final progress = <(int, int, int)>[];
+
+    final scanned = await scanner.scanFolder(
+      tempDir.path,
+      onBatch: (batch, indexed, total) async {
+        progress.add((batch.length, indexed, total));
+      },
+    );
+
+    expect(scanned, hasLength(7));
+    expect(progress, [(6, 6, 7), (1, 7, 7)]);
+  });
 }

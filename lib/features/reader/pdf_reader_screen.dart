@@ -75,7 +75,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   late int _activePage = widget.initialPageNumber;
   int _pageCount = 0;
   bool _savingBookmark = false;
-  bool _showOutlineSidebar = false;
+  bool _showOutlineSidebar = true;
 
   ReaderPreferences _preferences = const ReaderPreferences();
   List<ReaderOutlineItem> _outline = [];
@@ -209,6 +209,19 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     unawaited(
       _db.updateReadingProgress(widget.filePath, target, pageCount: _pageCount),
     );
+  }
+
+  void _changeZoom(double delta) {
+    final editingViewer = _editingViewerController;
+    if (_isWriting && editingViewer != null) {
+      editingViewer.setZoom(
+        (editingViewer.zoom + delta).clamp(.5, 4).toDouble(),
+      );
+      return;
+    }
+    _viewerController.zoomLevel = (_viewerController.zoomLevel + delta)
+        .clamp(1, 3)
+        .toDouble();
   }
 
   void _openThumbnailJumper() {
@@ -567,19 +580,17 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                     _showOutlineSidebar ? Icons.menu_open : Icons.menu_book,
                   ),
                 ),
+                IconButton(
+                  tooltip: 'Zoom out',
+                  onPressed: () => _changeZoom(-.25),
+                  icon: const Icon(Icons.zoom_out),
+                ),
+                IconButton(
+                  tooltip: 'Zoom in',
+                  onPressed: () => _changeZoom(.25),
+                  icon: const Icon(Icons.zoom_in),
+                ),
                 if (!_isWriting) ...[
-                  IconButton(
-                    tooltip: 'Zoom out',
-                    onPressed: () => _viewerController.zoomLevel =
-                        (_viewerController.zoomLevel - .25).clamp(1, 3),
-                    icon: const Icon(Icons.zoom_out),
-                  ),
-                  IconButton(
-                    tooltip: 'Zoom in',
-                    onPressed: () => _viewerController.zoomLevel =
-                        (_viewerController.zoomLevel + .25).clamp(1, 3),
-                    icon: const Icon(Icons.zoom_in),
-                  ),
                   IconButton(
                     tooltip: 'Bookmark active page (Ctrl+B)',
                     onPressed: _savingBookmark ? null : _openBookmarkDialog,
@@ -645,7 +656,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                   currentPage: _activePage,
                   pageCount: _pageCount,
                   chapterPages: _chapterPages,
-                  isBasicMode: true,
+                  isBasicMode: false,
                   onPageChanged: _jumpToPage,
                   onTapJumper: _openThumbnailJumper,
                 ),
@@ -658,127 +669,159 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   }
 
   Widget _buildWritingSurface() {
-    return RepaintBoundary(
-      key: const ValueKey('ink-canvas-repaint-boundary'),
-      child: editor.PdfEditorView(
-        controller: _editingController!,
-        viewerController: _editingViewerController!,
-        documentId: widget.filePath,
-        showSaveButton: false,
-        onSave: (_) => unawaited(_saveInk()),
-        backgroundColor: _backgroundColor(_preferences.theme),
-        pageLayout: const editor.PdfPageLayout.verticalContinuous(),
-        initialFit: editor.PdfViewerFit.page,
-        features: const editor.PdfEditorFeatures(
-          headerBar: false,
-          search: false,
-          searchResultsPanel: false,
-          pageNumber: false,
-          author: false,
-          authorEditable: false,
-          viewOptions: false,
-          reflowView: false,
-          pageColorEditable: false,
-          thumbnails: false,
-          bookmarks: false,
-          pageEditing: false,
-          annotationSidebar: false,
-          annotationLibrary: false,
-          propertiesPanel: false,
-          toolbar: false,
-          markup: false,
-          undoRedo: true,
-          colorControls: true,
-          styleControls: true,
-          flatten: false,
-          colorProcessing: false,
-          pencilEraserToggle: false,
-          tools: {
-            editor.PdfEditTool.select,
-            editor.PdfEditTool.ink,
-            editor.PdfEditTool.highlight,
-            editor.PdfEditTool.eraser,
-          },
+    return _withDesktopPageGutters(
+      RepaintBoundary(
+        key: const ValueKey('ink-canvas-repaint-boundary'),
+        child: editor.PdfEditorView(
+          controller: _editingController!,
+          viewerController: _editingViewerController!,
+          documentId: widget.filePath,
+          showSaveButton: false,
+          onSave: (_) => unawaited(_saveInk()),
+          backgroundColor: _backgroundColor(_preferences.theme),
+          pageLayout: const editor.PdfPageLayout.verticalContinuous(),
+          initialFit: editor.PdfViewerFit.page,
+          features: const editor.PdfEditorFeatures(
+            headerBar: false,
+            search: false,
+            searchResultsPanel: false,
+            pageNumber: false,
+            author: false,
+            authorEditable: false,
+            viewOptions: false,
+            reflowView: false,
+            pageColorEditable: false,
+            thumbnails: false,
+            bookmarks: false,
+            pageEditing: false,
+            annotationSidebar: false,
+            annotationLibrary: false,
+            propertiesPanel: false,
+            toolbar: false,
+            markup: false,
+            undoRedo: true,
+            colorControls: true,
+            styleControls: true,
+            flatten: false,
+            colorProcessing: false,
+            pencilEraserToggle: false,
+            tools: {
+              editor.PdfEditTool.select,
+              editor.PdfEditTool.ink,
+              editor.PdfEditTool.highlight,
+              editor.PdfEditTool.eraser,
+            },
+          ),
         ),
       ),
     );
   }
 
   Widget _buildReadingSurface() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        _withMarginCrop(
-          ColorFiltered(
-            colorFilter:
-                _colorFilter(_preferences.theme) ??
-                const ColorFilter.mode(Colors.transparent, BlendMode.dst),
-            child: FutureBuilder<List<int>>(
-              future: _documentBytes,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError || !snapshot.hasData) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text('Could not open this PDF: ${snapshot.error}'),
-                    ),
-                  );
-                }
-                final single = _preferences.mode == ReadingMode.singlePage;
-                return syncfusion.SfPdfViewer.memory(
-                  Uint8List.fromList(snapshot.data!),
-                  controller: _viewerController,
-                  enableDoubleTapZooming: true,
-                  enableTextSelection: true,
-                  pageLayoutMode: single
-                      ? syncfusion.PdfPageLayoutMode.single
-                      : syncfusion.PdfPageLayoutMode.continuous,
-                  scrollDirection: single
-                      ? syncfusion.PdfScrollDirection.horizontal
-                      : syncfusion.PdfScrollDirection.vertical,
-                  onPageChanged: (details) {
-                    setState(() => _activePage = details.newPageNumber);
-                    unawaited(
-                      _db.updateReadingProgress(
-                        widget.filePath,
-                        details.newPageNumber,
-                        pageCount: _pageCount,
+    return _withDesktopPageGutters(
+      Stack(
+        fit: StackFit.expand,
+        children: [
+          _withMarginCrop(
+            ColorFiltered(
+              colorFilter:
+                  _colorFilter(_preferences.theme) ??
+                  const ColorFilter.mode(Colors.transparent, BlendMode.dst),
+              child: FutureBuilder<List<int>>(
+                future: _documentBytes,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError || !snapshot.hasData) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'Could not open this PDF: ${snapshot.error}',
+                        ),
                       ),
                     );
-                  },
-                  onDocumentLoaded: (details) {
-                    final target = widget.initialPageNumber.clamp(
-                      1,
-                      details.document.pages.count,
-                    );
-                    _viewerController.jumpToPage(target);
-                    setState(() {
-                      _activePage = target;
-                      _pageCount = details.document.pages.count;
-                    });
-                  },
-                  onDocumentLoadFailed: (details) {
-                    _showError('Could not render PDF: ${details.description}');
-                  },
-                );
-              },
-            ),
-          ),
-        ),
-        if (_preferences.brightness < 1)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: ColoredBox(
-                color: Colors.black.withValues(
-                  alpha: 1 - _preferences.brightness,
-                ),
+                  }
+                  final single = _preferences.mode == ReadingMode.singlePage;
+                  return syncfusion.SfPdfViewer.memory(
+                    Uint8List.fromList(snapshot.data!),
+                    controller: _viewerController,
+                    enableDoubleTapZooming: true,
+                    enableTextSelection: true,
+                    pageLayoutMode: single
+                        ? syncfusion.PdfPageLayoutMode.single
+                        : syncfusion.PdfPageLayoutMode.continuous,
+                    scrollDirection: single
+                        ? syncfusion.PdfScrollDirection.horizontal
+                        : syncfusion.PdfScrollDirection.vertical,
+                    onPageChanged: (details) {
+                      setState(() => _activePage = details.newPageNumber);
+                      unawaited(
+                        _db.updateReadingProgress(
+                          widget.filePath,
+                          details.newPageNumber,
+                          pageCount: _pageCount,
+                        ),
+                      );
+                    },
+                    onDocumentLoaded: (details) {
+                      final target = widget.initialPageNumber.clamp(
+                        1,
+                        details.document.pages.count,
+                      );
+                      _viewerController.jumpToPage(target);
+                      setState(() {
+                        _activePage = target;
+                        _pageCount = details.document.pages.count;
+                      });
+                    },
+                    onDocumentLoadFailed: (details) {
+                      _showError(
+                        'Could not render PDF: ${details.description}',
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ),
-      ],
+          if (_preferences.brightness < 1)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: ColoredBox(
+                  color: Colors.black.withValues(
+                    alpha: 1 - _preferences.brightness,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _withDesktopPageGutters(Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final horizontal = constraints.maxWidth >= 1400
+            ? 64.0
+            : constraints.maxWidth >= 900
+            ? 32.0
+            : 8.0;
+        return ColoredBox(
+          color: switch (_preferences.theme) {
+            ReaderThemeMode.day => const Color(0xFFE7E8ED),
+            ReaderThemeMode.warmParchment => const Color(0xFFD8CDBB),
+            ReaderThemeMode.night => const Color(0xFF202124),
+            ReaderThemeMode.oled => Colors.black,
+          },
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: horizontal, vertical: 8),
+            child: child,
+          ),
+        );
+      },
     );
   }
 }

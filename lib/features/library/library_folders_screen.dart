@@ -24,6 +24,26 @@ class _LibraryFoldersScreenState extends State<LibraryFoldersScreen> {
   bool _isScanning = false;
   String _status = '';
 
+  @override
+  void initState() {
+    super.initState();
+    widget.manager.onProgress = (progress) {
+      if (!mounted) return;
+      setState(() {
+        _isScanning = true;
+        _status =
+            'Indexed ${progress.indexed} of ${progress.total} books in '
+            '${_folderName(progress.folderPath)}…';
+      });
+    };
+  }
+
+  @override
+  void dispose() {
+    widget.manager.onProgress = null;
+    super.dispose();
+  }
+
   Future<List<LibraryFolder>> _loadFolders() {
     return widget.database.getLibraryFolders();
   }
@@ -44,6 +64,27 @@ class _LibraryFoldersScreenState extends State<LibraryFoldersScreen> {
   }
 
   Future<void> _removeFolder(LibraryFolder folder) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove library folder?'),
+        content: Text(
+          'This removes the folder from Atlas Reader’s local index. '
+          'It will not delete any books or annotations.\n\n${folder.path}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
     await widget.manager.removeFolder(folder.id, folder.path);
     if (!mounted) return;
     setState(() {});
@@ -54,7 +95,7 @@ class _LibraryFoldersScreenState extends State<LibraryFoldersScreen> {
       _isScanning = true;
       _status = 'Scanning folders...';
     });
-    final report = await widget.manager.rescanAll();
+    final report = await widget.manager.rescanAll(restartAfterCurrent: true);
     if (!mounted) return;
     setState(() {
       _isScanning = false;
@@ -62,8 +103,17 @@ class _LibraryFoldersScreenState extends State<LibraryFoldersScreen> {
           ? 'Add a folder to start building your library.'
           : 'Scanned ${report.foldersScanned} folder'
                 '${report.foldersScanned == 1 ? '' : 's'} — '
-                '${report.filesFound} PDF files indexed.';
+                '${report.filesFound} books indexed.';
     });
+  }
+
+  String _folderName(String path) {
+    final parts = path
+        .replaceAll('\\', '/')
+        .split('/')
+        .where((part) => part.isNotEmpty)
+        .toList();
+    return parts.isEmpty ? path : parts.last;
   }
 
   @override
@@ -114,7 +164,7 @@ class _LibraryFoldersScreenState extends State<LibraryFoldersScreen> {
                 Padding(
                   padding: const EdgeInsets.all(24),
                   child: Text(
-                    'No folders yet. Add a folder full of PDFs to start '
+                    'No folders yet. Add a folder containing PDFs or EPUBs to start '
                     'indexing your library.',
                     textAlign: TextAlign.center,
                   ),

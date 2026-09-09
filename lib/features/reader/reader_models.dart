@@ -5,12 +5,7 @@ enum ReadingMode {
   twoColumnSplit,
 }
 
-enum ReaderThemeMode {
-  day,
-  night,
-  oled,
-  warmParchment,
-}
+enum ReaderThemeMode { day, night, oled, warmParchment }
 
 class ReaderPreferences {
   const ReaderPreferences({

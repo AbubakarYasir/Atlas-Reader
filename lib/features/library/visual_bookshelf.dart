@@ -15,6 +15,10 @@ class VisualBookshelf extends StatefulWidget {
     required this.fileSystem,
     required this.onCreateBookmark,
     this.onSelectPdf,
+    this.initialSortBy = LibrarySortBy.title,
+    this.initialSortAscending = true,
+    this.initialOnlyFavorites = false,
+    this.onlyOpened = false,
   });
 
   final AppDatabase database;
@@ -22,6 +26,10 @@ class VisualBookshelf extends StatefulWidget {
   final Future<void> Function(String filePath, ReaderBookmarkDraft draft)
   onCreateBookmark;
   final ValueChanged<String>? onSelectPdf;
+  final LibrarySortBy initialSortBy;
+  final bool initialSortAscending;
+  final bool initialOnlyFavorites;
+  final bool onlyOpened;
 
   @override
   State<VisualBookshelf> createState() => _VisualBookshelfState();
@@ -29,13 +37,13 @@ class VisualBookshelf extends StatefulWidget {
 
 class _VisualBookshelfState extends State<VisualBookshelf> {
   BookshelfViewMode _viewMode = BookshelfViewMode.coverGrid;
-  LibrarySortBy _sortBy = LibrarySortBy.title;
-  bool _sortAscending = true;
+  late LibrarySortBy _sortBy;
+  late bool _sortAscending;
   String _searchQuery = '';
   String? _selectedAuthor;
   String? _selectedTag;
   String? _selectedSeries;
-  bool _onlyFavorites = false;
+  late bool _onlyFavorites;
   String? _selectedFormat;
 
   Map<String, int> _authors = {};
@@ -47,6 +55,9 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
   @override
   void initState() {
     super.initState();
+    _sortBy = widget.initialSortBy;
+    _sortAscending = widget.initialSortAscending;
+    _onlyFavorites = widget.initialOnlyFavorites;
     _refreshFacets();
   }
 
@@ -71,6 +82,7 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
       series: _selectedSeries,
       format: _selectedFormat,
       onlyFavorites: _onlyFavorites ? true : null,
+      onlyOpened: widget.onlyOpened,
       sortBy: _sortBy,
       ascending: _sortAscending,
     );
@@ -289,146 +301,172 @@ class _VisualBookshelfState extends State<VisualBookshelf> {
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search title, author, file...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () => setState(() => _searchQuery = ''),
-                          )
-                        : null,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 600) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildSearchField(),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: _buildViewSelector(),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onChanged: (val) => setState(() => _searchQuery = val),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SegmentedButton<BookshelfViewMode>(
-                segments: const [
-                  ButtonSegment(
-                    value: BookshelfViewMode.coverGrid,
-                    icon: Icon(Icons.grid_view_rounded, size: 18),
-                    tooltip: 'Cover Grid',
-                  ),
-                  ButtonSegment(
-                    value: BookshelfViewMode.detailedList,
-                    icon: Icon(Icons.view_list_rounded, size: 18),
-                    tooltip: 'Detailed List',
-                  ),
-                  ButtonSegment(
-                    value: BookshelfViewMode.condensedList,
-                    icon: Icon(Icons.table_rows_rounded, size: 18),
-                    tooltip: 'Compact List',
-                  ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: _buildSearchField()),
+                  const SizedBox(width: 8),
+                  _buildViewSelector(),
                 ],
-                selected: {_viewMode},
-                onSelectionChanged: (set) =>
-                    setState(() => _viewMode = set.first),
-              ),
-            ],
+              );
+            },
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              PopupMenuButton<LibrarySortBy>(
-                initialValue: _sortBy,
-                tooltip: 'Sort by',
-                onSelected: (val) => setState(() => _sortBy = val),
-                itemBuilder: (ctx) => [
-                  const PopupMenuItem(
-                    value: LibrarySortBy.title,
-                    child: Text('Sort by Title'),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                PopupMenuButton<LibrarySortBy>(
+                  initialValue: _sortBy,
+                  tooltip: 'Sort by',
+                  onSelected: (val) => setState(() => _sortBy = val),
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem(
+                      value: LibrarySortBy.title,
+                      child: Text('Sort by Title'),
+                    ),
+                    const PopupMenuItem(
+                      value: LibrarySortBy.author,
+                      child: Text('Sort by Author'),
+                    ),
+                    const PopupMenuItem(
+                      value: LibrarySortBy.dateAdded,
+                      child: Text('Sort by Date Added'),
+                    ),
+                    const PopupMenuItem(
+                      value: LibrarySortBy.lastOpened,
+                      child: Text('Sort by Last Opened'),
+                    ),
+                    const PopupMenuItem(
+                      value: LibrarySortBy.fileSize,
+                      child: Text('Sort by File Size'),
+                    ),
+                    const PopupMenuItem(
+                      value: LibrarySortBy.progress,
+                      child: Text('Sort by Reading Progress'),
+                    ),
+                  ],
+                  child: Chip(
+                    avatar: const Icon(Icons.sort, size: 16),
+                    label: Text('Sort: ${_sortLabel(_sortBy)}'),
                   ),
-                  const PopupMenuItem(
-                    value: LibrarySortBy.author,
-                    child: Text('Sort by Author'),
-                  ),
-                  const PopupMenuItem(
-                    value: LibrarySortBy.dateAdded,
-                    child: Text('Sort by Date Added'),
-                  ),
-                  const PopupMenuItem(
-                    value: LibrarySortBy.lastOpened,
-                    child: Text('Sort by Last Opened'),
-                  ),
-                  const PopupMenuItem(
-                    value: LibrarySortBy.fileSize,
-                    child: Text('Sort by File Size'),
-                  ),
-                  const PopupMenuItem(
-                    value: LibrarySortBy.progress,
-                    child: Text('Sort by Reading Progress'),
-                  ),
-                ],
-                child: Chip(
-                  avatar: const Icon(Icons.sort, size: 16),
-                  label: Text('Sort: ${_sortLabel(_sortBy)}'),
                 ),
-              ),
-              IconButton(
-                icon: Icon(
-                  _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                  size: 18,
+                IconButton(
+                  icon: Icon(
+                    _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                    size: 18,
+                  ),
+                  tooltip: _sortAscending ? 'Ascending' : 'Descending',
+                  onPressed: () =>
+                      setState(() => _sortAscending = !_sortAscending),
                 ),
-                tooltip: _sortAscending ? 'Ascending' : 'Descending',
-                onPressed: () =>
-                    setState(() => _sortAscending = !_sortAscending),
-              ),
-              const SizedBox(width: 4),
-              FilterChip(
-                label: const Text('Favorites'),
-                avatar: Icon(
-                  _onlyFavorites ? Icons.star : Icons.star_border,
-                  size: 16,
-                  color: Colors.amber[700],
+                FilterChip(
+                  label: const Text('Favorites'),
+                  avatar: Icon(
+                    _onlyFavorites ? Icons.star : Icons.star_border,
+                    size: 16,
+                    color: Colors.amber[700],
+                  ),
+                  selected: _onlyFavorites,
+                  onSelected: (val) => setState(() => _onlyFavorites = val),
                 ),
-                selected: _onlyFavorites,
-                onSelected: (val) => setState(() => _onlyFavorites = val),
-              ),
-              const SizedBox(width: 6),
-              ActionChip(
-                avatar: const Icon(Icons.person_outline, size: 16),
-                label: Text('Authors (${_authors.length})'),
-                backgroundColor: _showAuthorIndex
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : null,
-                onPressed: () {
-                  setState(() {
-                    _showAuthorIndex = !_showAuthorIndex;
-                    if (_showAuthorIndex) _showTagIndex = false;
-                  });
-                },
-              ),
-              const SizedBox(width: 6),
-              ActionChip(
-                avatar: const Icon(Icons.tag_outlined, size: 16),
-                label: Text('Tags & Series (${_tags.length + _series.length})'),
-                backgroundColor: _showTagIndex
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : null,
-                onPressed: () {
-                  setState(() {
-                    _showTagIndex = !_showTagIndex;
-                    if (_showTagIndex) _showAuthorIndex = false;
-                  });
-                },
-              ),
-            ],
+                ActionChip(
+                  avatar: const Icon(Icons.person_outline, size: 16),
+                  label: Text('Authors (${_authors.length})'),
+                  backgroundColor: _showAuthorIndex
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : null,
+                  onPressed: () {
+                    setState(() {
+                      _showAuthorIndex = !_showAuthorIndex;
+                      if (_showAuthorIndex) _showTagIndex = false;
+                    });
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.tag_outlined, size: 16),
+                  label: Text(
+                    'Tags & Series (${_tags.length + _series.length})',
+                  ),
+                  backgroundColor: _showTagIndex
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : null,
+                  onPressed: () {
+                    setState(() {
+                      _showTagIndex = !_showTagIndex;
+                      if (_showTagIndex) _showAuthorIndex = false;
+                    });
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return TextField(
+      decoration: InputDecoration(
+        hintText: 'Search title, author, file...',
+        prefixIcon: const Icon(Icons.search, size: 20),
+        suffixIcon: _searchQuery.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear, size: 18),
+                onPressed: () => setState(() => _searchQuery = ''),
+              )
+            : null,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      onChanged: (value) => setState(() => _searchQuery = value),
+    );
+  }
+
+  Widget _buildViewSelector() {
+    return SegmentedButton<BookshelfViewMode>(
+      segments: const [
+        ButtonSegment(
+          value: BookshelfViewMode.coverGrid,
+          icon: Icon(Icons.grid_view_rounded, size: 18),
+          tooltip: 'Cover Grid',
+        ),
+        ButtonSegment(
+          value: BookshelfViewMode.detailedList,
+          icon: Icon(Icons.view_list_rounded, size: 18),
+          tooltip: 'Detailed List',
+        ),
+        ButtonSegment(
+          value: BookshelfViewMode.condensedList,
+          icon: Icon(Icons.table_rows_rounded, size: 18),
+          tooltip: 'Compact List',
+        ),
+      ],
+      selected: {_viewMode},
+      onSelectionChanged: (selection) =>
+          setState(() => _viewMode = selection.first),
     );
   }
 

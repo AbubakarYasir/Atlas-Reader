@@ -3,12 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/accessibility/accessibility_announcer.dart';
 
-enum CitationFormat {
-  apa,
-  chicago,
-  mla,
-  bibtex,
-}
+enum CitationFormat { apa, chicago, mla, bibtex }
 
 class CitationGenerator {
   const CitationGenerator._();
@@ -21,10 +16,16 @@ class CitationGenerator {
     String? publisher,
     String? year,
   }) {
-    final cleanAuthor = (author != null && author.trim().isNotEmpty) ? author.trim() : 'Unknown Author';
+    final cleanAuthor = (author != null && author.trim().isNotEmpty)
+        ? author.trim()
+        : 'Unknown Author';
     final cleanTitle = title.trim().isNotEmpty ? title.trim() : 'Untitled Work';
-    final cleanYear = (year != null && year.trim().isNotEmpty) ? year.trim() : DateTime.now().year.toString();
-    final cleanPublisher = (publisher != null && publisher.trim().isNotEmpty) ? publisher.trim() : 'Publisher';
+    final cleanYear = (year != null && year.trim().isNotEmpty)
+        ? year.trim()
+        : DateTime.now().year.toString();
+    final cleanPublisher = (publisher != null && publisher.trim().isNotEmpty)
+        ? publisher.trim()
+        : 'Publisher';
 
     switch (format) {
       case CitationFormat.apa:
@@ -48,7 +49,8 @@ class CitationGenerator {
   static String _generateCiteKey(String author, String year, int page) {
     var namePart = author.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
     if (namePart.isEmpty) namePart = 'book';
-    return '$namePart$year' '_p$page';
+    return '$namePart$year'
+        '_p$page';
   }
 }
 
@@ -111,7 +113,10 @@ class _CitationDialogState extends State<CitationDialog> {
                     children: [
                       const Icon(Icons.format_quote_rounded, size: 24),
                       const SizedBox(width: 8),
-                      Text('Generate Citation', style: Theme.of(context).textTheme.titleLarge),
+                      Text(
+                        'Generate Citation',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                     ],
                   ),
                   IconButton(
@@ -125,26 +130,47 @@ class _CitationDialogState extends State<CitationDialog> {
                 scrollDirection: Axis.horizontal,
                 child: SegmentedButton<CitationFormat>(
                   segments: const [
-                    ButtonSegment(value: CitationFormat.apa, label: Text('APA 7th')),
-                    ButtonSegment(value: CitationFormat.chicago, label: Text('Chicago')),
-                    ButtonSegment(value: CitationFormat.mla, label: Text('MLA 9th')),
-                    ButtonSegment(value: CitationFormat.bibtex, label: Text('BibTeX')),
+                    ButtonSegment(
+                      value: CitationFormat.apa,
+                      label: Text('APA 7th'),
+                    ),
+                    ButtonSegment(
+                      value: CitationFormat.chicago,
+                      label: Text('Chicago'),
+                    ),
+                    ButtonSegment(
+                      value: CitationFormat.mla,
+                      label: Text('MLA 9th'),
+                    ),
+                    ButtonSegment(
+                      value: CitationFormat.bibtex,
+                      label: Text('BibTeX'),
+                    ),
                   ],
                   selected: {_selectedFormat},
-                  onSelectionChanged: (set) => setState(() => _selectedFormat = set.first),
+                  onSelectionChanged: (set) =>
+                      setState(() => _selectedFormat = set.first),
                 ),
               ),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(100),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withAlpha(100),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Theme.of(context).dividerColor.withAlpha(60)),
+                  border: Border.all(
+                    color: Theme.of(context).dividerColor.withAlpha(60),
+                  ),
                 ),
                 child: SelectableText(
                   citation,
-                  style: const TextStyle(fontFamily: 'Courier', fontSize: 13, height: 1.4),
+                  style: const TextStyle(
+                    fontFamily: 'Courier',
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

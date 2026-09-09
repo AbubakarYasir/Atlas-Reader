@@ -33,6 +33,12 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Local CodeGraph SQLite knowledge graph (rebuild with `codegraph init`)
+.codegraph/
+
+# On-demand AI repository digests are generated artifacts, not source.
+repomix-output.*
+
 # Symbolication related
 app.*.symbols
 

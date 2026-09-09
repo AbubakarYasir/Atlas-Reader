@@ -173,6 +173,33 @@ class PdfEngine {
     }
   }
 
+  /// Reads library metadata and outline count in one file read and one parse.
+  /// Folder scanning uses this instead of reopening every PDF for each field.
+  Future<({int pageCount, int bookmarkCount, String? title, String? author})?>
+  inspectForLibrary(String filePath) async {
+    try {
+      final bytes = await _fileSystem.readAsBytesInBackground(filePath);
+      return Isolate.run(() {
+        final document = PdfDocument(inputBytes: bytes);
+        try {
+          final title = document.documentInformation.title.trim();
+          final author = document.documentInformation.author.trim();
+          return (
+            pageCount: document.pages.count,
+            bookmarkCount: _countBookmarkBase(document.bookmarks),
+            title: title.isEmpty ? null : title,
+            author: author.isEmpty ? null : author,
+          );
+        } finally {
+          document.dispose();
+        }
+      });
+    } catch (error) {
+      _log.warning('[PDF] Error inspecting library document: $error');
+      return null;
+    }
+  }
+
   Future<String?> injectBookmark(
     String filePath,
     String bookmarkTitle,
@@ -260,6 +287,14 @@ class PdfEngine {
     } finally {
       document.dispose();
     }
+  }
+
+  static int _countBookmarkBase(PdfBookmarkBase base) {
+    var count = 0;
+    for (var index = 0; index < base.count; index++) {
+      count += 1 + _countBookmarkBase(base[index]);
+    }
+    return count;
   }
 
   static String _extractPageTextFromBytes(List<int> bytes, int pageIndex) {

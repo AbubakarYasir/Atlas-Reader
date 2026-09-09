@@ -41,7 +41,10 @@ class ReaderSettingsDialog extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Text('Display Theme', style: Theme.of(context).textTheme.titleSmall),
+                Text(
+                  'Display Theme',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
                 const SizedBox(height: 8),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -69,11 +72,15 @@ class ReaderSettingsDialog extends StatelessWidget {
                       ),
                     ],
                     selected: {preferences.theme},
-                    onSelectionChanged: (set) => onChanged(preferences.copyWith(theme: set.first)),
+                    onSelectionChanged: (set) =>
+                        onChanged(preferences.copyWith(theme: set.first)),
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text('Reading Mode', style: Theme.of(context).textTheme.titleSmall),
+                Text(
+                  'Reading Mode',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -81,23 +88,34 @@ class ReaderSettingsDialog extends StatelessWidget {
                   children: [
                     ChoiceChip(
                       label: const Text('Vertical Scroll'),
-                      selected: preferences.mode == ReadingMode.continuousVertical,
-                      onSelected: (_) => onChanged(preferences.copyWith(mode: ReadingMode.continuousVertical)),
+                      selected:
+                          preferences.mode == ReadingMode.continuousVertical,
+                      onSelected: (_) => onChanged(
+                        preferences.copyWith(
+                          mode: ReadingMode.continuousVertical,
+                        ),
+                      ),
                     ),
                     ChoiceChip(
                       label: const Text('Single Page'),
                       selected: preferences.mode == ReadingMode.singlePage,
-                      onSelected: (_) => onChanged(preferences.copyWith(mode: ReadingMode.singlePage)),
+                      onSelected: (_) => onChanged(
+                        preferences.copyWith(mode: ReadingMode.singlePage),
+                      ),
                     ),
                     ChoiceChip(
                       label: const Text('Two-Page Spread'),
                       selected: preferences.mode == ReadingMode.twoPageSpread,
-                      onSelected: (_) => onChanged(preferences.copyWith(mode: ReadingMode.twoPageSpread)),
+                      onSelected: (_) => onChanged(
+                        preferences.copyWith(mode: ReadingMode.twoPageSpread),
+                      ),
                     ),
                     ChoiceChip(
                       label: const Text('Two-Column Split'),
                       selected: preferences.mode == ReadingMode.twoColumnSplit,
-                      onSelected: (_) => onChanged(preferences.copyWith(mode: ReadingMode.twoColumnSplit)),
+                      onSelected: (_) => onChanged(
+                        preferences.copyWith(mode: ReadingMode.twoColumnSplit),
+                      ),
                     ),
                   ],
                 ),
@@ -105,7 +123,10 @@ class ReaderSettingsDialog extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('White Margin Cropping', style: Theme.of(context).textTheme.titleSmall),
+                    Text(
+                      'White Margin Cropping',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
                     Text('${(preferences.marginCrop * 100).round()}%'),
                   ],
                 ),
@@ -115,13 +136,17 @@ class ReaderSettingsDialog extends StatelessWidget {
                   max: 0.30,
                   divisions: 30,
                   label: '${(preferences.marginCrop * 100).round()}%',
-                  onChanged: (val) => onChanged(preferences.copyWith(marginCrop: val)),
+                  onChanged: (val) =>
+                      onChanged(preferences.copyWith(marginCrop: val)),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Screen Brightness', style: Theme.of(context).textTheme.titleSmall),
+                    Text(
+                      'Screen Brightness',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
                     Text('${(preferences.brightness * 100).round()}%'),
                   ],
                 ),
@@ -131,13 +156,17 @@ class ReaderSettingsDialog extends StatelessWidget {
                   max: 1.0,
                   divisions: 14,
                   label: '${(preferences.brightness * 100).round()}%',
-                  onChanged: (val) => onChanged(preferences.copyWith(brightness: val)),
+                  onChanged: (val) =>
+                      onChanged(preferences.copyWith(brightness: val)),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
-                      child: Text('Academic Page Offset', style: Theme.of(context).textTheme.titleSmall),
+                      child: Text(
+                        'Academic Page Offset',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
                     ),
                     SizedBox(
                       width: 100,
@@ -161,7 +190,10 @@ class ReaderSettingsDialog extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Font Size', style: Theme.of(context).textTheme.titleSmall),
+                    Text(
+                      'Font Size',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
                     Text('${preferences.fontSize.round()} pt'),
                   ],
                 ),
@@ -171,7 +203,8 @@ class ReaderSettingsDialog extends StatelessWidget {
                   max: 32.0,
                   divisions: 20,
                   label: '${preferences.fontSize.round()}',
-                  onChanged: (val) => onChanged(preferences.copyWith(fontSize: val)),
+                  onChanged: (val) =>
+                      onChanged(preferences.copyWith(fontSize: val)),
                 ),
               ],
             ),

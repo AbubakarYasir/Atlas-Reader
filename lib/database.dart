@@ -136,6 +136,8 @@ class ReadingSessionTabs extends Table {
   ],
 )
 class AppDatabase extends _$AppDatabase {
+  static const externalFilesFolderPath = 'atlas-reader://external-files';
+
   AppDatabase() : super(openAppDatabaseConnection());
 
   /// Creates an in-memory or otherwise caller-provided database for tests.
@@ -202,31 +204,82 @@ class AppDatabase extends _$AppDatabase {
         ''');
       },
       onUpgrade: (Migrator m, int from, int to) async {
+        Future<bool> tableExists(String tableName) async {
+          final result = await customSelect(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
+            variables: [Variable.withString(tableName)],
+          ).getSingleOrNull();
+          return result != null;
+        }
+
+        Future<Set<String>> tableColumns(String tableName) async {
+          final rows = await customSelect(
+            'PRAGMA table_info("$tableName")',
+          ).get();
+          return rows.map((row) => row.read<String>('name')).toSet();
+        }
+
         if (from < 4 && from >= 3) {
-          await customStatement(
-            'ALTER TABLE bookmarks RENAME COLUMN modified_at TO updated_at',
-          );
+          final columns = await tableColumns('bookmarks');
+          if (columns.contains('modified_at') &&
+              !columns.contains('updated_at')) {
+            await customStatement(
+              'ALTER TABLE bookmarks RENAME COLUMN modified_at TO updated_at',
+            );
+          }
         }
         if (from < 5) {
-          await m.createTable(libraryFolders);
-          await m.createTable(libraryFiles);
+          if (!await tableExists('library_folders')) {
+            await m.createTable(libraryFolders);
+          }
+          if (!await tableExists('library_files')) {
+            await m.createTable(libraryFiles);
+          }
         }
         if (from < 6) {
-          await m.addColumn(libraryFiles, libraryFiles.title);
-          await m.addColumn(libraryFiles, libraryFiles.author);
-          await m.addColumn(libraryFiles, libraryFiles.format);
-          await m.addColumn(libraryFiles, libraryFiles.pageCount);
-          await m.addColumn(libraryFiles, libraryFiles.currentPage);
-          await m.addColumn(libraryFiles, libraryFiles.fileSizeBytes);
-          await m.addColumn(libraryFiles, libraryFiles.isFavorite);
-          await m.addColumn(libraryFiles, libraryFiles.coverPath);
-          await m.addColumn(libraryFiles, libraryFiles.lastOpened);
-          await m.addColumn(libraryFiles, libraryFiles.series);
-          await m.addColumn(libraryFiles, libraryFiles.tags);
+          final columns = await tableColumns('library_files');
+          if (!columns.contains('title')) {
+            await m.addColumn(libraryFiles, libraryFiles.title);
+          }
+          if (!columns.contains('author')) {
+            await m.addColumn(libraryFiles, libraryFiles.author);
+          }
+          if (!columns.contains('format')) {
+            await m.addColumn(libraryFiles, libraryFiles.format);
+          }
+          if (!columns.contains('page_count')) {
+            await m.addColumn(libraryFiles, libraryFiles.pageCount);
+          }
+          if (!columns.contains('current_page')) {
+            await m.addColumn(libraryFiles, libraryFiles.currentPage);
+          }
+          if (!columns.contains('file_size_bytes')) {
+            await m.addColumn(libraryFiles, libraryFiles.fileSizeBytes);
+          }
+          if (!columns.contains('is_favorite')) {
+            await m.addColumn(libraryFiles, libraryFiles.isFavorite);
+          }
+          if (!columns.contains('cover_path')) {
+            await m.addColumn(libraryFiles, libraryFiles.coverPath);
+          }
+          if (!columns.contains('last_opened')) {
+            await m.addColumn(libraryFiles, libraryFiles.lastOpened);
+          }
+          if (!columns.contains('series')) {
+            await m.addColumn(libraryFiles, libraryFiles.series);
+          }
+          if (!columns.contains('tags')) {
+            await m.addColumn(libraryFiles, libraryFiles.tags);
+          }
         }
         if (from < 7) {
-          await m.addColumn(libraryFiles, libraryFiles.pageOffset);
-          await m.createTable(annotations);
+          final columns = await tableColumns('library_files');
+          if (!columns.contains('page_offset')) {
+            await m.addColumn(libraryFiles, libraryFiles.pageOffset);
+          }
+          if (!await tableExists('annotations')) {
+            await m.createTable(annotations);
+          }
           await customStatement('''
             CREATE VIRTUAL TABLE IF NOT EXISTS annotations_fts 
             USING fts5(selected_text, note, content=annotations, content_rowid=id);
@@ -249,8 +302,12 @@ class AppDatabase extends _$AppDatabase {
           ''');
         }
         if (from < 8) {
-          await m.createTable(scratchpadNotes);
-          await m.createTable(readingSessionTabs);
+          if (!await tableExists('scratchpad_notes')) {
+            await m.createTable(scratchpadNotes);
+          }
+          if (!await tableExists('reading_session_tabs')) {
+            await m.createTable(readingSessionTabs);
+          }
         }
         // For PoC, we'll drop and recreate
         if (from < 3) {
@@ -513,26 +570,14 @@ class AppDatabase extends _$AppDatabase {
     }
 
     // Use FTS5 for lightning-fast full-text search
-    final results =
-        await customSelect(
-          'SELECT b.* FROM bookmarks b '
-          'INNER JOIN bookmarks_fts fts ON b.id = fts.rowid '
-          'WHERE bookmarks_fts MATCH ? '
-          'ORDER BY rank',
-          variables: [Variable.withString(trimmedQuery)],
-        ).map((row) {
-          return Bookmark(
-            id: row.data['id'] as int,
-            filePath: row.data['file_path'] as String,
-            title: row.data['title'] as String,
-            pageIndex: row.data['page_index'] as int?,
-            description: row.data['description'] as String?,
-            parentId: row.data['parent_id'] as int?,
-            isFolder: row.data['is_folder'] as bool,
-            createdAt: row.data['created_at'] as DateTime,
-            updatedAt: row.data['updated_at'] as DateTime,
-          );
-        }).get();
+    final results = await customSelect(
+      'SELECT b.* FROM bookmarks b '
+      'INNER JOIN bookmarks_fts fts ON b.id = fts.rowid '
+      'WHERE bookmarks_fts MATCH ? '
+      'ORDER BY rank',
+      variables: [Variable.withString(trimmedQuery)],
+      readsFrom: {bookmarks},
+    ).map((row) => bookmarks.map(row.data)).get();
 
     return results;
   }
@@ -671,9 +716,36 @@ class AppDatabase extends _$AppDatabase {
 
   /// Returns every registered library folder, ordered by path.
   Future<List<LibraryFolder>> getLibraryFolders() async {
-    return (select(
-      libraryFolders,
-    )..orderBy([(tbl) => OrderingTerm.asc(tbl.path)])).get();
+    return (select(libraryFolders)
+          ..where((tbl) => tbl.path.equals(externalFilesFolderPath).not())
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.path)]))
+        .get();
+  }
+
+  /// Remembers a directly opened PDF without pretending its parent directory
+  /// is a scanned library folder. It can then appear in Recents and global
+  /// search, while the reserved internal bucket stays hidden from Settings.
+  Future<void> rememberExternalFile(
+    ScannedPdf scanned, {
+    int currentPage = 1,
+  }) async {
+    final existing = await (select(
+      libraryFiles,
+    )..where((tbl) => tbl.filePath.equals(scanned.filePath))).getSingleOrNull();
+    if (existing == null) {
+      final folder = await addLibraryFolder(externalFilesFolderPath);
+      await upsertLibraryFiles(
+        folder.id,
+        [scanned],
+        removeMissing: false,
+        reconcileRenames: false,
+      );
+    }
+    await updateReadingProgress(
+      scanned.filePath,
+      currentPage,
+      pageCount: scanned.pageCount,
+    );
   }
 
   /// Removes a library folder; its scanned files cascade away.
@@ -691,8 +763,10 @@ class AppDatabase extends _$AppDatabase {
   /// any tracked file that no longer exists on disk.
   Future<void> upsertLibraryFiles(
     int folderId,
-    List<ScannedPdf> scanned,
-  ) async {
+    List<ScannedPdf> scanned, {
+    bool removeMissing = true,
+    bool reconcileRenames = true,
+  }) async {
     await transaction(() async {
       final tracked = await (select(
         libraryFiles,
@@ -709,6 +783,50 @@ class AppDatabase extends _$AppDatabase {
         )..where((tbl) => tbl.filePath.equals(pdf.filePath))).getSingleOrNull();
 
         if (existing != null) {
+          final moved = reconcileRenames
+              ? missingTracked.where((file) {
+                  return !reconciledIds.contains(file.id) &&
+                      file.bookmarkCount == pdf.bookmarkCount &&
+                      file.fileSizeBytes == pdf.fileSizeBytes &&
+                      file.lastModified.isAtSameMomentAs(pdf.lastModified);
+                }).firstOrNull
+              : null;
+          if (moved != null && moved.id != existing.id) {
+            // A progressive scan may have inserted the new path before the
+            // final rename-reconciliation pass. Prefer the old row so reading
+            // progress, favorite state, and local associations survive.
+            await (delete(
+              libraryFiles,
+            )..where((tbl) => tbl.id.equals(existing.id))).go();
+            reconciledIds.add(moved.id);
+            await (update(
+              libraryFiles,
+            )..where((tbl) => tbl.id.equals(moved.id))).write(
+              LibraryFilesCompanion(
+                folderId: Value(folderId),
+                filePath: Value(pdf.filePath),
+                fileName: Value(pdf.fileName),
+                title: Value(pdf.title),
+                author: Value(pdf.author),
+                format: Value(pdf.format),
+                bookmarkCount: Value(pdf.bookmarkCount),
+                pageCount: Value(pdf.pageCount),
+                fileSizeBytes: Value(pdf.fileSizeBytes),
+                coverPath: Value(pdf.coverPath),
+                tags: Value(pdf.tags),
+                series: Value(pdf.series),
+                lastModified: Value(pdf.lastModified),
+                lastScanned: Value(DateTime.now()),
+              ),
+            );
+            await (update(bookmarks)
+                  ..where((tbl) => tbl.filePath.equals(moved.filePath)))
+                .write(BookmarksCompanion(filePath: Value(pdf.filePath)));
+            await (update(fileSnapshots)
+                  ..where((tbl) => tbl.filePath.equals(moved.filePath)))
+                .write(FileSnapshotsCompanion(filePath: Value(pdf.filePath)));
+            continue;
+          }
           await (update(
             libraryFiles,
           )..where((tbl) => tbl.id.equals(existing.id))).write(
@@ -743,11 +861,14 @@ class AppDatabase extends _$AppDatabase {
           // A rename or move inside the same library folder produces a new
           // path and a missing old path. Match the stable outline signature
           // (bookmark count + modification time) to retain local bookmarks.
-          final moved = missingTracked.where((file) {
-            return !reconciledIds.contains(file.id) &&
-                file.bookmarkCount == pdf.bookmarkCount &&
-                file.lastModified.isAtSameMomentAs(pdf.lastModified);
-          }).firstOrNull;
+          final moved = reconcileRenames
+              ? missingTracked.where((file) {
+                  return !reconciledIds.contains(file.id) &&
+                      file.bookmarkCount == pdf.bookmarkCount &&
+                      file.fileSizeBytes == pdf.fileSizeBytes &&
+                      file.lastModified.isAtSameMomentAs(pdf.lastModified);
+                }).firstOrNull
+              : null;
 
           if (moved != null) {
             reconciledIds.add(moved.id);
@@ -813,12 +934,14 @@ class AppDatabase extends _$AppDatabase {
         }
       }
 
-      for (final file in tracked) {
-        if (!livePaths.contains(file.filePath) &&
-            !reconciledIds.contains(file.id)) {
-          await (delete(
-            libraryFiles,
-          )..where((tbl) => tbl.id.equals(file.id))).go();
+      if (removeMissing) {
+        for (final file in tracked) {
+          if (!livePaths.contains(file.filePath) &&
+              !reconciledIds.contains(file.id)) {
+            await (delete(
+              libraryFiles,
+            )..where((tbl) => tbl.id.equals(file.id))).go();
+          }
         }
       }
     });
@@ -1002,6 +1125,7 @@ class AppDatabase extends _$AppDatabase {
     String? series,
     String? format,
     bool? onlyFavorites,
+    bool onlyOpened = false,
     LibrarySortBy sortBy = LibrarySortBy.title,
     bool ascending = true,
   }) async {
@@ -1011,6 +1135,9 @@ class AppDatabase extends _$AppDatabase {
     }
     if (onlyFavorites == true) {
       q.where((tbl) => tbl.isFavorite.equals(true));
+    }
+    if (onlyOpened) {
+      q.where((tbl) => tbl.lastOpened.isNotNull());
     }
     if (format != null && format.isNotEmpty) {
       q.where((tbl) => tbl.format.equals(format));
@@ -1060,7 +1187,9 @@ class AppDatabase extends _$AppDatabase {
           cmp = aAuthor.toLowerCase().compareTo(bAuthor.toLowerCase());
           break;
         case LibrarySortBy.dateAdded:
-          cmp = a.lastScanned.compareTo(b.lastScanned);
+          // IDs are assigned once when a book first enters the library,
+          // unlike lastScanned which changes on every watcher refresh.
+          cmp = a.id.compareTo(b.id);
           break;
         case LibrarySortBy.lastOpened:
           final aTime = a.lastOpened ?? DateTime.fromMillisecondsSinceEpoch(0);

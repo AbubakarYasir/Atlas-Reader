@@ -6,7 +6,7 @@
 
 **Current checkpoint:** N1 — Windows toolchain + empty-shell baseline
 
-**Current N1 status:** **In progress** — implementation/toolchain work is on branch `native-v2-n1-toolchain-baseline`; strict Debug/Release CI and physical Windows baseline evidence are required before owner review.
+**Current N1 status:** **In progress — automated build/CI verified; physical Windows baseline pending**
 
 **Previous checkpoint:** N0 — **Accepted by owner on 2026-09-22**
 
@@ -50,7 +50,7 @@ Qt 6.11.2 is the preferred current product-generation line, but the unauthentica
 
 This is a reproducibility decision for the alpha baseline. The Qt pin must be re-evaluated before later release qualification.
 
-## Implemented in N1 so far
+## Implemented in N1
 
 - prerelease advanced to `2.0.0-alpha.1`;
 - local Visual Studio 2022 x64 presets aligned with CI;
@@ -63,15 +63,25 @@ This is a reproducibility decision for the alpha baseline. The Qt pin must be re
 - shell language/direction switch for English/Arabic proof;
 - light/dark shell toggle;
 - PowerShell target-machine baseline harness;
+- one-command N1 qualification runner;
 - canonical N1 toolchain document and ADR;
 - N1 baseline evidence sheet.
 
+## Verified automated evidence
+
+Windows CI run **65** on commit `7a3772508dc2390506a9888875c22ae90ee2fe8b` passed both strict lanes:
+
+- Debug Configure/Build/CTest: PASS;
+- Release Configure/Build/CTest: PASS;
+- Atlas-owned C++ warnings treated as errors: PASS.
+
+Subsequent documentation/qualification-helper commits remain subject to the same branch CI; the code/build baseline itself is verified.
+
 ## Evidence still required before N1 can be Accepted
 
-- current branch-head Debug CI PASS;
-- current branch-head Release CI PASS;
-- target Windows 11 Release baseline using `tools/bench/measure-windows-shell.ps1`;
+- physical Windows 11 Release baseline using `tools/bench/run-n1-qualification.ps1`;
 - English/LTR and Arabic/RTL manual shell check;
+- light/dark shell check;
 - 100% and 200% Windows scale check;
 - clean repeated startup/shutdown check;
 - owner PASS.

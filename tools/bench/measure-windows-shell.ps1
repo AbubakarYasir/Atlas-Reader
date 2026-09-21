@@ -7,7 +7,8 @@ param(
     [string]$Language = "en",
     [ValidateSet("system", "light", "dark")]
     [string]$Theme = "system",
-    [string]$OutputPath = ""
+    [string]$OutputPath = "",
+    [string]$BuildCommit = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,6 +37,28 @@ if (-not [string]::IsNullOrWhiteSpace($outputDirectory)) {
     New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 }
 
+function Read-MetricsSafe {
+    param([string]$Path)
+
+    $items = @()
+    if (-not (Test-Path $Path)) {
+        return $items
+    }
+
+    foreach ($line in Get-Content $Path -ErrorAction SilentlyContinue) {
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
+        }
+        try {
+            $items += ($line | ConvertFrom-Json)
+        } catch {
+            # The app flushes complete JSON lines, but a live read can still
+            # race the final write. Ignore only the incomplete live line.
+        }
+    }
+    return $items
+}
+
 function Get-MetricValue {
     param(
         [Parameter(Mandatory = $true)]
@@ -60,16 +83,63 @@ function Get-Average {
     return [math]::Round(($numbers | Measure-Object -Average).Average, 3)
 }
 
+function Get-Percentile {
+    param(
+        [object[]]$Values,
+        [double]$Fraction
+    )
+
+    $numbers = @($Values | Where-Object { $null -ne $_ } | ForEach-Object { [double]$_ } | Sort-Object)
+    if ($numbers.Count -eq 0) {
+        return $null
+    }
+
+    $index = [math]::Ceiling($Fraction * ($numbers.Count - 1))
+    return [math]::Round($numbers[[int]$index], 3)
+}
+
 $os = Get-CimInstance Win32_OperatingSystem
 $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
 $computer = Get-CimInstance Win32_ComputerSystem
-$gpu = Get-CimInstance Win32_VideoController | Select-Object -First 1
+$gpuControllers = @(Get-CimInstance Win32_VideoController)
+$activeGpu = $gpuControllers | Where-Object { $null -ne $_.CurrentHorizontalResolution } | Select-Object -First 1
+if ($null -eq $activeGpu) {
+    $activeGpu = $gpuControllers | Select-Object -First 1
+}
 $logicalProcessors = [Math]::Max(1, [int]$computer.NumberOfLogicalProcessors)
 
-$gitSha = "unknown"
+$powerScheme = "unknown"
 try {
-    $gitSha = (git -C $repoRoot rev-parse HEAD 2>$null).Trim()
+    $powerScheme = ((& powercfg /getactivescheme 2>$null) | Out-String).Trim()
 } catch {
+    $powerScheme = "unknown"
+}
+
+$physicalDisks = @()
+try {
+    $physicalDisks = @(
+        Get-PhysicalDisk | ForEach-Object {
+            [pscustomobject]@{
+                friendly_name = $_.FriendlyName
+                media_type = [string]$_.MediaType
+                bus_type = [string]$_.BusType
+                size_gib = [math]::Round($_.Size / 1GB, 1)
+            }
+        }
+    )
+} catch {
+    $physicalDisks = @()
+}
+
+$gitSha = $BuildCommit.Trim()
+if ([string]::IsNullOrWhiteSpace($gitSha)) {
+    try {
+        $gitSha = (git -C $repoRoot rev-parse HEAD 2>$null).Trim()
+    } catch {
+        $gitSha = "unknown"
+    }
+}
+if ([string]::IsNullOrWhiteSpace($gitSha)) {
     $gitSha = "unknown"
 }
 
@@ -81,7 +151,7 @@ for ($i = 1; $i -le $Iterations; $i++) {
 
     $arguments = @(
         "--benchmark-shell",
-        "--quit-after-ms", "4500",
+        "--quit-after-ms", "6500",
         "--metrics-file", "`"$metricsPath`"",
         "--language", $Language,
         "--theme", $Theme
@@ -90,49 +160,70 @@ for ($i = 1; $i -le $Iterations; $i++) {
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     $process = Start-Process -FilePath $AppPath -ArgumentList $arguments -PassThru
 
-    $inputIdleMs = $null
-    try {
-        if ($process.WaitForInputIdle(5000)) {
-            $inputIdleMs = [math]::Round($stopwatch.Elapsed.TotalMilliseconds, 3)
+    # Wait for Atlas's own first-frame metric instead of WaitForInputIdle().
+    # Qt Quick does not provide a useful/consistent input-idle signal here and
+    # the old call could block until after auto-shutdown, corrupting memory data.
+    $firstFrameObserved = $false
+    $firstFrameDeadline = [DateTime]::UtcNow.AddSeconds(8)
+    while (-not $process.HasExited -and [DateTime]::UtcNow -lt $firstFrameDeadline) {
+        $liveMetrics = @(Read-MetricsSafe -Path $metricsPath)
+        if ($null -ne (Get-MetricValue -Metrics $liveMetrics -Name "startup.first_frame_ms")) {
+            $firstFrameObserved = $true
+            break
         }
-    } catch {
-        $inputIdleMs = $null
+        Start-Sleep -Milliseconds 50
+        $process.Refresh()
     }
 
-    Start-Sleep -Milliseconds 1200
-    $process.Refresh()
+    $workingSetMiB = $null
+    $privateMiB = $null
+    $normalizedCpuPercent = $null
+    $processSampleValid = $false
 
-    $workingSetMiB = [math]::Round($process.WorkingSet64 / 1MB, 3)
-    $privateMiB = [math]::Round($process.PrivateMemorySize64 / 1MB, 3)
-    $cpuStartMs = $process.TotalProcessorTime.TotalMilliseconds
+    if ($firstFrameObserved -and -not $process.HasExited) {
+        Start-Sleep -Milliseconds 350
+        $process.Refresh()
 
-    Start-Sleep -Milliseconds 1000
-    $process.Refresh()
-    $cpuDeltaMs = $process.TotalProcessorTime.TotalMilliseconds - $cpuStartMs
-    $normalizedCpuPercent = [math]::Round((($cpuDeltaMs / 1000.0) / $logicalProcessors) * 100.0, 3)
+        if (-not $process.HasExited) {
+            $workingSetMiB = [math]::Round($process.WorkingSet64 / 1MB, 3)
+            $privateMiB = [math]::Round($process.PrivateMemorySize64 / 1MB, 3)
+            $cpuStartMs = $process.TotalProcessorTime.TotalMilliseconds
+
+            Start-Sleep -Milliseconds 1000
+            $process.Refresh()
+            if (-not $process.HasExited) {
+                $cpuDeltaMs = $process.TotalProcessorTime.TotalMilliseconds - $cpuStartMs
+                $normalizedCpuPercent = [math]::Round((($cpuDeltaMs / 1000.0) / $logicalProcessors) * 100.0, 3)
+                $processSampleValid = $true
+            }
+        }
+    }
 
     $process.WaitForExit()
     $stopwatch.Stop()
 
-    $metricObjects = @()
-    if (Test-Path $metricsPath) {
-        $metricObjects = @(
-            Get-Content $metricsPath |
-                Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
-                ForEach-Object { $_ | ConvertFrom-Json }
-        )
-    }
+    $metricObjects = @(Read-MetricsSafe -Path $metricsPath)
 
     $runs += [pscustomobject]@{
         iteration = $i
         cache_class = if ($i -eq 1) { "cold_candidate" } else { "warm_candidate" }
         process_runtime_ms = [math]::Round($stopwatch.Elapsed.TotalMilliseconds, 3)
-        input_idle_ms = $inputIdleMs
+        first_frame_observed = $firstFrameObserved
+        process_sample_valid = $processSampleValid
         working_set_mib = $workingSetMiB
         private_memory_mib = $privateMiB
         idle_cpu_percent_one_second = $normalizedCpuPercent
+        qgui_application_ready_ms = Get-MetricValue -Metrics $metricObjects -Name "startup.qgui_application_ready_ms"
+        arguments_ready_ms = Get-MetricValue -Metrics $metricObjects -Name "startup.arguments_ready_ms"
+        metrics_ready_ms = Get-MetricValue -Metrics $metricObjects -Name "startup.metrics_ready_ms"
+        qml_engine_ready_ms = Get-MetricValue -Metrics $metricObjects -Name "startup.qml_engine_ready_ms"
+        before_qml_load_ms = Get-MetricValue -Metrics $metricObjects -Name "startup.before_qml_load_ms"
         qml_loaded_ms = Get-MetricValue -Metrics $metricObjects -Name "startup.qml_loaded_ms"
         first_frame_ms = Get-MetricValue -Metrics $metricObjects -Name "startup.first_frame_ms"
+        device_pixel_ratio = Get-MetricValue -Metrics $metricObjects -Name "display.device_pixel_ratio"
+        logical_dpi = Get-MetricValue -Metrics $metricObjects -Name "display.logical_dpi"
+        physical_dpi = Get-MetricValue -Metrics $metricObjects -Name "display.physical_dpi"
+        measured_refresh_hz = Get-MetricValue -Metrics $metricObjects -Name "display.refresh_hz"
         resize_frame_samples = Get-MetricValue -Metrics $metricObjects -Name "resize.frame_samples"
         resize_frame_p50_ms = Get-MetricValue -Metrics $metricObjects -Name "resize.frame_p50_ms"
         resize_frame_p95_ms = Get-MetricValue -Metrics $metricObjects -Name "resize.frame_p95_ms"
@@ -144,15 +235,16 @@ for ($i = 1; $i -le $Iterations; $i++) {
 }
 
 $warmRuns = @($runs | Where-Object { $_.cache_class -eq "warm_candidate" })
+$validWarmProcessRuns = @($warmRuns | Where-Object { $_.process_sample_valid })
 
 $report = [pscustomobject]@{
-    schema = "atlas.n1.windows-shell-baseline.v1"
+    schema = "atlas.n1.windows-shell-baseline.v2"
     generated_utc = (Get-Date).ToUniversalTime().ToString("o")
     git_sha = $gitSha
     app_path = $AppPath
     language = $Language
     theme = $Theme
-    note = "The first launch is a cold-cache candidate, not a guaranteed laboratory cold-cache run. Compare like-for-like runs on the same machine."
+    note = "The first launch is a cold-cache candidate, not a guaranteed laboratory cold-cache run. Compare like-for-like runs on the same machine. Process memory/CPU summaries include only samples captured after Atlas emitted its own first-frame metric while the process was still alive."
     machine = [pscustomobject]@{
         os_caption = $os.Caption
         os_version = $os.Version
@@ -160,22 +252,40 @@ $report = [pscustomobject]@{
         cpu = $cpu.Name
         logical_processors = $logicalProcessors
         ram_gib = [math]::Round($computer.TotalPhysicalMemory / 1GB, 2)
-        gpu = $gpu.Name
-        refresh_hz = $gpu.CurrentRefreshRate
+        gpu = if ($null -ne $activeGpu) { $activeGpu.Name } else { "unknown" }
+        gpu_all = @($gpuControllers | ForEach-Object { $_.Name })
+        display_resolution = if ($null -ne $activeGpu -and $null -ne $activeGpu.CurrentHorizontalResolution) { "$($activeGpu.CurrentHorizontalResolution)x$($activeGpu.CurrentVerticalResolution)" } else { "unknown" }
+        refresh_hz = if ($null -ne $activeGpu) { $activeGpu.CurrentRefreshRate } else { $null }
+        power_scheme = $powerScheme
+        physical_disks = $physicalDisks
+    }
+    measurement_quality = [pscustomobject]@{
+        total_runs = $runs.Count
+        warm_runs = $warmRuns.Count
+        valid_warm_process_samples = $validWarmProcessRuns.Count
+        first_frame_observed_runs = @($runs | Where-Object { $_.first_frame_observed }).Count
     }
     summary = [pscustomobject]@{
         cold_first_frame_ms = if ($runs.Count -gt 0) { $runs[0].first_frame_ms } else { $null }
         warm_first_frame_ms_average = Get-Average ($warmRuns | ForEach-Object { $_.first_frame_ms })
-        warm_working_set_mib_average = Get-Average ($warmRuns | ForEach-Object { $_.working_set_mib })
-        warm_private_memory_mib_average = Get-Average ($warmRuns | ForEach-Object { $_.private_memory_mib })
-        warm_idle_cpu_percent_average = Get-Average ($warmRuns | ForEach-Object { $_.idle_cpu_percent_one_second })
+        warm_first_frame_ms_p50 = Get-Percentile ($warmRuns | ForEach-Object { $_.first_frame_ms }) 0.50
+        warm_first_frame_ms_p95 = Get-Percentile ($warmRuns | ForEach-Object { $_.first_frame_ms }) 0.95
+        warm_qml_loaded_ms_average = Get-Average ($warmRuns | ForEach-Object { $_.qml_loaded_ms })
+        warm_qml_loaded_ms_p95 = Get-Percentile ($warmRuns | ForEach-Object { $_.qml_loaded_ms }) 0.95
+        warm_working_set_mib_average = Get-Average ($validWarmProcessRuns | ForEach-Object { $_.working_set_mib })
+        warm_private_memory_mib_average = Get-Average ($validWarmProcessRuns | ForEach-Object { $_.private_memory_mib })
+        warm_idle_cpu_percent_average = Get-Average ($validWarmProcessRuns | ForEach-Object { $_.idle_cpu_percent_one_second })
         warm_resize_p95_ms_average = Get-Average ($warmRuns | ForEach-Object { $_.resize_frame_p95_ms })
         warm_resize_p99_ms_average = Get-Average ($warmRuns | ForEach-Object { $_.resize_frame_p99_ms })
+        device_pixel_ratio = if ($runs.Count -gt 0) { $runs[0].device_pixel_ratio } else { $null }
+        logical_dpi = if ($runs.Count -gt 0) { $runs[0].logical_dpi } else { $null }
+        measured_refresh_hz = if ($runs.Count -gt 0) { $runs[0].measured_refresh_hz } else { $null }
     }
     runs = $runs
 }
 
-$report | ConvertTo-Json -Depth 8 | Set-Content -Encoding UTF8 $OutputPath
+$report | ConvertTo-Json -Depth 10 | Set-Content -Encoding UTF8 $OutputPath
 
 Write-Host "Atlas N1 shell baseline written to: $OutputPath"
+$report.measurement_quality | Format-List
 $report.summary | Format-List

@@ -5,6 +5,9 @@ on:
     branches: ['**']
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build-test:
     runs-on: windows-latest
@@ -12,12 +15,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
+      # Qt 6.11.x is the preferred product-generation line, but as of the
+      # 2026-09 bootstrap aqt/install-qt-action cannot reliably install the
+      # Windows 6.11 repository from the public mirror. Keep public CI on the
+      # last reproducibly installable compatible patch and re-qualify 6.11.x
+      # in N1 rather than requiring private Qt account secrets in public CI.
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.11.2'
+          version: '6.10.3'
           host: 'windows'
           target: 'desktop'
           arch: 'win64_msvc2022_64'

@@ -22,7 +22,11 @@ All notable changes to Atlas Reader Native are documented here.
 - Added release strategy, ADR process, vcpkg dependency ADR, and development workflow documentation.
 - Expanded licensing/third-party/SBOM guardrails.
 - Added measurable provisional performance budgets and benchmark hygiene.
-- Updated master plan, README, INFO, build guide, stack guide, and AGENTS rules around the completed 2.0 program.
+- Added Atlas-owned data/format contracts covering document identity, destinations, bookmark overlay states, versioned interchange, backups, and migration boundaries.
+- Added a product/engineering success scorecard so beta progression is measured by safety, correctness, responsiveness, accessibility, interoperability, and resource use rather than feature count.
+- Added a living risk register for engine, corruption, licensing, C++ safety, portability, accessibility, migration, packaging, scope, and performance risks.
+- Added `docs/N0_HANDOFF.md` as the explicit owner-review/acceptance checklist.
+- Updated master plan, README, INFO, build guide, stack guide, documentation index, and AGENTS rules around the completed 2.0 program.
 - Explicitly kept production PDF engines, SQLite, scanning, reader features, bookmarks, annotations, migration, and installer code out of N0.
 
 ### Bootstrap CI findings and verification
@@ -34,7 +38,7 @@ Early CI runs exposed two useful setup defects:
 
 The Windows runner was also pinned to Windows 2022 with the Visual Studio 17 2022 x64 generator to match the MSVC 2022 Qt kit instead of inheriting changing `windows-latest` toolchains.
 
-**Verification:** Windows CI run 27 on commit `bb359876fc67d972b079bdaf643158952fb68638` passed Qt installation, CMake Configure, Release Build, and CTest/core smoke. N0 is therefore **Verified / Ready for owner test**, but not Accepted until explicit owner PASS.
+Windows CI has subsequently passed the full Qt installation → CMake Configure → Release Build → CTest/core-smoke path on the native bootstrap branch, including the status/documentation handoff state. N0 is therefore **Verified / Ready for owner test**, but not Accepted until explicit owner PASS. Branch-head CI must remain green after documentation-only completion commits.
 
 ## Versioning
 

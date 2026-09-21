@@ -51,6 +51,34 @@ jobs:
             Write-Host "PowerShell syntax OK: $file"
           }
 
+          # Runtime-contract smoke test for the live metrics poll. At process
+          # start the metrics file legitimately may not exist yet, so the first
+          # read returns @(). This exact case previously passed syntax checks but
+          # failed parameter binding on the physical qualification machine.
+          $tokens = $null
+          $parseErrors = $null
+          $measureAst = [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'tools/bench/measure-windows-shell.ps1'),
+            [ref]$tokens,
+            [ref]$parseErrors
+          )
+          $getMetricFunction = $measureAst.Find({
+            param($node)
+            $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+              $node.Name -eq 'Get-MetricValue'
+          }, $true)
+
+          if ($null -eq $getMetricFunction) {
+            throw 'Get-MetricValue function not found in measurement script'
+          }
+
+          Invoke-Expression $getMetricFunction.Extent.Text
+          $emptyMetricResult = Get-MetricValue -Metrics @() -Name 'startup.first_frame_ms'
+          if ($null -ne $emptyMetricResult) {
+            throw 'Get-MetricValue must return null for an empty live metrics collection'
+          }
+          Write-Host 'PowerShell runtime contract OK: empty live metric poll'
+
       # N1 canonical public alpha baseline. Qt 6.11.2 remains the preferred
       # current product-generation line, but public aqt Windows 6.11.x binary
       # installation is not reproducible without the official authenticated

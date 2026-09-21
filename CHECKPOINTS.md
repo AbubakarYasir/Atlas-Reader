@@ -10,12 +10,14 @@ This file controls implementation order. Only one checkpoint is active at a time
 |---|---|
 | Checkpoint | **N0 — Native repository bootstrap** |
 | Planned version | `2.0.0-alpha.0` (engineering bootstrap; not normal user release) |
-| Status | **In progress — documentation/toolchain verification** |
+| Status | **Ready for owner test** |
 | Scope | Documentation, CMake/Qt shell, core interfaces, smoke test, CI and agent/tooling skeleton |
 | Explicitly excluded | PDF engine integration, SQLite implementation, indexing, reader, bookmarks |
 | Primary platform | Windows 11 |
+| Automated evidence | Windows CI run 27 on commit `bb359876fc67d972b079bdaf643158952fb68638`: Qt install, CMake Configure, Release Build, and CTest all passed |
+| CI bootstrap toolchain | Windows 2022 runner · Visual Studio 17 2022 x64 · public Qt 6.10.3 compatibility pin |
 
-N0 is not Accepted until Windows CI has successfully configured, built, and run tests on the bootstrap tree and the owner accepts the architecture/documentation program.
+N0 is **Verified but not Accepted**. The native source/build foundation has passed public Windows CI; the owner must still review this architecture/documentation program and explicitly record PASS before N1 begins.
 
 ## Operating contract
 
@@ -34,7 +36,7 @@ N0 is not Accepted until Windows CI has successfully configured, built, and run 
 
 | ID | Planned release | Checkpoint | Status |
 |---|---|---|---|
-| N0 | `2.0.0-alpha.0` | Native repository bootstrap | **In progress** |
+| N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Ready for owner test** |
 | N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | Not started |
 | N2 | `2.0.0-alpha.2` | PDF engine qualification spike | Not started |
 | N3 | `2.0.0-beta.1` | Library/index foundation | Not started |
@@ -67,15 +69,32 @@ Corrective builds may increment beta/RC identifiers/build metadata. Never reuse 
 - pure C++ smoke test compiles/runs;
 - Windows CI configures/builds/tests successfully;
 - `.codex`/AGENTS agent-navigation rules exist;
-- architecture, feature scope, stack/dependencies, build, release strategy, performance, quality/testing, UX/accessibility, licensing, migration, competitive baseline, platform, and core-workflow docs exist;
+- architecture, feature scope, stack/dependencies, build, release strategy, performance, quality/testing, UX/accessibility, security, licensing, migration, competitive baseline, platform, upstream-tool catalog, and core-workflow docs exist;
 - no Flutter product source copied into native tree;
 - owner accepts repository naming/separation and program plan.
 
+### Automated verification
+
+Windows CI run 27 verified the bootstrap code/build path on commit `bb359876fc67d972b079bdaf643158952fb68638`:
+
+- public Qt installation: PASS;
+- CMake Configure: PASS;
+- Release Build: PASS;
+- CTest/core smoke: PASS.
+
+The exact product Qt 6.11.x patch remains an N1 toolchain qualification decision; public N0 CI uses the compatible Qt 6.10.3 pin because public aqt Windows 6.11.x repository installation is currently unreliable.
+
 ### Owner test
 
-Review documentation hierarchy and source tree; build the shell on a Windows dev machine when available; confirm there is no accidental feature implementation or Flutter coupling.
+1. Review `README.md`, `PLAN.md`, this checkpoint ledger, and `docs/README.md`.
+2. Confirm the Windows 2.0 scope and explicit non-goals match the intended product.
+3. Confirm the release sequence (alphas → betas → RC → `2.0.0`) is acceptable.
+4. Confirm the native architecture and dependency/tool policy are acceptable.
+5. Inspect the clean native source tree and confirm there is no accidental Flutter coupling or premature product implementation.
+6. Optionally build/run the minimal shell on the target Windows development machine; CI has already verified the reproducible build path.
+7. Record **PASS** to accept N0, or list defects/changes required while keeping N0 active.
 
-**Stop gate:** N1 does not begin until CI is green and owner records PASS.
+**Stop gate:** N1 does not begin until owner records PASS.
 
 ---
 

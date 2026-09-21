@@ -4,6 +4,7 @@ param(
     [ValidateRange(2, 50)]
     [int]$ArabicIterations = 3,
     [switch]$StartupDiagnostics,
+    [switch]$FontEngineDiagnostics,
     [ValidateRange(2, 10)]
     [int]$DiagnosticIterations = 3
 )
@@ -33,119 +34,228 @@ if (Test-Path $buildInfoPath) {
     }
 }
 
-if ($StartupDiagnostics) {
-    function Read-DiagnosticMetrics {
-        param([string]$Path)
+function Read-DiagnosticMetrics {
+    param([string]$Path)
 
-        $items = @()
-        if (-not (Test-Path $Path)) {
-            return $items
-        }
-
-        foreach ($line in Get-Content $Path -ErrorAction SilentlyContinue) {
-            if ([string]::IsNullOrWhiteSpace($line)) {
-                continue
-            }
-            try {
-                $items += ($line | ConvertFrom-Json)
-            } catch {
-                # Ignore only an incomplete final line.
-            }
-        }
+    $items = @()
+    if (-not (Test-Path $Path)) {
         return $items
     }
 
-    function Get-DiagnosticMetricValue {
-        param(
-            [AllowNull()]
-            [AllowEmptyCollection()]
-            [object[]]$Metrics,
-            [string]$Name
-        )
-
-        if ($null -eq $Metrics -or $Metrics.Count -eq 0) {
-            return $null
+    foreach ($line in Get-Content $Path -ErrorAction SilentlyContinue) {
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
         }
-
-        $item = $Metrics | Where-Object { $_.metric -eq $Name } | Select-Object -Last 1
-        if ($null -eq $item) {
-            return $null
+        try {
+            $items += ($line | ConvertFrom-Json)
+        } catch {
+            # Ignore only an incomplete final line.
         }
+    }
+    return $items
+}
 
-        return [double]$item.value
+function Get-DiagnosticMetricValue {
+    param(
+        [AllowNull()]
+        [AllowEmptyCollection()]
+        [object[]]$Metrics,
+        [string]$Name
+    )
+
+    if ($null -eq $Metrics -or $Metrics.Count -eq 0) {
+        return $null
     }
 
-    function Get-DiagnosticPercentile {
-        param(
-            [object[]]$Values,
-            [double]$Fraction
-        )
-
-        $numbers = @($Values | Where-Object { $null -ne $_ } | ForEach-Object { [double]$_ } | Sort-Object)
-        if ($numbers.Count -eq 0) {
-            return $null
-        }
-
-        $index = [math]::Ceiling($Fraction * ($numbers.Count - 1))
-        return [math]::Round($numbers[[int]$index], 3)
+    $item = $Metrics | Where-Object { $_.metric -eq $Name } | Select-Object -Last 1
+    if ($null -eq $item) {
+        return $null
     }
 
-    function Invoke-StartupProbe {
-        param(
-            [string]$Profile,
-            [string]$Language,
-            [int]$Iteration,
-            [bool]$Recorded
-        )
+    return [double]$item.value
+}
 
-        $tag = if ($Recorded) { "m$Iteration" } else { "prewarm" }
-        $metricsPath = Join-Path $env:TEMP "atlas-n1-startup-$PID-$Profile-$Language-$tag.jsonl"
-        Remove-Item -Force -ErrorAction SilentlyContinue $metricsPath
+function Get-DiagnosticPercentile {
+    param(
+        [object[]]$Values,
+        [double]$Fraction
+    )
 
-        $arguments = @(
-            "--quit-after-ms", "1200",
-            "--metrics-file", "`"$metricsPath`"",
-            "--language", $Language,
-            "--theme", "system",
-            "--shell-profile", $Profile
-        )
+    $numbers = @($Values | Where-Object { $null -ne $_ } | ForEach-Object { [double]$_ } | Sort-Object)
+    if ($numbers.Count -eq 0) {
+        return $null
+    }
 
-        $process = Start-Process -FilePath $appPath -ArgumentList $arguments -PassThru -Wait
-        if ($process.ExitCode -ne 0) {
-            throw "Atlas startup probe failed: profile=$Profile language=$Language exit=$($process.ExitCode)"
+    $index = [math]::Ceiling($Fraction * ($numbers.Count - 1))
+    return [math]::Round($numbers[[int]$index], 3)
+}
+
+function Invoke-StartupProbe {
+    param(
+        [string]$Profile,
+        [string]$Language,
+        [int]$Iteration,
+        [bool]$Recorded,
+        [string]$FontEngine = "default"
+    )
+
+    $tag = if ($Recorded) { "m$Iteration" } else { "prewarm" }
+    $metricsPath = Join-Path $env:TEMP "atlas-n1-startup-$PID-$Profile-$Language-$FontEngine-$tag.jsonl"
+    Remove-Item -Force -ErrorAction SilentlyContinue $metricsPath
+
+    $arguments = @()
+    if ($FontEngine -eq "gdi") {
+        $arguments += @("-platform", "windows:fontengine=gdi")
+    } elseif ($FontEngine -eq "freetype") {
+        $arguments += @("-platform", "windows:fontengine=freetype")
+    }
+
+    $arguments += @(
+        "--quit-after-ms", "1200",
+        "--metrics-file", "`"$metricsPath`"",
+        "--language", $Language,
+        "--theme", "system",
+        "--shell-profile", $Profile
+    )
+
+    $process = Start-Process -FilePath $appPath -ArgumentList $arguments -PassThru -Wait
+    if ($process.ExitCode -ne 0) {
+        throw "Atlas startup probe failed: profile=$Profile language=$Language font_engine=$FontEngine exit=$($process.ExitCode)"
+    }
+
+    $metrics = @(Read-DiagnosticMetrics -Path $metricsPath)
+    $beforeLoad = Get-DiagnosticMetricValue -Metrics $metrics -Name "startup.before_qml_load_ms"
+    $qmlLoaded = Get-DiagnosticMetricValue -Metrics $metrics -Name "startup.qml_loaded_ms"
+    $firstFrame = Get-DiagnosticMetricValue -Metrics $metrics -Name "startup.first_frame_ms"
+
+    Remove-Item -Force -ErrorAction SilentlyContinue $metricsPath
+
+    if (-not $Recorded) {
+        return $null
+    }
+
+    return [pscustomobject]@{
+        profile = $Profile
+        language = $Language
+        font_engine = $FontEngine
+        iteration = $Iteration
+        before_qml_load_ms = $beforeLoad
+        qml_loaded_ms = $qmlLoaded
+        first_frame_ms = $firstFrame
+        qml_load_cost_ms = if ($null -ne $beforeLoad -and $null -ne $qmlLoaded) {
+            [math]::Round($qmlLoaded - $beforeLoad, 3)
+        } else {
+            $null
         }
-
-        $metrics = @(Read-DiagnosticMetrics -Path $metricsPath)
-        $beforeLoad = Get-DiagnosticMetricValue -Metrics $metrics -Name "startup.before_qml_load_ms"
-        $qmlLoaded = Get-DiagnosticMetricValue -Metrics $metrics -Name "startup.qml_loaded_ms"
-        $firstFrame = Get-DiagnosticMetricValue -Metrics $metrics -Name "startup.first_frame_ms"
-
-        Remove-Item -Force -ErrorAction SilentlyContinue $metricsPath
-
-        if (-not $Recorded) {
-            return $null
+        post_qml_to_first_frame_ms = if ($null -ne $qmlLoaded -and $null -ne $firstFrame) {
+            [math]::Round($firstFrame - $qmlLoaded, 3)
+        } else {
+            $null
         }
+    }
+}
 
-        return [pscustomobject]@{
-            profile = $Profile
-            language = $Language
-            iteration = $Iteration
-            before_qml_load_ms = $beforeLoad
-            qml_loaded_ms = $qmlLoaded
-            first_frame_ms = $firstFrame
-            qml_load_cost_ms = if ($null -ne $beforeLoad -and $null -ne $qmlLoaded) {
-                [math]::Round($qmlLoaded - $beforeLoad, 3)
-            } else {
-                $null
+if ($FontEngineDiagnostics) {
+    $fontFileCount = 0
+    $userFontRegistryCount = 0
+
+    $windowsFonts = Join-Path $env:WINDIR "Fonts"
+    if (Test-Path $windowsFonts) {
+        $fontFileCount = @(Get-ChildItem -LiteralPath $windowsFonts -File -ErrorAction SilentlyContinue).Count
+    }
+
+    $userFontsKey = "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+    if (Test-Path $userFontsKey) {
+        $fontProperties = (Get-ItemProperty -Path $userFontsKey -ErrorAction SilentlyContinue).PSObject.Properties
+        $userFontRegistryCount = @($fontProperties | Where-Object { $_.Name -notmatch '^PS' }).Count
+    }
+
+    $engines = @("default", "gdi", "freetype")
+    $scenarios = @(
+        [pscustomobject]@{ profile = "text"; language = "en" },
+        [pscustomobject]@{ profile = "text"; language = "ar" },
+        [pscustomobject]@{ profile = "full"; language = "en" },
+        [pscustomobject]@{ profile = "full"; language = "ar" }
+    )
+
+    Write-Host "=== Atlas N1 Windows font-engine diagnostic ==="
+    Write-Host "Executable: $appPath"
+    Write-Host "Commit: $buildCommit"
+    Write-Host "Warm measured iterations per scenario/backend: $DiagnosticIterations"
+    Write-Host "Windows Fonts directory file count: $fontFileCount"
+    Write-Host "Per-user font registry entry count: $userFontRegistryCount"
+    Write-Host ""
+
+    $results = @()
+
+    foreach ($engine in $engines) {
+        foreach ($scenario in $scenarios) {
+            Write-Host "Prewarm: $engine / $($scenario.profile) / $($scenario.language)"
+            Invoke-StartupProbe -Profile $scenario.profile -Language $scenario.language -Iteration 0 -Recorded $false -FontEngine $engine | Out-Null
+
+            for ($i = 1; $i -le $DiagnosticIterations; $i++) {
+                Write-Host "Measure: $engine / $($scenario.profile) / $($scenario.language) [$i/$DiagnosticIterations]"
+                $results += Invoke-StartupProbe `
+                    -Profile $scenario.profile `
+                    -Language $scenario.language `
+                    -Iteration $i `
+                    -Recorded $true `
+                    -FontEngine $engine
             }
-            post_qml_to_first_frame_ms = if ($null -ne $qmlLoaded -and $null -ne $firstFrame) {
-                [math]::Round($firstFrame - $qmlLoaded, 3)
-            } else {
-                $null
+        }
+    }
+
+    $summary = @()
+    foreach ($engine in $engines) {
+        foreach ($scenario in $scenarios) {
+            $scenarioRuns = @($results | Where-Object {
+                $_.font_engine -eq $engine -and
+                $_.profile -eq $scenario.profile -and
+                $_.language -eq $scenario.language
+            })
+
+            $summary += [pscustomobject]@{
+                font_engine = $engine
+                profile = $scenario.profile
+                language = $scenario.language
+                samples = $scenarioRuns.Count
+                first_frame_p50_ms = Get-DiagnosticPercentile ($scenarioRuns | ForEach-Object { $_.first_frame_ms }) 0.50
+                first_frame_p95_ms = Get-DiagnosticPercentile ($scenarioRuns | ForEach-Object { $_.first_frame_ms }) 0.95
+                qml_load_cost_p50_ms = Get-DiagnosticPercentile ($scenarioRuns | ForEach-Object { $_.qml_load_cost_ms }) 0.50
+                qml_load_cost_p95_ms = Get-DiagnosticPercentile ($scenarioRuns | ForEach-Object { $_.qml_load_cost_ms }) 0.95
+                post_qml_to_first_frame_p95_ms = Get-DiagnosticPercentile ($scenarioRuns | ForEach-Object { $_.post_qml_to_first_frame_ms }) 0.95
             }
         }
     }
 
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $outputPath = Join-Path $packageRoot "artifacts\bench\n1-font-engine-diagnostics-$stamp.json"
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $outputPath) | Out-Null
+
+    $report = [pscustomobject]@{
+        schema = "atlas.n1.font-engine-diagnostics.v1"
+        generated_utc = (Get-Date).ToUniversalTime().ToString("o")
+        git_sha = if ([string]::IsNullOrWhiteSpace($buildCommit)) { "unknown" } else { $buildCommit }
+        note = "Diagnostic-only comparison of Windows Qt font backends after the startup matrix isolated first text/font initialization as the dominant cost. This is not an N1 acceptance report."
+        font_environment = [pscustomobject]@{
+            windows_fonts_directory_file_count = $fontFileCount
+            per_user_font_registry_entry_count = $userFontRegistryCount
+        }
+        scenarios = $summary
+        runs = $results
+    }
+
+    $report | ConvertTo-Json -Depth 8 | Set-Content -Encoding UTF8 $outputPath
+
+    Write-Host ""
+    Write-Host "Font-engine diagnostic report written to:"
+    Write-Host $outputPath
+    Write-Host ""
+    $summary | Format-Table -AutoSize
+    return
+}
+
+if ($StartupDiagnostics) {
     $scenarios = @(
         [pscustomobject]@{ profile = "bare"; language = "en" },
         [pscustomobject]@{ profile = "text"; language = "en" },

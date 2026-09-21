@@ -20,6 +20,7 @@ Use this page to find the authoritative document instead of duplicating requirem
 - **`ARCHITECTURE.md`** — layers, thread model, reader viewport, PDF/storage/platform ports.
 - **`TECH_STACK.md`** — chosen technical stack and alternatives.
 - **`DEPENDENCIES_AND_TOOLS.md`** — open-source dependencies, profilers, IDE plugins, GitHub/agent automation, acceptance policy.
+- **`SECURITY_MODEL.md`** — untrusted PDFs/imports/paths, password/privacy, safe mutation, dependency security, hardening.
 - **`PERFORMANCE.md`** — budgets, benchmark methodology, regression rules.
 - **`QUALITY_AND_TESTING.md`** — unit/component/integration/fixture/interoperability/accessibility/failure-injection gates.
 - **`BUILDING.md`** — local/CI build instructions and toolchain pins.

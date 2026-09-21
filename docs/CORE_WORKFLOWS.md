@@ -386,6 +386,15 @@ Reference material:
 
 The next bookmark checkpoint should not be implemented as one large UI patch. After C1 is accepted, C2 should proceed internally in this order:
 
+### C2.0 — Index and document-identity hardening
+
+- classify availability/capability states during indexing where detectable;
+- make nested/overlapping roots duplicate-safe;
+- guard junction/reparse traversal against cycles;
+- preserve indexed books when a root is temporarily unavailable;
+- make rename/move identity matching conservative and keep ambiguous copies separate;
+- isolate permission-denied/corrupt/encrypted files instead of failing a whole scan.
+
 ### C2.1 — Capability and local-overlay foundation
 
 - detect/open restricted and read-only states;

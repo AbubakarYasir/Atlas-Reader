@@ -68,3 +68,47 @@ jobs:
           ctest --test-dir build/ci-${{ matrix.configuration }}
           -C ${{ matrix.configuration }}
           --output-on-failure
+
+      - name: Stage canonical N1 portable shell
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          $stage = Join-Path $PWD 'artifact/n1-windows-x64'
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          New-Item -ItemType Directory -Force -Path (Join-Path $stage 'tools/bench') | Out-Null
+
+          $exe = Join-Path $PWD 'build/ci-Release/Release/atlas_reader.exe'
+          if (-not (Test-Path $exe)) {
+            throw "Release executable not found at $exe"
+          }
+
+          Copy-Item $exe (Join-Path $stage 'atlas_reader.exe')
+          Copy-Item 'tools/bench/measure-windows-shell.ps1' (Join-Path $stage 'tools/bench/measure-windows-shell.ps1')
+          Copy-Item 'tools/bench/run-n1-packaged-qualification.ps1' (Join-Path $stage 'tools/bench/run-n1-packaged-qualification.ps1')
+          Copy-Item 'docs/baselines/N1_WINDOWS_BASELINE.md' (Join-Path $stage 'N1_WINDOWS_BASELINE.md')
+
+          $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
+          & $deploy --release --qmldir (Join-Path $PWD 'qml') (Join-Path $stage 'atlas_reader.exe')
+          if ($LASTEXITCODE -ne 0) {
+            throw "windeployqt failed with exit code $LASTEXITCODE"
+          }
+
+          @(
+            'Atlas Reader Native N1 portable qualification artifact'
+            'Version: 2.0.0-alpha.1'
+            'Commit: ${{ github.sha }}'
+            'GitHub run: ${{ github.run_id }}'
+            'Configuration: Release'
+            'Generator: Visual Studio 17 2022 x64'
+            'Qt: 6.10.3 MSVC 2022 64-bit'
+            'Purpose: physical Windows baseline qualification only; not a user release'
+          ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N1_BUILD_INFO.txt')
+
+      - name: Upload canonical N1 portable shell
+        if: matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n1-windows-x64-${{ github.sha }}
+          path: artifact/n1-windows-x64
+          if-no-files-found: error
+          retention-days: 14

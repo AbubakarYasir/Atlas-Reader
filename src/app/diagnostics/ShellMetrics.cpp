@@ -7,6 +7,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QQuickWindow>
+#include <QScreen>
 #include <QSize>
 
 #include <algorithm>
@@ -66,6 +67,14 @@ ShellMetrics::ShellMetrics(Clock::time_point processStart,
     }
 }
 
+void ShellMetrics::recordCheckpoint(const QString& metricName, Clock::time_point checkpoint) {
+    writeMetric(metricName, elapsedMsAt(checkpoint), QStringLiteral("ms"));
+}
+
+void ShellMetrics::recordStage(const QString& metricName) {
+    writeMetric(metricName, elapsedMs(), QStringLiteral("ms"));
+}
+
 void ShellMetrics::recordQmlLoaded() {
     writeMetric(QStringLiteral("startup.qml_loaded_ms"), elapsedMs(), QStringLiteral("ms"));
 }
@@ -74,6 +83,16 @@ void ShellMetrics::attach(QQuickWindow* window) {
     window_ = window;
     if (!window_) {
         return;
+    }
+
+    writeMetric(QStringLiteral("display.device_pixel_ratio"), window_->devicePixelRatio(), QStringLiteral("ratio"));
+    writeMetric(QStringLiteral("display.window_width_px"), window_->width(), QStringLiteral("px"));
+    writeMetric(QStringLiteral("display.window_height_px"), window_->height(), QStringLiteral("px"));
+
+    if (const QScreen* screen = window_->screen()) {
+        writeMetric(QStringLiteral("display.logical_dpi"), screen->logicalDotsPerInch(), QStringLiteral("dpi"));
+        writeMetric(QStringLiteral("display.physical_dpi"), screen->physicalDotsPerInch(), QStringLiteral("dpi"));
+        writeMetric(QStringLiteral("display.refresh_hz"), screen->refreshRate(), QStringLiteral("hz"));
     }
 
     connect(window_, &QQuickWindow::frameSwapped, this, [this] { onFrameSwapped(); });
@@ -166,7 +185,11 @@ void ShellMetrics::writeMetric(const QString& name, double value, const QString&
 }
 
 double ShellMetrics::elapsedMs() const {
-    return std::chrono::duration<double, std::milli>(Clock::now() - processStart_).count();
+    return elapsedMsAt(Clock::now());
+}
+
+double ShellMetrics::elapsedMsAt(Clock::time_point checkpoint) const {
+    return std::chrono::duration<double, std::milli>(checkpoint - processStart_).count();
 }
 
 double ShellMetrics::percentile(std::vector<double> samples, double fraction) {

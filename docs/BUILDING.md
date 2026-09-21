@@ -1,101 +1,172 @@
 # Building Atlas Reader Native
 
-N0 is intentionally a small Qt Quick/C++ build with no PDF/database dependency.
+N1 is still an empty-shell/toolchain checkpoint. It intentionally contains no production PDF/database/index/bookmark dependency.
 
-## Windows prerequisites
+## Canonical Windows baseline
 
-- Windows 11 recommended
-- Visual Studio 2022 with **Desktop development with C++**
-- CMake >= 3.28
-- Ninja
-- Git
-- Qt desktop kit for **MSVC 2022 64-bit**
+See `TOOLCHAIN.md` for the binding N1 toolchain policy.
 
-### Qt version note
+For the public alpha baseline:
 
-Preferred product-generation line: Qt **6.11.x**. Local experimentation may use 6.11.2 while N1 qualifies the final canonical patch.
+- Windows 11 development machine recommended;
+- Visual Studio 2022 with **Desktop development with C++**;
+- Visual Studio 17 2022 x64 CMake generator;
+- MSVC v143;
+- CMake >= 3.28;
+- Git;
+- Qt **6.10.3** MSVC 2022 64-bit for canonical public parity.
 
-Public bootstrap CI currently pins **Qt 6.10.3** because the public aqt/install-qt-action Windows 6.11 repository path is failing upstream. N1 must converge CI/local release development onto one reproducible canonical Qt patch before feature implementation.
+Qt 6.11.2 may also be used as an additional developer compatibility build. It is not the public N1 canonical pin because the unauthenticated `aqtinstall` Windows 6.11.x binary path is currently unreliable.
 
-Qt Creator is optional; command-line builds are the canonical reproducible path.
+Qt Creator is optional. The repository command line remains the source of truth.
 
 ## Environment
 
-Example for a local 6.11.2 installation:
-
-```powershell
-$env:CMAKE_PREFIX_PATH = 'C:\Qt\6.11.2\msvc2022_64'
-```
-
-Or for 6.10.3:
+Canonical N1 public baseline:
 
 ```powershell
 $env:CMAKE_PREFIX_PATH = 'C:\Qt\6.10.3\msvc2022_64'
 ```
 
-Use a **Developer PowerShell for VS 2022** so `cl.exe` is available with Ninja.
+Optional Qt 6.11.2 compatibility build:
+
+```powershell
+$env:CMAKE_PREFIX_PATH = 'C:\Qt\6.11.2\msvc2022_64'
+```
 
 Verify:
 
 ```powershell
 cmake --version
-ninja --version
-cl
+git --version
 ```
 
-## Configure/build/test
+The Visual Studio generator discovers MSVC without requiring a Ninja-specific Developer PowerShell workflow.
 
-Debug:
+## Configure once
 
 ```powershell
-cmake --preset windows-debug
+cmake --preset windows-msvc2022
+```
+
+## Debug
+
+```powershell
 cmake --build --preset windows-debug
 ctest --preset windows-debug
 ```
 
-Release:
+Run:
 
 ```powershell
-cmake --preset windows-release
+.\build\windows-msvc2022\Debug\atlas_reader.exe
+```
+
+## Release
+
+```powershell
 cmake --build --preset windows-release
 ctest --preset windows-release
 ```
 
-Run (path can vary by generator/configuration):
+Run:
 
 ```powershell
-.\build\windows-debug\atlas_reader.exe
+.\build\windows-msvc2022\Release\atlas_reader.exe
 ```
 
-## What success means in N0
+If the executable cannot locate Qt runtime DLLs, either launch from a Qt-aware environment or prepend the Qt kit's `bin` directory to `PATH`.
 
-- CMake configures against Qt;
-- `atlas_reader` compiles;
-- minimal QML window opens;
-- `atlas_core_smoke` passes;
-- the same configure/build/test path passes in public Windows CI.
+## N1 shell command-line options
 
-It does **not** mean PDF/index/bookmark behavior exists.
+The alpha shell exposes test-only controls so startup/RTL/theme behavior is reproducible:
+
+```text
+--language en|ar
+--theme system|light|dark
+--quit-after-ms N
+--metrics-file PATH
+--benchmark-shell
+```
+
+Examples:
+
+```powershell
+.\build\windows-msvc2022\Release\atlas_reader.exe --language ar --theme dark
+```
+
+```powershell
+.\build\windows-msvc2022\Release\atlas_reader.exe `
+  --benchmark-shell `
+  --quit-after-ms 4500 `
+  --metrics-file .\artifacts\bench\manual.jsonl
+```
+
+The metrics file contains only explicit N1 numeric lifecycle/frame measurements. Ordinary product/document content must never be written into it.
+
+## Windows baseline harness
+
+Run:
+
+```powershell
+.\tools\bench\measure-windows-shell.ps1 `
+  -Iterations 6 `
+  -Language en `
+  -Theme system `
+  -QtBin C:\Qt\6.10.3\msvc2022_64\bin
+```
+
+See `baselines/N1_WINDOWS_BASELINE.md` for the required evidence and interpretation.
+
+Raw benchmark JSON is written under ignored `artifacts/bench/` by default. Do not commit machine-specific raw files merely to prove a number.
 
 ## Public Windows CI
 
-`.github/workflows/windows-ci.yml` performs:
+`.github/workflows/windows-ci.yml` uses a matrix for:
 
-1. checkout;
-2. public Qt installation;
-3. CMake Release configure with Ninja;
-4. build;
-5. CTest.
+- Debug;
+- Release.
 
-The CI workflow requires no private Qt account credentials. If a newer Qt release cannot be installed through the public automation path, record that constraint rather than adding repository secrets or silently changing the product claim.
+Each lane:
 
-## Formatting
+1. checks out the exact commit;
+2. installs public Qt 6.10.3 MSVC 2022 x64;
+3. prints toolchain information;
+4. configures with Visual Studio 17 2022 x64;
+5. enables `ATLAS_WARNINGS_AS_ERRORS=ON`;
+6. builds;
+7. runs CTest.
 
-```powershell
-clang-format -i src\app\main.cpp src\core\document\DocumentCapabilities.h src\core\pdf\IPdfEngine.h src\core\platform\IFileSystem.h src\core\index\ILibraryIndex.h tests\core_smoke.cpp
+CI intentionally does **not** run GUI performance numbers on hosted virtual hardware and then pretend they represent the user's Windows machine. Hardware/UI measurements belong to the local N1 baseline harness.
+
+## Warnings and formatting
+
+Atlas-owned C++ targets use:
+
+```text
+/W4 /permissive- /Zc:__cplusplus
 ```
 
-N1 introduces the canonical formatting/warning/static-analysis commands. N2 introduces vcpkg manifest mode when accepted non-Qt native dependencies first enter the build.
+Strict CI additionally uses:
+
+```text
+/WX
+```
+
+Formatting is controlled by the checked-in `.clang-format`.
+
+Examples:
+
+```powershell
+clang-format -i `
+  src\app\main.cpp `
+  src\app\logging\Logging.cpp `
+  src\app\logging\Logging.h `
+  src\app\diagnostics\ShellMetrics.cpp `
+  src\app\diagnostics\ShellMetrics.h
+```
+
+A repository-wide format-check script may be added once the source surface is large enough to justify it. N1 does not add a tool dependency solely for a badge.
 
 ## CodeGraph (optional local developer/agent tool)
 
@@ -108,26 +179,38 @@ codegraph init
 codegraph status
 ```
 
-The generated `.codegraph/` directory is ignored and reproducible. Restart Codex/compatible client after enabling project-local `.codex/config.toml` if MCP discovery requires it.
+`.codegraph/` is ignored and reproducible. Restart Codex/compatible clients after enabling project-local `.codex/config.toml` if MCP discovery requires it.
 
 ## Troubleshooting
 
 ### Qt not found
 
-Confirm `CMAKE_PREFIX_PATH` points to the Qt kit directory containing `lib\cmake\Qt6`.
+`CMAKE_PREFIX_PATH` must point to a kit containing `lib\cmake\Qt6`.
 
-### Compiler not found
+### Qt DLLs not found when launching
 
-Open Visual Studio Developer PowerShell or call the Visual Studio developer environment before configuring Ninja.
+Add the selected Qt kit's `bin` directory to `PATH`, or run from Qt Creator/a Qt-aware shell.
 
 ### QML module errors
 
-Confirm the Qt installation includes Qt Declarative/Quick/Quick Controls for the selected desktop kit.
+Confirm the kit contains Qt Declarative/Quick/Quick Controls.
 
-### CI Qt install fails before configure
+### Public CI cannot install Qt 6.11.x
 
-This can be an upstream aqt/Qt repository availability issue rather than an Atlas source failure. Inspect the install step logs, verify the selected version is publicly installable, and update the documented bootstrap/canonical pin only through the toolchain gate. Do not mark N0 verified if Configure/Build/Test never ran.
+This is a known upstream repository/automation limitation. Do not add private Qt credentials to a public workflow just to hide the problem. Update the canonical pin only through `TOOLCHAIN.md`/ADR/checkpoint review.
+
+### Benchmark numbers look unexpectedly high
+
+Confirm:
+
+- Release build;
+- no debugger attached;
+- consistent power plan;
+- same display refresh/scale;
+- same Qt/compiler build;
+- no heavy background workload;
+- same cold/warm interpretation.
 
 ## Dependency policy
 
-Do not add qpdf/PDFium/SQLite to N0 merely to test installation. Engine/dependency integration belongs to N2/N3 so each dependency enters with fixtures, licensing notes, performance evidence, and a pinned vcpkg baseline where appropriate.
+Do not add qpdf, PDFium, SQLite, FTS5, or unrelated libraries during N1. N2/N3 introduce production dependencies only with licensing, fixtures, benchmarks, and pinned dependency policy.

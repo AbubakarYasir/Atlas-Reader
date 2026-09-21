@@ -12,7 +12,9 @@ If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is 
 ## Atlas Reader product rules
 
 - Keep the application runtime offline/local-first, free, and open source.
-- Treat PDFs as the portable source of truth for outlines and standard annotations; local SQLite data is an index/projection unless the feature is inherently app-local.
+- Treat PDFs as the preferred portable source of truth for outlines and standard annotations when they can be modified safely and legitimately; use an explicit local Atlas overlay when the source is read-only, restricted, signed/certified, externally locked, conflicted, or otherwise unsafe to mutate.
+- Before changing Library/Index, Reader, Bookmarks/Outline, save, sync, or document-capability behavior, read `docs/CORE_WORKFLOWS.md`. Its capability, fallback, conflict, portability, and recovery contracts are planned product requirements and must not be silently weakened.
+- Never bypass PDF passwords or permission restrictions, silently invalidate signed/certified documents, or overwrite a source revision that changed outside Atlas. Preserve user work locally and surface a recovery path instead.
 - Prioritize Windows quality while keeping platform-specific filesystem and launch behavior behind adapters so Android and other platforms remain viable.
 - Preserve Arabic/RTL, keyboard access, screen-reader semantics, focus visibility, and text scaling in user-facing changes.
 - Prefer progressive, bounded background work for library/PDF processing and keep the Flutter UI isolate responsive.

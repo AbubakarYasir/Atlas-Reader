@@ -21,10 +21,17 @@ if (-not (Test-Path $measureScript)) {
 }
 
 $buildInfoPath = Join-Path $packageRoot "N1_BUILD_INFO.txt"
+$buildCommit = ""
 if (Test-Path $buildInfoPath) {
     Write-Host "=== Canonical build info ==="
-    Get-Content $buildInfoPath | ForEach-Object { Write-Host $_ }
+    $buildInfo = @(Get-Content $buildInfoPath)
+    $buildInfo | ForEach-Object { Write-Host $_ }
     Write-Host ""
+
+    $commitLine = $buildInfo | Where-Object { $_ -match '^Commit:\s*([0-9a-fA-F]{7,40})\s*$' } | Select-Object -First 1
+    if ($null -ne $commitLine -and $commitLine -match '^Commit:\s*([0-9a-fA-F]{7,40})\s*$') {
+        $buildCommit = $Matches[1]
+    }
 }
 
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
@@ -41,7 +48,8 @@ Write-Host "[1/2] English/LTR system-theme measurement"
     -Iterations $EnglishIterations `
     -Language en `
     -Theme system `
-    -OutputPath $englishOutput
+    -OutputPath $englishOutput `
+    -BuildCommit $buildCommit
 
 Write-Host "[2/2] Arabic/RTL dark-theme measurement"
 & $measureScript `
@@ -49,7 +57,8 @@ Write-Host "[2/2] Arabic/RTL dark-theme measurement"
     -Iterations $ArabicIterations `
     -Language ar `
     -Theme dark `
-    -OutputPath $arabicOutput
+    -OutputPath $arabicOutput `
+    -BuildCommit $buildCommit
 
 Write-Host ""
 Write-Host "Automated physical-machine measurements completed."

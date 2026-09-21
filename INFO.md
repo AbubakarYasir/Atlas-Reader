@@ -6,7 +6,7 @@
 
 **Current checkpoint:** N1 — Windows toolchain + empty-shell baseline
 
-**Current N1 status:** **In progress — automated build/CI verified; physical Windows baseline pending**
+**Current N1 status:** **In progress — corrective performance pass**. The repository/toolchain path is verified, physical attempt 1 proved the shell/RTL/theme path but exposed slow empty-shell startup and a v1 process-sampler defect. N2 remains closed.
 
 **Previous checkpoint:** N0 — **Accepted by owner on 2026-09-22**
 
@@ -27,7 +27,8 @@ It may contain only:
 - light/dark shell proof;
 - deterministic startup/shutdown controls;
 - local numeric startup/frame benchmark instrumentation;
-- documentation and evidence.
+- physical-machine evidence and corrective performance work;
+- documentation.
 
 It must not contain production PDF, SQLite, scanner, Library, Reader, Bookmark, annotation, or migration implementation.
 
@@ -63,30 +64,47 @@ This is a reproducibility decision for the alpha baseline. The Qt pin must be re
 - shell language/direction switch for English/Arabic proof;
 - light/dark shell toggle;
 - PowerShell target-machine baseline harness;
-- one-command N1 qualification runner;
 - canonical N1 toolchain document and ADR;
-- N1 baseline evidence sheet.
+- N1 baseline evidence sheet;
+- self-contained `windeployqt` Windows qualification artifact;
+- PowerShell syntax validation in CI;
+- v2 physical harness with first-frame-aware process sampling, sample validity, packaged commit identity, storage/power/DPI capture, and p50/p95 startup statistics;
+- staged startup metrics around `QGuiApplication`, QML engine/load, and first frame;
+- compile-time `QtQuick.Controls.Basic` shell baseline to remove unnecessary runtime Fusion-style overhead.
 
-## Verified automated evidence
+## Physical attempt 1 findings
 
-Windows CI run **65** on commit `7a3772508dc2390506a9888875c22ae90ee2fe8b` passed both strict lanes:
+The first owner-machine run used the CI artifact from commit `d76eeef804b06fc3fae47079b8364a1b114a8b26` on Windows 11 Home build 26200 with a Core i7-14650HX, RTX 4070 Laptop GPU, 15.71 GiB RAM and a reported 144 Hz display.
 
-- Debug Configure/Build/CTest: PASS;
-- Release Configure/Build/CTest: PASS;
-- Atlas-owned C++ warnings treated as errors: PASS.
+Owner observations:
 
-Subsequent documentation/qualification-helper commits remain subject to the same branch CI; the code/build baseline itself is verified.
+- English/LTR worked correctly;
+- Arabic/RTL worked correctly;
+- light and dark modes looked correct;
+- no clipped or broken layout was noticed.
+
+Automated findings:
+
+- resize pacing was roughly around the 60 Hz budget on ordinary runs;
+- idle shell memory was roughly mid-40 MiB working set / mid-20 MiB private memory in valid samples;
+- v1 `WaitForInputIdle` sampling produced one invalid English process-memory sample and has been removed;
+- warm first-frame startup remained roughly 1.8–2.2 s on ordinary runs, materially above the provisional **<800 ms p95** N1 target;
+- cold candidates were about 2.6–3.1 s, above the provisional **<1.5 s** target.
+
+Therefore N1 is **not** being waved through merely because the shell looked responsive after appearing. The corrective build must re-measure and attribute startup cost before acceptance.
+
+See `docs/baselines/N1_WINDOWS_BASELINE.md` for the durable raw/corrected evidence.
 
 ## Evidence still required before N1 can be Accepted
 
-- physical Windows 11 Release baseline using `tools/bench/run-n1-qualification.ps1`;
-- English/LTR and Arabic/RTL manual shell check;
-- light/dark shell check;
-- 100% and 200% Windows scale check;
-- clean repeated startup/shutdown check;
+- corrective branch-head Debug CI PASS;
+- corrective branch-head Release CI PASS + portable artifact PASS;
+- target Windows 11 v2 baseline using the corrected packaged qualification script;
+- verify the new Basic-style shell still looks correct in LTR/RTL/light/dark;
+- exact DPI/device-pixel-ratio evidence sufficient to qualify 100%/200% scaling;
+- keyboard focus check;
+- startup target met, or remaining deviation measured/root-caused and explicitly accepted as a tradeoff;
 - owner PASS.
-
-See `docs/baselines/N1_WINDOWS_BASELINE.md`.
 
 ## Chosen long-term foundation
 
@@ -116,7 +134,7 @@ The research-data rule remains:
 ## Release program
 
 - N0: `2.0.0-alpha.0` — Accepted bootstrap
-- N1: `2.0.0-alpha.1` — active toolchain/baseline
+- N1: `2.0.0-alpha.1` — active toolchain/baseline corrective pass
 - N2: `2.0.0-alpha.2` — PDF-engine qualification
 - N3: first useful native `2.0.0-beta.1`
 - N4–N9: incremental `2.0.0-beta.N` milestones

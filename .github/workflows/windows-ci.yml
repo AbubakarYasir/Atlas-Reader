@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   build-test:
-    runs-on: windows-latest
+    # Pin the image because the Qt kit is the MSVC 2022 x64 build. Avoid
+    # windows-latest silently moving the bootstrap onto a different VS toolset.
+    runs-on: windows-2022
     timeout-minutes: 30
 
     steps:
@@ -33,12 +35,16 @@ jobs:
 
       - name: Configure
         shell: pwsh
-        run: cmake -S . -B build/ci -G Ninja -DCMAKE_BUILD_TYPE=Release
+        run: >-
+          cmake -S . -B build/ci
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
 
       - name: Build
         shell: pwsh
-        run: cmake --build build/ci --parallel
+        run: cmake --build build/ci --config Release --parallel
 
       - name: Test
         shell: pwsh
-        run: ctest --test-dir build/ci --output-on-failure
+        run: ctest --test-dir build/ci -C Release --output-on-failure

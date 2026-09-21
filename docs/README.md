@@ -9,6 +9,7 @@ Use this page to find the authoritative document instead of duplicating requirem
 3. **`../CHECKPOINTS.md`** — current checkpoint, release mapping, stop gates.
 4. **`FEATURE_SCOPE_2_0.md`** — binding Windows 2.0 feature scope.
 5. **`SUCCESS_METRICS.md`** — how we prove the rewrite is becoming a better product rather than merely larger.
+6. **`N0_HANDOFF.md`** — current bootstrap owner-review checklist; N1 stays closed until explicit PASS.
 
 ## Product behavior
 

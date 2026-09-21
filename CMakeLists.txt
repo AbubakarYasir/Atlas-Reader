@@ -64,6 +64,9 @@ qt_add_qml_module(atlas_reader
     VERSION 1.0
     QML_FILES
         qml/Main.qml
+        qml/BareProbe.qml
+        qml/TextProbe.qml
+        qml/ControlsProbe.qml
 )
 
 target_compile_definitions(atlas_reader PRIVATE

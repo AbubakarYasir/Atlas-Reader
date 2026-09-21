@@ -28,6 +28,29 @@ QString normalizedTheme(const QString& value) {
     return QStringLiteral("system");
 }
 
+QString normalizedShellProfile(const QString& value) {
+    const QString normalized = value.trimmed().toLower();
+    if (normalized == QStringLiteral("bare")
+        || normalized == QStringLiteral("text")
+        || normalized == QStringLiteral("controls")) {
+        return normalized;
+    }
+    return QStringLiteral("full");
+}
+
+QString qmlTypeForProfile(const QString& profile) {
+    if (profile == QStringLiteral("bare")) {
+        return QStringLiteral("BareProbe");
+    }
+    if (profile == QStringLiteral("text")) {
+        return QStringLiteral("TextProbe");
+    }
+    if (profile == QStringLiteral("controls")) {
+        return QStringLiteral("ControlsProbe");
+    }
+    return QStringLiteral("Main");
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -59,6 +82,11 @@ int main(int argc, char* argv[]) {
         QStringLiteral("Initial shell theme: system, light, or dark."),
         QStringLiteral("theme"),
         QStringLiteral("system"));
+    const QCommandLineOption shellProfileOption(
+        QStringLiteral("shell-profile"),
+        QStringLiteral("N1 diagnostic shell profile: full, bare, text, or controls."),
+        QStringLiteral("profile"),
+        QStringLiteral("full"));
     const QCommandLineOption quitAfterOption(
         QStringLiteral("quit-after-ms"),
         QStringLiteral("Quit automatically after N milliseconds; intended for lifecycle tests."),
@@ -74,6 +102,7 @@ int main(int argc, char* argv[]) {
 
     parser.addOption(languageOption);
     parser.addOption(themeOption);
+    parser.addOption(shellProfileOption);
     parser.addOption(quitAfterOption);
     parser.addOption(metricsFileOption);
     parser.addOption(benchmarkShellOption);
@@ -82,6 +111,7 @@ int main(int argc, char* argv[]) {
 
     const QString language = normalizedLanguage(parser.value(languageOption));
     const QString theme = normalizedTheme(parser.value(themeOption));
+    const QString shellProfile = normalizedShellProfile(parser.value(shellProfileOption));
     const bool isArabic = language == QStringLiteral("ar");
 
     QGuiApplication::setLayoutDirection(isArabic ? Qt::RightToLeft : Qt::LeftToRight);
@@ -96,8 +126,12 @@ int main(int argc, char* argv[]) {
     const int effectiveQuitAfterMs = quitDelayValid && quitAfterMs > 0 ? quitAfterMs : 0;
 
     qCInfo(atlas::logging::startup).noquote()
-        << QStringLiteral("Starting %1 with Qt %2; language=%3 theme=%4")
-               .arg(QGuiApplication::applicationVersion(), QString::fromLatin1(qVersion()), language, theme);
+        << QStringLiteral("Starting %1 with Qt %2; language=%3 theme=%4 profile=%5")
+               .arg(QGuiApplication::applicationVersion(),
+                    QString::fromLatin1(qVersion()),
+                    language,
+                    theme,
+                    shellProfile);
 
     atlas::diagnostics::ShellMetrics metrics(
         processStart,
@@ -124,7 +158,7 @@ int main(int argc, char* argv[]) {
         Qt::QueuedConnection);
 
     metrics.recordStage(QStringLiteral("startup.before_qml_load_ms"));
-    engine.loadFromModule(QStringLiteral("AtlasReader"), QStringLiteral("Main"));
+    engine.loadFromModule(QStringLiteral("AtlasReader"), qmlTypeForProfile(shellProfile));
     metrics.recordQmlLoaded();
 
     if (engine.rootObjects().isEmpty()) {

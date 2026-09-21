@@ -21,6 +21,8 @@ public:
                  bool runResizeBenchmark,
                  QObject* parent = nullptr);
 
+    void recordCheckpoint(const QString& metricName, Clock::time_point checkpoint);
+    void recordStage(const QString& metricName);
     void recordQmlLoaded();
     void attach(QQuickWindow* window);
     void recordShutdown();
@@ -31,6 +33,7 @@ private:
     void finishResizeBenchmark();
     void writeMetric(const QString& name, double value, const QString& unit);
     [[nodiscard]] double elapsedMs() const;
+    [[nodiscard]] double elapsedMsAt(Clock::time_point checkpoint) const;
     [[nodiscard]] static double percentile(std::vector<double> samples, double fraction);
 
     Clock::time_point processStart_;

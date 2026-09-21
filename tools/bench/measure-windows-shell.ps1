@@ -62,10 +62,16 @@ function Read-MetricsSafe {
 function Get-MetricValue {
     param(
         [Parameter(Mandatory = $true)]
+        [AllowNull()]
+        [AllowEmptyCollection()]
         [object[]]$Metrics,
         [Parameter(Mandatory = $true)]
         [string]$Name
     )
+
+    if ($null -eq $Metrics -or $Metrics.Count -eq 0) {
+        return $null
+    }
 
     $item = $Metrics | Where-Object { $_.metric -eq $Name } | Select-Object -Last 1
     if ($null -eq $item) {

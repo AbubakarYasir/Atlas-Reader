@@ -12,6 +12,8 @@ Strict Windows CI run **65** on implementation/status commit `7a3772508dc2390506
 
 A later portable-artifact run on commit `d76eeef804b06fc3fae47079b8364a1b114a8b26` also passed Debug/Release, `windeployqt` staging, and artifact upload. That artifact became physical baseline attempt 1 below.
 
+Corrective build commit `b0b22403db5c3d4a56b72f284a3dbc368718bc2a` then passed Debug/Release, CTest, portable staging and qualification-script syntax validation. Its first physical invocation exposed a runtime parameter-binding defect in the v2 PowerShell sampler before any accepted measurement was produced. The harness fix is tracked below and adds an explicit CI runtime-contract smoke test for an empty first metrics poll.
+
 ## Canonical build
 
 See `../TOOLCHAIN.md`.
@@ -113,6 +115,28 @@ Even ignoring the invalid process-memory sample, ordinary warm English first fra
 - cold empty-shell first frame: **<1.5 s p95**.
 
 Attempt 1 therefore **does not pass the N1 startup target**. N1 remains In progress; we do not normalize a slow empty shell merely because it feels visually fine after appearing.
+
+---
+
+## Physical corrective invocation abort — 2026-09-22
+
+The owner invoked the packaged corrective artifact built from `b0b22403db5c3d4a56b72f284a3dbc368718bc2a`. The application package identified itself correctly and the harness began English/LTR measurement, but the sampler aborted before a valid report was produced:
+
+```text
+Get-MetricValue : Cannot bind argument to parameter 'Metrics' because it is an empty array.
+```
+
+This is a **harness defect, not a product-performance result**. At startup it is normal for the metrics file to be absent or contain zero complete JSON lines during the first polling interval. `Read-MetricsSafe` therefore legitimately returns `@()`. `Get-MetricValue` declared `Metrics` as a mandatory `object[]` without permitting an empty collection, so PowerShell rejected the call during parameter binding before the function body could return `$null` and allow polling to continue.
+
+The correction:
+
+- permits null/empty collections on `Get-MetricValue`;
+- returns `$null` explicitly for an empty first poll;
+- keeps the 50 ms polling loop unchanged;
+- adds a Release-CI runtime-contract smoke test that extracts the actual `Get-MetricValue` function from the measurement script and invokes it with `@()`;
+- treats this aborted invocation as **no accepted N1 evidence**.
+
+The follow-up branch head must again pass strict Debug + Release CI, CTest, runtime harness validation, portable staging and artifact upload before another physical measurement is accepted.
 
 ---
 

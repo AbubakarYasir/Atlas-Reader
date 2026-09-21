@@ -28,6 +28,16 @@ For every checkpoint:
 9. Hand off for owner test.
 10. Stop. Do not begin the next checkpoint until accepted.
 
+### Accepted-checkpoint immutability
+
+A passed checkpoint cannot be reopened without **new evidence of a user-facing regression** in the accepted state.
+
+- New preferences, theoretical risks, retrospective stricter criteria, or unrelated toolchain churn do not invalidate an accepted checkpoint.
+- Such concerns belong to the active/later checkpoint, release qualification, or backlog unless they produce concrete regression evidence against the accepted behavior.
+- If new user-facing regression evidence does require reopening a passed checkpoint, record the evidence, the affected acceptance item, and the corrective scope explicitly before changing its status.
+
+This rule prevents already-proven work from becoming permanently provisional while still allowing real regressions to be corrected.
+
 ## 3. Commit policy
 
 Prefer reviewable commits with intent:

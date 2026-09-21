@@ -19,7 +19,8 @@ Use this page to find the authoritative document instead of duplicating requirem
 
 - **`ARCHITECTURE.md`** — layers, thread model, reader viewport, PDF/storage/platform ports.
 - **`TECH_STACK.md`** — chosen technical stack and alternatives.
-- **`DEPENDENCIES_AND_TOOLS.md`** — open-source dependencies, profilers, IDE plugins, GitHub/agent automation, acceptance policy.
+- **`DEPENDENCIES_AND_TOOLS.md`** — dependency admission, profilers, IDE plugins, GitHub/agent automation, quality tooling.
+- **`UPSTREAM_CATALOG.md`** — concrete upstream open-source repositories/tools and the checkpoint where each may be adopted.
 - **`SECURITY_MODEL.md`** — untrusted PDFs/imports/paths, password/privacy, safe mutation, dependency security, hardening.
 - **`PERFORMANCE.md`** — budgets, benchmark methodology, regression rules.
 - **`QUALITY_AND_TESTING.md`** — unit/component/integration/fixture/interoperability/accessibility/failure-injection gates.
@@ -39,6 +40,7 @@ Use this page to find the authoritative document instead of duplicating requirem
 - **`../INFO.md`** — compact current orientation/status.
 - **`../CHANGELOG.md`** — repository changes.
 - **`../AGENTS.md`** — mandatory rules for coding agents and automated contributors.
+- **`../SECURITY.md`** — vulnerability-reporting policy.
 
 ## Authority rule
 

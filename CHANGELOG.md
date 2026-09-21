@@ -22,6 +22,16 @@ All notable changes to Atlas Reader Native are documented here.
 - Added ignored `artifacts/` output for machine-specific benchmark data.
 - Added `docs/TOOLCHAIN.md` and `docs/baselines/N1_WINDOWS_BASELINE.md`.
 - Added ADR-0003 documenting the reproducible public Qt 6.10.3/MSVC 2022 alpha pin while Qt 6.11.2 remains the preferred newer compatibility target.
+- Added a self-contained Release qualification artifact produced with `windeployqt` so owner hardware testing does not require a local compiler/Qt install.
+- Added CI syntax validation for the PowerShell qualification scripts before packaging.
+- Physical attempt 1 on Windows 11 / Core i7-14650HX / RTX 4070 Laptop / 144 Hz verified English/LTR, Arabic/RTL, light/dark presentation, and no observed clipping/broken layout.
+- Physical attempt 1 also exposed two N1 blockers before PDF/index work begins:
+  - the v1 `WaitForInputIdle` process sampler could outlive Atlas auto-shutdown and corrupt memory/CPU readings;
+  - empty-shell first-frame startup was materially above the provisional N1 target (roughly 1.8–2.2 s on ordinary warm runs versus the <800 ms p95 engineering target).
+- Reworked the physical harness to wait for Atlas's own first-frame metric, reject dead-process memory/CPU samples, report validity counts, capture power/storage/DPI context, preserve packaged commit identity, and report startup p50/p95.
+- Added startup-stage instrumentation around `QGuiApplication`, argument parsing, QML-engine creation/load, and first frame so remaining startup cost can be attributed rather than guessed.
+- Switched the N1 shell from runtime-selected Fusion controls to compile-time `QtQuick.Controls.Basic`, Qt's lightweight/max-performance Controls baseline, while retaining Atlas-owned palette/RTL behavior.
+- Recorded attempt-1 raw and corrected evidence in `docs/baselines/N1_WINDOWS_BASELINE.md`; N1 remains In progress until corrective physical evidence satisfies or explicitly resolves the startup gate.
 - Updated README, INFO, BUILDING, docs index, and AGENTS rules for the active N1 checkpoint.
 - Kept PDF engines, qpdf, SQLite/FTS5, scanner, production Library/Reader/Bookmarks, annotations, migration, and installer code out of N1.
 

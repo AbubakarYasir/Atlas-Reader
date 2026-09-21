@@ -31,6 +31,7 @@ Never renumber/remove an accepted ADR. Supersede it with a new record.
 - PDF engine responsibility split;
 - database/search architecture;
 - dependency manager;
+- canonical build/toolchain policy when it affects reproducibility/platform support;
 - persisted interchange/backup format;
 - document identity strategy;
 - threading/task architecture;
@@ -45,5 +46,6 @@ Ordinary implementation details do not need an ADR.
 
 - `ADR-0001-native-stack.md` — C++23 + Qt Quick native successor architecture.
 - `ADR-0002-vcpkg-manifest.md` — vcpkg manifest mode for non-Qt native production dependencies.
+- `ADR-0003-n1-qt-toolchain-pin.md` — public N1 Qt 6.10.3/MSVC 2022 baseline while 6.11.2 remains the preferred compatibility target.
 
 The PDF rendering/transformation split remains deliberately **Proposed/undecided** until N2 evidence is available; do not create an Accepted ADR before that bake-off.

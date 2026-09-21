@@ -1,63 +1,48 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
+# CMake
 /build/
-/dist/
-/coverage/
+/cmake-build-*/
+CMakeUserPresets.json
 
-# Local CodeGraph SQLite knowledge graph (rebuild with `codegraph init`)
+# Qt
+*.qmlc
+*.jsc
+.qmlcache/
+
+# IDE/editor
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.VC.db
+
+# Build products
+*.obj
+*.o
+*.pdb
+*.ilk
+*.exe
+*.dll
+*.lib
+*.a
+*.so
+*.dylib
+
+# Test/runtime state
+Testing/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+
+# Local dependencies/tooling
+vcpkg_installed/
 .codegraph/
-
-# On-demand AI repository digests are generated artifacts, not source.
-repomix-output.*
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Environment & secret credential files
 .env
 .env.*
 !.env.example
-*.key
-*.pem
 
-# VS Code local workspace settings (which may contain local API keys or secrets)
-.vscode/settings.json
-
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini

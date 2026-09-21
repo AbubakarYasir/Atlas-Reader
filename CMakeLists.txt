@@ -7,23 +7,53 @@ project(
     LANGUAGES CXX
 )
 
-set(ATLAS_PRERELEASE "alpha.0" CACHE STRING "Atlas prerelease identifier")
+set(ATLAS_PRERELEASE "alpha.1" CACHE STRING "Atlas prerelease identifier")
 set(ATLAS_VERSION_STRING "${PROJECT_VERSION}-${ATLAS_PRERELEASE}")
+option(ATLAS_WARNINGS_AS_ERRORS "Treat Atlas compiler warnings as errors" OFF)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Exact Qt patch selection belongs to the reproducible toolchain/CI pin, not to
-# application source. The bootstrap currently uses only APIs available in Qt
-# 6.10+, while N1 owns convergence on the canonical 6.11.x product patch.
+# N1 canonical public baseline: Qt 6.10.3 / MSVC 2022. Application source
+# intentionally requires only the Qt 6.10 API floor so a newer qualified Qt
+# 6.11.x developer kit can build the same source. See docs/TOOLCHAIN.md.
 find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Quick Qml QuickControls2)
 qt_standard_project_setup(REQUIRES 6.10)
+
+function(atlas_enable_warnings target)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4 /permissive- /Zc:__cplusplus)
+        if(ATLAS_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE /WX)
+        endif()
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+        if(ATLAS_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE -Werror)
+        endif()
+    endif()
+endfunction()
 
 add_library(atlas_core INTERFACE)
 target_include_directories(atlas_core INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_features(atlas_core INTERFACE cxx_std_23)
+
+add_library(atlas_app_support STATIC
+    src/app/diagnostics/ShellMetrics.cpp
+    src/app/diagnostics/ShellMetrics.h
+    src/app/logging/Logging.cpp
+    src/app/logging/Logging.h
+)
+target_include_directories(atlas_app_support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_app_support
+    PUBLIC
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Quick
+)
+atlas_enable_warnings(atlas_app_support)
 
 qt_add_executable(atlas_reader
     src/app/main.cpp
@@ -43,28 +73,19 @@ target_compile_definitions(atlas_reader PRIVATE
 target_link_libraries(atlas_reader
     PRIVATE
         atlas_core
+        atlas_app_support
         Qt6::Core
         Qt6::Gui
         Qt6::Quick
         Qt6::Qml
         Qt6::QuickControls2
 )
-
-if(MSVC)
-    target_compile_options(atlas_reader PRIVATE /W4 /permissive- /Zc:__cplusplus)
-else()
-    target_compile_options(atlas_reader PRIVATE -Wall -Wextra -Wpedantic)
-endif()
+atlas_enable_warnings(atlas_reader)
 
 enable_testing()
 
 add_executable(atlas_core_smoke tests/core_smoke.cpp)
 target_link_libraries(atlas_core_smoke PRIVATE atlas_core)
-
-if(MSVC)
-    target_compile_options(atlas_core_smoke PRIVATE /W4 /permissive- /Zc:__cplusplus)
-else()
-    target_compile_options(atlas_core_smoke PRIVATE -Wall -Wextra -Wpedantic)
-endif()
+atlas_enable_warnings(atlas_core_smoke)
 
 add_test(NAME atlas_core_smoke COMMAND atlas_core_smoke)

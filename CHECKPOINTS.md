@@ -8,16 +8,17 @@ This file controls implementation order. Only one checkpoint is active at a time
 
 | Field | Value |
 |---|---|
-| Checkpoint | **N0 — Native repository bootstrap** |
-| Planned version | `2.0.0-alpha.0` (engineering bootstrap; not normal user release) |
-| Status | **Ready for owner test** |
-| Scope | Documentation, CMake/Qt shell, core interfaces, smoke test, CI and agent/tooling skeleton |
-| Explicitly excluded | PDF engine integration, SQLite implementation, indexing, reader, bookmarks |
+| Checkpoint | **N1 — Windows toolchain + empty-shell baseline** |
+| Planned version | `2.0.0-alpha.1` (engineering alpha; not normal user release) |
+| Status | **In progress** |
+| Previous checkpoint | **N0 Accepted by owner on 2026-09-22** |
+| Scope | Canonical Windows build/CI, empty shell, RTL/theme proof, privacy-safe logging, lifecycle/benchmark harness, zero-feature measurements |
+| Explicitly excluded | PDF engines, qpdf, SQLite/FTS5, scanner, production Library/Reader/Bookmarks, annotations, migration, installer |
 | Primary platform | Windows 11 |
-| Automated evidence | Windows CI run 27 on commit `bb359876fc67d972b079bdaf643158952fb68638`: Qt install, CMake Configure, Release Build, and CTest all passed |
-| CI bootstrap toolchain | Windows 2022 runner · Visual Studio 17 2022 x64 · public Qt 6.10.3 compatibility pin |
+| Canonical public alpha toolchain | Windows 2022 CI family · Visual Studio 17 2022 x64 · MSVC v143 · Qt 6.10.3 MSVC 2022 64-bit · C++23 |
+| Evidence sheet | `docs/baselines/N1_WINDOWS_BASELINE.md` |
 
-N0 is **Verified but not Accepted**. The native source/build foundation has passed public Windows CI; the owner must still review this architecture/documentation program and explicitly record PASS before N1 begins.
+N1 cannot become **Ready for owner test** until strict Debug + Release branch-head CI passes and the target Windows machine has real Release baseline measurements plus RTL/scale checks. N2 remains closed.
 
 ## Operating contract
 
@@ -31,13 +32,14 @@ N0 is **Verified but not Accepted**. The native source/build foundation has pass
 8. Migration work never destructively modifies the Flutter profile or user PDFs.
 9. Dependencies/tooling follow `docs/DEPENDENCIES_AND_TOOLS.md` and licensing gates.
 10. P0 Windows 2.0 scope in `docs/FEATURE_SCOPE_2_0.md` cannot be silently deferred; changing scope requires an explicit docs/owner decision.
+11. Canonical toolchain changes follow `docs/TOOLCHAIN.md` and require recorded evidence rather than silent workstation drift.
 
 ## Release ledger
 
 | ID | Planned release | Checkpoint | Status |
 |---|---|---|---|
-| N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Ready for owner test** |
-| N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | Not started |
+| N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Accepted** |
+| N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **In progress** |
 | N2 | `2.0.0-alpha.2` | PDF engine qualification spike | Not started |
 | N3 | `2.0.0-beta.1` | Library/index foundation | Not started |
 | N4 | `2.0.0-beta.2` | Native reader foundation | Not started |
@@ -57,11 +59,11 @@ Corrective builds may increment beta/RC identifiers/build metadata. Never reuse 
 
 ---
 
-## N0 — Native repository bootstrap
+## N0 — Native repository bootstrap — Accepted
 
 **Goal:** Establish a clean, documented native architecture without prematurely implementing product features.
 
-### Exit criteria
+### Exit criteria completed
 
 - C++23/CMake project exists;
 - minimal Qt Quick shell exists;
@@ -69,63 +71,88 @@ Corrective builds may increment beta/RC identifiers/build metadata. Never reuse 
 - pure C++ smoke test compiles/runs;
 - Windows CI configures/builds/tests successfully;
 - `.codex`/AGENTS agent-navigation rules exist;
-- architecture, feature scope, stack/dependencies, build, release strategy, performance, quality/testing, UX/accessibility, security, licensing, migration, competitive baseline, platform, upstream-tool catalog, and core-workflow docs exist;
+- architecture, feature scope, stack/dependencies, build, release strategy, performance, quality/testing, UX/accessibility, security, licensing, migration, competitive baseline, platform, upstream-tool catalog, data-format, risk, success-metric, and core-workflow docs exist;
 - no Flutter product source copied into native tree;
-- owner accepts repository naming/separation and program plan.
+- owner accepted repository separation, architecture, product priorities, and checkpoint program.
 
-### Automated verification
+### Verification
 
-Windows CI run 27 verified the bootstrap code/build path on commit `bb359876fc67d972b079bdaf643158952fb68638`:
+Branch-head bootstrap CI passed public Qt installation, CMake Configure, Release Build, and CTest/core smoke. Earlier failed runs were retained as useful evidence that toolchain assumptions were corrected rather than hidden.
 
-- public Qt installation: PASS;
-- CMake Configure: PASS;
-- Release Build: PASS;
-- CTest/core smoke: PASS.
+### Acceptance
 
-The exact product Qt 6.11.x patch remains an N1 toolchain qualification decision; public N0 CI uses the compatible Qt 6.10.3 pin because public aqt Windows 6.11.x repository installation is currently unreliable.
-
-### Owner test
-
-1. Review `README.md`, `PLAN.md`, this checkpoint ledger, and `docs/README.md`.
-2. Confirm the Windows 2.0 scope and explicit non-goals match the intended product.
-3. Confirm the release sequence (alphas → betas → RC → `2.0.0`) is acceptable.
-4. Confirm the native architecture and dependency/tool policy are acceptable.
-5. Inspect the clean native source tree and confirm there is no accidental Flutter coupling or premature product implementation.
-6. Optionally build/run the minimal shell on the target Windows development machine; CI has already verified the reproducible build path.
-7. Record **PASS** to accept N0, or list defects/changes required while keeping N0 active.
-
-**Stop gate:** N1 does not begin until owner records PASS.
+**Owner PASS recorded 2026-09-22.** N0 is frozen as the accepted `2.0.0-alpha.0` foundation. Later fixes may update historical documentation for correctness but must not retroactively imply N0 contained product features.
 
 ---
 
-## N1 — Windows toolchain + empty-shell baseline
+## N1 — Windows toolchain + empty-shell baseline (`2.0.0-alpha.1`)
 
-**Goal:** Prove the chosen toolchain is reproducible and establish zero-feature performance measurements before feature code hides framework/architecture overhead.
+**Goal:** Prove the chosen Windows build is reproducible and establish zero-feature performance measurements before feature code hides framework/architecture overhead.
 
-### Work
+### Toolchain decision
 
-- select one canonical Qt 6.11.x patch if public/local toolchain can reproduce it; otherwise document/justify compatible pin;
-- canonical Visual Studio/MSVC/Windows SDK/CMake/Ninja versions;
-- Debug and Release builds;
-- CI/local parity;
-- app startup/shutdown loop;
-- initial theme + English/Arabic shell direction switch;
-- logging skeleton with privacy rules;
-- clang-format and initial compiler warning policy;
-- benchmark harness introduced.
+Binding details are in `docs/TOOLCHAIN.md` and ADR-0003.
 
-### Evidence
+For N1 public reproducibility:
 
-Measure Release build:
+- Windows 2022 GitHub runner family;
+- Visual Studio 17 2022 x64 generator;
+- MSVC v143 / C++23;
+- Qt 6.10.3 MSVC 2022 64-bit canonical public alpha pin;
+- Qt 6.11.2 allowed as additional developer compatibility evidence;
+- CMake >= 3.28;
+- Debug + Release;
+- warnings-as-errors in CI.
 
-- cold/warm startup;
-- idle CPU;
+Qt 6.10.3 is the alpha reproducibility pin because unauthenticated public `aqtinstall` Windows 6.11.x binaries are currently unreliable. This is not a claim that 6.10.3 is preferable to newer Qt; re-qualification is required before release.
+
+### Implemented work
+
+- [x] prerelease identifier `alpha.1`;
+- [x] local Visual Studio 2022 x64 presets aligned with CI;
+- [x] Debug + Release CI matrix;
+- [x] `/W4 /permissive- /Zc:__cplusplus`, strict CI `/WX`;
+- [x] privacy-safe startup/UI/performance logging categories;
+- [x] deterministic startup/shutdown option (`--quit-after-ms`);
+- [x] first-frame/QML-load/shutdown metric recorder;
+- [x] deterministic empty-shell resize/frame-pacing exercise (`--benchmark-shell`);
+- [x] explicit local metrics output (`--metrics-file`), no telemetry;
+- [x] English/LTR and Arabic/RTL shell-direction proof;
+- [x] light/dark shell proof;
+- [x] local PowerShell process memory/CPU/startup measurement harness;
+- [x] canonical toolchain document + ADR;
+- [x] target-machine evidence template.
+
+### CI evidence required
+
+Current branch head must pass both matrix lanes:
+
+- Debug Configure/Build/CTest with warnings-as-errors;
+- Release Configure/Build/CTest with warnings-as-errors.
+
+Hosted CI validates reproducibility/correctness. It is **not** accepted as physical-user performance evidence.
+
+### Target-machine evidence required
+
+Using a Release build on a physical Windows 11 machine, record in `docs/baselines/N1_WINDOWS_BASELINE.md`:
+
+- cold-candidate and warm first frame;
+- process input-idle candidate;
 - idle working set/private bytes;
-- empty-shell frame pacing/resizing;
-- 100% and 200% scale;
-- shutdown cleanliness.
+- normalized idle CPU sample;
+- deterministic resize p50/p95/p99;
+- machine/OS/CPU/GPU/RAM/storage/refresh/scale context;
+- English/LTR smoke;
+- Arabic/RTL smoke;
+- 100% scale;
+- 200% scale;
+- repeated clean startup/shutdown.
 
-**Stop gate:** baseline report committed/attached; no PDF dependency yet.
+### Stop gate
+
+N1 becomes **Ready for owner test** only when branch-head strict CI and target-machine evidence are complete. It becomes **Accepted** only after explicit owner PASS.
+
+**N2 does not begin before N1 Accepted. No PDF dependency may enter N1.**
 
 ---
 

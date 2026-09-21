@@ -2,19 +2,24 @@ cmake_minimum_required(VERSION 3.28)
 
 project(
     AtlasReaderNative
-    VERSION 0.0.1
-    DESCRIPTION "Native successor bootstrap for Atlas Reader"
+    VERSION 2.0.0
+    DESCRIPTION "Native successor to Atlas Reader"
     LANGUAGES CXX
 )
+
+set(ATLAS_PRERELEASE "alpha.0" CACHE STRING "Atlas prerelease identifier")
+set(ATLAS_VERSION_STRING "${PROJECT_VERSION}-${ATLAS_PRERELEASE}")
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.11.2 REQUIRED COMPONENTS Core Gui Quick Qml QuickControls2)
-qt_standard_project_setup(REQUIRES 6.11)
+# Exact Qt patch selection belongs to the reproducible toolchain/CI pin, not to
+# application source. The bootstrap currently uses only APIs available in Qt
+# 6.10+, while N1 owns convergence on the canonical 6.11.x product patch.
+find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Quick Qml QuickControls2)
+qt_standard_project_setup(REQUIRES 6.10)
 
 add_library(atlas_core INTERFACE)
 target_include_directories(atlas_core INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -29,6 +34,10 @@ qt_add_qml_module(atlas_reader
     VERSION 1.0
     QML_FILES
         qml/Main.qml
+)
+
+target_compile_definitions(atlas_reader PRIVATE
+    ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}"
 )
 
 target_link_libraries(atlas_reader

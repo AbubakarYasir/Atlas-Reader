@@ -44,7 +44,7 @@ jobs:
             ) | Out-Null
 
             if ($parseErrors.Count -gt 0) {
-              $parseErrors | ForEach-Object { Write-Error "$file: $($_.Message)" }
+              $parseErrors | ForEach-Object { Write-Error "${file}: $($_.Message)" }
               throw "PowerShell syntax validation failed for $file"
             }
 

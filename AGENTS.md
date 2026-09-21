@@ -5,7 +5,7 @@ Read this before changing the repository.
 ## Start with the current checkpoint
 
 1. Read `CHECKPOINTS.md` and identify the active checkpoint.
-2. Read `docs/N0_HANDOFF.md` while N0 is active; later checkpoints should receive equivalent evidence/handoff notes when useful.
+2. Read the active checkpoint evidence sheet (`docs/baselines/N1_WINDOWS_BASELINE.md` for N1).
 3. Read only the relevant requirements/ADRs before editing.
 4. Respect the checkpoint's explicit exclusions.
 5. Do not begin work from a later checkpoint because it is convenient while touching the same files.
@@ -141,4 +141,6 @@ Never inspect, print, commit, or request secrets unnecessarily. Password-protect
 
 ## Current stop gate
 
-**N0 is bootstrap only and currently Ready for owner review.** Do not implement PDF, SQLite, scanner, reader, or bookmark product features until N0 is explicitly Accepted and N1 begins. N0 itself may change documentation, build/CI/tooling, minimal shell, core interfaces, and smoke tests needed to prove the foundation.
+**N0 is Accepted. N1 is active.** N1 may change only the Windows toolchain/build/CI, empty shell, privacy-safe logging, shell RTL/theme baseline, lifecycle/benchmark harness, documentation, and evidence needed to establish the zero-feature performance floor.
+
+Do **not** add PDF engines, qpdf, SQLite/FTS5, scanners, production Library/Reader/Bookmark logic, annotations, or migration code. Those remain closed until their later checkpoints.

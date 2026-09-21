@@ -14,6 +14,8 @@ A later portable-artifact run on commit `d76eeef804b06fc3fae47079b8364a1b114a8b2
 
 Corrective build commit `b0b22403db5c3d4a56b72f284a3dbc368718bc2a` then passed Debug/Release, CTest, portable staging and qualification-script syntax validation. Its first physical invocation exposed a runtime parameter-binding defect in the v2 PowerShell sampler before any accepted measurement was produced. The harness fix is tracked below and adds an explicit CI runtime-contract smoke test for an empty first metrics poll.
 
+The runtime-contract validation has passed on the corrected harness line. Full Debug/Release build, CTest, staging and artifact-upload gates remain required on the final exact branch head before the next physical run is accepted.
+
 ## Canonical build
 
 See `../TOOLCHAIN.md`.

@@ -5,9 +5,10 @@ Read this before changing the repository.
 ## Start with the current checkpoint
 
 1. Read `CHECKPOINTS.md` and identify the active checkpoint.
-2. Read only the relevant requirements/ADRs before editing.
-3. Respect the checkpoint's explicit exclusions.
-4. Do not begin work from a later checkpoint because it is convenient while touching the same files.
+2. Read `docs/N0_HANDOFF.md` while N0 is active; later checkpoints should receive equivalent evidence/handoff notes when useful.
+3. Read only the relevant requirements/ADRs before editing.
+4. Respect the checkpoint's explicit exclusions.
+5. Do not begin work from a later checkpoint because it is convenient while touching the same files.
 
 The Windows 2.0 release program is defined in `docs/RELEASE_STRATEGY.md`.
 
@@ -15,7 +16,7 @@ The Windows 2.0 release program is defined in `docs/RELEASE_STRATEGY.md`.
 
 Work in the order **Index → Reader → Bookmarks** unless the active checkpoint explicitly requires another supporting slice. Do not expand scope because the native stack makes an unrelated feature attractive.
 
-Windows 2.0 scope is defined in `docs/FEATURE_SCOPE_2_0.md`; P0 scope cannot be silently removed.
+Windows 2.0 scope is defined in `docs/FEATURE_SCOPE_2_0.md`; P0 scope cannot be silently removed. Product success and regression priorities are defined in `docs/SUCCESS_METRICS.md`.
 
 ## Architecture rules
 
@@ -30,6 +31,17 @@ Read `docs/ARCHITECTURE.md` before changing cross-layer structure.
 - Do not add a production dependency without applying `docs/DEPENDENCIES_AND_TOOLS.md` and `docs/LICENSING.md`.
 - Persisted format/schema/architecture decisions that materially constrain the future require an ADR in `docs/decisions/`.
 
+## Data-format rules
+
+Before changing document identity, bookmarks, destinations, SQLite persistence, import/export, backup, migration, or local overlays, read `docs/DATA_MODEL_AND_FORMATS.md`.
+
+- Engines/databases are implementations; Atlas-owned data semantics stay engine-independent.
+- Do not identify documents by filename/path alone.
+- Do not treat FTS/cache structures as durable research data.
+- Do not introduce an unversioned Atlas-owned persisted/interchange format.
+- Do not silently downgrade or discard unknown/newer durable data.
+- A bookmark is not merely title + page number; preserve stable identity, hierarchy/order, destination semantics, and storage state.
+
 ## Performance rules
 
 Before changing hot/background/document work, read `docs/PERFORMANCE.md`.
@@ -42,7 +54,7 @@ Use profiling tools (QML Profiler, Tracy, RenderDoc, WPA/WPR, VS profiler) to fi
 
 ## Document safety rules
 
-Before touching save/security/bookmark behavior, read `docs/CORE_WORKFLOWS.md` and `docs/QUALITY_AND_TESTING.md`.
+Before touching save/security/bookmark behavior, read `docs/CORE_WORKFLOWS.md`, `docs/SECURITY_MODEL.md`, and `docs/QUALITY_AND_TESTING.md`.
 
 - Never bypass PDF security/password restrictions.
 - Never silently mutate a signed/certified original when doing so may affect integrity.
@@ -73,9 +85,11 @@ Every behavioral change needs the smallest relevant evidence layer from `docs/QU
 
 A defect found in beta/owner testing should gain a regression test or documented manual checklist entry.
 
+Use `docs/RISK_REGISTER.md` when a change creates or changes a significant architecture, data, licensing, platform, security, or delivery risk.
+
 ## Documentation/status rules
 
-Keep README, PLAN, CHECKPOINTS, INFO, CHANGELOG, relevant docs, and ADRs consistent.
+Keep README, PLAN, CHECKPOINTS, INFO, CHANGELOG, `docs/README.md`, relevant specialized docs, and ADRs consistent.
 
 Use these meanings precisely:
 
@@ -91,7 +105,7 @@ Never upgrade a status merely because code compiles.
 
 Do not add libraries, IDE plugins, cloud services, GitHub apps, telemetry, or external review tools “because they are useful.” First show the problem they solve and why existing Qt/C++/GitHub tooling does not solve it sufficiently.
 
-Non-Qt native production dependencies move toward pinned vcpkg manifest mode from N2. Qt remains separately pinned/installed.
+Use `docs/UPSTREAM_CATALOG.md` as the operational candidate list. Non-Qt native production dependencies move toward pinned vcpkg manifest mode from N2. Qt remains separately pinned/installed.
 
 Development-only profilers/analyzers must not accidentally become runtime dependencies.
 
@@ -106,7 +120,7 @@ Project-local `.codex/config.toml` also defines a read-only GitHub MCP endpoint.
 AI/agent code has no reduced quality bar. Accept only when it:
 
 - belongs to current checkpoint;
-- follows architecture/dependency rules;
+- follows architecture/dependency/data-format rules;
 - compiles;
 - passes relevant tests/static analysis;
 - includes tests for new behavior;
@@ -127,4 +141,4 @@ Never inspect, print, commit, or request secrets unnecessarily. Password-protect
 
 ## Current stop gate
 
-**N0 is bootstrap only.** Do not implement PDF, SQLite, scanner, reader, or bookmark product features until N0 is Accepted and N1 begins. N0 itself may change documentation, build/CI/tooling, minimal shell, core interfaces, and smoke tests needed to prove the foundation.
+**N0 is bootstrap only and currently Ready for owner review.** Do not implement PDF, SQLite, scanner, reader, or bookmark product features until N0 is explicitly Accepted and N1 begins. N0 itself may change documentation, build/CI/tooling, minimal shell, core interfaces, and smoke tests needed to prove the foundation.

@@ -7,16 +7,15 @@
 |---|---|---|---|
 | `0.8.0-beta.2` (build 4) | Corrected C1 prerelease candidate ready for owner test; latest accepted release is `0.8.0-beta.1` | PDF reader/editor; PDF and EPUB discovery | Windows 11 |
 
-Atlas Reader focuses on three jobs:
+Atlas Reader focuses on three jobs, in this product-priority order:
 
-1. Find books quickly across one or more folders.
-2. Create detailed bookmarks and jump directly to the right book and page.
-3. Read, highlight, and write on PDFs with responsive pen tools.
+1. Find and index books quickly across one or more folders.
+2. Read and navigate PDFs responsively and accurately.
+3. Create detailed bookmarks/outlines and jump directly to the right book and page.
 
-The guiding rule is **the document is the database**. PDF outline bookmarks and
-standard `/Ink` annotations are written back into the PDF, while a local SQLite
-index makes browsing and search fast. Atlas works offline and does not require
-an account.
+The guiding architecture is **document-first portability**. For ordinary writable PDFs, outline bookmarks and standard `/Ink` annotations are written back into the PDF, while a local SQLite index makes browsing and search fast. Atlas works offline and does not require an account.
+
+The road to 1.0 refines the earlier shorthand “the document is the database” with a second rule: **portable when possible, local when necessary, never lost silently**. Restricted, filesystem-read-only, signed/certified, temporarily locked, externally conflicted, or unavailable documents require an explicit Atlas-local fallback rather than security bypass, false success, or destructive overwrite. That planned behavior is specified in [`docs/CORE_WORKFLOWS.md`](docs/CORE_WORKFLOWS.md); it is not yet fully implemented in the current beta.
 
 > Atlas is beta software that modifies local PDFs. Saves are validated and use
 > recoverable temporary replacement, but irreplaceable books should still have
@@ -156,9 +155,9 @@ release the source file before a save.
 3. Enter a title and, if useful, a description and comma-separated tags.
 4. Save.
 
-Atlas safely commits the authoritative PDF outline first, then updates SQLite.
-This order prevents a Windows file-lock or replacement failure from leaving a
-misleading local-only bookmark. The active page number is filled automatically.
+In the current beta, Atlas safely commits the authoritative PDF outline first, then updates SQLite. This order prevents a Windows file-lock or replacement failure from leaving a misleading local-only bookmark. The active page number is filled automatically.
+
+**Current limitation:** the beta does not yet provide the planned first-class fallback for a PDF that cannot safely accept outline changes because it is permission-restricted, filesystem read-only, signed/certified, externally conflicted, or otherwise non-writable. C2 will add explicit local-only/pending bookmark states, authorization/password handling, Save Copy, conflict reconciliation, and bookmark export/import. See [`docs/CORE_WORKFLOWS.md`](docs/CORE_WORKFLOWS.md).
 
 ### Find a bookmark and jump to it
 
@@ -200,6 +199,8 @@ paths and destinations, document information, and XMP presence. It then:
 
 The normal reader and writing editor use completed byte reads rather than an
 open source-file handle, avoiding common Windows sharing errors (`errno 32`).
+
+C2 extends this save model with source-revision conflict checks and document-capability preflight so later write features do not bypass restrictions, invalidate signed originals silently, or overwrite a PDF changed by another application.
 
 ## Keyboard and accessibility
 
@@ -251,6 +252,8 @@ while Atlas is closed. A rebuilt local index can rediscover PDF outlines and
 ink, but local-only descriptions, tags, favorites, and reading progress require
 the SQLite backup.
 
+Because C2 introduces first-class local-only bookmark data, C7 now includes a planned versioned **Export Atlas Backup** / restore workflow so ordinary users will not have to depend permanently on locating the raw SQLite database by hand.
+
 ## Privacy and data ownership
 
 - Offline by default; no Atlas account is required.
@@ -259,6 +262,7 @@ the SQLite backup.
 - A PDF changes only after an explicit bookmark, annotation, or sync save.
 - Source document operations pass through a platform-neutral file-system
   interface; Windows is the current adapter.
+- Planned password handling never stores document-open or permissions passwords in SQLite, logs, or bookmark exports; pre-1.0 may retain a successful password only in process memory for the current session.
 
 ## Current beta limitations
 
@@ -266,6 +270,8 @@ the SQLite backup.
 - Bookmark titles and hierarchy are portable through the standard PDF outline.
   Descriptions and tags remain in SQLite; a portable interoperable metadata
   format is a known pre-1.0 gap.
+- Protected/read-only/signed/conflicted PDF bookmark fallback is **planned, not yet implemented**. The current beta still expects a safely writable source for committing outline changes.
+- Bookmark export/import bundles, Markdown/CSV export, local suppression/override states, and explicit local-to-PDF promotion are C2 work.
 - Directly opened PDFs are remembered in Library/Recents, but their parent
   folder is not watched unless the user adds it explicitly.
 - PDF cover thumbnails are not yet rendered for every scanned PDF; EPUB cover
@@ -310,9 +316,11 @@ Only one checkpoint is active at a time. After its automated gates pass, work
 stops for the numbered owner test; the next checkpoint does not start until the
 owner explicitly records a PASS.
 
+The detailed real-world document-state and bookmark contract is in [`docs/CORE_WORKFLOWS.md`](docs/CORE_WORKFLOWS.md). It covers password-protected and permission-restricted PDFs, filesystem read-only sources, signed/certified documents, sharing locks, offline/missing books, external modification conflicts, bookmark local overlays, import/export, identity, indexing edge cases, and recovery.
+
 The owner accepted **C0 — Baseline acceptance** on 2026-09-09. **C1 — Reader
 workspace** build 4 is verified and stopped at **Ready for owner test**; C2 will not
-start until the owner records an explicit PASS.
+start until the owner records an explicit PASS. C2 is now **Core resilience and complete bookmarks**, with internal Index/Identity, Capability/Overlay, Bookmark Editor/Reconciliation, and Portability/Recovery subgates.
 
 ## Developer guide
 
@@ -463,13 +471,15 @@ Atlas follows [Semantic Versioning](https://semver.org/):
   each distributable beta build.
 
 The version is defined in `pubspec.yaml`. Release changes belong in
-`CHANGELOG.md`, and engineering scope and acceptance criteria belong in
-`PLAN.md`. Delivery order, evidence, and owner stop gates belong in
-`CHECKPOINTS.md`.
+`CHANGELOG.md`, and broad engineering scope and acceptance criteria belong in
+`PLAN.md`. Detailed core Index/Reader/Bookmark resilience requirements live in
+`docs/CORE_WORKFLOWS.md`. Delivery order, evidence, and owner stop gates belong
+in `CHECKPOINTS.md`.
 
 ## Documentation
 
 - [Engineering and accessibility plan](PLAN.md)
+- [Core workflows, capability model, and edge cases](docs/CORE_WORKFLOWS.md)
 - [Delivery checkpoints and owner tests](CHECKPOINTS.md)
 - [Release history](CHANGELOG.md)
 - [Additional project notes](INFO.md)

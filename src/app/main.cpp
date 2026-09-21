@@ -6,7 +6,6 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QQuickStyle>
 #include <QQuickWindow>
 #include <QStyleHints>
 #include <QTimer>
@@ -32,9 +31,12 @@ QString normalizedTheme(const QString& value) {
 } // namespace
 
 int main(int argc, char* argv[]) {
-    const auto processStart = atlas::diagnostics::ShellMetrics::Clock::now();
+    using MetricsClock = atlas::diagnostics::ShellMetrics::Clock;
+    const auto processStart = MetricsClock::now();
 
     QGuiApplication app(argc, argv);
+    const auto applicationReady = MetricsClock::now();
+
     QGuiApplication::setApplicationName(QStringLiteral("Atlas Reader Native"));
     QGuiApplication::setOrganizationName(QStringLiteral("Atlas Reader"));
     QGuiApplication::setApplicationVersion(QStringLiteral(ATLAS_VERSION_STRING));
@@ -76,14 +78,13 @@ int main(int argc, char* argv[]) {
     parser.addOption(metricsFileOption);
     parser.addOption(benchmarkShellOption);
     parser.process(app);
+    const auto argumentsReady = MetricsClock::now();
 
     const QString language = normalizedLanguage(parser.value(languageOption));
     const QString theme = normalizedTheme(parser.value(themeOption));
     const bool isArabic = language == QStringLiteral("ar");
 
     QGuiApplication::setLayoutDirection(isArabic ? Qt::RightToLeft : Qt::LeftToRight);
-
-    QQuickStyle::setStyle(QStringLiteral("Fusion"));
 
     bool initialDark = theme == QStringLiteral("dark");
     if (theme == QStringLiteral("system")) {
@@ -103,8 +104,13 @@ int main(int argc, char* argv[]) {
         parser.value(metricsFileOption),
         parser.isSet(benchmarkShellOption),
         &app);
+    metrics.recordCheckpoint(QStringLiteral("startup.qgui_application_ready_ms"), applicationReady);
+    metrics.recordCheckpoint(QStringLiteral("startup.arguments_ready_ms"), argumentsReady);
+    metrics.recordStage(QStringLiteral("startup.metrics_ready_ms"));
 
     QQmlApplicationEngine engine;
+    metrics.recordStage(QStringLiteral("startup.qml_engine_ready_ms"));
+
     engine.rootContext()->setContextProperty(
         QStringLiteral("atlasVersion"), QGuiApplication::applicationVersion());
     engine.rootContext()->setContextProperty(QStringLiteral("atlasInitialArabic"), isArabic);
@@ -117,6 +123,7 @@ int main(int argc, char* argv[]) {
         [] { QCoreApplication::exit(EXIT_FAILURE); },
         Qt::QueuedConnection);
 
+    metrics.recordStage(QStringLiteral("startup.before_qml_load_ms"));
     engine.loadFromModule(QStringLiteral("AtlasReader"), QStringLiteral("Main"));
     metrics.recordQmlLoaded();
 

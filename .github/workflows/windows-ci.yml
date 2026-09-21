@@ -79,6 +79,12 @@ jobs:
           }
           Write-Host 'PowerShell runtime contract OK: empty live metric poll'
 
+          $qtConf = Get-Content 'qt.conf' -Raw
+          if ($qtConf -notmatch '(?m)^WindowsArguments\s*=\s*fontengine=gdi\s*$') {
+            throw 'qt.conf must pin the N1 Windows GDI font backend candidate'
+          }
+          Write-Host 'Qt Windows font backend config OK: GDI'
+
       # N1 canonical public alpha baseline. Qt 6.11.2 remains the preferred
       # current product-generation line, but public aqt Windows 6.11.x binary
       # installation is not reproducible without the official authenticated
@@ -138,6 +144,7 @@ jobs:
           }
 
           Copy-Item $exe (Join-Path $stage 'atlas_reader.exe')
+          Copy-Item 'qt.conf' (Join-Path $stage 'qt.conf')
           Copy-Item 'tools/bench/measure-windows-shell.ps1' (Join-Path $stage 'tools/bench/measure-windows-shell.ps1')
           Copy-Item 'tools/bench/run-n1-packaged-qualification.ps1' (Join-Path $stage 'tools/bench/run-n1-packaged-qualification.ps1')
           Copy-Item 'docs/baselines/N1_WINDOWS_BASELINE.md' (Join-Path $stage 'N1_WINDOWS_BASELINE.md')
@@ -157,6 +164,7 @@ jobs:
             'Generator: Visual Studio 17 2022 x64'
             'Qt: 6.10.3 MSVC 2022 64-bit'
             'Controls style: compile-time Basic'
+            'Windows font backend: GDI via qt.conf'
             'Purpose: physical Windows baseline qualification only; not a user release'
           ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N1_BUILD_INFO.txt')
 

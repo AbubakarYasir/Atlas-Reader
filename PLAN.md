@@ -1,220 +1,308 @@
-# Atlas Reader Native — Master Plan
+# Atlas Reader Native — Master Plan to 2.0
 
-**Status:** Native successor bootstrap
+**Status:** Native successor bootstrap / N0
 
 **Primary implementation target:** Windows 11
 
 **Future platform order:** Android → Linux → macOS → iOS/iPadOS
 
-**Core stack:** C++23 · Qt 6.11.x · Qt Quick/QML · SQLite/FTS5 · PDF-engine abstraction · CMake
+**Core stack:** C++23 · Qt 6/Qt Quick/QML · SQLite/FTS5 · replaceable PDF-engine layer · qpdf candidate · CMake · vcpkg manifest for non-Qt dependencies
 
 ## I. North Star
 
-Atlas Reader is a fast, local-first reading and research environment where a user can find a book, get to the exact place, and preserve research navigation without being trapped by a proprietary cloud database.
+Atlas Reader is a fast, local-first reading and research environment where a user can find a book, get to the exact place, preserve deep research navigation, and keep ownership of their data without being trapped by a proprietary cloud database.
 
-The native successor exists to make that promise compatible with graphics-heavy PDF workloads and long-term multi-platform deployment.
+The native successor exists to make that promise compatible with graphics-heavy PDF workloads, low-latency pen input, very large local libraries, safe PDF mutation, and long-term desktop/mobile deployment.
 
 ### Non-negotiable principles
 
 | Principle | Meaning |
 |---|---|
-| Index → Reader → Bookmarks | Core product work is prioritized in that order |
-| Native responsiveness | Expensive work never executes synchronously on the UI/render thread |
-| Portable when possible | PDF-native data belongs in the PDF when safe and permitted |
-| Local when necessary | Non-writable/unsafe documents retain full research usability through local overlays |
-| Never lost silently | No false save success, blind overwrite, or destructive unavailable-root reconciliation |
-| Core is portable | Shared domain logic contains no Windows-only assumptions |
-| Engine replaceability | PDF renderer/editor is behind interfaces; no vendor library owns product architecture |
-| Arabic/RTL first-class | Unicode, bidi, Arabic UI, mixed-script metadata, and outlines are release requirements |
-| Accessibility first | Keyboard, screen reader, visible focus, text scale, and non-color status are architectural gates |
-| Evidence before claims | Documentation distinguishes planned, implemented, verified, and owner-accepted behavior |
+| **Index → Reader → Bookmarks** | Core product work is prioritized in that order |
+| **Native responsiveness** | Expensive work never executes synchronously on the UI/render thread |
+| **Portable when possible** | PDF-native data belongs in the PDF when safe and permitted |
+| **Local when necessary** | Non-writable/unsafe documents retain research usability through explicit local overlays |
+| **Never lost silently** | No false save success, blind overwrite, ambiguous relinking, or destructive unavailable-root reconciliation |
+| **Core is portable** | Shared domain/application rules contain no Windows-only assumptions |
+| **Engine replaceability** | PDF vendor libraries remain behind Atlas-owned interfaces |
+| **Arabic/RTL first-class** | Unicode, bidi, Arabic UI, mixed-script metadata/outlines are release requirements |
+| **Accessibility first** | Keyboard, Narrator/UIA, visible focus, text scale, high contrast are architectural gates |
+| **Evidence before claims** | Planned, Implemented, Verified, Accepted, Released are distinct |
+| **Measure before optimize** | Profilers/benchmarks identify bottlenecks; “C++” alone is not a performance guarantee |
+| **Scope beats feature-count** | Atlas competes by excellence in chosen workflows, not by cloning every Acrobat/Foxit function |
 
-## II. Product pillars
+## II. Windows 2.0 product pillars
 
-### Pillar 1 — Library and Index
+### Pillar 1 — Library and Index (P0)
 
-- explicit library roots plus direct-open documents;
-- progressive scanning with bounded concurrency;
-- guarded document identity across safe moves/renames;
-- SQLite/FTS5 search over metadata and bookmarks;
-- offline/missing/restricted/unreadable states instead of binary present/deleted;
-- no destructive purge when a root cannot be enumerated;
-- Arabic/Unicode filenames and metadata;
-- responsive library at large scale.
+- explicit library roots plus direct-open PDFs;
+- progressive bounded scanning;
+- SQLite/FTS5 metadata/bookmark search;
+- guarded identity across safe moves/renames;
+- unavailable/offline/restricted/unreadable states;
+- no destructive root purge when enumeration fails;
+- Arabic/Unicode paths/metadata;
+- Recents/Favorites/Folders and Command Center;
+- measurable responsiveness at large scale.
 
-### Pillar 2 — Reader
+### Pillar 2 — Reader (P0)
 
-- GPU-backed virtualized page surface;
-- only visible/near-visible pages rendered at useful resolution;
-- continuous scroll, page mode, zoom, fit width/page, rotation and crop-aware layout;
-- text/search/link layers separated from page texture;
-- accurate physical page index versus page label versus academic offset;
-- byte-backed sessions where useful to avoid file sharing locks;
-- no PDF parse/render/save on the UI thread.
+- Atlas-owned GPU-backed virtualized page viewport;
+- visible/near-visible page texture priority;
+- bounded caches/memory;
+- continuous/page reading modes;
+- free zoom + fit page/width;
+- page index/label/academic-offset separation;
+- thumbnails, outline, text/search/links where supported;
+- multi-document workspace;
+- byte-backed/read-session behavior where useful;
+- no PDF parse/render/save or large SQL on UI thread.
 
-### Pillar 3 — Bookmarks and Outlines
+### Pillar 3 — Bookmarks and Outlines (P0 / strategic differentiator)
 
-- deep hierarchy and duplicate names under different parents;
-- exact destinations and breadcrumb identity;
-- complete create/edit/move/reorder/nest/delete workflow;
-- global search and command-center navigation;
+- deep hierarchy, duplicate visible names, exact destinations/breadcrumb identity;
+- complete create/edit/move/reorder/nest/delete;
+- library-wide search/Command Center;
 - embedded PDF outline when safe;
-- local overlay for restricted/read-only/signed/offline/conflicted documents;
-- import/export and backup;
-- previewed reconciliation after external changes.
+- first-class local overlay for restricted/read-only/signed/offline/conflicted documents;
+- security/password capability model;
+- external-revision conflict/reconciliation;
+- safe promotion into PDF;
+- lossless Atlas JSON + Markdown/CSV import/export;
+- backup/recovery.
 
-### Pillar 4 — Standard writing and annotations
+### Pillar 4 — Standard Writing and Annotations (P1)
 
-After the first three pillars are dependable, add low-latency live ink, highlighting, text markup, notes, and standard portable PDF annotation representations. Live drawing is a GPU/UI overlay first; persistence happens asynchronously.
+After the first three pillars are dependable: low-latency live ink, highlighter, selection/erase/undo/redo, standard markup/notes where interop passes. Live drawing is a GPU/UI overlay first; PDF persistence happens asynchronously through the same safe-save capability model.
 
-### Pillar 5 — Platform quality
+### Pillar 5 — Essential Desktop Utilities (P1)
 
-Windows reaches release quality first. Subsequent platforms adapt storage/input/shell/printing/lifecycle behavior while reusing the core and most QML components.
+Printing, cover generation, useful document details, selected portable metadata editing, Windows shell integration, installer, backup/migration.
 
-## III. Architectural constraints
+### Pillar 6 — Platform Quality
+
+Windows reaches full 2.0 release quality first. Later platforms adapt storage/input/shell/printing/lifecycle/UI while reusing the core rules and most QML components.
+
+## III. Scope contract
+
+The detailed Windows 2.0 feature contract lives in `docs/FEATURE_SCOPE_2_0.md`. P0 features cannot be silently dropped during implementation.
+
+Explicitly deferred from Windows 2.0 unless owner scope changes:
+
+- OCR;
+- cloud accounts/sync;
+- AI document chat/analysis;
+- PDF password cracking/restriction bypass;
+- arbitrary PDF text/object editing;
+- forms/signature-authoring workflow;
+- office conversion;
+- multimedia/3D;
+- full EPUB rendering/annotation.
+
+A competitor having one of these does not make Atlas 2.0 a failure. Core quality has priority over feature-count vanity.
+
+## IV. Architectural constraints
 
 ### Pure shared core
 
-The reusable core uses standard C++ types where practical and does not expose Qt GUI, Win32, Java/Kotlin, Swift/Objective-C, or platform path handles in domain interfaces.
-
-Qt may be used in infrastructure/application adapters when it genuinely reduces complexity, but platform-specific code stays behind ports.
+Reusable domain/application logic uses standard C++ types where practical and never exposes Qt GUI, Win32, Java/Kotlin, Swift/Objective-C, Windows HANDLEs, Android URIs, or Apple security-scoped handles as domain identity.
 
 ### UI boundary
 
-QML is for presentation, interaction composition, and animation. Business rules do not live in JavaScript/QML.
-
-Controllers/view models translate between QML and domain/application services.
+QML handles presentation/interaction composition. Business rules do not live in QML JavaScript. Controllers/view models translate to application commands/state.
 
 ### PDF boundary
 
-The product depends on `IPdfEngine`, not on Qt PDF, PDFium, qpdf, or any single library directly.
-
-Likely split:
-
-- rendering/text/search: Qt PDF initially evaluated against PDFium;
-- structural transformations: qpdf candidate;
-- annotations/outlines/security/capability: Atlas facade over whichever engines pass round-trip tests.
-
-No engine is accepted merely because it renders a sample PDF.
+Application code depends on Atlas PDF contracts/facades, never directly on Qt PDF, PDFium, or qpdf. N2 selects responsibilities by fixture/benchmark/interop evidence.
 
 ### Storage boundary
 
-SQLite + FTS5 is the planned local searchable store. Database writes are serialized/batched behind a repository boundary. UI code never issues arbitrary SQL.
+SQLite + FTS5 behind schema/migrations/repositories. Writes are serialized/batched as appropriate. UI never executes arbitrary SQL.
 
 ### Platform boundary
 
 At minimum:
 
-- `IFileSystem`
-- file watcher
-- file picker
-- printing
-- stylus/touch input specialization
-- shell/open-with integration
-- secure credential facility if later needed
-- app lifecycle/power events
+- filesystem/storage/document-reference port;
+- watcher;
+- picker;
+- printing;
+- stylus/touch specialization;
+- shell/open-with/share integration;
+- lifecycle/power/session behavior;
+- secure credential facility only if a future ADR introduces persistent secret storage.
 
-## IV. Threading and performance model
+See `docs/ARCHITECTURE.md`.
+
+## V. Threading/performance model
 
 The GUI/render thread must not perform:
 
 - directory traversal;
-- PDF parse or structural validation;
-- page rasterization beyond GPU presentation commands;
+- PDF parsing/structural validation;
+- CPU page rasterization;
 - cover generation;
-- document hashing;
+- large hashing/fingerprinting;
 - large SQL queries;
 - PDF serialization/save;
-- import/export serialization for large trees;
-- expensive bookmark reconciliation.
+- large import/export;
+- expensive tree reconciliation.
 
-Work is scheduled through bounded worker queues with cancellation and priority.
+Bounded queues prioritize interactive viewport/search work over prefetch/background scan work. Cancellation/reprioritization is first-class.
 
-Reader priority is viewport-first: visible page → neighboring page → requested thumbnail → background prefetch.
+Performance budgets/evidence rules live in `docs/PERFORMANCE.md`; profiling/tooling policy lives in `docs/DEPENDENCIES_AND_TOOLS.md` and `docs/QUALITY_AND_TESTING.md`.
 
-See `docs/PERFORMANCE.md` for budgets.
+## VI. Safety and data ownership
 
-## V. Safety model
+Every PDF mutation rechecks:
 
-Every PDF mutation must re-check:
-
-1. document identity/path;
-2. external revision/fingerprint;
-3. current filesystem writability;
-4. PDF permission/security capability;
-5. signed/certified mutation consequences;
-6. destination space/availability;
+1. document identity/location;
+2. external source revision;
+3. filesystem writability;
+4. PDF security/permission capability;
+5. signed/certified consequence;
+6. destination/storage availability;
 7. preservation invariants.
 
-Commit is temp → validate → backup/replace → reopen → re-index → mark committed.
+Commit model: **temp → validate → backup/replace → reopen → re-index → mark committed**.
 
-Local state is never labeled embedded before successful validation.
+Local data is never labeled Embedded before successful validated re-read.
 
-## VI. Accessibility and internationalization
+A non-writable document is not a broken research workflow; Atlas keeps local state clearly and exportably.
 
-Release work must include:
+See `docs/CORE_WORKFLOWS.md`.
 
-- English and Arabic resources from the first user-facing checkpoint;
-- RTL layout and bidi isolation;
-- mixed Arabic/English/Urdu metadata tests;
+## VII. Accessibility and internationalization
+
+From the first user-facing beta:
+
+- English + Arabic resources;
+- RTL layout/bidi isolation;
+- Arabic/English/Urdu mixed fixtures;
 - keyboard-only operation;
-- screen-reader semantics and announcements;
+- Narrator/UI Automation semantics;
 - visible focus;
-- 200% UI scale/text testing;
-- no status conveyed by color alone;
-- reduced-motion handling where applicable.
+- 200% UI/text testing;
+- system high-contrast behavior;
+- non-color-only state;
+- reduced motion where relevant.
 
-## VII. Platform sequence
+N9 is final qualification, not the first implementation pass.
 
-### Windows
+See `docs/UX_ACCESSIBILITY_AND_DESIGN.md`.
 
-The first complete implementation. Use Qt's Direct3D-backed scene graph by default, plus Win32/Windows APIs only through adapters when Qt cannot provide required behavior.
+## VIII. Quality model
 
-### Android
+A feature is Done only when relevant layers have evidence:
 
-Reuse C++ core and QML components; add scoped-storage/document-provider, lifecycle, sharing, and stylus adapters.
+- domain/unit tests;
+- adapter/component tests;
+- integration/fixture tests;
+- preservation/round-trip tests;
+- Release build;
+- benchmark budget for hot paths;
+- Arabic/RTL/accessibility evidence;
+- failure/recovery evidence;
+- documentation status update;
+- owner checkpoint acceptance.
 
-### Linux
+Critical defects found in beta/owner testing receive regression tests or a documented manual checklist item.
 
-Reuse desktop shell; qualify Wayland/X11, portals, filesystem/watch behavior, printing, and packaging.
+See `docs/QUALITY_AND_TESTING.md`.
 
-### macOS
+## IX. Dependency/open-source strategy
 
-Reuse core/desktop shell; add Finder/sandbox/printing/macOS menu conventions and Metal qualification.
+Atlas deliberately reuses mature components where quality improves:
 
-### iOS/iPadOS
+- Qt for cross-platform native UI/platform infrastructure;
+- SQLite/FTS5 for local transactional search/index;
+- qpdf candidate for PDF structure/transformation;
+- Qt PDF/PDFium candidates for rendering/inspection;
+- Catch2/Qt Test for testing;
+- Google Benchmark for performance tests;
+- nlohmann/json candidate for versioned Atlas JSON interchange;
+- xxHash candidate as one guarded fingerprint signal;
+- spdlog only if needed;
+- vcpkg manifest mode for non-Qt native dependency reproducibility.
 
-Reuse mobile shell/core; add document picker/security-scoped file behavior, lifecycle, sharing, and Pencil qualification.
+Development-only quality tools include QML Profiler, Tracy, RenderDoc, WPA/WPR, Visual Studio profiler, Accessibility Insights, clang-format/tidy, CodeQL, CodeGraph, and GitHub Actions.
 
-## VIII. Deferred scope
+No dependency bypasses license/performance/portability/abstraction review.
 
-The native migration is not justification to expand scope. Before 1.0, defer unless a checkpoint explicitly changes this:
+See `docs/DEPENDENCIES_AND_TOOLS.md` and `docs/LICENSING.md`.
 
-- OCR;
-- cloud accounts/sync;
-- PDF password cracking/restriction bypass;
-- arbitrary PDF text/object editing;
-- forms/signature creation workflows;
-- office conversion;
-- multimedia/3D;
-- AI features;
-- EPUB full rendering/annotation.
+## X. Competitive strategy
 
-## IX. Definition of done
+Adobe/Foxit define mature security/interoperability/desktop expectations; Librera informs reader/library flow; Xournal++ demonstrates pen/local-layer value; SumatraPDF reinforces startup/minimal-latency expectations; Okular is a useful open-source cross-platform reference.
 
-A feature is not done until:
+Atlas differentiation is the combination of:
 
-- unit/domain tests cover rules;
-- integration tests cover engine/platform boundaries;
-- release build succeeds;
-- relevant benchmark budgets pass;
-- Arabic/RTL/accessibility behavior is verified for user-facing changes;
-- failure/recovery paths are tested;
-- documentation states actual implementation status;
-- owner checkpoint is explicitly accepted.
+- serious local library;
+- fast native reader;
+- deep first-class bookmarks;
+- protected-document local fallback;
+- local-first ownership;
+- Arabic/RTL;
+- accessibility;
+- transparent conflict/recovery.
 
-## X. Migration rule
+See `docs/COMPETITIVE_BASELINE.md`.
 
-The Flutter application remains a product-behavior reference, not a source-code template. Port behavior and data contracts deliberately; do not recreate Flutter widget structure in C++/QML.
+## XI. Release program
 
-The first native releases may run side-by-side with the Flutter beta. Existing PDFs remain the strongest portable migration path; app-local SQLite migration is introduced only after the native schema is stable enough to avoid repeated destructive converters.
+Native V2 uses:
+
+- N0–N2: `2.0.0-alpha.N` engineering previews;
+- N3 onward: `2.0.0-beta.N` usable milestone builds;
+- N10: `2.0.0-rc.N`;
+- N11: stable `2.0.0` Windows.
+
+Later Android/Linux/macOS/iOS adaptations occur after Windows 2.0 rather than delaying Windows indefinitely.
+
+See `docs/RELEASE_STRATEGY.md` and `CHECKPOINTS.md`.
+
+## XII. Success definition for Windows 2.0
+
+Atlas 2.0 succeeds when:
+
+- all P0 Windows scope is Accepted;
+- no known core path silently loses research data;
+- protected/signed/read-only/offline/conflicted PDFs have explicit tested behavior;
+- large libraries remain usable while indexing;
+- large PDFs navigate with bounded memory and responsive UI;
+- 10k bookmark search/navigation meets recorded target;
+- embedded portable data round-trips in independent readers for accepted fixtures;
+- backup/restore and legacy migration are tested;
+- Arabic/RTL/Narrator matrix has no untested core workflow;
+- installer/upgrade/uninstall preserve user books/data;
+- exact dependency/toolchain/SBOM/notices and release evidence are archived;
+- owner explicitly accepts the release candidate.
+
+## XIII. Migration rule
+
+The Flutter application is a **behavior/data reference**, not a source-code template. Port contracts deliberately; do not recreate its widget/service structure in C++/QML.
+
+Native and Flutter builds may run side-by-side through beta. PDFs are the strongest portable bridge. Legacy app-local migration is implemented only after the native schema/identity model is stable enough to avoid repeated destructive converters.
+
+## XIV. Documentation map
+
+- `README.md` — entry point/current status.
+- `PLAN.md` — this master plan.
+- `CHECKPOINTS.md` — execution order/releases/stop gates.
+- `INFO.md` — compact orientation.
+- `docs/FEATURE_SCOPE_2_0.md` — exact Windows 2.0 product scope.
+- `docs/ARCHITECTURE.md` — boundaries/data/threading.
+- `docs/CORE_WORKFLOWS.md` — capability/local-overlay/save/conflict contract.
+- `docs/TECH_STACK.md` — technical choices and alternatives.
+- `docs/DEPENDENCIES_AND_TOOLS.md` — open-source/tool/plugin/agent policy.
+- `docs/PERFORMANCE.md` — performance budgets/benchmarks.
+- `docs/QUALITY_AND_TESTING.md` — test/evidence/security quality gates.
+- `docs/UX_ACCESSIBILITY_AND_DESIGN.md` — UX/a11y/RTL contract.
+- `docs/COMPETITIVE_BASELINE.md` — competitor research/differentiation.
+- `docs/RELEASE_STRATEGY.md` — alpha/beta/RC/stable rules.
+- `docs/DEVELOPMENT_WORKFLOW.md` — branches/PRs/ADRs/agent workflow.
+- `docs/PLATFORM_ROADMAP.md` — Windows-first portability program.
+- `docs/MIGRATION_FROM_FLUTTER.md` — legacy migration.
+- `docs/BUILDING.md` — canonical build instructions.
+- `docs/LICENSING.md` — license/distribution guardrails.
+- `docs/decisions/` — ADRs.

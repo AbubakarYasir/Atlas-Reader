@@ -51,6 +51,14 @@ ApplicationWindow {
                 text: root.arabic ? "English" : "العربية"
                 Accessible.name: root.arabic ? "Switch to English" : "التبديل إلى العربية"
                 onClicked: root.arabic = !root.arabic
+
+                Keys.onPressed: (event) => {
+                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        if (!event.isAutoRepeat)
+                            animateClick()
+                        event.accepted = true
+                    }
+                }
             }
 
             Button {
@@ -61,6 +69,14 @@ ApplicationWindow {
                     ? (root.arabic ? "استخدام الوضع الفاتح" : "Use light theme")
                     : (root.arabic ? "استخدام الوضع الداكن" : "Use dark theme")
                 onClicked: root.darkMode = !root.darkMode
+
+                Keys.onPressed: (event) => {
+                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        if (!event.isAutoRepeat)
+                            animateClick()
+                        event.accepted = true
+                    }
+                }
             }
         }
     }

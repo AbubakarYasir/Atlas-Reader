@@ -82,6 +82,20 @@ target_link_libraries(atlas_reader
 )
 atlas_enable_warnings(atlas_reader)
 
+# N1 Windows candidate: keep the measured GDI font-backend configuration next
+# to every built executable so local and packaged qualification exercise the
+# same QPA configuration. Other platforms ignore the WindowsArguments key.
+if(WIN32)
+    add_custom_command(
+        TARGET atlas_reader
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_SOURCE_DIR}/qt.conf
+                $<TARGET_FILE_DIR:atlas_reader>/qt.conf
+        VERBATIM
+    )
+endif()
+
 enable_testing()
 
 add_executable(atlas_core_smoke tests/core_smoke.cpp)

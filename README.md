@@ -445,3 +445,45 @@ $env:ATLAS_AUDIT_ARABIC_PDF = 'C:\path\to\arabic-copy.pdf'
 $env:ATLAS_AUDIT_ENGLISH_PDF = 'C:\path\to\english-copy.pdf'
 flutter test test/runtime_pdf_audit_test.dart
 ```
+
+### Localization
+
+Translations live in `lib/l10n/app_en.arb` and `lib/l10n/app_ar.arb`.
+
+```powershell
+flutter gen-l10n
+```
+
+New interactive tree rows should reuse
+`lib/widgets/accessible_bookmark_tile.dart` so keyboard traversal, focus, and
+screen-reader semantics remain consistent.
+
+## Versioning and release policy
+
+Atlas follows [Semantic Versioning](https://semver.org/):
+
+- `0.x` means storage contracts and APIs can still change before stable `1.0`.
+- `0.8.0-beta.1` is the first consolidated beta of library/search, portable
+  bookmarks, and PDF reading/ink.
+- A new beta suffix is a compatible hardening build; a new minor version adds a
+  material core capability.
+- Flutter build metadata (`+2`) identifies the packaged build and increases for
+  each distributable beta build.
+
+The version is defined in `pubspec.yaml`. Release changes belong in
+`CHANGELOG.md`, and broad engineering scope and acceptance criteria belong in
+`PLAN.md`. Detailed core Index/Reader/Bookmark resilience requirements live in
+`docs/CORE_WORKFLOWS.md`. Delivery order, evidence, and owner stop gates belong
+in `CHECKPOINTS.md`.
+
+## Documentation
+
+- [Engineering and accessibility plan](PLAN.md)
+- [Core workflows, capability model, and edge cases](docs/CORE_WORKFLOWS.md)
+- [Delivery checkpoints and owner tests](CHECKPOINTS.md)
+- [Release history](CHANGELOG.md)
+- [Additional project notes](INFO.md)
+
+## License
+
+Atlas Reader is open-source software released under the [MIT License](LICENSE).

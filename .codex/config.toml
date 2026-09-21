@@ -1,0 +1,10 @@
+[mcp_servers.codegraph]
+command = "codegraph"
+args = ["serve", "--mcp"]
+
+# GitHub's hosted MCP server. Keep credentials in GITHUB_PAT_TOKEN at user level;
+# never place tokens in this repository. Read-only is the default for repository
+# lookup/diff/CI inspection; explicit write actions happen through reviewed tools.
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/readonly"
+bearer_token_env_var = "GITHUB_PAT_TOKEN"

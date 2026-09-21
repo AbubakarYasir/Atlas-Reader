@@ -24,6 +24,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Validate qualification scripts
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          $files = @(
+            'tools/bench/measure-windows-shell.ps1',
+            'tools/bench/run-n1-qualification.ps1',
+            'tools/bench/run-n1-packaged-qualification.ps1'
+          )
+
+          foreach ($file in $files) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file),
+              [ref]$tokens,
+              [ref]$parseErrors
+            ) | Out-Null
+
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | ForEach-Object { Write-Error "$file: $($_.Message)" }
+              throw "PowerShell syntax validation failed for $file"
+            }
+
+            Write-Host "PowerShell syntax OK: $file"
+          }
+
       # N1 canonical public alpha baseline. Qt 6.11.2 remains the preferred
       # current product-generation line, but public aqt Windows 6.11.x binary
       # installation is not reproducible without the official authenticated
@@ -101,6 +128,7 @@ jobs:
             'Configuration: Release'
             'Generator: Visual Studio 17 2022 x64'
             'Qt: 6.10.3 MSVC 2022 64-bit'
+            'Controls style: compile-time Basic'
             'Purpose: physical Windows baseline qualification only; not a user release'
           ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N1_BUILD_INFO.txt')
 

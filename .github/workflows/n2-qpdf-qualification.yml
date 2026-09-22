@@ -69,6 +69,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "Fixture validation dependency install failed with exit code $LASTEXITCODE"
           }
+          python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/source/requirements.txt
+          if ($LASTEXITCODE -ne 0) {
+            throw "Fixture generation dependency install failed with exit code $LASTEXITCODE"
+          }
 
       - name: Regenerate and verify deterministic N2 fixtures
         shell: pwsh
@@ -85,13 +89,17 @@ jobs:
           python tests/fixtures/pdf/source/generate_a010_certification_structure.py
           if ($LASTEXITCODE -ne 0) { throw "A010 generation failed: $LASTEXITCODE" }
 
+          python tests/fixtures/pdf/source/generate_a011_visual_geometry.py
+          if ($LASTEXITCODE -ne 0) { throw "A011 generation failed: $LASTEXITCODE" }
+
           $fixtures = @(
             @{ Id = 'A003'; Path = 'tests/fixtures/pdf/generated/A003_outlines_links.pdf'; Expected = '77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5' },
             @{ Id = 'A006'; Path = 'tests/fixtures/pdf/generated/A006_unicode_semantics.pdf'; Expected = 'efe3aa5f9538a8a18af71e4517c9f1e10980db394107c0e16141b03ec7058f0b' },
             @{ Id = 'A007'; Path = 'tests/fixtures/pdf/generated/A007_malformed_truncated.pdf'; Expected = 'd6e2fb7962bb233083c110593f6e6968b067c155c713ebb9418c19493e48d79f' },
             @{ Id = 'A008'; Path = 'tests/fixtures/pdf/generated/A008_password_rc4_40.pdf'; Expected = '62a6b4e332b8296250b9f8d1076e7c5d717a01c54a7471418bc771f0e2d4a08e' },
             @{ Id = 'A009'; Path = 'tests/fixtures/pdf/generated/A009_restricted_permissions_rc4_40.pdf'; Expected = '0db18b77d4dc8f43ee728fd22eb897f1072f630444a41fef3a8fff12b83400b2' },
-            @{ Id = 'A010'; Path = 'tests/fixtures/pdf/generated/A010_certification_structure.pdf'; Expected = '95bc8daabea7d46bb70432bb65fc2fd8af3ad6e590f0fbf539e443930ce8f668' }
+            @{ Id = 'A010'; Path = 'tests/fixtures/pdf/generated/A010_certification_structure.pdf'; Expected = '95bc8daabea7d46bb70432bb65fc2fd8af3ad6e590f0fbf539e443930ce8f668' },
+            @{ Id = 'A011'; Path = 'tests/fixtures/pdf/generated/A011_visual_geometry.pdf'; Expected = 'c4862d88c867dd893c742d21e30f922338c771c3caaf2e7e1a2ea4bc8e4de81d' }
           )
           foreach ($fixture in $fixtures) {
             $actual = (Get-FileHash $fixture.Path -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -186,6 +194,7 @@ jobs:
             'Acquisition: first-party qpdf GitHub release, MSVC64 ZIP'
             'vcpkg baseline: N/A for this CLI qualification slice'
             'Fixture validator: pypdf 5.9.0'
+            'Shared deterministic corpus preparation: A006-A011 regenerated before independent manifest validation'
             'Restricted permission fixture: A009 Standard V1/R2 RC4-40 test-only P=-64; user/owner/wrong password states independently validated'
             'Signature safety fixture: A010 structural /Sig + /DocMDP P=2; intentionally not cryptographically valid; safety detection only'
             'Safety policy: signed/certified structure must be detected before mutation; rewrite may never be represented as preserving verified signature integrity without independent cryptographic verification'

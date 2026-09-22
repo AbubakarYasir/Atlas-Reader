@@ -126,17 +126,42 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
+
           python tests/fixtures/pdf/source/generate_a006_unicode_semantics.py
           if ($LASTEXITCODE -ne 0) {
             throw "A006 deterministic fixture generation failed with exit code $LASTEXITCODE"
           }
-          $expected = 'efe3aa5f9538a8a18af71e4517c9f1e10980db394107c0e16141b03ec7058f0b'
-          $path = 'tests/fixtures/pdf/generated/A006_unicode_semantics.pdf'
-          $actual = (Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actual -ne $expected) {
-            throw "A006 generated SHA-256 mismatch: $actual != $expected"
+          $a006Expected = 'efe3aa5f9538a8a18af71e4517c9f1e10980db394107c0e16141b03ec7058f0b'
+          $a006Path = 'tests/fixtures/pdf/generated/A006_unicode_semantics.pdf'
+          $a006Actual = (Get-FileHash $a006Path -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($a006Actual -ne $a006Expected) {
+            throw "A006 generated SHA-256 mismatch: $a006Actual != $a006Expected"
           }
-          Write-Host "A006 deterministic fixture verified: $actual"
+          Write-Host "A006 deterministic fixture verified: $a006Actual"
+
+          python tests/fixtures/pdf/source/generate_a007_a008_security_semantics.py
+          if ($LASTEXITCODE -ne 0) {
+            throw "A007/A008 deterministic fixture generation failed with exit code $LASTEXITCODE"
+          }
+          $securityFixtures = @(
+            @{
+              Id = 'A007'
+              Path = 'tests/fixtures/pdf/generated/A007_malformed_truncated.pdf'
+              Expected = 'd6e2fb7962bb233083c110593f6e6968b067c155c713ebb9418c19493e48d79f'
+            },
+            @{
+              Id = 'A008'
+              Path = 'tests/fixtures/pdf/generated/A008_password_rc4_40.pdf'
+              Expected = '62a6b4e332b8296250b9f8d1076e7c5d717a01c54a7471418bc771f0e2d4a08e'
+            }
+          )
+          foreach ($fixture in $securityFixtures) {
+            $actual = (Get-FileHash $fixture.Path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $fixture.Expected) {
+              throw "$($fixture.Id) generated SHA-256 mismatch: $actual != $($fixture.Expected)"
+            }
+            Write-Host "$($fixture.Id) deterministic fixture verified: $actual"
+          }
 
       - name: Validate N2 synthetic PDF fixtures independently
         if: matrix.configuration == 'Release'
@@ -186,15 +211,19 @@ jobs:
           $pdfiumEvidence = Join-Path $stage 'evidence/pdfium'
           $qtSearchEvidence = Join-Path $stage 'evidence/qt-pdf-search'
           $pdfiumSearchEvidence = Join-Path $stage 'evidence/pdfium-search'
-          New-Item -ItemType Directory -Force -Path $stage, $docs, $qtProbeStage, $pdfiumProbeStage, $fixtureStage, $qtEvidence, $pdfiumEvidence, $qtSearchEvidence, $pdfiumSearchEvidence | Out-Null
+          $qtSecurityEvidence = Join-Path $stage 'evidence/qt-pdf-security'
+          $pdfiumSecurityEvidence = Join-Path $stage 'evidence/pdfium-security'
+          New-Item -ItemType Directory -Force -Path $stage, $docs, $qtProbeStage, $pdfiumProbeStage, $fixtureStage, $qtEvidence, $pdfiumEvidence, $qtSearchEvidence, $pdfiumSearchEvidence, $qtSecurityEvidence, $pdfiumSecurityEvidence | Out-Null
 
           $exe = Join-Path $PWD 'build/ci-Release/Release/atlas_reader.exe'
           $qtProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_qt_pdf_probe.exe'
           $qtSearchProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_qt_pdf_search_probe.exe'
+          $qtSecurityProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_qt_pdf_security_probe.exe'
           $pdfiumProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_pdfium_probe.exe'
           $pdfiumSearchProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_pdfium_search_probe.exe'
+          $pdfiumSecurityProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_pdfium_security_probe.exe'
           $pdfiumDll = Join-Path $PWD 'build/ci-Release/Release/pdfium.dll'
-          foreach ($required in @($exe, $qtProbe, $qtSearchProbe, $pdfiumProbe, $pdfiumSearchProbe, $pdfiumDll)) {
+          foreach ($required in @($exe, $qtProbe, $qtSearchProbe, $qtSecurityProbe, $pdfiumProbe, $pdfiumSearchProbe, $pdfiumSecurityProbe, $pdfiumDll)) {
             if (-not (Test-Path $required)) {
               throw "Required Release artifact not found at $required"
             }
@@ -204,8 +233,10 @@ jobs:
           Copy-Item 'qt.conf' (Join-Path $stage 'qt.conf')
           Copy-Item $qtProbe (Join-Path $qtProbeStage 'atlas_qt_pdf_probe.exe')
           Copy-Item $qtSearchProbe (Join-Path $qtProbeStage 'atlas_qt_pdf_search_probe.exe')
+          Copy-Item $qtSecurityProbe (Join-Path $qtProbeStage 'atlas_qt_pdf_security_probe.exe')
           Copy-Item $pdfiumProbe (Join-Path $pdfiumProbeStage 'atlas_pdfium_probe.exe')
           Copy-Item $pdfiumSearchProbe (Join-Path $pdfiumProbeStage 'atlas_pdfium_search_probe.exe')
+          Copy-Item $pdfiumSecurityProbe (Join-Path $pdfiumProbeStage 'atlas_pdfium_security_probe.exe')
           Copy-Item $pdfiumDll (Join-Path $pdfiumProbeStage 'pdfium.dll')
           Copy-Item 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md' (Join-Path $docs 'N2_PDF_ENGINE_QUALIFICATION_PLAN.md')
           Copy-Item 'docs/baselines/N2_PDF_ENGINE_MATRIX.md' (Join-Path $docs 'N2_PDF_ENGINE_MATRIX.md')
@@ -301,6 +332,33 @@ jobs:
           Invoke-EvidenceProbe -Executable $qtSearchProbe -Arguments $diagnosticArgs -OutputPath (Join-Path $qtSearchEvidence 'A006-vocalized-source-order-diagnostic.json') -Label 'Qt PDF source-order vocalized search diagnostic'
           Invoke-EvidenceProbe -Executable $pdfiumSearchProbe -Arguments $diagnosticArgs -OutputPath (Join-Path $pdfiumSearchEvidence 'A006-vocalized-source-order-diagnostic.json') -Label 'PDFium source-order vocalized search diagnostic'
 
+          $a007 = Join-Path $fixtureRoot 'A007_malformed_truncated.pdf'
+          $a008 = Join-Path $fixtureRoot 'A008_password_rc4_40.pdf'
+          $securityCases = @(
+            @{ Name = 'A007-malformed'; File = $a007; QtError = 'invalid-file-format'; PdfiumError = 'format'; Password = $null; Success = $false },
+            @{ Name = 'A008-no-password'; File = $a008; QtError = 'incorrect-password'; PdfiumError = 'password'; Password = $null; Success = $false },
+            @{ Name = 'A008-wrong-password'; File = $a008; QtError = 'incorrect-password'; PdfiumError = 'password'; Password = 'atlas-wrong'; Success = $false },
+            @{ Name = 'A008-correct-password'; File = $a008; QtError = 'none'; PdfiumError = 'success'; Password = 'atlas-user'; Success = $true }
+          )
+
+          foreach ($case in $securityCases) {
+            $qtArgs = @('--fixture-id',$case.Name,'--expect-load-error',$case.QtError)
+            $pdfiumArgs = @('--fixture-id',$case.Name,'--expect-load-error',$case.PdfiumError)
+            if ($null -ne $case.Password) {
+              $qtArgs += @('--password',$case.Password)
+              $pdfiumArgs += @('--password',$case.Password)
+            }
+            if ($case.Success) {
+              $qtArgs += @('--expect-pages','1','--expect-labels','1')
+              $pdfiumArgs += @('--expect-pages','1','--expect-labels','1')
+            }
+            $qtArgs += @($case.File)
+            $pdfiumArgs += @($case.File)
+
+            Invoke-EvidenceProbe -Executable $qtSecurityProbe -Arguments $qtArgs -OutputPath (Join-Path $qtSecurityEvidence "$($case.Name).json") -Label "Qt PDF security $($case.Name)"
+            Invoke-EvidenceProbe -Executable $pdfiumSecurityProbe -Arguments $pdfiumArgs -OutputPath (Join-Path $pdfiumSecurityEvidence "$($case.Name).json") -Label "PDFium security $($case.Name)"
+          }
+
           $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
           & $deploy --release --qmldir (Join-Path $PWD 'qml') (Join-Path $stage 'atlas_reader.exe')
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_reader with exit code $LASTEXITCODE" }
@@ -308,10 +366,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_qt_pdf_probe with exit code $LASTEXITCODE" }
           & $deploy --release (Join-Path $qtProbeStage 'atlas_qt_pdf_search_probe.exe')
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_qt_pdf_search_probe with exit code $LASTEXITCODE" }
+          & $deploy --release (Join-Path $qtProbeStage 'atlas_qt_pdf_security_probe.exe')
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_qt_pdf_security_probe with exit code $LASTEXITCODE" }
           & $deploy --release (Join-Path $pdfiumProbeStage 'atlas_pdfium_probe.exe')
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_pdfium_probe with exit code $LASTEXITCODE" }
           & $deploy --release (Join-Path $pdfiumProbeStage 'atlas_pdfium_search_probe.exe')
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_pdfium_search_probe with exit code $LASTEXITCODE" }
+          & $deploy --release (Join-Path $pdfiumProbeStage 'atlas_pdfium_security_probe.exe')
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_pdfium_security_probe with exit code $LASTEXITCODE" }
 
           @(
             'Atlas Reader Native N2 Windows engineering artifact'
@@ -329,12 +391,15 @@ jobs:
             'Unicode evidence: deterministic A006 exact Arabic, Urdu, mixed-script page and Unicode outline coverage; raw combining-mark order retained as evidence'
             'Search evidence: separate Qt PDF and PDFium probes; normalized page/per-page hit ordinal plus engine-native index/geometry fields'
             'Search diagnostic: source-order fully vocalized Arabic query captured without a predetermined expected hit count'
+            'Security evidence: deterministic A007 malformed-open classification and A008 no/wrong/correct password control flow through focused probes'
+            'Security fixture warning: A008 uses legacy RC4-40 only for deterministic password-path qualification; not a production crypto recommendation'
             'PDFium archive SHA-256: 739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020'
             'PDFium call model: serialized single-thread only'
             'Product shell Qt PDF linkage: none'
             'Product shell PDFium linkage: none'
             'Fixture integrity gate: pypdf 5.9.0 + manifest SHA-256'
             'A006 fixture policy: deterministically regenerated from checked-in source before validation/tests'
+            'A007/A008 fixture policy: deterministically regenerated from checked-in source before validation/tests'
             'Controls style: compile-time Basic'
             'Inherited Windows font backend: GDI via qt.conf'
             'PDF engine production selection: none; ADR-0004 remains Proposed'

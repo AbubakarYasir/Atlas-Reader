@@ -186,6 +186,42 @@ add_test(
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A005_links_only.pdf"
 )
 
+# A006 is regenerated from checked-in source before CI validation/tests. Its
+# Type3 glyphs are synthetic; these tests qualify logical Unicode extraction
+# and outline semantics only, never Arabic/Urdu shaping or raster fidelity.
+add_test(
+    NAME n2_qt_pdf_a006_arabic_outline
+    COMMAND atlas_qt_pdf_probe
+        --fixture-id A006
+        --expect-pages 4
+        --expect-labels 1,2,3,4
+        --expect-text-contains "مرحبا بالعالم"
+        --expect-outline-count 4
+        --expect-outline-titles "العربية|مُشَكَّل|Mixed العربية English|اردو"
+        --expect-outline-depths 0,1,0,0
+        --expect-outline-pages 0,1,2,3
+        --expect-link-count 0
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+)
+
+add_test(
+    NAME n2_qt_pdf_a006_vocalized_arabic
+    COMMAND atlas_qt_pdf_probe
+        --fixture-id A006
+        --expect-pages 4
+        --expect-text-contains "بِسْمِ اللَّهِ"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+)
+
+add_test(
+    NAME n2_qt_pdf_a006_urdu
+    COMMAND atlas_qt_pdf_probe
+        --fixture-id A006
+        --expect-pages 4
+        --expect-text-contains "یہ اردو متن ہے"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+)
+
 if(ATLAS_ENABLE_PDFIUM_PROBE)
     add_test(
         NAME n2_pdfium_a001_simple_text
@@ -258,5 +294,38 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
             --expect-internal-link-page 2
             --expect-external-uri "https://example.com/atlas-n2-fixture"
             "${ATLAS_N2_PDF_FIXTURE_DIR}/A005_links_only.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_a006_arabic_outline
+        COMMAND atlas_pdfium_probe
+            --fixture-id A006
+            --expect-pages 4
+            --expect-labels 1,2,3,4
+            --expect-text-contains "مرحبا بالعالم"
+            --expect-outline-count 4
+            --expect-outline-titles "العربية|مُشَكَّل|Mixed العربية English|اردو"
+            --expect-outline-depths 0,1,0,0
+            --expect-outline-pages 0,1,2,3
+            --expect-link-count 0
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_a006_vocalized_arabic
+        COMMAND atlas_pdfium_probe
+            --fixture-id A006
+            --expect-pages 4
+            --expect-text-contains "بِسْمِ اللَّهِ"
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_a006_urdu
+        COMMAND atlas_pdfium_probe
+            --fixture-id A006
+            --expect-pages 4
+            --expect-text-contains "یہ اردو متن ہے"
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
     )
 endif()

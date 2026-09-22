@@ -131,7 +131,7 @@ def main() -> int:
 
     result = {
         "schema": "atlas.n2.a011-fidelity-validation.v1",
-        "fixture_sha256": "c4862d88c867dd893c742d21e30f922338c771c3caaf2e7e1a2ea4bc8e4de81d",
+        "fixture_sha256": "ebf82d49391c4df27f50afc2eb785aa828effbdeb85039ec2bb4c26d1896f824",
         "engines": ["qt-pdf", "pdfium"],
         "scales": [1, 2],
         "color_tolerance": TOLERANCE,

@@ -126,7 +126,8 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
     add_executable(atlas_pdfium_probe tools/pdf/pdfium_probe.cpp)
     target_compile_definitions(atlas_pdfium_probe PRIVATE
         ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}"
-        ATLAS_PDFIUM_PIN="chromium/8066 (156.0.8066.0)"
+        ATLAS_PDFIUM_PIN="chromium/8066"
+        ATLAS_PDFIUM_VERSION="156.0.8066.0"
     )
     target_link_libraries(atlas_pdfium_probe
         PRIVATE

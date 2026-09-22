@@ -1,7 +1,7 @@
 # N2 PDF Engine Qualification Matrix
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Open — N2.1/N2.2 core smoke captured; broader qualification pending**  
+**Status:** **Open — Qt PDF/PDFium core + navigation evidence captured; Unicode/search/security/performance/qpdf pending**  
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Opened:** 2026-09-22
 
@@ -16,46 +16,81 @@ This is the durable comparison sheet for N2. It must be updated when evidence is
 - **N/A** — responsibility is outside the engine's intended role.
 - **PENDING** — not tested yet.
 
-## N2.1 Qt PDF evidence baseline — 2026-09-22
+## N2.1 Qt PDF core evidence baseline — 2026-09-22
 
-The first clean Qt PDF evidence baseline is bound to the **tested implementation SHA** `213050ee75882ae5fa53f73b07fe2707bbaea5a8`.
+The first clean Qt PDF evidence baseline is bound to tested implementation SHA `213050ee75882ae5fa53f73b07fe2707bbaea5a8`.
 
-- GitHub Actions run: `35679099222` — Debug and Release both PASS.
-- Windows engineering artifact: `atlas-reader-n2-windows-x64-213050ee75882ae5fa53f73b07fe2707bbaea5a8`.
-- Artifact ID: `10674630141`.
-- Artifact digest: `sha256:6490e039589984d3190f3e6ac0f0269b9b732f21da581472822d90a5fb51187b`.
-- Qt PDF under test: **Qt 6.10.3**, `qtpdf`, MSVC 2022 x64.
-- Atlas product shell still does **not** link Qt PDF; the candidate remains isolated in `atlas_qt_pdf_probe`.
-- Independent fixture validator: **pypdf 5.9.0**. All five A001–A005 files matched the manifest SHA-256 values and independently passed expected page/text/outline/link checks applicable to each fixture.
-- Repository integrity finding: without `.gitattributes`, Windows checkout rewrote LF bytes in ASCII-heavy PDF files, changing all fixture SHA-256 values and invalidating `startxref` offsets. `*.pdf -text` was added at the tested SHA, after which all manifest hashes passed exactly. The earlier A003 empty-text symptom is therefore **not** retained as a Qt PDF defect.
-- Qt PDF A001–A005 strict CTest expectations all passed. A003 no longer has any `WILL_FAIL`/expected-failure waiver.
+- GitHub Actions run `35679099222` — Debug and Release PASS.
+- Artifact ID `10674630141`.
+- Artifact digest `sha256:6490e039589984d3190f3e6ac0f0269b9b732f21da581472822d90a5fb51187b`.
+- Qt PDF: 6.10.3 via `qtpdf`, MSVC 2022 x64.
+- `atlas_reader` and `atlas_core` do not link Qt PDF; only the focused probe does.
+- Independent pypdf 5.9.0 fixture validation passes A001–A005.
+- Windows checkout originally rewrote ASCII-heavy PDF fixtures through line-ending conversion. Repository-level `*.pdf -text` fixed the corruption. The earlier A003 empty-text symptom is therefore not retained as a Qt PDF defect.
+- A001–A005 strict Qt PDF CTests pass.
 
-Single-run CI smoke timings are evidence of successful execution, **not** performance benchmarks: open time ranged from about **0.585–0.853 ms** across A001–A005; first-page text extraction was about **2.05–2.12 ms**; A001 rendered a non-null 612×792 image in **0.895 ms** with pixel SHA-256 `ed2ce000dc1bc40cb8d1b2b340d268b638eb961d5aa81b95394e938aefa2d434`. Repeated warm p50/p95 measurements remain PENDING.
-
-Coverage boundary: the current Qt probe calls `QPdfDocument::load`, `pageCount`, `pageLabel`, `pagePointSize`, `getAllText`, and one raster `render`. It does **not yet** call Qt bookmark, link, destination, search-model, password-flow, malformed-input, annotation, or repeated-performance APIs. Those rows remain PENDING even where the fixture itself contains the relevant structure.
+Single-run timings are smoke evidence only, not benchmarks. Repeated p50/p95 work remains PENDING.
 
 ## N2.2 PDFium core evidence baseline — 2026-09-22
 
-The first passing PDFium core evidence is bound to **implementation head SHA** `7874794e14b9cea54ec0723c15963621f65bebf6`.
+The first passing PDFium core evidence is bound to implementation head `7874794e14b9cea54ec0723c15963621f65bebf6`.
 
-- GitHub Actions run: `35680738681` — Debug and Release both PASS.
-- PDFium under test: **156.0.8066.0**, release tag `chromium/8066`, non-V8 Windows x64 package from `bblanchon/pdfium-binaries`.
-- Distribution source commit: `f2e9a1c45bb17b85b540abf1af30146ef65416ac`.
-- Downloaded asset: `pdfium-win-x64.tgz`, asset ID `579031518`, 3,823,498 bytes.
-- Archive SHA-256 verified in both CI lanes **before extraction**: `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020`.
-- Release engineering artifact ID: `10674712819`; digest `sha256:0972d8424b6d35c8f2c8c1612ddbea60b34f7038b59c5d8c5643ab37bfad4803`.
-- This PR-triggered run used GitHub's synthetic merge checkout SHA `df4f45e1a301508b81a4389a90b2d00d156730b6` in the artifact name/build-info while the workflow run's head SHA is `7874794e14b9cea54ec0723c15963621f65bebf6`. That is a CI identity-labeling issue, not an engine result. It must be corrected before later evidence artifacts are treated as canonical so future artifacts record implementation head and checkout SHA separately.
-- `atlas_pdfium_probe` is isolated from `atlas_reader` and `atlas_core`. All PDFium calls in this probe are serialized on one thread, honoring the upstream non-thread-safe API contract.
-- A001–A005 passed strict PDFium CTests and Release evidence runs. The same independently validated fixture bytes were used for Qt PDF and PDFium.
-- Cross-engine text semantics are identical on the current English fixture corpus: **every page of A001–A005 has the same UTF-8 text SHA-256 from Qt PDF and PDFium**, with matching extracted text lengths.
-- Cross-engine normalized visible page geometry and page labels also match exactly on A001–A005. For A002 both report `612×792`, rotated `841.8897705×595.2755737`, and cropped `360×560` visible page sizes, with labels `i,ii,1`.
-- A001 rendered non-null at 612×792 through both engines. The raw pixel hashes differ, so raster fidelity/equivalence is **not** inferred from the smoke test and remains PENDING.
+- GitHub Actions run `35680738681` — Debug and Release PASS.
+- PDFium 156.0.8066.0 / `chromium/8066`.
+- Probe distribution: `bblanchon/pdfium-binaries`, source commit `f2e9a1c45bb17b85b540abf1af30146ef65416ac`.
+- Asset `pdfium-win-x64.tgz`, ID `579031518`, 3,823,498 bytes.
+- Archive SHA-256 `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020`, verified before extraction in both CI lanes.
+- Artifact ID `10674712819`; digest `sha256:0972d8424b6d35c8f2c8c1612ddbea60b34f7038b59c5d8c5643ab37bfad4803`.
+- `atlas_pdfium_probe` is isolated from `atlas_reader`/`atlas_core`.
+- All PDFium calls in the probe are serialized on one thread, honoring the upstream non-thread-safe API contract.
+- A001–A005 strict PDFium tests pass.
+- On A001–A005, Qt PDF and PDFium produce matching page counts, page labels, normalized visible page sizes, and exact page-by-page UTF-8 text SHA-256 values.
+- A001 renders non-null through both engines, but raw pixel hashes differ; raster fidelity/equivalence is not inferred.
 
-Single-run PDFium CI smoke timings are **not** performance rankings: open time ranged about **0.078–0.112 ms** across A001–A005; first-page text extraction about **0.044–0.070 ms**; A001 raster render about **0.440 ms**. The corresponding Qt PDF sample in the same artifact was slower, but repeated same-process/cold-warm benchmark distributions are required before any performance conclusion.
+Detailed acquisition/licensing caveats are in `N2_PDFIUM_PROVENANCE.md`.
 
-Coverage boundary: the current PDFium probe calls document load, page count, page labels, normalized page width/height, text-page extraction, and one bitmap render. It does **not yet** exercise bookmarks, links/destinations, search, raw page-box/rotation decomposition, password/security paths, malformed-input typing beyond the mapped error enum, annotation behavior, or repeated performance. Those rows remain PENDING.
+## N2 navigation evidence baseline — 2026-09-22
 
-Detailed package pin and production caveats are recorded in `docs/baselines/N2_PDFIUM_PROVENANCE.md`.
+Canonical navigation evidence is bound to implementation head:
+
+`59073e4bd341bd4f5feb86097a8f700a3603be4e`
+
+- GitHub Actions run `35682017265` — Debug and Release PASS.
+- PR checkout SHA `f6a68fe10f3268e91ddca292d5f357420569d197` is recorded separately from the implementation head.
+- Artifact `atlas-reader-n2-windows-x64-59073e4bd341bd4f5feb86097a8f700a3603be4e`.
+- Artifact ID `10675244583`.
+- Artifact digest `sha256:280d660a99c44de72eecb65e6b6fcdd530517a6b64fe09e3ec81f0f896e8d3a3`.
+- Fixture validation, configure, build, CTest, evidence staging and artifact upload all pass in the canonical run.
+
+### Outline semantics
+
+A003 and A004 produce the same normalized outline semantics in both engines:
+
+| Flattened item | Depth | Destination page |
+|---|---:|---:|
+| `Chapter 1` | 0 | 0 |
+| `Section 1.1` | 1 | 1 |
+| `Chapter 2` | 0 | 2 |
+
+This establishes the tested hierarchy/title/order/page-destination path for the current synthetic corpus.
+
+### Link semantics and raw-engine difference
+
+A003 and A005 establish the same required semantic targets in both engines:
+
+- internal link destination: zero-based page `2`;
+- external URI: `https://example.com/atlas-n2-fixture`.
+
+Raw row cardinality is deliberately preserved rather than normalized inside the candidate probes:
+
+- PDFium reports the two explicit PDF link annotations: raw count `2`;
+- Qt `QPdfLinkModel` reports raw count `3`: the internal destination plus **two rows for the same external URI with different rectangles**.
+
+Therefore Qt external-URI detection is **PASS WITH LIMITATION** at the raw model layer: the URI is correct, but raw link rows require Atlas-side semantic normalization/de-duplication before they can become the portable application contract. PDFium reports the expected two raw annotations for this fixture.
+
+The exploratory run `35681776254` first exposed this cardinality difference and is diagnostic only. Its failure was an overly strict cross-engine raw-row-count assumption; it is not the canonical navigation result.
+
+Destination **page** normalization is now proven on the current fixture. Destination-coordinate normalization remains PENDING because the engines expose coordinate systems/fields differently and no Atlas-normalized coordinate contract has yet been tested.
 
 ## Candidate identity
 
@@ -63,111 +98,89 @@ Detailed package pin and production caveats are recorded in `docs/baselines/N2_P
 |---|---|---|---|
 | Intended N2 role | read/render/text/search/navigation candidate | read/render/text/search/navigation candidate | structural/security/transformation candidate |
 | Exact version/revision tested | **6.10.3** | **156.0.8066.0 / `chromium/8066`** | PENDING |
-| Acquisition path | `jurplel/install-qt-action@v4`, Qt desktop MSVC 2022 x64 + `qtpdf` | **PASS WITH LIMITATION** — pinned `bblanchon/pdfium-binaries` non-V8 Windows x64 package for N2 probe only | PENDING |
-| Compiler/build path | **PASS** — CMake 3.31.6 + MSVC 19.44.35228 on `windows-2022` | **PASS WITH LIMITATION** — published `PDFiumConfig.cmake` imported target + MSVC 2022; production source-build route unresolved | PENDING |
-| Package/archive SHA-256 | PENDING — Qt package archive hash not separately captured | **PASS** — `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020` | PENDING |
-| Primary upstream license | LGPLv3/GPLv2/commercial module terms | BSD-style/third-party engine notices; distributor repository MIT; exact production package notice audit PENDING | Apache-2.0/MIT upstream/port terms to verify per exact version |
-| Production distribution decision | PENDING | PENDING — community binary is probe-only | PENDING |
-
-## Upstream/integration facts recorded at opening
-
-### Qt PDF
-
-- Current Qt documentation exposes page rendering, text access, search model, bookmark model, link model and navigation helpers.
-- It integrates through normal Qt CMake targets.
-- Atlas will qualify the engine APIs, not adopt the complete Qt viewer as the reader architecture.
-
-### PDFium
-
-- Public embedder APIs cover document/page loading, bitmap rendering, text, bookmarks/destinations/links and related functionality.
-- Current upstream public header states PDFium APIs are not thread-safe and embedders must serialize calls.
-- Official source build uses Chromium-style depot_tools/gclient + GN/Ninja + Clang rather than Atlas's normal CMake/MSVC-only path.
-- Microsoft vcpkg does not currently expose a standard `ports/pdfium` package in the inspected registry tree.
-- Community `bblanchon/pdfium-binaries` is used only as a pinned N2 bootstrap until supply-chain suitability is decided.
-
-### qpdf
-
-- Latest published release visible at N2 opening: 12.4.1 (2026-08-27).
-- Current vcpkg curated qpdf port inspected at opening: 12.4.0.
-- Current latest documentation may already identify 12.4.2; this discrepancy must not be hidden when recording exact experiment versions.
+| Acquisition path | Qt desktop MSVC 2022 x64 + `qtpdf` | **PASS WITH LIMITATION** — pinned community non-V8 Windows x64 package, probe-only | PENDING |
+| Compiler/build path | **PASS** — CMake + MSVC 2022 | **PASS WITH LIMITATION** — published `PDFiumConfig.cmake` + MSVC; official source-build route unresolved | PENDING |
+| Package/archive SHA-256 | PENDING — Qt archive hash not separately captured | **PASS** — `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020` | PENDING |
+| Primary license surface | Qt module terms require release review | PDFium/Chromium third-party notices; distributor repo MIT; production audit PENDING | Apache-2.0/MIT port terms to verify on exact pin |
+| Production distribution decision | PENDING | PENDING — community binary remains probe-only | PENDING |
 
 ## Read/open and geometry
 
 | Capability | Qt PDF | PDFium | Notes / fixture IDs |
 |---|---|---|---|
-| Valid document open | **PASS** | **PASS** | A001–A005; strict CI |
-| Invalid/malformed failure typing | PENDING | PENDING | Both probes map engine error enums; malformed fixture not yet exercised |
+| Valid document open | **PASS** | **PASS** | A001–A005 |
+| Invalid/malformed failure typing | PENDING | PENDING | Error enums mapped; malformed fixtures not yet exercised |
 | Password-required detection | PENDING | PENDING | |
 | Incorrect-password distinction | PENDING | PENDING | |
 | Unsupported-security distinction | PENDING | PENDING | |
 | Page count | **PASS** | **PASS** | A001–A005 agree |
-| Page labels | **PASS** | **PASS** | A001 `1`; A002 `i,ii,1`; A003–A005 `1,2,3`; engines agree |
-| Media box | PENDING | PENDING | Current probes record normalized visible page size, not raw boxes |
-| Crop box | PENDING | PENDING | A002 visible crop result observed; raw crop box not read |
-| Rotation | PENDING | PENDING | A002 normalized rotated dimensions agree; rotation value itself not read |
-| Mixed page sizes | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A002 normalized visible sizes match exactly; raw media/crop/rotation decomposition pending |
+| Page labels | **PASS** | **PASS** | Engines agree on all current fixtures |
+| Media box | PENDING | PENDING | Raw boxes not yet read |
+| Crop box | PENDING | PENDING | A002 visible crop result observed; raw crop box pending |
+| Rotation | PENDING | PENDING | A002 normalized rotated dimensions agree; raw rotation pending |
+| Mixed page sizes | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Normalized visible sizes match; raw decomposition pending |
 | Image-only page handling | PENDING | PENDING | |
 
 ## Rendering
 
 | Capability | Qt PDF | PDFium | Notes / evidence |
 |---|---|---|---|
-| 100% nominal raster fidelity | PENDING | PENDING | A001 non-null render smoke passes in both; pixel hashes differ, so no fidelity/equivalence claim yet |
+| 100% nominal raster fidelity | PENDING | PENDING | Non-null smoke passes; pixel hashes differ |
 | High-DPI raster fidelity | PENDING | PENDING | |
 | Rotation correctness | PENDING | PENDING | |
 | Crop-box correctness | PENDING | PENDING | |
 | Annotation rendering behavior | PENDING | PENDING | |
 | Transparent/background behavior | PENDING | PENDING | |
-| Warm render p50 | PENDING | PENDING | ms; same fixture/page/size |
-| Warm render p95 | PENDING | PENDING | ms; same fixture/page/size |
-| First render after open | PENDING | PENDING | single A001 smoke: Qt ≈0.911 ms, PDFium ≈0.440 ms in run `35680738681`; not benchmark evidence |
+| Warm render p50 | PENDING | PENDING | |
+| Warm render p95 | PENDING | PENDING | |
+| First render after open | PENDING | PENDING | Existing values are one-shot smoke only |
 | Repeated-render memory behavior | PENDING | PENDING | |
 
 ## Text extraction and search
 
 | Capability | Qt PDF | PDFium | Notes / evidence |
 |---|---|---|---|
-| English Unicode extraction | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A001–A005 current English text matches page-for-page by exact UTF-8 SHA-256 across both engines; broader Unicode corpus pending |
+| English Unicode extraction | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A001–A005 page text hashes agree exactly; broader Unicode pending |
 | Arabic Unicode extraction | PENDING | PENDING | |
 | Mixed Arabic/English extraction | PENDING | PENDING | |
 | Diacritics/combining marks | PENDING | PENDING | |
 | Urdu text | PENDING | PENDING | |
-| Extraction bounds/geometry | PENDING | PENDING | Current probes record text only, not glyph/selection bounds |
+| Extraction bounds/geometry | PENDING | PENDING | |
 | English search | PENDING | PENDING | Search APIs not yet exercised |
 | Arabic search | PENDING | PENDING | |
 | Mixed-script search | PENDING | PENDING | |
 | Hit page/index identity | PENDING | PENDING | |
 | Hit geometry/destination | PENDING | PENDING | |
-| First extraction time | PENDING | PENDING | one-shot same-artifact smoke: Qt ≈2.09–2.88 ms first pages, PDFium ≈0.044–0.070 ms; repeatable benchmark pending |
-| Repeated extraction time | PENDING | PENDING | later-page smoke exists but is not repeated benchmark evidence |
-| Search completion time | PENDING | PENDING | ms |
+| First extraction time | PENDING | PENDING | Existing values are one-shot smoke only |
+| Repeated extraction time | PENDING | PENDING | |
+| Search completion time | PENDING | PENDING | |
 
 ## Links, outlines and destinations
 
 | Capability | Qt PDF | PDFium | Notes / evidence |
 |---|---|---|---|
-| Internal link detection | PENDING | PENDING | A003/A005 independently contain links, but candidate link APIs not yet called |
-| External URI link detection | PENDING | PENDING | A003/A005 URI independently verified by pypdf; candidate link APIs not yet called |
-| Named/explicit destination handling | PENDING | PENDING | |
-| Outline hierarchy | PENDING | PENDING | A003/A004 outline hierarchy independently verified; candidate bookmark APIs not yet called |
+| Internal link detection | **PASS** | **PASS** | A003/A005; zero-based destination page `2` |
+| External URI link detection | **PASS WITH LIMITATION** | **PASS** | Correct URI in both; Qt exposes duplicate raw URI row with distinct rectangle |
+| Named/explicit destination handling | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Current synthetic named bookmark/link destinations resolve correctly; broader destination forms not yet covered |
+| Outline hierarchy | **PASS** | **PASS** | A003/A004 exact titles, order, depths and destination pages |
 | Duplicate outline titles | PENDING | PENDING | |
-| Deep outline hierarchy | PENDING | PENDING | |
+| Deep outline hierarchy | PENDING | PENDING | Current fixture depth only 1 child level |
 | Arabic/English outline text | PENDING | PENDING | |
-| Destination page normalization | PENDING | PENDING | |
-| Destination coordinate normalization | PENDING | PENDING | |
+| Destination page normalization | **PASS** | **PASS** | A003/A005 internal target normalized to zero-based page `2`; outline pages `0,1,2` |
+| Destination coordinate normalization | PENDING | PENDING | Raw engine coordinate representations differ; no Atlas normalized assertion yet |
 
 ## PDFium concurrency/build-specific evidence
 
 | Check | Result | Evidence |
 |---|---|---|
-| Public API non-thread-safe constraint acknowledged in adapter design | **PASS** | `N2_PDFIUM_PROVENANCE.md`, probe records `serialized-single-thread`; no unsupported parallel calls |
-| Serialized-call correctness | **PASS WITH LIMITATION** | A001–A005 pass through single-thread serialized probe; future Atlas task-queue/adapter stress still pending |
-| Parallel Atlas tasks do not violate PDFium API contract | PENDING | No production adapter/task queue exists in N2 yet |
-| Acquisition pinned by exact revision/tag | **PASS** | `chromium/8066`, distribution commit `f2e9a1c45bb17b85b540abf1af30146ef65416ac` |
-| Binary/archive checksum pinned | **PASS** | `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020`, verified before extraction |
-| Clean CI acquisition reproducible | **PASS** | Debug + Release run `35680738681` independently acquired/verified/configured package |
-| Runtime binary/dependency footprint | PENDING | Probe artifact records `pdfium.dll` = 7,380,992 bytes; clean production package delta/transitive footprint not yet measured |
-| Upgrade/rollback procedure documented | **PASS WITH LIMITATION** | Exact tag/hash pinned and probe is removable; production update policy/source-build route remains undecided |
+| Public API non-thread-safe constraint acknowledged | **PASS** | Probe records `serialized-single-thread` |
+| Serialized-call correctness | **PASS WITH LIMITATION** | Current fixture suite passes; concurrent app task-queue stress pending |
+| Parallel Atlas tasks respect contract | PENDING | Production adapter/task queue does not exist yet |
+| Acquisition pinned by exact revision/tag | **PASS** | `chromium/8066`, distributor commit recorded |
+| Binary/archive checksum pinned | **PASS** | SHA-256 verified before extraction |
+| Clean CI acquisition reproducible | **PASS** | Multiple Debug/Release runs acquire and verify exact package |
+| Runtime binary/dependency footprint | PENDING | Raw `pdfium.dll` size known; product delta/transitive footprint pending |
+| Upgrade/rollback procedure documented | **PASS WITH LIMITATION** | Exact pin/remove path documented; production source/update policy unresolved |
 
 ## qpdf structural/security evidence
 
@@ -181,7 +194,7 @@ Detailed package pin and production caveats are recorded in `docs/baselines/N2_P
 | Page tree/basic geometry access | PENDING | |
 | Outline read hierarchy/order | PENDING | |
 | Outline destination read | PENDING | |
-| Signature/certification visibility needed by Atlas | PENDING | exact available information to document |
+| Signature/certification visibility needed by Atlas | PENDING | |
 | No-op/rewrite reopen check | PENDING | copied fixture only |
 | No-op/rewrite unrelated structure preservation | PENDING | |
 | Controlled outline transformation | PENDING | synthetic/redistributable fixture only |
@@ -209,16 +222,16 @@ Detailed package pin and production caveats are recorded in `docs/baselines/N2_P
 
 | Criterion | Qt PDF | PDFium | qpdf |
 |---|---|---|---|
-| Fits existing CMake flow | **PASS** — focused `Qt6::Pdf` target integrates directly | **PASS WITH LIMITATION** — pinned probe package exposes `PDFiumConfig.cmake`/`pdfium`; official source build is a separate Chromium-style path | PENDING |
-| Fits existing MSVC toolchain | **PASS** — MSVC 2022 x64 CI | **PASS** for pinned Windows probe package + MSVC 2022 import library | PENDING |
-| Extra toolchain required | **PASS** — no extra compiler/build system beyond installing the Qt `qtpdf` module | **PASS WITH LIMITATION** — no extra compiler for pinned binary probe; official production source build would require depot_tools/GN/Ninja/Clang | PENDING |
-| CI setup cost | **PASS WITH LIMITATION** — one extra Qt module plus deployment/evidence staging | **PASS WITH LIMITATION** — tagged archive download + SHA verification + extraction + DLL staging; source-build cost not measured | PENDING |
+| Fits existing CMake flow | **PASS** | **PASS WITH LIMITATION** — probe package integrates; official source build differs | PENDING |
+| Fits existing MSVC toolchain | **PASS** | **PASS** for pinned Windows probe package | PENDING |
+| Extra toolchain required | **PASS** | **PASS WITH LIMITATION** — no extra compiler for binary probe; official source build needs Chromium tooling | PENDING |
+| CI setup cost | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | PENDING |
 | Package size delta | PENDING | PENDING | PENDING |
-| Runtime dependency delta | PENDING | PENDING — current probe `pdfium.dll` is 7,380,992 bytes; full product delta not measured | Current engineering artifact duplicates probe/runtime files, so it is not a clean product-size delta measurement |
+| Runtime dependency delta | PENDING | PENDING | PENDING |
 | Cross-platform path | PENDING | PENDING | PENDING |
-| License/notices complexity | PENDING | PENDING — distributor repo is MIT but PDFium/third-party production notices still require audit | PENDING |
-| Reproducible pinning | **PASS WITH LIMITATION** — Qt 6.10.3 pinned and CI reproducible; underlying Qt archive SHA not separately recorded | **PASS** for N2 probe — immutable tag + source commit + asset ID + SHA-256 recorded | PENDING |
-| Rollback/replaceability | **PASS** — probe isolated; `atlas_reader` product shell does not link Qt PDF | **PASS** — probe isolated behind build option; `atlas_reader`/`atlas_core` do not link PDFium | PENDING |
+| License/notices complexity | PENDING | PENDING — production notice audit required | PENDING |
+| Reproducible pinning | **PASS WITH LIMITATION** | **PASS** for N2 probe | PENDING |
+| Rollback/replaceability | **PASS** | **PASS** | PENDING |
 
 ## Hard blockers
 
@@ -241,10 +254,10 @@ A candidate/responsibility is not accepted if evidence shows any of the followin
 | Page raster rendering | PENDING | PENDING | |
 | Text extraction | PENDING | PENDING | |
 | Search | PENDING | PENDING | |
-| Links/navigation | PENDING | PENDING | |
-| Outline read | PENDING | PENDING | |
+| Links/navigation | PENDING | PENDING | Candidate evidence exists; no final responsibility selection yet |
+| Outline read | PENDING | PENDING | Candidate evidence exists; no final responsibility selection yet |
 | Security/capability inspection | PENDING | PENDING | |
 | Structural transformation/write | PENDING | PENDING | |
 | Independent output validation | PENDING | PENDING | |
 
-The final entries above must match accepted ADR-0004. No decision is implied by the initial ordering of candidates.
+The final entries above must match accepted ADR-0004. No decision is implied by candidate ordering or intermediate PASS rows.

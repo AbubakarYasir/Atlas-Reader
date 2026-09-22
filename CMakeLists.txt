@@ -144,12 +144,35 @@ add_test(
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A002_geometry_labels.pdf"
 )
 
+# A003–A005 deliberately isolate the first observed Qt PDF 6.10.3 text
+# extraction anomaly. The expectations remain strict: we do not weaken a
+# fixture merely because one candidate returned empty text.
 add_test(
-    NAME n2_qt_pdf_a003_outlines_links_open
+    NAME n2_qt_pdf_a003_outlines_links_text
     COMMAND atlas_qt_pdf_probe
         --fixture-id A003
         --expect-pages 3
         --expect-labels 1,2,3
         --expect-text-contains "Atlas N2 Fixture A003 page 1"
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A003_outlines_links.pdf"
+)
+
+add_test(
+    NAME n2_qt_pdf_a004_outlines_only_text
+    COMMAND atlas_qt_pdf_probe
+        --fixture-id A004
+        --expect-pages 3
+        --expect-labels 1,2,3
+        --expect-text-contains "Atlas N2 Fixture A004 page 1"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A004_outlines_only.pdf"
+)
+
+add_test(
+    NAME n2_qt_pdf_a005_links_only_text
+    COMMAND atlas_qt_pdf_probe
+        --fixture-id A005
+        --expect-pages 3
+        --expect-labels 1,2,3
+        --expect-text-contains "Atlas N2 Fixture A005 page 1"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A005_links_only.pdf"
 )

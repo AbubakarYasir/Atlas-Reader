@@ -1,0 +1,122 @@
+name: N2 PDF Coordinates
+
+on:
+  push:
+    branches: ['native-v2-n2-pdf-engine-qualification']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  coordinates:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    env:
+      ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Qt + Qt PDF
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.3'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+          modules: 'qtpdf'
+          cache: true
+
+      - name: Acquire pinned PDFium probe package
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/bblanchon/pdfium-binaries/releases/download/chromium/8066/pdfium-win-x64.tgz'
+          $expected = '739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020'
+          $archive = Join-Path $env:RUNNER_TEMP 'pdfium-win-x64-chromium-8066.tgz'
+          $root = Join-Path $env:RUNNER_TEMP 'pdfium-chromium-8066'
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "PDFium package SHA-256 mismatch: $actual != $expected" }
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          tar.exe -xf $archive -C $root
+          if ($LASTEXITCODE -ne 0) { throw "PDFium extraction failed with exit code $LASTEXITCODE" }
+          foreach ($required in @('PDFiumConfig.cmake', 'include/fpdfview.h', 'include/fpdf_text.h', 'include/fpdf_doc.h', 'lib/pdfium.dll.lib', 'bin/pdfium.dll')) {
+            if (-not (Test-Path (Join-Path $root $required))) { throw "Pinned PDFium package missing expected path: $required" }
+          }
+          "PDFium_DIR=$root" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ATLAS_PDFIUM_ARCHIVE_SHA256=$actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Prepare exact coordinate fixtures
+        shell: pwsh
+        run: |
+          $a003 = 'tests/fixtures/pdf/generated/A003_outlines_links.pdf'
+          $a003Expected = '77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5'
+          $a003Actual = (Get-FileHash $a003 -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($a003Actual -ne $a003Expected) { throw "A003 SHA-256 mismatch: $a003Actual != $a003Expected" }
+
+          python tests/fixtures/pdf/source/generate_a011_visual_geometry.py
+          if ($LASTEXITCODE -ne 0) { throw "A011 generation failed with exit code $LASTEXITCODE" }
+          $a011 = 'tests/fixtures/pdf/generated/A011_visual_geometry.pdf'
+          $a011Expected = 'b25d6b6716fbbcf095cbd68bcf57913d4e14bca3e64be19f513c35fd3ddadd29'
+          $a011Actual = (Get-FileHash $a011 -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($a011Actual -ne $a011Expected) { throw "A011 SHA-256 mismatch: $a011Actual != $a011Expected" }
+
+          New-Item -ItemType Directory -Force -Path artifacts/n2/coordinates | Out-Null
+
+      - name: Configure isolated coordinate probes
+        shell: pwsh
+        run: >-
+          cmake -S tools/pdf/coordinates -B build/n2-coordinates
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          -DPDFium_DIR="$env:PDFium_DIR"
+
+      - name: Build Release coordinate probes
+        shell: pwsh
+        run: cmake --build build/n2-coordinates --config Release --parallel
+
+      - name: Run coordinate normalization qualification
+        shell: pwsh
+        run: |
+          $a003 = (Resolve-Path 'tests/fixtures/pdf/generated/A003_outlines_links.pdf').Path
+          $a011 = (Resolve-Path 'tests/fixtures/pdf/generated/A011_visual_geometry.pdf').Path
+          $qt = (Resolve-Path 'build/n2-coordinates/Release/atlas_qt_pdf_coordinate_probe.exe').Path
+          $pdfium = (Resolve-Path 'build/n2-coordinates/Release/atlas_pdfium_coordinate_probe.exe').Path
+
+          & $qt $a003 $a011 | Set-Content -Encoding UTF8 artifacts/n2/coordinates/qt-coordinate.json
+          if ($LASTEXITCODE -ne 0) { throw "Qt PDF coordinate probe failed with exit code $LASTEXITCODE" }
+
+          & $pdfium $a003 $a011 | Set-Content -Encoding UTF8 artifacts/n2/coordinates/pdfium-coordinate.json
+          if ($LASTEXITCODE -ne 0) { throw "PDFium coordinate probe failed with exit code $LASTEXITCODE" }
+
+          python tools/pdf/coordinates/validate_coordinate_evidence.py `
+            --qt artifacts/n2/coordinates/qt-coordinate.json `
+            --pdfium artifacts/n2/coordinates/pdfium-coordinate.json `
+            --output artifacts/n2/coordinates/coordinate-validation.json
+          if ($LASTEXITCODE -ne 0) { throw "Coordinate normalization validation failed with exit code $LASTEXITCODE" }
+
+          @(
+            'Atlas Reader N2 PDF coordinate qualification'
+            "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
+            'Qt PDF: 6.10.3'
+            'PDFium: 156.0.8066.0 / chromium/8066'
+            "PDFium archive SHA-256: $env:ATLAS_PDFIUM_ARCHIVE_SHA256"
+            'Atlas page space: effective visible page; origin top-left; x right; y down; units PDF points'
+            'A003 SHA-256: 77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5'
+            'A011 SHA-256: b25d6b6716fbbcf095cbd68bcf57913d4e14bca3e64be19f513c35fd3ddadd29'
+            'PDFium normalization: FPDF_PageToDevice at 100 device units per PDF point, then divided back to point units'
+            'Current scope: link source rectangles + search result rectangles on normal/cropped/rotated pages'
+            'Explicit /XYZ destination-coordinate normalization remains a separate subcase'
+          ) | Set-Content -Encoding UTF8 artifacts/n2/coordinates/BUILD_INFO.txt
+
+      - name: Upload coordinate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n2-pdf-coordinates-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/n2/coordinates
+          if-no-files-found: error
+          retention-days: 14

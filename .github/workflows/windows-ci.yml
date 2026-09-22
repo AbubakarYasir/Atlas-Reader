@@ -117,7 +117,7 @@ jobs:
           -G "Visual Studio 17 2022"
           -A x64
           -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
-          -DATLAS_PRERELEASE=alpha.2
+          "-DATLAS_PRERELEASE:STRING=alpha.2"
           -DATLAS_WARNINGS_AS_ERRORS=ON
 
       - name: Build
@@ -181,6 +181,16 @@ jobs:
               Id = 'A003'
               File = 'A003_outlines_links.pdf'
               Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A003 page 1')
+            },
+            @{
+              Id = 'A004'
+              File = 'A004_outlines_only.pdf'
+              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A004 page 1')
+            },
+            @{
+              Id = 'A005'
+              File = 'A005_links_only.pdf'
+              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A005 page 1')
             }
           )
 

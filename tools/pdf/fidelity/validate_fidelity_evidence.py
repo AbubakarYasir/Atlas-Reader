@@ -73,9 +73,6 @@ def validate_engine(evidence: dict[str, Any]) -> list[str]:
                 f"{engine}:page-{page_index}-visible:{width}x{height}!={expected_width}x{expected_height}"
             )
 
-        if engine == "pdfium" and page_index == 2 and int(page.get("rotation_quarters", -1)) != 1:
-            failures.append(f"{engine}:page-2-rotation:{page.get('rotation_quarters')}!=1")
-
         for scale in (1, 2):
             render = find_render(page, scale, False)
             if render is None:
@@ -142,6 +139,7 @@ def main() -> int:
             "solid-color-landmarks-1x-2x",
             "annotation-off-on-sentinel",
         ],
+        "rotation_evidence": "raw /Rotate is independently validated by pypdf; each engine must then expose the rotated effective size and render the rotated semantic landmarks at 1x and 2x",
         "failures": failures,
         "passed": not failures,
     }

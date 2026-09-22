@@ -1,7 +1,7 @@
 # N2 PDF Engine Qualification Matrix
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Open — Qt PDF/PDFium core + navigation evidence captured; Unicode/search/security/performance/qpdf pending**  
+**Status:** **Open — Qt PDF/PDFium core, navigation, Unicode and search evidence captured; security/performance/qpdf pending**  
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Opened:** 2026-09-22
 
@@ -92,6 +92,64 @@ The exploratory run `35681776254` first exposed this cardinality difference and 
 
 Destination **page** normalization is now proven on the current fixture. Destination-coordinate normalization remains PENDING because the engines expose coordinate systems/fields differently and no Atlas-normalized coordinate contract has yet been tested.
 
+## N2 Unicode + search evidence baseline — 2026-09-22
+
+Canonical Unicode/search evidence is bound to implementation head:
+
+`57029562525fc90f0fb8fb80ce32d5781705b054`
+
+- GitHub Actions run `35686938500` — Debug and Release PASS.
+- PR checkout SHA `a098a24dbfd9ee59a1406396db7bd0e3f01fa189` is recorded separately from the implementation head.
+- Artifact `atlas-reader-n2-windows-x64-57029562525fc90f0fb8fb80ce32d5781705b054`.
+- Artifact ID `10676978221`.
+- Artifact digest `sha256:28f465d787936b8fc943f7f57ce3806f58a5853325bf38140097267da388e120`.
+- A006 is regenerated from checked-in source and must match SHA-256 `efe3aa5f9538a8a18af71e4517c9f1e10980db394107c0e16141b03ec7058f0b` before validation/build/test.
+- Independent pypdf 5.9.0 validation, 27 strict CTests, evidence staging and artifact upload all pass.
+- A006 is a logical-Unicode fixture using synthetic Type3 glyphs plus ToUnicode mappings. It is **not** visual Arabic/Urdu shaping or raster-fidelity evidence.
+
+### Unicode extraction
+
+Qt PDF and PDFium produce identical A006 page text lengths and UTF-8 hashes:
+
+| Page | Purpose | UTF-16 length | UTF-8 SHA-256 |
+|---:|---|---:|---|
+| 0 | plain Arabic | 13 | `9262a0a791605071a500c1a15bef2d5efcc6c8f198567105e9ab364811377e9f` |
+| 1 | fully vocalized Arabic | 38 | `376cdb244082d82602d5f60ab1edff730450a55d53b5b9bcb2eaf2755ce76cb0` |
+| 2 | English + Arabic runs | 28 | `5a83c4017aff1dd32778fd24fe25ea52d85ca1fe741574daf52473b72d8efc69` |
+| 3 | Urdu | 14 | `273b0d5f90d7e562bc5ccf57666fc9e511d43b60343049b534e10e39af5b0d84` |
+
+Plain Arabic and Urdu expected substrings pass exactly in both engines. Page 2 proves English and Arabic runs coexist and extract identically in both engines, but it does not yet qualify arbitrary contiguous bidi ordering. Unicode outline titles/hierarchy/pages also agree exactly: `العربية` -> page 0; child `مُشَكَّل` -> page 1; `Mixed العربية English` -> page 2; `اردو` -> page 3.
+
+### Combining-mark limitation
+
+The fixture source vocalized line has UTF-8 SHA-256:
+
+`43ffde22c1f7320e3683a8b883168d6bfdd1678779e4349cd9833ab80229734f`
+
+Both engines preserve all 38 UTF-16 code units, but their raw extracted representation reverses the order of combining marks within affected base-letter clusters. The resulting raw full-line hash is:
+
+`376cdb244082d82602d5f60ab1edff730450a55d53b5b9bcb2eaf2755ce76cb0`
+
+The source and raw forms are canonically equivalent after Unicode decomposition/normalization; no tested code point is lost. Atlas must therefore normalize Unicode before user-facing equality, indexing or search-query comparison rather than using raw engine strings as canonical text.
+
+### Search semantics
+
+Separate focused search probes preserve vendor-native fields while comparing a portable contract of zero-based page + per-page hit ordinal.
+
+Strict evidence agrees in both engines:
+
+- A001 English query: 1 hit, page 0, ordinal 0;
+- A006 plain Arabic query: 2 hits, page 0 and page 2, ordinal 0 on each page;
+- A006 English query on the mixed-script page: 1 hit, page 2, ordinal 0;
+- A006 Urdu query: 1 hit, page 3, ordinal 0;
+- A006 raw-order fully vocalized Arabic query: 1 hit, page 1, ordinal 0.
+
+The source-order fully vocalized Arabic query is deliberately diagnostic rather than pre-assumed. It returns **0 hits in both Qt PDF and PDFium**, while the canonically equivalent raw-order query returns the expected hit. This confirms a shared normalization requirement for tashkīl-sensitive search; it is not evidence favoring one read engine over the other.
+
+Qt `IndexOnPage` and PDFium character start/count are retained as engine-native evidence and are not treated as equivalent types. PDFium raw text rectangles and Qt search locations are also captured, but normalized cross-engine hit geometry remains PENDING.
+
+The probe's one-shot `search_ms` values are **not performance evidence**. In particular, the Qt search probe intentionally waits for a minimum observation/stability window before declaring the asynchronous model settled. Repeated performance work must use a dedicated benchmark contract.
+
 ## Candidate identity
 
 | Item | Qt PDF | PDFium | qpdf |
@@ -108,12 +166,12 @@ Destination **page** normalization is now proven on the current fixture. Destina
 
 | Capability | Qt PDF | PDFium | Notes / fixture IDs |
 |---|---|---|---|
-| Valid document open | **PASS** | **PASS** | A001–A005 |
+| Valid document open | **PASS** | **PASS** | A001–A006 |
 | Invalid/malformed failure typing | PENDING | PENDING | Error enums mapped; malformed fixtures not yet exercised |
 | Password-required detection | PENDING | PENDING | |
 | Incorrect-password distinction | PENDING | PENDING | |
 | Unsupported-security distinction | PENDING | PENDING | |
-| Page count | **PASS** | **PASS** | A001–A005 agree |
+| Page count | **PASS** | **PASS** | A001–A006 agree |
 | Page labels | **PASS** | **PASS** | Engines agree on all current fixtures |
 | Media box | PENDING | PENDING | Raw boxes not yet read |
 | Crop box | PENDING | PENDING | A002 visible crop result observed; raw crop box pending |
@@ -140,20 +198,20 @@ Destination **page** normalization is now proven on the current fixture. Destina
 
 | Capability | Qt PDF | PDFium | Notes / evidence |
 |---|---|---|---|
-| English Unicode extraction | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A001–A005 page text hashes agree exactly; broader Unicode pending |
-| Arabic Unicode extraction | PENDING | PENDING | |
-| Mixed Arabic/English extraction | PENDING | PENDING | |
-| Diacritics/combining marks | PENDING | PENDING | |
-| Urdu text | PENDING | PENDING | |
+| English Unicode extraction | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A001–A006 hashes agree; current evidence remains synthetic |
+| Arabic Unicode extraction | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A006 plain Arabic exact in both; real-world font/ligature corpus still needed |
+| Mixed Arabic/English extraction | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A006 page 2 English + Arabic runs agree; arbitrary contiguous bidi ordering not yet qualified |
+| Diacritics/combining marks | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | All tested code points preserved, but raw mark order differs; Unicode normalization required |
+| Urdu text | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A006 Urdu exact in both; synthetic ToUnicode fixture |
 | Extraction bounds/geometry | PENDING | PENDING | |
-| English search | PENDING | PENDING | Search APIs not yet exercised |
-| Arabic search | PENDING | PENDING | |
-| Mixed-script search | PENDING | PENDING | |
-| Hit page/index identity | PENDING | PENDING | |
-| Hit geometry/destination | PENDING | PENDING | |
+| English search | **PASS** | **PASS** | A001 count/page identity passes; A006 mixed-page English also passes |
+| Arabic search | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Plain Arabic exact search passes; vocalized source-order search requires normalization |
+| Mixed-script search | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A006 Arabic hit on mixed page + English hit on same page; broader bidi/query variants pending |
+| Hit page/index identity | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Shared page/per-page ordinal contract passes; vendor-native index semantics differ |
+| Hit geometry/destination | PENDING | PENDING | Raw locations/rectangles captured; coordinate normalization/equivalence not yet asserted |
 | First extraction time | PENDING | PENDING | Existing values are one-shot smoke only |
 | Repeated extraction time | PENDING | PENDING | |
-| Search completion time | PENDING | PENDING | |
+| Search completion time | PENDING | PENDING | Current search timing is one-shot probe plumbing, not benchmark evidence |
 
 ## Links, outlines and destinations
 
@@ -165,8 +223,8 @@ Destination **page** normalization is now proven on the current fixture. Destina
 | Outline hierarchy | **PASS** | **PASS** | A003/A004 exact titles, order, depths and destination pages |
 | Duplicate outline titles | PENDING | PENDING | |
 | Deep outline hierarchy | PENDING | PENDING | Current fixture depth only 1 child level |
-| Arabic/English outline text | PENDING | PENDING | |
-| Destination page normalization | **PASS** | **PASS** | A003/A005 internal target normalized to zero-based page `2`; outline pages `0,1,2` |
+| Arabic/English outline text | **PASS** | **PASS** | A006 exact Unicode titles, hierarchy and destination pages |
+| Destination page normalization | **PASS** | **PASS** | A003/A005 internal target normalized to zero-based page `2`; outline pages `0,1,2`; A006 outline pages `0,1,2,3` |
 | Destination coordinate normalization | PENDING | PENDING | Raw engine coordinate representations differ; no Atlas normalized assertion yet |
 
 ## PDFium concurrency/build-specific evidence
@@ -252,8 +310,8 @@ A candidate/responsibility is not accepted if evidence shows any of the followin
 | Document open/read metadata | PENDING | PENDING | |
 | Page geometry/labels | PENDING | PENDING | |
 | Page raster rendering | PENDING | PENDING | |
-| Text extraction | PENDING | PENDING | |
-| Search | PENDING | PENDING | |
+| Text extraction | PENDING | PENDING | Candidate Unicode evidence exists; no final responsibility selection yet |
+| Search | PENDING | PENDING | Candidate Unicode/search evidence exists; normalization contract still required |
 | Links/navigation | PENDING | PENDING | Candidate evidence exists; no final responsibility selection yet |
 | Outline read | PENDING | PENDING | Candidate evidence exists; no final responsibility selection yet |
 | Security/capability inspection | PENDING | PENDING | |

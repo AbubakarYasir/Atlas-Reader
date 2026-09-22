@@ -10,10 +10,11 @@ permissions:
 
 jobs:
   build-test:
-    # Qt's Windows kit is MSVC 2022 x64. Keep the runner generation pinned so
-    # windows-latest cannot silently move Atlas to a different VS toolset.
     runs-on: windows-2022
     timeout-minutes: 35
+    env:
+      ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      ATLAS_CHECKOUT_SHA: ${{ github.sha }}
 
     strategy:
       fail-fast: false
@@ -51,8 +52,6 @@ jobs:
             Write-Host "PowerShell syntax OK: $file"
           }
 
-          # Keep the regression check for the N1 benchmark bug even though N1
-          # is now Accepted. Later checkpoints must not silently reintroduce it.
           $tokens = $null
           $parseErrors = $null
           $measureAst = [System.Management.Automation.Language.Parser]::ParseFile(
@@ -77,16 +76,12 @@ jobs:
           }
           Write-Host 'PowerShell runtime contract OK: empty live metric poll'
 
-          # N2 inherits the user-qualified N1 Windows shell configuration. PDF
-          # engine experiments do not get to reopen this baseline casually.
           $qtConf = Get-Content 'qt.conf' -Raw
           if ($qtConf -notmatch '(?m)^WindowsArguments\s*=\s*fontengine=gdi\s*$') {
             throw 'qt.conf must retain the Accepted N1 Windows GDI font backend configuration'
           }
           Write-Host 'Inherited N1 Windows font backend config OK: GDI'
 
-      # Accepted N1 public Windows baseline inherited by N2. Qt PDF is installed
-      # explicitly for the N2.1 probe; atlas_reader itself does not link Qt6::Pdf.
       - name: Install Qt + Qt PDF probe module
         uses: jurplel/install-qt-action@v4
         with:
@@ -127,7 +122,7 @@ jobs:
           "ATLAS_PDFIUM_ARCHIVE_SHA256=$actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Pinned PDFium package verified: chromium/8066 -> $actual"
 
-      - name: Report toolchain
+      - name: Report toolchain and evidence identity
         shell: pwsh
         run: |
           cmake --version
@@ -135,6 +130,8 @@ jobs:
           Write-Host "Qt root: $env:QT_ROOT_DIR"
           Write-Host "PDFium root: $env:PDFium_DIR"
           Write-Host "PDFium archive SHA-256: $env:ATLAS_PDFIUM_ARCHIVE_SHA256"
+          Write-Host "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
+          Write-Host "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
           Write-Host "Configuration: ${{ matrix.configuration }}"
           Write-Host 'Checkpoint: N2 PDF engine qualification'
           if (-not (Test-Path (Join-Path $env:QT_ROOT_DIR 'lib/cmake/Qt6Pdf'))) {
@@ -178,8 +175,6 @@ jobs:
           -C ${{ matrix.configuration }}
           --output-on-failure
 
-      # This is an engineering smoke/evidence artifact for the active N2 branch.
-      # It is not the already-Accepted N1 artifact and not a user release.
       - name: Stage N2 Windows engineering artifact + engine evidence
         if: matrix.configuration == 'Release'
         shell: pwsh
@@ -223,27 +218,27 @@ jobs:
             @{
               Id = 'A001'
               File = 'A001_simple_text.pdf'
-              Args = @('--expect-pages','1','--expect-labels','1','--expect-text-contains','Atlas N2 Fixture A001','--render-page','0','--render-width','612','--render-height','792')
+              Args = @('--expect-pages','1','--expect-labels','1','--expect-text-contains','Atlas N2 Fixture A001','--expect-outline-count','0','--expect-link-count','0','--render-page','0','--render-width','612','--render-height','792')
             },
             @{
               Id = 'A002'
               File = 'A002_geometry_labels.pdf'
-              Args = @('--expect-pages','3','--expect-labels','i,ii,1','--expect-text-contains','Atlas N2 Fixture A002 page 1')
+              Args = @('--expect-pages','3','--expect-labels','i,ii,1','--expect-text-contains','Atlas N2 Fixture A002 page 1','--expect-outline-count','0','--expect-link-count','0')
             },
             @{
               Id = 'A003'
               File = 'A003_outlines_links.pdf'
-              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A003 page 1')
+              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A003 page 1','--expect-outline-count','3','--expect-outline-titles','Chapter 1|Section 1.1|Chapter 2','--expect-outline-depths','0,1,0','--expect-outline-pages','0,1,2','--expect-link-count','2','--expect-internal-link-page','2','--expect-external-uri','https://example.com/atlas-n2-fixture')
             },
             @{
               Id = 'A004'
               File = 'A004_outlines_only.pdf'
-              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A004 page 1')
+              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A004 page 1','--expect-outline-count','3','--expect-outline-titles','Chapter 1|Section 1.1|Chapter 2','--expect-outline-depths','0,1,0','--expect-outline-pages','0,1,2','--expect-link-count','0')
             },
             @{
               Id = 'A005'
               File = 'A005_links_only.pdf'
-              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A005 page 1')
+              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A005 page 1','--expect-outline-count','0','--expect-link-count','2','--expect-internal-link-page','2','--expect-external-uri','https://example.com/atlas-n2-fixture')
             }
           )
 
@@ -288,13 +283,15 @@ jobs:
             'Atlas Reader Native N2 Windows engineering artifact'
             'Version: 2.0.0-alpha.2'
             'Checkpoint: N2 PDF engine qualification spike'
-            'Commit: ${{ github.sha }}'
+            "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
+            "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
             'GitHub run: ${{ github.run_id }}'
             'Configuration: Release'
             'Generator: Visual Studio 17 2022 x64'
             'Qt baseline: 6.10.3 MSVC 2022 64-bit'
             'N2.1 probe: Qt PDF 6.10.3 via qtpdf module'
             'N2.2 probe: PDFium 156.0.8066.0 / chromium/8066 via pinned bblanchon Windows x64 package'
+            'Navigation evidence: normalized outline/link/destination assertions on A003-A005'
             'PDFium archive SHA-256: 739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020'
             'PDFium call model: serialized single-thread only'
             'Product shell Qt PDF linkage: none'
@@ -310,7 +307,7 @@ jobs:
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
         with:
-          name: atlas-reader-n2-windows-x64-${{ github.sha }}
+          name: atlas-reader-n2-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
           path: artifact/n2-windows-x64
           if-no-files-found: error
           retention-days: 14

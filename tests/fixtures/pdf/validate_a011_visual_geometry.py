@@ -11,7 +11,7 @@ from pypdf import PdfReader
 
 ROOT = Path(__file__).resolve().parent
 PDF = ROOT / "generated" / "A011_visual_geometry.pdf"
-EXPECTED_SHA256 = "ebf82d49391c4df27f50afc2eb785aa828effbdeb85039ec2bb4c26d1896f824"
+EXPECTED_SHA256 = "b25d6b6716fbbcf095cbd68bcf57913d4e14bca3e64be19f513c35fd3ddadd29"
 
 EXPECTED = [
     {
@@ -78,8 +78,12 @@ def main() -> int:
             }
         )
 
-    # Page 0 carries the annotation-fidelity sentinel.
+    # Page 0 carries the annotation-fidelity sentinel. The independent oracle
+    # proves not just link semantics but that an explicit normal appearance
+    # exists; engine probes then qualify whether annotation rendering draws it.
     annots = reader.pages[0].get("/Annots", []) or []
+    appearance_present = False
+    appearance_bbox: list[float] | None = None
     if len(annots) != 1:
         failures.append(f"annotation-count:{len(annots)}!=1")
     else:
@@ -94,6 +98,22 @@ def main() -> int:
         if not action or str(action.get("/URI")) != "https://example.com/atlas-a011":
             failures.append("annotation-uri-mismatch")
 
+        appearance = annot.get("/AP")
+        appearance = appearance.get_object() if hasattr(appearance, "get_object") else appearance
+        normal = appearance.get("/N") if appearance else None
+        normal = normal.get_object() if hasattr(normal, "get_object") else normal
+        if normal is None:
+            failures.append("annotation-normal-appearance-missing")
+        else:
+            appearance_present = True
+            bbox = normal.get("/BBox")
+            appearance_bbox = [float(v) for v in bbox] if bbox is not None else None
+            if appearance_bbox != [0.0, 0.0, 60.0, 50.0]:
+                failures.append(f"annotation-appearance-bbox:{appearance_bbox}")
+            stream_bytes = normal.get_data()
+            if b"1 0 1 RG" not in stream_bytes or b"6 w" not in stream_bytes:
+                failures.append("annotation-appearance-magenta-border-missing")
+
     evidence = {
         "schema": "atlas.n2.a011-independent-geometry.v1",
         "validator": "pypdf",
@@ -101,6 +121,8 @@ def main() -> int:
         "sha256": actual_sha,
         "pages": pages,
         "annotation_count_page_0": len(annots),
+        "annotation_normal_appearance_present": appearance_present,
+        "annotation_appearance_bbox": appearance_bbox,
         "failures": failures,
         "passed": not failures,
     }

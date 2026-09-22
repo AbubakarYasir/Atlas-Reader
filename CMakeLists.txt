@@ -82,6 +82,11 @@ target_compile_definitions(atlas_qt_pdf_probe PRIVATE ATLAS_VERSION_STRING="${AT
 target_link_libraries(atlas_qt_pdf_probe PRIVATE Qt6::Core Qt6::Gui Qt6::Pdf)
 atlas_enable_warnings(atlas_qt_pdf_probe)
 
+add_executable(atlas_qt_pdf_search_probe tools/pdf/qt_pdf_search_probe.cpp)
+target_compile_definitions(atlas_qt_pdf_search_probe PRIVATE ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}")
+target_link_libraries(atlas_qt_pdf_search_probe PRIVATE Qt6::Core Qt6::Pdf)
+atlas_enable_warnings(atlas_qt_pdf_search_probe)
+
 if(ATLAS_ENABLE_PDFIUM_PROBE)
     add_executable(atlas_pdfium_probe tools/pdf/pdfium_probe.cpp)
     target_compile_definitions(atlas_pdfium_probe PRIVATE
@@ -92,6 +97,15 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
     target_link_libraries(atlas_pdfium_probe PRIVATE Qt6::Core pdfium)
     atlas_enable_warnings(atlas_pdfium_probe)
 
+    add_executable(atlas_pdfium_search_probe tools/pdf/pdfium_search_probe.cpp)
+    target_compile_definitions(atlas_pdfium_search_probe PRIVATE
+        ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}"
+        ATLAS_PDFIUM_PIN="chromium/8066"
+        ATLAS_PDFIUM_VERSION="156.0.8066.0"
+    )
+    target_link_libraries(atlas_pdfium_search_probe PRIVATE Qt6::Core pdfium)
+    atlas_enable_warnings(atlas_pdfium_search_probe)
+
     if(WIN32)
         add_custom_command(
             TARGET atlas_pdfium_probe
@@ -99,6 +113,14 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     $<TARGET_FILE:pdfium>
                     $<TARGET_FILE_DIR:atlas_pdfium_probe>
+            VERBATIM
+        )
+        add_custom_command(
+            TARGET atlas_pdfium_search_probe
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    $<TARGET_FILE:pdfium>
+                    $<TARGET_FILE_DIR:atlas_pdfium_search_probe>
             VERBATIM
         )
     endif()
@@ -226,6 +248,52 @@ add_test(
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
 )
 
+# Search probes normalize only document-order page/ordinal identity. Qt's
+# IndexOnPage and PDFium's character start/count remain engine-native evidence.
+add_test(
+    NAME n2_qt_pdf_search_a001_english
+    COMMAND atlas_qt_pdf_search_probe
+        --fixture-id A001
+        --query "Atlas N2 Fixture A001"
+        --expect-count 1
+        --expect-first-page 0
+        --expect-first-ordinal 0
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A001_simple_text.pdf"
+)
+
+add_test(
+    NAME n2_qt_pdf_search_a006_arabic
+    COMMAND atlas_qt_pdf_search_probe
+        --fixture-id A006
+        --query "مرحبا بالعالم"
+        --expect-count 2
+        --expect-first-page 0
+        --expect-first-ordinal 0
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+)
+
+add_test(
+    NAME n2_qt_pdf_search_a006_urdu
+    COMMAND atlas_qt_pdf_search_probe
+        --fixture-id A006
+        --query "یہ اردو متن ہے"
+        --expect-count 1
+        --expect-first-page 3
+        --expect-first-ordinal 0
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+)
+
+add_test(
+    NAME n2_qt_pdf_search_a006_vocalized_raw
+    COMMAND atlas_qt_pdf_search_probe
+        --fixture-id A006
+        --query "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
+        --expect-count 1
+        --expect-first-page 1
+        --expect-first-ordinal 0
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+)
+
 if(ATLAS_ENABLE_PDFIUM_PROBE)
     add_test(
         NAME n2_pdfium_a001_simple_text
@@ -330,6 +398,50 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
             --fixture-id A006
             --expect-pages 4
             --expect-text-contains "یہ اردو متن ہے"
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_search_a001_english
+        COMMAND atlas_pdfium_search_probe
+            --fixture-id A001
+            --query "Atlas N2 Fixture A001"
+            --expect-count 1
+            --expect-first-page 0
+            --expect-first-ordinal 0
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A001_simple_text.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_search_a006_arabic
+        COMMAND atlas_pdfium_search_probe
+            --fixture-id A006
+            --query "مرحبا بالعالم"
+            --expect-count 2
+            --expect-first-page 0
+            --expect-first-ordinal 0
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_search_a006_urdu
+        COMMAND atlas_pdfium_search_probe
+            --fixture-id A006
+            --query "یہ اردو متن ہے"
+            --expect-count 1
+            --expect-first-page 3
+            --expect-first-ordinal 0
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_search_a006_vocalized_raw
+        COMMAND atlas_pdfium_search_probe
+            --fixture-id A006
+            --query "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
+            --expect-count 1
+            --expect-first-page 1
+            --expect-first-ordinal 0
             "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
     )
 endif()

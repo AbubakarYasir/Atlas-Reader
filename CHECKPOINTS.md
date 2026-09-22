@@ -10,7 +10,7 @@ This file controls implementation order. Only one checkpoint is active at a time
 |---|---|
 | Checkpoint | **N1 — Windows toolchain + empty-shell baseline** |
 | Planned version | `2.0.0-alpha.1` (engineering alpha; not normal user release) |
-| Status | **In progress — corrective physical performance pass** |
+| Status | **Accepted — owner PASS recorded 2026-09-22** |
 | Previous checkpoint | **N0 Accepted by owner on 2026-09-22** |
 | Scope | Canonical Windows build/CI, empty shell, RTL/theme proof, privacy-safe logging, lifecycle/benchmark harness, zero-feature measurements |
 | Explicitly excluded | PDF engines, qpdf, SQLite/FTS5, scanner, production Library/Reader/Bookmarks, annotations, migration, installer |
@@ -18,7 +18,7 @@ This file controls implementation order. Only one checkpoint is active at a time
 | Canonical public alpha toolchain | Windows 2022 CI family · Visual Studio 17 2022 x64 · MSVC v143 · Qt 6.10.3 MSVC 2022 64-bit · C++23 |
 | Evidence sheet | `docs/baselines/N1_WINDOWS_BASELINE.md` |
 
-N1 cannot become **Ready for owner test** until strict Debug + Release branch-head CI passes and the target Windows machine has valid Release baseline measurements plus RTL/scale checks. Physical attempt 1 on 2026-09-22 verified the visible shell/RTL/theme behavior but exposed empty-shell startup above the provisional target and a process-sampling defect; the corrective harness/style build must be re-measured before N1 can pass. N2 remains closed.
+N1 is accepted. The owner passed the final keyboard activation retest, explicitly accepted the measured English startup tradeoff, and recorded `N1 PASS` on 2026-09-22. The accepted user-qualified artifact is `73f567cf2c557f185371d7f944ebf6d69453105a`. N2 remains **Not started** until it is deliberately opened as the next checkpoint.
 
 ## Operating contract
 
@@ -33,13 +33,14 @@ N1 cannot become **Ready for owner test** until strict Debug + Release branch-he
 9. Dependencies/tooling follow `docs/DEPENDENCIES_AND_TOOLS.md` and licensing gates.
 10. P0 Windows 2.0 scope in `docs/FEATURE_SCOPE_2_0.md` cannot be silently deferred; changing scope requires an explicit docs/owner decision.
 11. Canonical toolchain changes follow `docs/TOOLCHAIN.md` and require recorded evidence rather than silent workstation drift.
+12. A passed checkpoint cannot be reopened without new evidence of a user-facing regression.
 
 ## Release ledger
 
 | ID | Planned release | Checkpoint | Status |
 |---|---|---|---|
 | N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Accepted** |
-| N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **In progress** |
+| N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **Accepted** |
 | N2 | `2.0.0-alpha.2` | PDF engine qualification spike | Not started |
 | N3 | `2.0.0-beta.1` | Library/index foundation | Not started |
 | N4 | `2.0.0-beta.2` | Native reader foundation | Not started |
@@ -85,7 +86,7 @@ Branch-head bootstrap CI passed public Qt installation, CMake Configure, Release
 
 ---
 
-## N1 — Windows toolchain + empty-shell baseline (`2.0.0-alpha.1`)
+## N1 — Windows toolchain + empty-shell baseline (`2.0.0-alpha.1`) — Accepted
 
 **Goal:** Prove the chosen Windows build is reproducible and establish zero-feature performance measurements before feature code hides framework/architecture overhead.
 
@@ -127,54 +128,45 @@ Qt 6.10.3 is the alpha reproducibility pin because unauthenticated public `aqtin
 - [x] v1 sampler defect identified and replaced by first-frame-aware v2 sampling;
 - [x] staged startup breakdown and display DPI/DPR measurement;
 - [x] compile-time `QtQuick.Controls.Basic` corrective shell baseline;
-- [x] PowerShell qualification-script syntax validation in CI.
+- [x] PowerShell qualification-script syntax validation in CI;
+- [x] Windows GDI font-backend decision measured and documented;
+- [x] 100% and manual 200% scale qualification;
+- [x] English/LTR, Arabic/RTL, mixed-script, light/dark qualification;
+- [x] repeated clean startup/shutdown;
+- [x] keyboard Tab traversal and Enter/Return activation.
 
-### Physical attempt 1 result
+### Physical investigation and accepted result
 
-Attempt 1 used the canonical `d76eeef...` Release artifact on the owner Windows 11 machine.
+Attempt 1 used the canonical `d76eeef...` Release artifact on the owner Windows 11 machine. It verified the visible shell/RTL/theme behavior but exposed startup around 1.8–2.2 seconds and a v1 sampler defect.
 
-Verified visually:
+The corrected v2 harness produced valid measurements, and startup isolation showed the dominant Windows cost appeared with first meaningful text/font initialization rather than Atlas layout composition. A backend comparison led to the N1 GDI `qt.conf` candidate.
 
-- English/LTR;
-- Arabic/RTL;
-- light/dark presentation;
-- no observed clipping or broken layout.
+The final measured GDI evidence includes:
 
-Measured startup did **not** meet the provisional N1 target: ordinary warm first frames were roughly 1.8–2.2 seconds versus the documented <800 ms p95 engineering target, and cold candidates were roughly 2.6–3.1 seconds versus the <1.5 second target. One English memory/CPU sample was invalid because the v1 harness used `WaitForInputIdle` and could sample after auto-shutdown.
+- Arabic warm first-frame p95: `772.875 ms`;
+- English 22-run confirmation warm p50: `365.941 ms`;
+- English 22-run confirmation warm p95: `1014.827 ms`;
+- English worst observed warm in that confirmation: approximately `1.185 s`.
 
-The corrective v2 harness and Basic-style shell exist specifically to re-measure/attribute this before acceptance. See `docs/baselines/N1_WINDOWS_BASELINE.md`.
+The English confirmation showed a temporary contiguous system-wide slow window affecting pre-QML, QML-load, and post-QML first-frame delivery together, followed by recovery without an application change. The owner explicitly accepted this measured startup tradeoff.
 
-### CI evidence required
+A focused Enter activation defect was then found before acceptance, corrected, rebuilt, and physically retested. The accepted user-qualified artifact is:
 
-Current corrective branch head must pass both matrix lanes:
+`73f567cf2c557f185371d7f944ebf6d69453105a`
 
-- Debug Configure/Build/CTest with warnings-as-errors;
-- Release qualification-script syntax validation + Configure/Build/CTest + `windeployqt` portable staging/artifact upload.
+with digest:
 
-Hosted CI validates reproducibility/correctness. It is **not** accepted as physical-user performance evidence.
+`sha256:0fa2b638c5e17e90a30f43c117f4c5f74b509fade31108cfe9119e7a86c17d88`
 
-### Target-machine evidence required
+See `docs/baselines/N1_WINDOWS_BASELINE.md` and `docs/baselines/N1_FINAL_QUALIFICATION.md` for the complete evidence record.
 
-Using the corrective Release artifact on a physical Windows 11 machine, record in `docs/baselines/N1_WINDOWS_BASELINE.md`:
+### Acceptance
 
-- cold-candidate and warm first frame p50/p95;
-- staged startup checkpoints through QML load/first frame;
-- valid idle working set/private bytes;
-- normalized idle CPU sample;
-- deterministic resize p50/p95/p99;
-- machine/OS/CPU/GPU/RAM/storage/power/refresh/DPI/DPR context;
-- English/LTR smoke;
-- Arabic/RTL smoke;
-- 100% scale;
-- 200% scale;
-- keyboard focus;
-- repeated clean startup/shutdown.
+**Owner PASS recorded 2026-09-22.** The owner confirmed keyboard activation passes, explicitly accepted the measured English startup tradeoff, and recorded `N1 PASS`.
 
-### Stop gate
+N1 is frozen as the accepted `2.0.0-alpha.1` Windows empty-shell/toolchain baseline. Per the repository operating contract, it cannot be reopened without new evidence of a user-facing regression.
 
-N1 becomes **Ready for owner test** only when corrective branch-head strict CI and target-machine evidence are complete and the startup gate is met or any remaining deviation has a measured root cause plus explicit owner-approved tradeoff. It becomes **Accepted** only after explicit owner PASS.
-
-**N2 does not begin before N1 Accepted. No PDF dependency may enter N1.**
+**N2 remains Not started until deliberately opened as the next checkpoint.**
 
 ---
 

@@ -1,7 +1,7 @@
 # N2 PDF Engine Qualification Matrix
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Open — Qt PDF/PDFium core, navigation, Unicode and search evidence captured; security/performance/qpdf pending**  
+**Status:** **Open — Qt PDF/PDFium core, navigation, Unicode, search and basic malformed/password security evidence captured; performance, unsupported-security and qpdf pending**  
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Opened:** 2026-09-22
 
@@ -150,6 +150,47 @@ Qt `IndexOnPage` and PDFium character start/count are retained as engine-native 
 
 The probe's one-shot `search_ms` values are **not performance evidence**. In particular, the Qt search probe intentionally waits for a minimum observation/stability window before declaring the asynchronous model settled. Repeated performance work must use a dedicated benchmark contract.
 
+## N2 malformed + password security evidence baseline — 2026-09-22
+
+Canonical basic security/open evidence is bound to implementation head:
+
+`ba673ff0d539f38f44136c6757ecc1220c709865`
+
+- GitHub Actions run `35687950134` — Debug and Release PASS.
+- PR checkout SHA `72b7b95bc8a7a99b2f151719c3d8325b1994c7ba` is recorded separately from the implementation head.
+- Artifact `atlas-reader-n2-windows-x64-ba673ff0d539f38f44136c6757ecc1220c709865`.
+- Artifact ID `10677830518`.
+- Artifact digest `sha256:0b7c519a81fbab87808a85169806918188cb6b33462f0496df63e38e5a352d30`.
+- Independent pypdf 5.9.0 validation passes all 8 registered fixtures before engine qualification.
+- 35 strict CTests pass in both Debug and Release, including eight focused security cases.
+
+### Deterministic security fixtures
+
+A007 is deliberately truncated malformed input and must match SHA-256:
+
+`d6e2fb7962bb233083c110593f6e6968b067c155c713ebb9418c19493e48d79f`
+
+Independent pypdf validation rejects it with `PdfStreamError`.
+
+A008 is a deterministic one-page Standard Security Handler V1/R2 RC4-40 password fixture and must match SHA-256:
+
+`62a6b4e332b8296250b9f8d1076e7c5d717a01c54a7471418bc771f0e2d4a08e`
+
+The fixture uses public test credentials only. Independent validation proves: encrypted state detected; page access without a password is blocked; the wrong password is rejected; the correct user password opens the one-page document. **RC4-40 is intentionally weak legacy cryptography and exists only to exercise deterministic password-control flow. It is not a production crypto recommendation.**
+
+### Engine error mapping
+
+| Case | Qt PDF 6.10.3 | PDFium `chromium/8066` | Result |
+|---|---|---|---|
+| A007 malformed | `invalid-file-format`, code `4` | `format`, code `3` | PASS both |
+| A008 no password | `incorrect-password`, code `5` | `password`, code `4` | PASS both |
+| A008 wrong password | `incorrect-password`, code `5` | `password`, code `4` | PASS both |
+| A008 correct password | `none`, code `0`; page 1/label `1` | `success`, code `0`; page 1/label `1` | PASS both |
+
+The portable Atlas contract should therefore express semantic states such as malformed/invalid, password-required-or-invalid, and open-success rather than exposing candidate-engine numeric enums. The current fixture does **not** exercise an unsupported encryption/security scheme, permission restrictions, signatures, certification, or owner-password semantics; those remain PENDING.
+
+The security probes record whether a password was supplied but never emit the password itself. Their one-shot `open_ms` values are diagnostic only and are not performance evidence.
+
 ## Candidate identity
 
 | Item | Qt PDF | PDFium | qpdf |
@@ -166,13 +207,14 @@ The probe's one-shot `search_ms` values are **not performance evidence**. In par
 
 | Capability | Qt PDF | PDFium | Notes / fixture IDs |
 |---|---|---|---|
-| Valid document open | **PASS** | **PASS** | A001–A006 |
-| Invalid/malformed failure typing | PENDING | PENDING | Error enums mapped; malformed fixtures not yet exercised |
-| Password-required detection | PENDING | PENDING | |
-| Incorrect-password distinction | PENDING | PENDING | |
-| Unsupported-security distinction | PENDING | PENDING | |
-| Page count | **PASS** | **PASS** | A001–A006 agree |
-| Page labels | **PASS** | **PASS** | Engines agree on all current fixtures |
+| Valid document open | **PASS** | **PASS** | A001–A006 plus A008 correct-password open |
+| Invalid/malformed failure typing | **PASS** | **PASS** | A007: Qt `invalid-file-format`; PDFium `format` |
+| Password-required detection | **PASS** | **PASS** | A008 without password: Qt `incorrect-password`; PDFium `password` |
+| Incorrect-password distinction | **PASS** | **PASS** | A008 wrong password rejected by both; candidate enums differ |
+| Supported encrypted open with correct password | **PASS** | **PASS** | A008 correct user password; page count/label verified |
+| Unsupported-security distinction | PENDING | PENDING | A008 is a supported legacy R2 fixture, not an unsupported-scheme fixture |
+| Page count | **PASS** | **PASS** | A001–A006 agree; A008 succeeds with correct password |
+| Page labels | **PASS** | **PASS** | Engines agree on all current valid fixtures |
 | Media box | PENDING | PENDING | Raw boxes not yet read |
 | Crop box | PENDING | PENDING | A002 visible crop result observed; raw crop box pending |
 | Rotation | PENDING | PENDING | A002 normalized rotated dimensions agree; raw rotation pending |
@@ -314,7 +356,7 @@ A candidate/responsibility is not accepted if evidence shows any of the followin
 | Search | PENDING | PENDING | Candidate Unicode/search evidence exists; normalization contract still required |
 | Links/navigation | PENDING | PENDING | Candidate evidence exists; no final responsibility selection yet |
 | Outline read | PENDING | PENDING | Candidate evidence exists; no final responsibility selection yet |
-| Security/capability inspection | PENDING | PENDING | |
+| Security/capability inspection | PENDING | PENDING | Basic malformed/password reader evidence exists; unsupported-security/permissions/signatures and qpdf inspection remain pending |
 | Structural transformation/write | PENDING | PENDING | |
 | Independent output validation | PENDING | PENDING | |
 

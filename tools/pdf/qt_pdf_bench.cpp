@@ -51,6 +51,19 @@ void addFailure(QJsonArray& failures, const QString& message)
     failures.append(message);
 }
 
+bool awaitDocumentReady(QPdfDocument& document, int timeoutMs = 5000)
+{
+    QElapsedTimer timeout;
+    timeout.start();
+    while (document.status() == QPdfDocument::Status::Loading && timeout.elapsed() < timeoutMs) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        QThread::msleep(1);
+    }
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    return document.status() == QPdfDocument::Status::Ready
+        && document.error() == QPdfDocument::Error::None;
+}
+
 double openOnce(const QByteArray& pdfBytes, bool* ok)
 {
     QBuffer buffer;
@@ -63,9 +76,10 @@ double openOnce(const QByteArray& pdfBytes, bool* ok)
     QPdfDocument document;
     QElapsedTimer timer;
     timer.start();
-    const QPdfDocument::Error error = document.load(&buffer);
+    document.load(&buffer);
+    const bool ready = awaitDocumentReady(document);
     const double elapsedMs = static_cast<double>(timer.nsecsElapsed()) / 1'000'000.0;
-    *ok = error == QPdfDocument::Error::None && document.pageCount() > 0;
+    *ok = ready && document.pageCount() > 0;
     return elapsedMs;
 }
 
@@ -238,8 +252,8 @@ int main(int argc, char* argv[])
     persistentBuffer.setData(pdfBytes);
     persistentBuffer.open(QIODevice::ReadOnly);
     QPdfDocument document;
-    const QPdfDocument::Error persistentLoadError = document.load(&persistentBuffer);
-    if (persistentLoadError != QPdfDocument::Error::None) {
+    document.load(&persistentBuffer);
+    if (!awaitDocumentReady(document)) {
         addFailure(failures, QStringLiteral("persistent-load-failed"));
     }
     if (*renderPage >= document.pageCount()) {

@@ -87,6 +87,27 @@
       "expected_external_uri": "https://example.com/atlas-n2-fixture",
       "mutation_allowed": true,
       "password_fixture": false
+    },
+    {
+      "id": "A006",
+      "file": "generated/A006_unicode_semantics.pdf",
+      "sha256": "1b69b6ce646ad3052d0a8f967efb4d2540569641e3f946ca8e533d9c9655d019",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "tests/fixtures/pdf/source/generate_a006_unicode_semantics.py with pypdf 5.9.0",
+      "purpose": ["arabic-unicode-extraction", "arabic-combining-marks", "mixed-arabic-english", "urdu-unicode-extraction", "unicode-outline", "search-semantics"],
+      "expected_pages": 4,
+      "expected_labels": ["1", "2", "3", "4"],
+      "expected_text": ["مرحبا بالعالم", "بِسْمِ اللَّهِ", "Atlas PDF 123", "یہ اردو متن ہے"],
+      "expected_outline": [
+        {"title": "العربية", "page_index": 0, "children": [{"title": "مُشَكَّل", "page_index": 1}]},
+        {"title": "Mixed العربية English", "page_index": 2},
+        {"title": "اردو", "page_index": 3}
+      ],
+      "visual_fidelity_fixture": false,
+      "notes": "Synthetic Type3 glyphs and ToUnicode CMap deliberately separate logical Unicode extraction/search semantics from Arabic/Urdu font shaping and raster fidelity. Do not use A006 as visual-shaping evidence.",
+      "mutation_allowed": true,
+      "password_fixture": false
     }
   ]
 }

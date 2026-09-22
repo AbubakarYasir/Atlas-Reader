@@ -33,7 +33,7 @@ mutation_allowed    yes/no
 notes               known ambiguity/limitations
 ```
 
-The exact manifest serialization may be JSON later; the semantic fields above are already binding for N2 evidence.
+Additional fields may narrow fixture scope. For example, `visual_fidelity_fixture: false` explicitly prevents a semantic-only PDF from being cited as rendering/shaping evidence.
 
 ## Minimum fixture classes
 
@@ -61,6 +61,33 @@ N2 should establish fixtures for:
 20. long document for timing/memory loops.
 
 One PDF may cover several classes when doing so does not make the expected result ambiguous.
+
+## A006 — Unicode semantics, not visual shaping
+
+`A006_unicode_semantics.pdf` is deliberately **font-free at the external dependency level**. Its generator builds a synthetic Type3 font and a deterministic ToUnicode CMap with pypdf 5.9.0.
+
+Its purpose is to isolate logical Unicode behavior for:
+
+- Arabic extraction;
+- Arabic combining marks/tashkīl;
+- mixed Arabic + English content on one page;
+- Urdu extraction;
+- Unicode outline titles/hierarchy;
+- engine search semantics.
+
+The visible Type3 glyphs are simple synthetic rectangles. They do not resemble Arabic or Urdu letters and therefore provide **zero evidence** about shaping, joining, typography, fallback, or raster fidelity.
+
+This separation is intentional: a text/search engine should first prove that it preserves the correct logical Unicode mapping without the result being confounded by HarfBuzz/font/shaping differences.
+
+A later visual-shaping fixture may embed an open font only after its exact upstream revision, redistribution license, file/archive SHA-256, shaping/generator versions, and source are documented. Never substitute a system font and call the fixture reproducible.
+
+A006 generator:
+
+`tests/fixtures/pdf/source/generate_a006_unicode_semantics.py`
+
+Expected SHA-256:
+
+`1b69b6ce646ad3052d0a8f967efb4d2540569641e3f946ca8e533d9c9655d019`
 
 ## Public versus private fixtures
 
@@ -132,6 +159,8 @@ If golden comparison is used, record:
 
 A visually wrong render cannot pass merely because it is fast.
 
+A006 is explicitly excluded from visual/golden evidence because its glyphs are synthetic semantic markers.
+
 ## Checksums
 
 Use SHA-256 for fixture identity and produced mutation artifacts.
@@ -148,9 +177,9 @@ If fixture bytes change intentionally:
 ```text
 tests/fixtures/pdf/
 ├─ README.md
-├─ manifest.json                 # added when first committed PDFs land
+├─ manifest.json
 ├─ generated/                    # redistributable synthetic fixtures
-├─ source/                       # source/generator inputs when applicable
+├─ source/                       # source/generator inputs
 └─ expected/                     # normalized expected records/golden metadata
 ```
 

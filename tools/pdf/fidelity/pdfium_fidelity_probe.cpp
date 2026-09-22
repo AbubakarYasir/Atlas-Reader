@@ -6,6 +6,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <fpdf_transformpage.h>
 #include <fpdfview.h>
 
 #include <algorithm>
@@ -67,8 +68,8 @@ QJsonObject renderPage(FPDF_PAGE page, int pageIndex, int scale, bool annotation
 {
     const double widthPoints = FPDF_GetPageWidthF(page);
     const double heightPoints = FPDF_GetPageHeightF(page);
-    const int width = std::max(1, static_cast<int>(std::lround(widthPoints * scale)));
-    const int height = std::max(1, static_cast<int>(std::lround(heightPoints * scale)));
+    const int width = (std::max)(1, static_cast<int>(std::lround(widthPoints * scale)));
+    const int height = (std::max)(1, static_cast<int>(std::lround(heightPoints * scale)));
 
     FPDF_BITMAP bitmap = FPDFBitmap_Create(width, height, 1);
     QJsonObject out;

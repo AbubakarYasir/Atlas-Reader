@@ -181,6 +181,28 @@
       "notes": "Contains synthetic /Sig and /DocMDP structure only. /Contents and /ByteRange are deliberately not a valid cryptographic signature. This fixture qualifies structural detection and the Atlas pre-mutation safety interlock, never cryptographic verification.",
       "mutation_allowed": false,
       "password_fixture": false
+    },
+    {
+      "id": "A011",
+      "file": "generated/A011_visual_geometry.pdf",
+      "sha256": "c4862d88c867dd893c742d21e30f922338c771c3caaf2e7e1a2ea4bc8e4de81d",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "tests/fixtures/pdf/source/generate_a011_visual_geometry.py with ReportLab 4.4.9 + pypdf 5.9.0",
+      "purpose": ["raw-page-geometry", "cropbox", "rotation", "render-fidelity", "high-dpi-render", "annotation-rendering", "external-uri-link"],
+      "expected_pages": 3,
+      "expected_labels": ["1", "2", "3"],
+      "expected_text": ["A011 PAGE 1", "A011 PAGE 2", "A011 PAGE 3"],
+      "expected_raw_geometry": [
+        {"index": 0, "media_box": [0.0, 0.0, 200.0, 300.0], "crop_box": [0.0, 0.0, 200.0, 300.0], "rotation": 0, "visible_points": [200.0, 300.0]},
+        {"index": 1, "media_box": [0.0, 0.0, 300.0, 200.0], "crop_box": [50.0, 25.0, 250.0, 175.0], "rotation": 0, "visible_points": [200.0, 150.0]},
+        {"index": 2, "media_box": [0.0, 0.0, 200.0, 300.0], "crop_box": [0.0, 0.0, 200.0, 300.0], "rotation": 90, "visible_points": [300.0, 200.0]}
+      ],
+      "expected_external_uri": "https://example.com/atlas-a011",
+      "visual_fidelity_fixture": true,
+      "notes": "Simple solid vector anchors permit stable interior color sampling at 1x/2x without requiring byte-identical raster output across engines. Page 1 has a visible link-annotation border only when annotation rendering is enabled; page 2 verifies crop clipping; page 3 verifies 90-degree page rotation.",
+      "mutation_allowed": true,
+      "password_fixture": false
     }
   ]
 }

@@ -6,7 +6,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-#include <fpdf_transformpage.h>
 #include <fpdfview.h>
 
 #include <algorithm>
@@ -138,7 +137,6 @@ int main(int argc, char* argv[])
             page.insert(QStringLiteral("index"), pageIndex);
             page.insert(QStringLiteral("visible_width_points"), FPDF_GetPageWidthF(pageHandle));
             page.insert(QStringLiteral("visible_height_points"), FPDF_GetPageHeightF(pageHandle));
-            page.insert(QStringLiteral("rotation_quarters"), FPDFPage_GetRotation(pageHandle));
 
             QJsonArray renders;
             renders.append(renderPage(pageHandle, pageIndex, 1, false));

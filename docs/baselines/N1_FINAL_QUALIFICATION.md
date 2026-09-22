@@ -114,6 +114,14 @@ Therefore every N1 acceptance condition is satisfied:
 4. measured English startup tradeoff explicitly accepted — **PASS**;
 5. explicit `N1 PASS` — **PASS**.
 
+## Acceptance-record CI
+
+The acceptance-record branch head after updating the baseline, final qualification record, and checkpoint ledger is:
+
+`3c2892e16ecd3c4813e72ad02dfdd2c7260883b9`
+
+Pull-request Windows CI run `35671096980` passed both Debug and Release lanes, including Release qualification-script validation, Configure → Build → CTest, portable staging, and artifact upload. These commits are documentation-only acceptance records; the physically tested and owner-qualified runtime remains `73f567cf2c557f185371d7f944ebf6d69453105a`.
+
 ## Final state
 
 **N1 is Accepted.** The accepted user-qualified runtime artifact remains the exact-head package `73f567cf2c557f185371d7f944ebf6d69453105a`. Subsequent acceptance-record commits are documentation-only and do not redefine the physically tested runtime.

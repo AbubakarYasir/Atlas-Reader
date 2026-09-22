@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Independently validate the N2 synthetic PDF fixtures.
 
-This validator deliberately does not use Qt PDF or PDFium. It checks fixture
-bytes and expected structure/text/security behavior with pinned pypdf 5.9.0 so
-an engine probe failure is not automatically blamed on malformed/stale fixture
-bytes.
+This validator deliberately does not use Qt PDF, PDFium, or qpdf. It checks
+fixture bytes and expected structure/text/security behavior with pinned pypdf
+5.9.0 so an engine probe failure is not automatically blamed on malformed or
+stale fixture bytes.
 """
 
 from __future__ import annotations
@@ -78,6 +78,12 @@ def link_summary(reader: PdfReader) -> dict[str, Any]:
     }
 
 
+def signed_permissions(value: int) -> int:
+    """Normalize pypdf's unsigned 32-bit permission view to PDF's signed /P."""
+    value &= 0xFFFFFFFF
+    return value if value < 0x80000000 else value - 0x100000000
+
+
 def validate_fixture(spec: dict[str, Any]) -> dict[str, Any]:
     fixture_path = ROOT / spec["file"]
     failures: list[str] = []
@@ -100,7 +106,7 @@ def validate_fixture(spec: dict[str, Any]) -> dict[str, Any]:
     if spec.get("expected_open_failure"):
         try:
             PdfReader(str(fixture_path), strict=False)
-        except Exception as exc:  # expected malformed fixture failure
+        except Exception as exc:
             result["open_failure"] = type(exc).__name__
             result["passed"] = not failures
             return result
@@ -110,7 +116,7 @@ def validate_fixture(spec: dict[str, Any]) -> dict[str, Any]:
 
     try:
         reader = PdfReader(str(fixture_path), strict=False)
-    except Exception as exc:  # fixture validation must report parser failures
+    except Exception as exc:
         failures.append(f"pypdf-open-failed:{type(exc).__name__}")
         result["passed"] = False
         return result
@@ -138,8 +144,25 @@ def validate_fixture(spec: dict[str, Any]) -> dict[str, Any]:
             reader = PdfReader(str(fixture_path), strict=False)
             correct_result = int(reader.decrypt(str(spec["test_user_password"])))
             result["correct_password_result"] = correct_result
-            if correct_result == 0:
-                failures.append("correct-password-rejected")
+            if correct_result != 1:
+                failures.append(f"user-password-result-unexpected:{correct_result}")
+
+            owner_password = spec.get("test_owner_password")
+            if owner_password is not None:
+                owner_reader = PdfReader(str(fixture_path), strict=False)
+                owner_result = int(owner_reader.decrypt(str(owner_password)))
+                result["owner_password_result"] = owner_result
+                if owner_result != 2:
+                    failures.append(f"owner-password-result-unexpected:{owner_result}")
+
+            expected_permissions = spec.get("expected_permissions_signed")
+            if expected_permissions is not None and correct_result != 0:
+                actual_permissions = signed_permissions(int(reader.user_access_permissions))
+                result["permissions_signed"] = actual_permissions
+                if actual_permissions != int(expected_permissions):
+                    failures.append(
+                        f"permission-integer-mismatch:{actual_permissions}!={int(expected_permissions)}"
+                    )
 
     page_count = len(reader.pages)
     result["page_count"] = page_count
@@ -206,9 +229,6 @@ def main() -> int:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    # GitHub's Windows runner console may still be CP1252. Keep the durable
-    # evidence file true UTF-8, but escape non-ASCII in console JSON so logging
-    # can never turn a valid Unicode fixture result into a CI failure.
     print(json.dumps(evidence, ensure_ascii=True, indent=2))
     return 0 if passed else 2
 

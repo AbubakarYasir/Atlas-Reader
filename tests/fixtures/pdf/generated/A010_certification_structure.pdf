@@ -1,0 +1,49 @@
+%PDF-1.7
+%ATLS
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm 5 0 R /Perms << /DocMDP 7 0 R >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> /Contents 4 0 R /Annots [6 0 R] >>
+endobj
+4 0 obj
+<< /Length 0 >>
+stream
+
+endstream
+endobj
+5 0 obj
+<< /Fields [6 0 R] /SigFlags 3 >>
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Sig /T (Atlas Certification) /Rect [0 0 0 0] /V 7 0 R /P 3 0 R /F 132 >>
+endobj
+7 0 obj
+<< /Type /Sig /Filter /Adobe.PPKLite /SubFilter /adbe.pkcs7.detached /ByteRange [0 0 0 0] /Contents <0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000> /Reason (Atlas synthetic certification structure; not cryptographically valid) /M (D:20260922210000Z) /Reference [8 0 R] >>
+endobj
+8 0 obj
+<< /Type /SigRef /TransformMethod /DocMDP /DigestMethod /SHA256 /TransformParams 9 0 R >>
+endobj
+9 0 obj
+<< /Type /TransformParams /P 2 /V /1.2 >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000015 00000 n 
+0000000107 00000 n 
+0000000164 00000 n 
+0000000284 00000 n 
+0000000333 00000 n 
+0000000382 00000 n 
+0000000508 00000 n 
+0000001006 00000 n 
+0000001111 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+1168
+%%EOF

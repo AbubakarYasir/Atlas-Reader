@@ -39,6 +39,15 @@ QJsonArray rectsJson(const QList<QRectF>& rects)
     return out;
 }
 
+QJsonArray normalizedRectsJson(const QList<QRectF>& rects)
+{
+    QJsonArray out;
+    for (const QRectF& rect : rects) {
+        out.append(rectJson(rect.normalized()));
+    }
+    return out;
+}
+
 bool settleSearch(QPdfSearchModel& model, int expectedCount)
 {
     QElapsedTimer timer;
@@ -83,7 +92,7 @@ QJsonArray collectA003Links(QPdfDocument& document, QJsonArray& failures)
         item.insert(QStringLiteral("source_page"), 0);
         item.insert(QStringLiteral("destination_page"), model.data(index, pageRole).toInt());
         item.insert(QStringLiteral("url"), model.data(index, urlRole).toUrl().toString());
-        item.insert(QStringLiteral("atlas_rect"), rectJson(rect));
+        item.insert(QStringLiteral("atlas_rect"), rectJson(rect.normalized()));
         item.insert(QStringLiteral("raw_qt_rect"), rectJson(rect));
         item.insert(QStringLiteral("raw_destination_x"), location.x());
         item.insert(QStringLiteral("raw_destination_y"), location.y());
@@ -124,7 +133,7 @@ QJsonObject searchOne(QPdfDocument& document, int page, const QString& query, QJ
     const QSizeF size = document.pagePointSize(page);
     out.insert(QStringLiteral("visible_width_points"), size.width());
     out.insert(QStringLiteral("visible_height_points"), size.height());
-    out.insert(QStringLiteral("atlas_rects"), rectsJson(link.rectangles()));
+    out.insert(QStringLiteral("atlas_rects"), normalizedRectsJson(link.rectangles()));
     out.insert(QStringLiteral("raw_qt_rects"), rectsJson(link.rectangles()));
     out.insert(QStringLiteral("raw_location_x"), link.location().x());
     out.insert(QStringLiteral("raw_location_y"), link.location().y());

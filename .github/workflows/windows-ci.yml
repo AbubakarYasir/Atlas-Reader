@@ -122,11 +122,26 @@ jobs:
           }
           Write-Host 'Qt PDF module available: Qt6Pdf'
 
+      - name: Prepare deterministic generated N2 fixtures
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
+          python tests/fixtures/pdf/source/generate_a006_unicode_semantics.py
+          if ($LASTEXITCODE -ne 0) {
+            throw "A006 deterministic fixture generation failed with exit code $LASTEXITCODE"
+          }
+          $expected = '1b69b6ce646ad3052d0a8f967efb4d2540569641e3f946ca8e533d9c9655d019'
+          $path = 'tests/fixtures/pdf/generated/A006_unicode_semantics.pdf'
+          $actual = (Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) {
+            throw "A006 generated SHA-256 mismatch: $actual != $expected"
+          }
+          Write-Host "A006 deterministic fixture verified: $actual"
+
       - name: Validate N2 synthetic PDF fixtures independently
         if: matrix.configuration == 'Release'
         shell: pwsh
         run: |
-          python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
           python tests/fixtures/pdf/validate_n2_fixtures.py --output artifacts/n2/fixture-validation.json
           if ($LASTEXITCODE -ne 0) {
             throw "Independent N2 fixture validation failed with exit code $LASTEXITCODE"
@@ -267,6 +282,7 @@ jobs:
             'Product shell Qt PDF linkage: none'
             'Product shell PDFium linkage: none'
             'Fixture integrity gate: pypdf 5.9.0 + manifest SHA-256'
+            'A006 fixture policy: deterministically regenerated from checked-in source before validation/tests'
             'Controls style: compile-time Basic'
             'Inherited Windows font backend: GDI via qt.conf'
             'PDF engine production selection: none; ADR-0004 remains Proposed'

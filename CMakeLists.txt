@@ -144,9 +144,8 @@ add_test(
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A002_geometry_labels.pdf"
 )
 
-# A003–A005 deliberately isolate the first observed Qt PDF 6.10.3 text
-# extraction anomaly. The expectations remain strict: we do not weaken a
-# fixture merely because one candidate returned empty text.
+# A003–A005 isolate combined and individual outline/link structures. Their text
+# expectations remain strict so fixture or engine regressions cannot be hidden.
 add_test(
     NAME n2_qt_pdf_a003_outlines_links_text
     COMMAND atlas_qt_pdf_probe
@@ -156,13 +155,6 @@ add_test(
         --expect-text-contains "Atlas N2 Fixture A003 page 1"
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A003_outlines_links.pdf"
 )
-
-# This is an evidence sentinel, not a waiver. Qt PDF 6.10.3 currently returns
-# empty text for A003 while the independently validated fixture contains text.
-# WILL_FAIL keeps normal CI green only while that exact candidate failure is
-# reproduced; an unexpected future PASS forces this test red so the matrix and
-# ADR evidence must be revisited instead of silently becoming stale.
-set_tests_properties(n2_qt_pdf_a003_outlines_links_text PROPERTIES WILL_FAIL TRUE)
 
 add_test(
     NAME n2_qt_pdf_a004_outlines_only_text

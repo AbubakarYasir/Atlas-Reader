@@ -1,0 +1,59 @@
+{
+  "schema": "atlas.n2.pdf-fixtures.v1",
+  "generated_at": "2026-09-22",
+  "generator": {
+    "python": "3.x",
+    "reportlab": "4.4.9",
+    "pypdf": "5.9.0",
+    "source": "tests/fixtures/pdf/source/generate_n2_core_fixtures.py"
+  },
+  "fixtures": [
+    {
+      "id": "A001",
+      "file": "generated/A001_simple_text.pdf",
+      "sha256": "50748f207094d9e7d25c7ae52d0b17a8c9e3217d0bddccea5c5ca3c11ae916eb",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "purpose": ["open", "page-count", "page-size", "page-label", "render", "english-text-extraction", "english-search", "metadata"],
+      "expected_pages": 1,
+      "expected_labels": ["1"],
+      "expected_text": ["Atlas N2 Fixture A001", "Simple searchable English text."],
+      "mutation_allowed": true,
+      "password_fixture": false
+    },
+    {
+      "id": "A002",
+      "file": "generated/A002_geometry_labels.pdf",
+      "sha256": "27a496e24b786648964cde8b53be0f7c13d4bebdbfd8f28c2ff3365e56c2ce3d",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "purpose": ["page-count", "page-labels", "mixed-page-sizes", "rotation", "cropbox", "render", "geometry-normalization"],
+      "expected_pages": 3,
+      "expected_labels": ["i", "ii", "1"],
+      "expected_page_geometry": [
+        {"index": 0, "media_points": [612.0, 792.0], "rotation": 0},
+        {"index": 1, "media_points": [595.2756, 841.8898], "rotation": 90},
+        {"index": 2, "media_points": [400.0, 600.0], "crop_box": [20.0, 20.0, 380.0, 580.0], "rotation": 0}
+      ],
+      "mutation_allowed": true,
+      "password_fixture": false
+    },
+    {
+      "id": "A003",
+      "file": "generated/A003_outlines_links.pdf",
+      "sha256": "048b97adc8c9f28e4441644ff29a0eabf9906bb6b2152bd8fba05335ec90d745",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "purpose": ["outline-hierarchy", "internal-link", "external-uri-link", "destination-normalization"],
+      "expected_pages": 3,
+      "expected_labels": ["1", "2", "3"],
+      "expected_outline": [
+        {"title": "Chapter 1", "page_index": 0, "children": [{"title": "Section 1.1", "page_index": 1}]},
+        {"title": "Chapter 2", "page_index": 2}
+      ],
+      "expected_external_uri": "https://example.com/atlas-n2-fixture",
+      "mutation_allowed": true,
+      "password_fixture": false
+    }
+  ]
+}

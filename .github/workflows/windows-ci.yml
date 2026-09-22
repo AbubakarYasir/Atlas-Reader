@@ -10,20 +10,85 @@ permissions:
 
 jobs:
   build-test:
-    # Pin the image because the Qt kit is the MSVC 2022 x64 build. Avoid
-    # windows-latest silently moving the bootstrap onto a different VS toolset.
+    # Qt's Windows kit is MSVC 2022 x64. Keep the runner generation pinned so
+    # windows-latest cannot silently move Atlas to a different VS toolset.
     runs-on: windows-2022
-    timeout-minutes: 30
+    timeout-minutes: 35
+
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      # Qt 6.11.x is the preferred product-generation line, but as of the
-      # 2026-09 bootstrap aqt/install-qt-action cannot reliably install the
-      # Windows 6.11 repository from the public mirror. Keep public CI on the
-      # last reproducibly installable compatible patch and re-qualify 6.11.x
-      # in N1 rather than requiring private Qt account secrets in public CI.
+      - name: Validate qualification scripts
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          $files = @(
+            'tools/bench/measure-windows-shell.ps1',
+            'tools/bench/run-n1-qualification.ps1',
+            'tools/bench/run-n1-packaged-qualification.ps1'
+          )
+
+          foreach ($file in $files) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file),
+              [ref]$tokens,
+              [ref]$parseErrors
+            ) | Out-Null
+
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | ForEach-Object { Write-Error "${file}: $($_.Message)" }
+              throw "PowerShell syntax validation failed for $file"
+            }
+
+            Write-Host "PowerShell syntax OK: $file"
+          }
+
+          # Runtime-contract smoke test for the live metrics poll. At process
+          # start the metrics file legitimately may not exist yet, so the first
+          # read returns @(). This exact case previously passed syntax checks but
+          # failed parameter binding on the physical qualification machine.
+          $tokens = $null
+          $parseErrors = $null
+          $measureAst = [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'tools/bench/measure-windows-shell.ps1'),
+            [ref]$tokens,
+            [ref]$parseErrors
+          )
+          $getMetricFunction = $measureAst.Find({
+            param($node)
+            $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+              $node.Name -eq 'Get-MetricValue'
+          }, $true)
+
+          if ($null -eq $getMetricFunction) {
+            throw 'Get-MetricValue function not found in measurement script'
+          }
+
+          Invoke-Expression $getMetricFunction.Extent.Text
+          $emptyMetricResult = Get-MetricValue -Metrics @() -Name 'startup.first_frame_ms'
+          if ($null -ne $emptyMetricResult) {
+            throw 'Get-MetricValue must return null for an empty live metrics collection'
+          }
+          Write-Host 'PowerShell runtime contract OK: empty live metric poll'
+
+          $qtConf = Get-Content 'qt.conf' -Raw
+          if ($qtConf -notmatch '(?m)^WindowsArguments\s*=\s*fontengine=gdi\s*$') {
+            throw 'qt.conf must pin the N1 Windows GDI font backend candidate'
+          }
+          Write-Host 'Qt Windows font backend config OK: GDI'
+
+      # N1 canonical public alpha baseline. Qt 6.11.2 remains the preferred
+      # current product-generation line, but public aqt Windows 6.11.x binary
+      # installation is not reproducible without the official authenticated
+      # installer path. See docs/TOOLCHAIN.md.
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
@@ -33,18 +98,81 @@ jobs:
           arch: 'win64_msvc2022_64'
           cache: true
 
+      - name: Report toolchain
+        shell: pwsh
+        run: |
+          cmake --version
+          git --version
+          Write-Host "Qt root: $env:QT_ROOT_DIR"
+          Write-Host "Configuration: ${{ matrix.configuration }}"
+
       - name: Configure
         shell: pwsh
         run: >-
-          cmake -S . -B build/ci
+          cmake -S . -B build/ci-${{ matrix.configuration }}
           -G "Visual Studio 17 2022"
           -A x64
           -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          -DATLAS_PRERELEASE=alpha.1
+          -DATLAS_WARNINGS_AS_ERRORS=ON
 
       - name: Build
         shell: pwsh
-        run: cmake --build build/ci --config Release --parallel
+        run: >-
+          cmake --build build/ci-${{ matrix.configuration }}
+          --config ${{ matrix.configuration }}
+          --parallel
 
       - name: Test
         shell: pwsh
-        run: ctest --test-dir build/ci -C Release --output-on-failure
+        run: >-
+          ctest --test-dir build/ci-${{ matrix.configuration }}
+          -C ${{ matrix.configuration }}
+          --output-on-failure
+
+      - name: Stage canonical N1 portable shell
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          $stage = Join-Path $PWD 'artifact/n1-windows-x64'
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          New-Item -ItemType Directory -Force -Path (Join-Path $stage 'tools/bench') | Out-Null
+
+          $exe = Join-Path $PWD 'build/ci-Release/Release/atlas_reader.exe'
+          if (-not (Test-Path $exe)) {
+            throw "Release executable not found at $exe"
+          }
+
+          Copy-Item $exe (Join-Path $stage 'atlas_reader.exe')
+          Copy-Item 'qt.conf' (Join-Path $stage 'qt.conf')
+          Copy-Item 'tools/bench/measure-windows-shell.ps1' (Join-Path $stage 'tools/bench/measure-windows-shell.ps1')
+          Copy-Item 'tools/bench/run-n1-packaged-qualification.ps1' (Join-Path $stage 'tools/bench/run-n1-packaged-qualification.ps1')
+          Copy-Item 'docs/baselines/N1_WINDOWS_BASELINE.md' (Join-Path $stage 'N1_WINDOWS_BASELINE.md')
+
+          $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
+          & $deploy --release --qmldir (Join-Path $PWD 'qml') (Join-Path $stage 'atlas_reader.exe')
+          if ($LASTEXITCODE -ne 0) {
+            throw "windeployqt failed with exit code $LASTEXITCODE"
+          }
+
+          @(
+            'Atlas Reader Native N1 portable qualification artifact'
+            'Version: 2.0.0-alpha.1'
+            'Commit: ${{ github.sha }}'
+            'GitHub run: ${{ github.run_id }}'
+            'Configuration: Release'
+            'Generator: Visual Studio 17 2022 x64'
+            'Qt: 6.10.3 MSVC 2022 64-bit'
+            'Controls style: compile-time Basic'
+            'Windows font backend: GDI via qt.conf'
+            'Purpose: physical Windows baseline qualification only; not a user release'
+          ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N1_BUILD_INFO.txt')
+
+      - name: Upload canonical N1 portable shell
+        if: matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n1-windows-x64-${{ github.sha }}
+          path: artifact/n1-windows-x64
+          if-no-files-found: error
+          retention-days: 14

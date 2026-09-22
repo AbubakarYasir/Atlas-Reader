@@ -7,26 +7,18 @@
   },
   "configurePresets": [
     {
-      "name": "windows-debug",
-      "displayName": "Windows Debug (Ninja)",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/windows-debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CXX_STANDARD": "23"
+      "name": "windows-msvc2022",
+      "displayName": "Windows MSVC 2022 x64",
+      "generator": "Visual Studio 17 2022",
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
       },
-      "environment": {
-        "CMAKE_PREFIX_PATH": "$env{CMAKE_PREFIX_PATH}"
-      }
-    },
-    {
-      "name": "windows-release",
-      "displayName": "Windows Release (Ninja)",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/windows-release",
+      "binaryDir": "${sourceDir}/build/windows-msvc2022",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CXX_STANDARD": "23"
+        "CMAKE_CXX_STANDARD": "23",
+        "ATLAS_PRERELEASE": "alpha.1",
+        "ATLAS_WARNINGS_AS_ERRORS": "OFF"
       },
       "environment": {
         "CMAKE_PREFIX_PATH": "$env{CMAKE_PREFIX_PATH}"
@@ -34,18 +26,28 @@
     }
   ],
   "buildPresets": [
-    { "name": "windows-debug", "configurePreset": "windows-debug" },
-    { "name": "windows-release", "configurePreset": "windows-release" }
+    {
+      "name": "windows-debug",
+      "configurePreset": "windows-msvc2022",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-release",
+      "configurePreset": "windows-msvc2022",
+      "configuration": "Release"
+    }
   ],
   "testPresets": [
     {
       "name": "windows-debug",
-      "configurePreset": "windows-debug",
+      "configurePreset": "windows-msvc2022",
+      "configuration": "Debug",
       "output": { "outputOnFailure": true }
     },
     {
       "name": "windows-release",
-      "configurePreset": "windows-release",
+      "configurePreset": "windows-msvc2022",
+      "configuration": "Release",
       "output": { "outputOnFailure": true }
     }
   ]

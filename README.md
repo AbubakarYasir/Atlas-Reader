@@ -2,9 +2,9 @@
 
 > Native-performance, local-first reading and research software built around **Index → Reader → Bookmarks**.
 
-**Status:** N0 bootstrap is **Verified / Ready for owner test**. No production index/reader/bookmark implementation has started.
+**Status:** N0 bootstrap **Accepted**. N1 Windows toolchain + empty-shell baseline is **In progress**. No production index/reader/bookmark implementation has started.
 
-**Native release line:** `2.0.0`
+**Current native build:** `2.0.0-alpha.1`
 
 **Primary platform:** Windows 11 first
 
@@ -46,7 +46,9 @@ A writable ordinary PDF is the preferred authority for PDF-native data. Restrict
 
 We do **not** call an empty shell a beta.
 
-- N0–N2: `2.0.0-alpha.N` engineering/toolchain/PDF-engine qualification.
+- N0: `2.0.0-alpha.0` — accepted architecture/bootstrap.
+- N1: `2.0.0-alpha.1` — active Windows toolchain + zero-feature performance baseline.
+- N2: `2.0.0-alpha.2` — PDF-engine qualification.
 - N3: `2.0.0-beta.1` — first useful native Library/Index beta.
 - N4: `2.0.0-beta.2` — native Reader.
 - N5: `2.0.0-beta.3` — complete resilient Bookmarks.
@@ -83,50 +85,68 @@ See [`docs/RELEASE_STRATEGY.md`](docs/RELEASE_STRATEGY.md) and [`CHECKPOINTS.md`
 
 The shared domain/core must not depend on Win32, Android APIs, Objective-C/Swift, or QML. Platform-specific behavior lives behind interfaces.
 
+## N1: measure before adding features
+
+N1 exists so later regressions have a known zero-feature baseline.
+
+The alpha shell now provides:
+
+- reproducible Visual Studio 2022 x64 CMake presets;
+- public Debug + Release CI;
+- strict compiler warnings-as-errors in CI;
+- privacy-safe logging categories;
+- startup/QML-load/first-frame/shutdown metrics;
+- deterministic resize/frame-pacing exercise;
+- English/LTR ↔ Arabic/RTL shell proof;
+- light/dark shell proof;
+- repeatable automatic startup/shutdown;
+- local PowerShell memory/CPU/startup benchmark harness.
+
+No PDF renderer, SQLite schema, folder scanner, Library, Reader, Bookmark editor, or annotation engine is permitted in N1.
+
+### N1 toolchain
+
+Canonical public alpha baseline:
+
+- Visual Studio 17 2022 x64 / MSVC v143;
+- C++23;
+- Qt **6.10.3** MSVC 2022 64-bit;
+- CMake >= 3.28.
+
+Qt 6.11.2 is the preferred current product-generation line and may be used as an additional compatibility build, but public Windows `aqtinstall` 6.11.x binary installation is currently unreliable. Atlas therefore keeps public alpha CI on the reproducible 6.10.3 pin instead of requiring private Qt-account credentials.
+
+See [`docs/TOOLCHAIN.md`](docs/TOOLCHAIN.md) and [`docs/decisions/ADR-0003-n1-qt-toolchain-pin.md`](docs/decisions/ADR-0003-n1-qt-toolchain-pin.md).
+
+### N1 evidence
+
+Target-machine performance and manual RTL/scale checks live in:
+
+[`docs/baselines/N1_WINDOWS_BASELINE.md`](docs/baselines/N1_WINDOWS_BASELINE.md)
+
+Raw machine-specific benchmark files are ignored by Git and should not be committed by default.
+
 ## Open-source reuse without lock-in
 
 Planned production candidates include Qt, SQLite/FTS5, qpdf, Qt PDF/PDFium, Catch2, nlohmann/json, Google Benchmark, and small utilities only when they solve a measured need.
 
 Development-only tools include Qt QML Profiler, Tracy, RenderDoc, Windows Performance Analyzer/Recorder, Accessibility Insights, clang-format/tidy, GitHub Actions/CodeQL, and CodeGraph.
 
-Every dependency must pass license, maintenance, portability, abstraction, performance, and fixture tests. See [`docs/DEPENDENCIES_AND_TOOLS.md`](docs/DEPENDENCIES_AND_TOOLS.md) and the concrete [`docs/UPSTREAM_CATALOG.md`](docs/UPSTREAM_CATALOG.md).
-
-## What exists in N0
-
-- clean CMake/C++23 project;
-- minimal Qt Quick window proving the application boundary;
-- pure C++ interfaces for PDF, filesystem, library index, and document capability;
-- core smoke test;
-- Windows GitHub Actions workflow;
-- project-local CodeGraph/GitHub read-only MCP configuration;
-- comprehensive architecture/product/release/quality/security documentation;
-- checkpoint delivery rules.
-
-No PDF renderer, scanner, SQLite schema, bookmark editor, or migration code is intentionally implemented yet.
-
-### N0 automated verification
-
-Windows CI run 27 on commit `bb359876fc67d972b079bdaf643158952fb68638` passed:
-
-- public Qt installation;
-- CMake Configure;
-- Release Build;
-- CTest/core smoke.
-
-The build path is therefore Verified. N0 still requires explicit owner **PASS** before N1 begins.
+Every dependency must pass license, maintenance, portability, abstraction, performance, and fixture tests. See [`docs/DEPENDENCIES_AND_TOOLS.md`](docs/DEPENDENCIES_AND_TOOLS.md) and [`docs/UPSTREAM_CATALOG.md`](docs/UPSTREAM_CATALOG.md).
 
 ## Repository map
 
 ```text
 .
 ├── .codex/                  local agent/MCP configuration
-├── .github/workflows/       Windows build/test automation
+├── .github/workflows/       Windows Debug/Release build/test automation
 ├── docs/
+│   ├── baselines/           checkpoint performance/evidence summaries
 │   ├── decisions/           Architecture decision records
 │   ├── ARCHITECTURE.md
 │   ├── BUILDING.md
 │   ├── COMPETITIVE_BASELINE.md
 │   ├── CORE_WORKFLOWS.md
+│   ├── DATA_MODEL_AND_FORMATS.md
 │   ├── DEPENDENCIES_AND_TOOLS.md
 │   ├── DEVELOPMENT_WORKFLOW.md
 │   ├── FEATURE_SCOPE_2_0.md
@@ -136,15 +156,19 @@ The build path is therefore Verified. N0 still requires explicit owner **PASS** 
 │   ├── PLATFORM_ROADMAP.md
 │   ├── QUALITY_AND_TESTING.md
 │   ├── RELEASE_STRATEGY.md
+│   ├── RISK_REGISTER.md
 │   ├── SECURITY_MODEL.md
+│   ├── SUCCESS_METRICS.md
 │   ├── TECH_STACK.md
+│   ├── TOOLCHAIN.md
 │   ├── UPSTREAM_CATALOG.md
 │   └── UX_ACCESSIBILITY_AND_DESIGN.md
 ├── qml/                     presentation-only QML
 ├── src/
-│   ├── app/                 process/bootstrap layer
+│   ├── app/                 process/shell/diagnostics infrastructure
 │   └── core/                portable C++ contracts/domain logic
 ├── tests/                   native core and later integration tests
+├── tools/bench/             local physical-machine benchmark harnesses
 ├── AGENTS.md
 ├── CHANGELOG.md
 ├── CHECKPOINTS.md
@@ -154,33 +178,30 @@ The build path is therefore Verified. N0 still requires explicit owner **PASS** 
 └── CMakeLists.txt
 ```
 
-## Build the bootstrap on Windows
+## Build on Windows
 
-See [`docs/BUILDING.md`](docs/BUILDING.md) for canonical instructions.
+See [`docs/BUILDING.md`](docs/BUILDING.md) for canonical commands.
 
-The preferred product line is Qt 6.11.x, but public bootstrap CI currently uses Qt 6.10.3 because the public aqt Windows 6.11 repository installation path is failing upstream. N1 must establish one reproducible canonical Qt patch across local development and CI before feature work.
+In short:
+
+```powershell
+$env:CMAKE_PREFIX_PATH = 'C:\Qt\6.10.3\msvc2022_64'
+cmake --preset windows-msvc2022
+cmake --build --preset windows-debug
+ctest --preset windows-debug
+cmake --build --preset windows-release
+ctest --preset windows-release
+```
 
 ## Documentation hierarchy
 
-Start with [`docs/README.md`](docs/README.md). The core documents are:
-
-1. [`PLAN.md`](PLAN.md) — master product/engineering plan.
-2. [`CHECKPOINTS.md`](CHECKPOINTS.md) — exact execution order and alpha/beta/RC gates.
-3. [`docs/FEATURE_SCOPE_2_0.md`](docs/FEATURE_SCOPE_2_0.md) — what Windows 2.0 includes/excludes.
-4. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — architectural boundaries/threading/data flow.
-5. [`docs/CORE_WORKFLOWS.md`](docs/CORE_WORKFLOWS.md) — Index/Reader/Bookmark capability/failure/recovery contract.
-6. [`docs/TECH_STACK.md`](docs/TECH_STACK.md) + [`docs/DEPENDENCIES_AND_TOOLS.md`](docs/DEPENDENCIES_AND_TOOLS.md) — stack, open-source reuse, plugins/tools/agents.
-7. [`docs/QUALITY_AND_TESTING.md`](docs/QUALITY_AND_TESTING.md) + [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) — measurable acceptance/evidence.
-8. [`docs/SECURITY_MODEL.md`](docs/SECURITY_MODEL.md) — untrusted-document/privacy/security contract.
-9. [`docs/UX_ACCESSIBILITY_AND_DESIGN.md`](docs/UX_ACCESSIBILITY_AND_DESIGN.md) — UX, keyboard, Narrator, RTL design contract.
-10. [`docs/COMPETITIVE_BASELINE.md`](docs/COMPETITIVE_BASELINE.md) — how we learn from giants without becoming a clone.
-11. [`docs/RELEASE_STRATEGY.md`](docs/RELEASE_STRATEGY.md) — version/release rules.
-12. [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md) — branches/PRs/ADRs/AI-agent workflow.
-13. [`docs/PLATFORM_ROADMAP.md`](docs/PLATFORM_ROADMAP.md), [`docs/MIGRATION_FROM_FLUTTER.md`](docs/MIGRATION_FROM_FLUTTER.md), [`docs/LICENSING.md`](docs/LICENSING.md), [`docs/BUILDING.md`](docs/BUILDING.md).
+Start with [`docs/README.md`](docs/README.md). It points to the authoritative product, architecture, data, toolchain, quality, performance, security, accessibility, dependency, migration, and release documents.
 
 ## Current checkpoint
 
-**N0 — Native repository bootstrap:** **Ready for owner test**. N1 must not start before explicit owner PASS.
+**N1 — Windows toolchain + empty-shell baseline:** **In progress**.
+
+N2 must not begin until N1 has strict Debug/Release CI evidence, real Windows target-machine baseline measurements, RTL/scale manual checks, and explicit owner PASS.
 
 ## License
 

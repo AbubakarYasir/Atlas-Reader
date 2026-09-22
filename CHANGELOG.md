@@ -4,7 +4,38 @@ All notable changes to Atlas Reader Native are documented here.
 
 ## [Unreleased]
 
-### Native 2.0 bootstrap program
+### N1 — Windows toolchain + empty-shell baseline (`2.0.0-alpha.1`)
+
+- N0 was explicitly Accepted by the owner on 2026-09-22; N1 is now the active checkpoint.
+- Created dedicated branch `native-v2-n1-toolchain-baseline`.
+- Advanced native prerelease identifier from `alpha.0` to `alpha.1`.
+- Aligned local CMake presets with the Visual Studio 17 2022 x64 generator used by CI instead of using a separate Ninja path.
+- Added a Debug + Release Windows CI matrix.
+- Added strict Atlas-owned compiler policy: `/W4 /permissive- /Zc:__cplusplus`, with `/WX` in CI.
+- Added privacy-safe Qt logging categories for startup, UI, and performance diagnostics.
+- Added local-only numeric metrics for QML load, first swapped frame, resize frame intervals, and clean shutdown.
+- Added deterministic `--benchmark-shell` resize exercise and `--quit-after-ms` lifecycle test option.
+- Added `--language en|ar`, `--theme system|light|dark`, and `--metrics-file` shell test controls.
+- Added live English/LTR ↔ Arabic/RTL direction proof in the empty shell.
+- Added light/dark shell proof without introducing a production theming system.
+- Added `tools/bench/measure-windows-shell.ps1` for physical-machine startup, memory, CPU, and frame baseline measurement.
+- Added ignored `artifacts/` output for machine-specific benchmark data.
+- Added `docs/TOOLCHAIN.md` and `docs/baselines/N1_WINDOWS_BASELINE.md`.
+- Added ADR-0003 documenting the reproducible public Qt 6.10.3/MSVC 2022 alpha pin while Qt 6.11.2 remains the preferred newer compatibility target.
+- Added a self-contained Release qualification artifact produced with `windeployqt` so owner hardware testing does not require a local compiler/Qt install.
+- Added CI syntax validation for the PowerShell qualification scripts before packaging.
+- Physical attempt 1 on Windows 11 / Core i7-14650HX / RTX 4070 Laptop / 144 Hz verified English/LTR, Arabic/RTL, light/dark presentation, and no observed clipping/broken layout.
+- Physical attempt 1 also exposed two N1 blockers before PDF/index work begins:
+  - the v1 `WaitForInputIdle` process sampler could outlive Atlas auto-shutdown and corrupt memory/CPU readings;
+  - empty-shell first-frame startup was materially above the provisional N1 target (roughly 1.8–2.2 s on ordinary warm runs versus the <800 ms p95 engineering target).
+- Reworked the physical harness to wait for Atlas's own first-frame metric, reject dead-process memory/CPU samples, report validity counts, capture power/storage/DPI context, preserve packaged commit identity, and report startup p50/p95.
+- Added startup-stage instrumentation around `QGuiApplication`, argument parsing, QML-engine creation/load, and first frame so remaining startup cost can be attributed rather than guessed.
+- Switched the N1 shell from runtime-selected Fusion controls to compile-time `QtQuick.Controls.Basic`, Qt's lightweight/max-performance Controls baseline, while retaining Atlas-owned palette/RTL behavior.
+- Recorded attempt-1 raw and corrected evidence in `docs/baselines/N1_WINDOWS_BASELINE.md`; N1 remains In progress until corrective physical evidence satisfies or explicitly resolves the startup gate.
+- Updated README, INFO, BUILDING, docs index, and AGENTS rules for the active N1 checkpoint.
+- Kept PDF engines, qpdf, SQLite/FTS5, scanner, production Library/Reader/Bookmarks, annotations, migration, and installer code out of N1.
+
+### N0 — Native 2.0 bootstrap program (`2.0.0-alpha.0`)
 
 - Established C++23 + Qt Quick/QML + CMake successor architecture.
 - Added pure C++ contracts for document capabilities, PDF engine, filesystem, and library index.
@@ -26,26 +57,25 @@ All notable changes to Atlas Reader Native are documented here.
 - Added a product/engineering success scorecard so beta progression is measured by safety, correctness, responsiveness, accessibility, interoperability, and resource use rather than feature count.
 - Added a living risk register for engine, corruption, licensing, C++ safety, portability, accessibility, migration, packaging, scope, and performance risks.
 - Added `docs/N0_HANDOFF.md` as the explicit owner-review/acceptance checklist.
-- Updated master plan, README, INFO, build guide, stack guide, documentation index, and AGENTS rules around the completed 2.0 program.
 - Explicitly kept production PDF engines, SQLite, scanning, reader features, bookmarks, annotations, migration, and installer code out of N0.
 
-### Bootstrap CI findings and verification
+### N0 CI findings and verification
 
 Early CI runs exposed two useful setup defects:
 
-1. Public `aqtinstall` could resolve Qt 6.11.2 but could not locate its Windows repository XML, so bootstrap CI moved to a reproducibly public Qt 6.10.3 compatibility pin while N1 owns final Qt 6.11.x qualification.
-2. `CMakeLists.txt` incorrectly hard-required the exact Qt 6.11.2 patch while CI intentionally used a compatible patch. The application now declares a Qt 6.10+ API floor while exact patch selection remains a reproducible toolchain/CI policy.
+1. Public `aqtinstall` could resolve Qt 6.11.2 but could not locate its Windows repository XML, so public CI moved to a reproducibly installable Qt 6.10.3 pin.
+2. `CMakeLists.txt` incorrectly hard-required the exact Qt 6.11.2 patch while CI intentionally used a compatible patch. Application source now states the Qt 6.10 API floor while exact patch selection belongs to the toolchain policy.
 
-The Windows runner was also pinned to Windows 2022 with the Visual Studio 17 2022 x64 generator to match the MSVC 2022 Qt kit instead of inheriting changing `windows-latest` toolchains.
+The Windows runner was pinned to Windows 2022 with the Visual Studio 17 2022 x64 generator to match the MSVC 2022 Qt kit instead of inheriting changing `windows-latest` toolchains.
 
-Windows CI has subsequently passed the full Qt installation → CMake Configure → Release Build → CTest/core-smoke path on the native bootstrap branch, including the status/documentation handoff state. N0 is therefore **Verified / Ready for owner test**, but not Accepted until explicit owner PASS. Branch-head CI must remain green after documentation-only completion commits.
+N0 passed branch-head Windows Qt installation → CMake Configure → Release Build → CTest and was explicitly Accepted by the owner on 2026-09-22.
 
 ## Versioning
 
 The native successor belongs to the `2.0.0` release line.
 
-- `2.0.0-alpha.0` — N0 bootstrap (engineering-only)
-- `2.0.0-alpha.1` — N1 Windows/toolchain baseline
+- `2.0.0-alpha.0` — N0 bootstrap — **Accepted**
+- `2.0.0-alpha.1` — N1 Windows/toolchain baseline — **In progress**
 - `2.0.0-alpha.2` — N2 PDF-engine qualification
 - `2.0.0-beta.1` onward — usable feature checkpoints from N3
 - `2.0.0-rc.N` — release qualification

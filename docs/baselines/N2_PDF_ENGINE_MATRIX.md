@@ -1,7 +1,7 @@
 # N2 PDF Engine Qualification Matrix
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Open — Qt PDF/PDFium core, navigation, Unicode, search and basic malformed/password security evidence captured; performance, unsupported-security and qpdf pending**  
+**Status:** **Open — Qt PDF/PDFium core, navigation, Unicode, search, basic malformed/password security and repeated synthetic performance evidence captured; unsupported-security and qpdf pending**  
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Opened:** 2026-09-22
 
@@ -29,7 +29,7 @@ The first clean Qt PDF evidence baseline is bound to tested implementation SHA `
 - Windows checkout originally rewrote ASCII-heavy PDF fixtures through line-ending conversion. Repository-level `*.pdf -text` fixed the corruption. The earlier A003 empty-text symptom is therefore not retained as a Qt PDF defect.
 - A001–A005 strict Qt PDF CTests pass.
 
-Single-run timings are smoke evidence only, not benchmarks. Repeated p50/p95 work remains PENDING.
+Single-run timings in the original core probe remain smoke evidence only. Canonical repeated timing evidence is recorded separately below.
 
 ## N2.2 PDFium core evidence baseline — 2026-09-22
 
@@ -148,7 +148,7 @@ The source-order fully vocalized Arabic query is deliberately diagnostic rather 
 
 Qt `IndexOnPage` and PDFium character start/count are retained as engine-native evidence and are not treated as equivalent types. PDFium raw text rectangles and Qt search locations are also captured, but normalized cross-engine hit geometry remains PENDING.
 
-The probe's one-shot `search_ms` values are **not performance evidence**. In particular, the Qt search probe intentionally waits for a minimum observation/stability window before declaring the asynchronous model settled. Repeated performance work must use a dedicated benchmark contract.
+The probe's one-shot `search_ms` values are **not performance evidence**. In particular, the Qt search probe intentionally waits for a minimum observation/stability window before declaring the asynchronous model settled. Canonical repeated performance evidence is recorded separately below.
 
 ## N2 malformed + password security evidence baseline — 2026-09-22
 
@@ -191,6 +191,74 @@ The portable Atlas contract should therefore express semantic states such as mal
 
 The security probes record whether a password was supplied but never emit the password itself. Their one-shot `open_ms` values are diagnostic only and are not performance evidence.
 
+## N2 repeated performance evidence baseline — 2026-09-22
+
+Canonical repeated performance evidence is bound to implementation head:
+
+`ab5b00ed8b573145cd065ead2ad61163e6f2c232`
+
+- Dedicated `N2 PDF Performance` run `35689957375` — PASS.
+- PR checkout SHA `26fd5da647bf894c3a36419a82124c2d3524599f` is recorded separately from the implementation head.
+- Performance artifact `atlas-reader-n2-pdf-performance-ab5b00ed8b573145cd065ead2ad61163e6f2c232`.
+- Artifact ID `10678183252`.
+- Artifact digest `sha256:398854eec6bf88e8c6b3e2c47fb37b1f02eb14f54c6631013351c95780e3969e`.
+- The normal Windows CI run `35689957385` also passes on the same implementation head in both Debug and Release, preserving all 35 strict functional/security CTests plus Release evidence staging/upload.
+- The benchmark is isolated in its own mini-CMake project and workflow; `atlas_reader` and the production/domain targets still do not link either candidate read engine.
+- Environment: GitHub-hosted Windows Server 2022, MSVC 2022 x64 Release, Qt PDF 6.10.3, PDFium 156.0.8066.0 / `chromium/8066`.
+- Protocol: 3 excluded warmups + 31 measured iterations per operation, nearest-rank p50/p95, render page 0 at 612 x 792 pixels, and already-loaded in-memory PDF bytes for the open benchmark.
+- A003 is the ordinary small English/navigation fixture. A006 is the deterministic logical-Unicode fixture and must not be interpreted as realistic Arabic visual-render evidence.
+
+### Warm distributions
+
+All four benchmark JSONs report `passed: true`, `failures: []`, and the full 31 requested measured samples.
+
+| Fixture | Operation | Qt PDF p50 / p95 ms | PDFium p50 / p95 ms |
+|---|---|---:|---:|
+| A003 | open | 0.4461 / 0.4625 | 0.0102 / 0.0178 |
+| A003 | extract all pages | 0.1188 / 0.1214 | 0.0579 / 0.0598 |
+| A003 | known-hit search | 109.8045 / 125.0793 | 0.0627 / 0.0642 |
+| A003 | render 612 x 792 | 0.3176 / 0.3213 | 0.3290 / 0.3621 |
+| A006 | open | 0.9745 / 1.0490 | 0.0116 / 0.0189 |
+| A006 | extract all pages | 0.1079 / 0.1152 | 0.0376 / 0.0389 |
+| A006 | known-hit search | 328.7500 / 344.5818 | 0.0409 / 0.0414 |
+| A006 | render 612 x 792 | 0.4082 / 0.4411 | 0.3104 / 0.3486 |
+
+### First-operation evidence
+
+First-operation values are kept separate from warm percentiles because they may include lazy engine initialization:
+
+| Fixture | Operation | Qt PDF first ms | PDFium first ms |
+|---|---|---:|---:|
+| A003 | open | 0.6992 | 0.1834 |
+| A003 | extract all pages | 54.2246 | 2.1143 |
+| A003 | known-hit search | 100.9263 | 0.0787 |
+| A003 | render 612 x 792 | 0.9956 | 0.7940 |
+| A006 | open | 1.1194 | 0.0810 |
+| A006 | extract all pages | 0.5575 | 0.5111 |
+| A006 | known-hit search | 359.3860 | 0.0499 |
+| A006 | render 612 x 792 | 0.5745 | 0.4184 |
+
+The A003 Qt first extraction at 54.2246 ms is therefore preserved as first-use evidence and is not diluted into the warm distribution. The current evidence does not attribute that initialization cost to a specific internal subsystem.
+
+### Memory signal
+
+Only peak process working set is used as cross-engine evidence in this slice:
+
+| Fixture | Qt PDF peak MiB | PDFium peak MiB |
+|---|---:|---:|
+| A003 | 17.4414 | 13.7930 |
+| A006 | 15.3711 | 11.4492 |
+
+The JSON also retains before/after working-set deltas, but they are **not** cross-engine evidence because the first benchmark implementation snapshots candidate document lifetime at different points. Repeated-render growth/leak behavior remains PENDING until a lifetime-symmetric stress harness exists.
+
+### Interpretation limits
+
+On this tiny synthetic hosted-runner workload, PDFium shows materially lower observed warm open/extraction/search times, while render timing is of the same sub-millisecond order and differs by fixture. This is engineering evidence, not a final responsibility choice.
+
+Qt search specifically measures end-to-end completion through asynchronous `QPdfSearchModel` behavior until the known expected hit count is observed; PDFium search uses its synchronous text-search API. The large timing difference therefore must **not** be described as a pure internal algorithm speed ratio. The corpus is also far too small to establish large-document scaling, cache behavior, user-machine latency, real Arabic-font rendering cost, or memory growth under prolonged use.
+
+No absolute performance threshold is invented from these data. Final engine responsibility selection remains deferred until the remaining structural/preservation/security/provenance evidence is complete.
+
 ## Candidate identity
 
 | Item | Qt PDF | PDFium | qpdf |
@@ -231,10 +299,10 @@ The security probes record whether a password was supplied but never emit the pa
 | Crop-box correctness | PENDING | PENDING | |
 | Annotation rendering behavior | PENDING | PENDING | |
 | Transparent/background behavior | PENDING | PENDING | |
-| Warm render p50 | PENDING | PENDING | |
-| Warm render p95 | PENDING | PENDING | |
-| First render after open | PENDING | PENDING | Existing values are one-shot smoke only |
-| Repeated-render memory behavior | PENDING | PENDING | |
+| Warm render p50 | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Repeated A003/A006 612 x 792 synthetic benchmark recorded; not fidelity or large-page evidence |
+| Warm render p95 | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Repeated A003/A006 612 x 792 synthetic benchmark recorded |
+| First render on loaded document | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | First-operation values recorded separately; not a composite open+render latency metric |
+| Repeated-render memory behavior | PENDING | PENDING | Coarse peak working set captured; lifetime-symmetric growth/leak stress pending |
 
 ## Text extraction and search
 
@@ -251,9 +319,9 @@ The security probes record whether a password was supplied but never emit the pa
 | Mixed-script search | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A006 Arabic hit on mixed page + English hit on same page; broader bidi/query variants pending |
 | Hit page/index identity | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Shared page/per-page ordinal contract passes; vendor-native index semantics differ |
 | Hit geometry/destination | PENDING | PENDING | Raw locations/rectangles captured; coordinate normalization/equivalence not yet asserted |
-| First extraction time | PENDING | PENDING | Existing values are one-shot smoke only |
-| Repeated extraction time | PENDING | PENDING | |
-| Search completion time | PENDING | PENDING | Current search timing is one-shot probe plumbing, not benchmark evidence |
+| First extraction time | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Dedicated A003/A006 first-operation evidence recorded; synthetic tiny corpus |
+| Repeated extraction time | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | 31 measured warm samples after 3 warmups on A003/A006 |
+| Search completion time | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Repeated end-to-end known-hit benchmark recorded; Qt asynchronous vs PDFium synchronous API semantics are not identical |
 
 ## Links, outlines and destinations
 
@@ -278,7 +346,7 @@ The security probes record whether a password was supplied but never emit the pa
 | Parallel Atlas tasks respect contract | PENDING | Production adapter/task queue does not exist yet |
 | Acquisition pinned by exact revision/tag | **PASS** | `chromium/8066`, distributor commit recorded |
 | Binary/archive checksum pinned | **PASS** | SHA-256 verified before extraction |
-| Clean CI acquisition reproducible | **PASS** | Multiple Debug/Release runs acquire and verify exact package |
+| Clean CI acquisition reproducible | **PASS** | Multiple Debug/Release and dedicated performance runs acquire and verify exact package |
 | Runtime binary/dependency footprint | PENDING | Raw `pdfium.dll` size known; product delta/transitive footprint pending |
 | Upgrade/rollback procedure documented | **PASS WITH LIMITATION** | Exact pin/remove path documented; production source/update policy unresolved |
 
@@ -349,11 +417,11 @@ A candidate/responsibility is not accepted if evidence shows any of the followin
 
 | Responsibility | Selected implementation | Status | Evidence |
 |---|---|---|---|
-| Document open/read metadata | PENDING | PENDING | |
+| Document open/read metadata | PENDING | PENDING | Candidate correctness + small synthetic performance evidence exists; no final selection yet |
 | Page geometry/labels | PENDING | PENDING | |
-| Page raster rendering | PENDING | PENDING | |
-| Text extraction | PENDING | PENDING | Candidate Unicode evidence exists; no final responsibility selection yet |
-| Search | PENDING | PENDING | Candidate Unicode/search evidence exists; normalization contract still required |
+| Page raster rendering | PENDING | PENDING | Repeated timing exists; fidelity/high-DPI/real-world evidence still pending |
+| Text extraction | PENDING | PENDING | Candidate Unicode + repeated synthetic timing evidence exists; no final responsibility selection yet |
+| Search | PENDING | PENDING | Candidate Unicode/search + repeated synthetic timing evidence exists; normalization contract still required |
 | Links/navigation | PENDING | PENDING | Candidate evidence exists; no final responsibility selection yet |
 | Outline read | PENDING | PENDING | Candidate evidence exists; no final responsibility selection yet |
 | Security/capability inspection | PENDING | PENDING | Basic malformed/password reader evidence exists; unsupported-security/permissions/signatures and qpdf inspection remain pending |

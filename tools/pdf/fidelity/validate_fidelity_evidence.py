@@ -24,8 +24,6 @@ EXPECTED_SAMPLES = {
     1: {
         "crop_magenta": (255, 0, 255, 255),
         "crop_cyan": (0, 255, 255, 255),
-        "crop_top_left_white": (255, 255, 255, 255),
-        "crop_bottom_right_white": (255, 255, 255, 255),
     },
     2: {
         "rotated_top_left_blue": (0, 0, 255, 255),
@@ -33,6 +31,15 @@ EXPECTED_SAMPLES = {
         "rotated_bottom_left_yellow": (255, 255, 0, 255),
         "rotated_bottom_right_green": (0, 128, 0, 255),
     },
+}
+
+# Native blank-page behavior differs by API. QPdfDocument::render() leaves
+# untouched pixels transparent. The PDFium qualification probe deliberately
+# pre-fills its caller-owned bitmap opaque white before rendering. Both are
+# valid as long as Atlas treats background/compositing as an adapter policy.
+EXPECTED_BLANK = {
+    "qt-pdf": (0, 0, 0, 0),
+    "pdfium": (255, 255, 255, 255),
 }
 
 TOLERANCE = 24
@@ -56,6 +63,11 @@ def find_render(page: dict[str, Any], scale: int, annotations: bool) -> dict[str
 def validate_engine(evidence: dict[str, Any]) -> list[str]:
     failures: list[str] = []
     engine = str(evidence.get("engine", "unknown"))
+    if engine not in EXPECTED_BLANK:
+        failures.append(f"{engine}:unknown-background-policy")
+        return failures
+    blank = EXPECTED_BLANK[engine]
+
     if not evidence.get("passed"):
         failures.append(f"{engine}:probe-not-passed")
 
@@ -98,6 +110,17 @@ def validate_engine(evidence: dict[str, Any]) -> list[str]:
                         f"{engine}:page-{page_index}-scale-{scale}-{name}:{actual}!~{expected}"
                     )
 
+            if page_index == 1:
+                for name in ("crop_top_left_white", "crop_bottom_right_white"):
+                    if name not in samples:
+                        failures.append(f"{engine}:page-1-scale-{scale}-sample-missing:{name}")
+                        continue
+                    actual = rgba(samples[name])
+                    if not close_color(actual, blank):
+                        failures.append(
+                            f"{engine}:page-1-scale-{scale}-{name}:{actual}!~background{blank}"
+                        )
+
         if page_index == 0:
             for scale in (1, 2):
                 without = find_render(page, scale, False)
@@ -107,8 +130,8 @@ def validate_engine(evidence: dict[str, Any]) -> list[str]:
                     continue
                 plain = rgba(without["samples"]["annotation_probe"])
                 annotated = rgba(with_annotations["samples"]["annotation_probe"])
-                if not close_color(plain, (255, 255, 255, 255)):
-                    failures.append(f"{engine}:annotation-off-not-white-scale-{scale}:{plain}")
+                if not close_color(plain, blank):
+                    failures.append(f"{engine}:annotation-off-background-scale-{scale}:{plain}!~{blank}")
                 if not close_color(annotated, (255, 0, 255, 255)):
                     failures.append(f"{engine}:annotation-on-not-magenta-scale-{scale}:{annotated}")
 
@@ -128,16 +151,21 @@ def main() -> int:
 
     result = {
         "schema": "atlas.n2.a011-fidelity-validation.v1",
-        "fixture_sha256": "ebf82d49391c4df27f50afc2eb785aa828effbdeb85039ec2bb4c26d1896f824",
+        "fixture_sha256": "b25d6b6716fbbcf095cbd68bcf57913d4e14bca3e64be19f513c35fd3ddadd29",
         "engines": ["qt-pdf", "pdfium"],
         "scales": [1, 2],
         "color_tolerance": TOLERANCE,
+        "blank_background_policy": {
+            "qt-pdf": "native transparent untouched pixels",
+            "pdfium": "caller-owned bitmap prefilled opaque white by qualification probe",
+        },
         "checks": [
             "effective-visible-geometry",
             "cropbox-visibility",
             "inherent-rotation-orientation",
             "solid-color-landmarks-1x-2x",
-            "annotation-off-on-sentinel",
+            "native-background-behavior",
+            "annotation-off-on-explicit-appearance-sentinel",
         ],
         "rotation_evidence": "raw /Rotate is independently validated by pypdf; each engine must then expose the rotated effective size and render the rotated semantic landmarks at 1x and 2x",
         "failures": failures,

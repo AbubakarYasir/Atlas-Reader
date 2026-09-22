@@ -91,7 +91,7 @@
     {
       "id": "A006",
       "file": "generated/A006_unicode_semantics.pdf",
-      "sha256": "1b69b6ce646ad3052d0a8f967efb4d2540569641e3f946ca8e533d9c9655d019",
+      "sha256": "efe3aa5f9538a8a18af71e4517c9f1e10980db394107c0e16141b03ec7058f0b",
       "source": "synthetic-atlas",
       "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
       "created_by": "tests/fixtures/pdf/source/generate_a006_unicode_semantics.py with pypdf 5.9.0",
@@ -105,7 +105,7 @@
         {"title": "اردو", "page_index": 3}
       ],
       "visual_fidelity_fixture": false,
-      "notes": "Synthetic Type3 glyphs and ToUnicode CMap deliberately separate logical Unicode extraction/search semantics from Arabic/Urdu font shaping and raster fidelity. Do not use A006 as visual-shaping evidence.",
+      "notes": "Synthetic Type3 glyphs map one PDF code to one Unicode scalar through ToUnicode. RTL content is stored in visual codepoint order so extraction can restore logical order without moving combining marks ahead of their base letters. This deliberately separates logical Unicode extraction/search semantics from Arabic/Urdu shaping and raster fidelity; do not use A006 as visual-shaping evidence.",
       "mutation_allowed": true,
       "password_fixture": false
     }

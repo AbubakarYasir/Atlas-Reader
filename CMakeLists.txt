@@ -10,6 +10,7 @@ project(
 set(ATLAS_PRERELEASE "alpha.2" CACHE STRING "Atlas prerelease identifier")
 set(ATLAS_VERSION_STRING "${PROJECT_VERSION}-${ATLAS_PRERELEASE}")
 option(ATLAS_WARNINGS_AS_ERRORS "Treat Atlas compiler warnings as errors" OFF)
+option(ATLAS_ENABLE_PDFIUM_PROBE "Build the N2 PDFium qualification probe" OFF)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,6 +22,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # N2 qualification probe; atlas_reader and atlas_core do not depend on Qt PDF.
 find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Quick Qml QuickControls2 Pdf)
 qt_standard_project_setup(REQUIRES 6.10)
+
+if(ATLAS_ENABLE_PDFIUM_PROBE)
+    # N2.2 only: the package is acquired/pinned outside the product dependency
+    # graph and exposed through PDFium_DIR. This does not make PDFium a product
+    # dependency; only atlas_pdfium_probe links it.
+    find_package(PDFium REQUIRED)
+endif()
 
 function(atlas_enable_warnings target)
     if(MSVC)
@@ -111,6 +119,34 @@ target_link_libraries(atlas_qt_pdf_probe
 )
 atlas_enable_warnings(atlas_qt_pdf_probe)
 
+# N2.2: competing PDFium qualification executable. PDFium's public API contract
+# is not thread-safe, so this probe deliberately performs all calls serially on
+# one thread. The product shell/core remain unlinked.
+if(ATLAS_ENABLE_PDFIUM_PROBE)
+    add_executable(atlas_pdfium_probe tools/pdf/pdfium_probe.cpp)
+    target_compile_definitions(atlas_pdfium_probe PRIVATE
+        ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}"
+        ATLAS_PDFIUM_PIN="chromium/8066 (156.0.8066.0)"
+    )
+    target_link_libraries(atlas_pdfium_probe
+        PRIVATE
+            Qt6::Core
+            pdfium
+    )
+    atlas_enable_warnings(atlas_pdfium_probe)
+
+    if(WIN32)
+        add_custom_command(
+            TARGET atlas_pdfium_probe
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    $<TARGET_FILE:pdfium>
+                    $<TARGET_FILE_DIR:atlas_pdfium_probe>
+            VERBATIM
+        )
+    endif()
+endif()
+
 enable_testing()
 
 add_executable(atlas_core_smoke tests/core_smoke.cpp)
@@ -175,3 +211,58 @@ add_test(
         --expect-text-contains "Atlas N2 Fixture A005 page 1"
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A005_links_only.pdf"
 )
+
+if(ATLAS_ENABLE_PDFIUM_PROBE)
+    add_test(
+        NAME n2_pdfium_a001_simple_text
+        COMMAND atlas_pdfium_probe
+            --fixture-id A001
+            --expect-pages 1
+            --expect-labels 1
+            --expect-text-contains "Atlas N2 Fixture A001"
+            --render-page 0
+            --render-width 612
+            --render-height 792
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A001_simple_text.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_a002_geometry_labels
+        COMMAND atlas_pdfium_probe
+            --fixture-id A002
+            --expect-pages 3
+            --expect-labels i,ii,1
+            --expect-text-contains "Atlas N2 Fixture A002 page 1"
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A002_geometry_labels.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_a003_outlines_links_text
+        COMMAND atlas_pdfium_probe
+            --fixture-id A003
+            --expect-pages 3
+            --expect-labels 1,2,3
+            --expect-text-contains "Atlas N2 Fixture A003 page 1"
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A003_outlines_links.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_a004_outlines_only_text
+        COMMAND atlas_pdfium_probe
+            --fixture-id A004
+            --expect-pages 3
+            --expect-labels 1,2,3
+            --expect-text-contains "Atlas N2 Fixture A004 page 1"
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A004_outlines_only.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_a005_links_only_text
+        COMMAND atlas_pdfium_probe
+            --fixture-id A005
+            --expect-pages 3
+            --expect-labels 1,2,3
+            --expect-text-contains "Atlas N2 Fixture A005 page 1"
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A005_links_only.pdf"
+    )
+endif()

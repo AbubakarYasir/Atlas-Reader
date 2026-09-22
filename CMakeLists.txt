@@ -205,15 +205,15 @@ add_test(
 )
 
 # Both read engines preserve every vocalized code point but reverse the order
-# of combining marks within a base-letter cluster. This raw substring is the
-# NFD/canonical-equivalent form observed for the first phrase; the full-page
-# raw SHA and limitation are recorded in the N2 matrix.
+# of combining marks within a base-letter cluster. This full raw line has
+# SHA-256 376cdb244082d82602d5f60ab1edff730450a55d53b5b9bcb2eaf2755ce76cb0
+# and is NFD/canonically equivalent to the source fixture string.
 add_test(
     NAME n2_qt_pdf_a006_vocalized_arabic
     COMMAND atlas_qt_pdf_probe
         --fixture-id A006
         --expect-pages 4
-        --expect-text-contains "بِسْمِ اللَّهِ"
+        --expect-text-contains "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
 )
 
@@ -320,7 +320,7 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
         COMMAND atlas_pdfium_probe
             --fixture-id A006
             --expect-pages 4
-            --expect-text-contains "بِسْمِ اللَّهِ"
+            --expect-text-contains "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
             "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
     )
 

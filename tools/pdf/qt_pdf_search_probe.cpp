@@ -159,13 +159,14 @@ int main(int argc, char* argv[])
     const int effectiveTimeoutMs = timeoutMs.has_value() && *timeoutMs > 0 ? *timeoutMs : 5000;
     constexpr qint64 minimumObservationMs = 500;
     constexpr qint64 stableWindowMs = 150;
-    int lastCount = model.rowCount();
+    const QModelIndex rootIndex;
+    int lastCount = model.rowCount(rootIndex);
     qint64 lastChangeMs = timer.elapsed();
     bool settled = false;
 
     while (timer.elapsed() < effectiveTimeoutMs) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 25);
-        const int currentCount = model.rowCount();
+        const int currentCount = model.rowCount(rootIndex);
         if (currentCount != lastCount) {
             lastCount = currentCount;
             lastChangeMs = timer.elapsed();
@@ -192,8 +193,9 @@ int main(int argc, char* argv[])
 
     QJsonArray hits;
     QHash<int, int> nextOrdinalOnPage;
-    for (int row = 0; row < model.rowCount(); ++row) {
-        const QModelIndex index = model.index(row, 0, QModelIndex());
+    const int hitCount = model.rowCount(rootIndex);
+    for (int row = 0; row < hitCount; ++row) {
+        const QModelIndex index = model.index(row, 0, rootIndex);
         const int page = model.data(index, pageRole).toInt();
         const int normalizedOrdinal = nextOrdinalOnPage.value(page, 0);
         nextOrdinalOnPage.insert(page, normalizedOrdinal + 1);

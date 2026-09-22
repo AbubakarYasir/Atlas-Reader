@@ -12,6 +12,8 @@
 #include <QPdfSelection>
 #include <QStringList>
 
+#include <cstddef>
+#include <cstdio>
 #include <optional>
 
 namespace {

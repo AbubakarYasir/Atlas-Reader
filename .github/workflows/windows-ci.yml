@@ -97,12 +97,44 @@ jobs:
           modules: 'qtpdf'
           cache: true
 
+      - name: Acquire pinned PDFium N2.2 probe package
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/bblanchon/pdfium-binaries/releases/download/chromium/8066/pdfium-win-x64.tgz'
+          $expected = '739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020'
+          $archive = Join-Path $env:RUNNER_TEMP 'pdfium-win-x64-chromium-8066.tgz'
+          $root = Join-Path $env:RUNNER_TEMP 'pdfium-chromium-8066'
+
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) {
+            throw "PDFium package SHA-256 mismatch: $actual != $expected"
+          }
+
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          tar.exe -xf $archive -C $root
+          if ($LASTEXITCODE -ne 0) {
+            throw "PDFium package extraction failed with exit code $LASTEXITCODE"
+          }
+
+          foreach ($required in @('PDFiumConfig.cmake', 'include/fpdfview.h', 'lib/pdfium.dll.lib', 'bin/pdfium.dll')) {
+            if (-not (Test-Path (Join-Path $root $required))) {
+              throw "Pinned PDFium package missing expected path: $required"
+            }
+          }
+
+          "PDFium_DIR=$root" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ATLAS_PDFIUM_ARCHIVE_SHA256=$actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Pinned PDFium package verified: chromium/8066 -> $actual"
+
       - name: Report toolchain
         shell: pwsh
         run: |
           cmake --version
           git --version
           Write-Host "Qt root: $env:QT_ROOT_DIR"
+          Write-Host "PDFium root: $env:PDFium_DIR"
+          Write-Host "PDFium archive SHA-256: $env:ATLAS_PDFIUM_ARCHIVE_SHA256"
           Write-Host "Configuration: ${{ matrix.configuration }}"
           Write-Host 'Checkpoint: N2 PDF engine qualification'
           if (-not (Test-Path (Join-Path $env:QT_ROOT_DIR 'lib/cmake/Qt6Pdf'))) {
@@ -127,6 +159,8 @@ jobs:
           -G "Visual Studio 17 2022"
           -A x64
           -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          -DPDFium_DIR="$env:PDFium_DIR"
+          -DATLAS_ENABLE_PDFIUM_PROBE=ON
           "-DATLAS_PRERELEASE:STRING=alpha.2"
           -DATLAS_WARNINGS_AS_ERRORS=ON
 
@@ -146,32 +180,38 @@ jobs:
 
       # This is an engineering smoke/evidence artifact for the active N2 branch.
       # It is not the already-Accepted N1 artifact and not a user release.
-      - name: Stage N2 Windows engineering artifact + Qt PDF evidence
+      - name: Stage N2 Windows engineering artifact + engine evidence
         if: matrix.configuration == 'Release'
         shell: pwsh
         run: |
           $stage = Join-Path $PWD 'artifact/n2-windows-x64'
           $docs = Join-Path $stage 'docs'
-          $probeStage = Join-Path $stage 'probes/qt-pdf'
+          $qtProbeStage = Join-Path $stage 'probes/qt-pdf'
+          $pdfiumProbeStage = Join-Path $stage 'probes/pdfium'
           $fixtureStage = Join-Path $stage 'fixtures/pdf'
-          $evidence = Join-Path $stage 'evidence/qt-pdf'
+          $qtEvidence = Join-Path $stage 'evidence/qt-pdf'
+          $pdfiumEvidence = Join-Path $stage 'evidence/pdfium'
 
-          New-Item -ItemType Directory -Force -Path $stage, $docs, $probeStage, $fixtureStage, $evidence | Out-Null
+          New-Item -ItemType Directory -Force -Path $stage, $docs, $qtProbeStage, $pdfiumProbeStage, $fixtureStage, $qtEvidence, $pdfiumEvidence | Out-Null
 
           $exe = Join-Path $PWD 'build/ci-Release/Release/atlas_reader.exe'
-          $probe = Join-Path $PWD 'build/ci-Release/Release/atlas_qt_pdf_probe.exe'
-          if (-not (Test-Path $exe)) {
-            throw "Release executable not found at $exe"
-          }
-          if (-not (Test-Path $probe)) {
-            throw "Qt PDF probe not found at $probe"
+          $qtProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_qt_pdf_probe.exe'
+          $pdfiumProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_pdfium_probe.exe'
+          $pdfiumDll = Join-Path $PWD 'build/ci-Release/Release/pdfium.dll'
+          foreach ($required in @($exe, $qtProbe, $pdfiumProbe, $pdfiumDll)) {
+            if (-not (Test-Path $required)) {
+              throw "Required Release artifact not found at $required"
+            }
           }
 
           Copy-Item $exe (Join-Path $stage 'atlas_reader.exe')
           Copy-Item 'qt.conf' (Join-Path $stage 'qt.conf')
-          Copy-Item $probe (Join-Path $probeStage 'atlas_qt_pdf_probe.exe')
+          Copy-Item $qtProbe (Join-Path $qtProbeStage 'atlas_qt_pdf_probe.exe')
+          Copy-Item $pdfiumProbe (Join-Path $pdfiumProbeStage 'atlas_pdfium_probe.exe')
+          Copy-Item $pdfiumDll (Join-Path $pdfiumProbeStage 'pdfium.dll')
           Copy-Item 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md' (Join-Path $docs 'N2_PDF_ENGINE_QUALIFICATION_PLAN.md')
           Copy-Item 'docs/baselines/N2_PDF_ENGINE_MATRIX.md' (Join-Path $docs 'N2_PDF_ENGINE_MATRIX.md')
+          Copy-Item 'docs/baselines/N2_PDFIUM_PROVENANCE.md' (Join-Path $docs 'N2_PDFIUM_PROVENANCE.md')
           Copy-Item 'tests/fixtures/pdf/manifest.json' (Join-Path $fixtureStage 'manifest.json')
           Copy-Item 'tests/fixtures/pdf/generated/*.pdf' $fixtureStage
           if (Test-Path 'artifacts/n2/fixture-validation.json') {
@@ -183,56 +223,49 @@ jobs:
             @{
               Id = 'A001'
               File = 'A001_simple_text.pdf'
-              ExpectFailure = $false
               Args = @('--expect-pages','1','--expect-labels','1','--expect-text-contains','Atlas N2 Fixture A001','--render-page','0','--render-width','612','--render-height','792')
             },
             @{
               Id = 'A002'
               File = 'A002_geometry_labels.pdf'
-              ExpectFailure = $false
               Args = @('--expect-pages','3','--expect-labels','i,ii,1','--expect-text-contains','Atlas N2 Fixture A002 page 1')
             },
             @{
               Id = 'A003'
               File = 'A003_outlines_links.pdf'
-              ExpectFailure = $false
               Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A003 page 1')
             },
             @{
               Id = 'A004'
               File = 'A004_outlines_only.pdf'
-              ExpectFailure = $false
               Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A004 page 1')
             },
             @{
               Id = 'A005'
               File = 'A005_links_only.pdf'
-              ExpectFailure = $false
               Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A005 page 1')
             }
           )
 
           foreach ($case in $probeCases) {
             $fixture = Join-Path $fixtureRoot $case.File
-            $output = Join-Path $evidence "$($case.Id).json"
             $args = @('--fixture-id', $case.Id) + $case.Args + @($fixture)
-            & $probe @args | Set-Content -Encoding UTF8 $output
-            $exitCode = $LASTEXITCODE
 
-            if ($case.ExpectFailure) {
-              if ($exitCode -eq 0) {
-                Get-Content $output
-                throw "Known Qt PDF sentinel $($case.Id) unexpectedly passed; update N2 evidence before proceeding"
-              }
-              Write-Host "Qt PDF known limitation reproduced: $($case.Id) -> $output"
+            $qtOutput = Join-Path $qtEvidence "$($case.Id).json"
+            & $qtProbe @args | Set-Content -Encoding UTF8 $qtOutput
+            if ($LASTEXITCODE -ne 0) {
+              Get-Content $qtOutput
+              throw "Qt PDF probe failed for fixture $($case.Id) with exit code $LASTEXITCODE"
             }
-            elseif ($exitCode -ne 0) {
-              Get-Content $output
-              throw "Qt PDF probe failed for fixture $($case.Id) with exit code $exitCode"
+            Write-Host "Qt PDF probe PASS: $($case.Id) -> $qtOutput"
+
+            $pdfiumOutput = Join-Path $pdfiumEvidence "$($case.Id).json"
+            & $pdfiumProbe @args | Set-Content -Encoding UTF8 $pdfiumOutput
+            if ($LASTEXITCODE -ne 0) {
+              Get-Content $pdfiumOutput
+              throw "PDFium probe failed for fixture $($case.Id) with exit code $LASTEXITCODE"
             }
-            else {
-              Write-Host "Qt PDF probe PASS: $($case.Id) -> $output"
-            }
+            Write-Host "PDFium probe PASS: $($case.Id) -> $pdfiumOutput"
           }
 
           $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
@@ -241,9 +274,14 @@ jobs:
             throw "windeployqt failed for atlas_reader with exit code $LASTEXITCODE"
           }
 
-          & $deploy --release (Join-Path $probeStage 'atlas_qt_pdf_probe.exe')
+          & $deploy --release (Join-Path $qtProbeStage 'atlas_qt_pdf_probe.exe')
           if ($LASTEXITCODE -ne 0) {
             throw "windeployqt failed for atlas_qt_pdf_probe with exit code $LASTEXITCODE"
+          }
+
+          & $deploy --release (Join-Path $pdfiumProbeStage 'atlas_pdfium_probe.exe')
+          if ($LASTEXITCODE -ne 0) {
+            throw "windeployqt failed for atlas_pdfium_probe with exit code $LASTEXITCODE"
           }
 
           @(
@@ -256,9 +294,12 @@ jobs:
             'Generator: Visual Studio 17 2022 x64'
             'Qt baseline: 6.10.3 MSVC 2022 64-bit'
             'N2.1 probe: Qt PDF 6.10.3 via qtpdf module'
+            'N2.2 probe: PDFium 156.0.8066.0 / chromium/8066 via pinned bblanchon Windows x64 package'
+            'PDFium archive SHA-256: 739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020'
+            'PDFium call model: serialized single-thread only'
             'Product shell Qt PDF linkage: none'
-            'Fixture integrity gate: pypdf 5.9.0 + manifest SHA-256; A003 restored byte-exact'
-            'Independent fixture validation: pypdf 5.9.0'
+            'Product shell PDFium linkage: none'
+            'Fixture integrity gate: pypdf 5.9.0 + manifest SHA-256'
             'Controls style: compile-time Basic'
             'Inherited Windows font backend: GDI via qt.conf'
             'PDF engine production selection: none; ADR-0004 remains Proposed'

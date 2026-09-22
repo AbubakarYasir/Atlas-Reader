@@ -1,7 +1,7 @@
 # N2 PDF Engine Qualification Matrix
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Open — Qt PDF/PDFium core, navigation, Unicode, search, basic malformed/password security and repeated synthetic performance evidence captured; unsupported-security and qpdf pending**  
+**Status:** **Open — Qt PDF/PDFium core, navigation, Unicode, search, basic malformed/password security, repeated synthetic performance, and qpdf structural/transformation evidence captured; restricted-security/signatures/fidelity and final responsibility selection pending**  
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Opened:** 2026-09-22
 
@@ -33,7 +33,7 @@ Single-run timings in the original core probe remain smoke evidence only. Canoni
 
 ## N2.2 PDFium core evidence baseline — 2026-09-22
 
-The first passing PDFium core evidence is bound to implementation head `7874794e14b9cea54ec0723c15963621f65bebf6`.
+The first passing PDFium core evidence is bound to implementation head `7874794e14b9cea54f73b07fe2707bbaea5a8`.
 
 - GitHub Actions run `35680738681` — Debug and Release PASS.
 - PDFium 156.0.8066.0 / `chromium/8066`.
@@ -259,17 +259,48 @@ Qt search specifically measures end-to-end completion through asynchronous `QPdf
 
 No absolute performance threshold is invented from these data. Final engine responsibility selection remains deferred until the remaining structural/preservation/security/provenance evidence is complete.
 
+## N2 qpdf structural/security/transformation evidence baseline — 2026-09-22
+
+Canonical qpdf evidence is bound to implementation head:
+
+`35888d8d09510c2366f68537fd5d2f2d3e05ea2d`
+
+- `N2 qpdf Qualification` run `35691066745` — PASS.
+- Normal Windows CI run `35691066727` — Debug and Release PASS on the same implementation head.
+- `N2 PDF Performance` run `35691066809` — PASS on the same implementation head.
+- Artifact `atlas-reader-n2-qpdf-35888d8d09510c2366f68537fd5d2f2d3e05ea2d`.
+- Artifact ID `10678394708`.
+- Artifact digest `sha256:fe41e20373ab9bcad2930d2664eb58d848dd1250887d01925b4a736c0457ac99`.
+- qpdf 12.4.1 official Windows MSVC64 ZIP, asset ID `533019080`, size `28,165,367` bytes.
+- ZIP SHA-256 `3cd016cd433ef7232e42f4c13348a49cc14907a3c7278ef4f99120593126f7a6`, verified before extraction.
+- The current evidence qualifies the first-party CLI distribution only; a linked-library production route would need a separate exact build/dependency baseline.
+
+Current canonical behavior:
+
+- A003/A006 structural `--check` passes and qpdf JSON v2 exposes page/outline structure, including Arabic/Urdu Unicode titles.
+- A007 hard-truncated malformed input returns `--check` exit `2`, so it is not silently considered clean.
+- A008 encrypted-state/password-state inspection is scriptable; `--show-encryption` exposes `R=2`, `P=-4` and effective permission capabilities even without the correct password.
+- A003/A006 no-op rewrites re-check clean and independently reopen in pypdf 5.9.0.
+- The preservation snapshot proves equality of page count/labels, page text hashes, MediaBox/CropBox/rotation, decoded page content streams, outlines/destinations, annotations, Document Info, XMP stream hash and attachments for the tested no-op rewrites.
+- Controlled A003 title update `Chapter 2` → `Atlas Controlled Outline` passes with unrelated preservation invariants intact.
+- Controlled A006 Unicode title update `اردو` → `اردو — فوائد` passes with unrelated preservation invariants intact.
+- qpdf may renumber indirect objects during serialization; PDF object numbers are therefore explicitly not Atlas portable/domain identity.
+
+Focused detail is recorded in `N2_QPDF_BASELINE.md` and `N2_QPDF_PROVENANCE.md`.
+
+Remaining limitations include restricted-permission evidence, owner-password distinction, unsupported-security classification, signatures/certification visibility and rewrite consequence, broader mutation forms, and production CLI-vs-library packaging/notice decisions.
+
 ## Candidate identity
 
 | Item | Qt PDF | PDFium | qpdf |
 |---|---|---|---|
 | Intended N2 role | read/render/text/search/navigation candidate | read/render/text/search/navigation candidate | structural/security/transformation candidate |
-| Exact version/revision tested | **6.10.3** | **156.0.8066.0 / `chromium/8066`** | PENDING |
-| Acquisition path | Qt desktop MSVC 2022 x64 + `qtpdf` | **PASS WITH LIMITATION** — pinned community non-V8 Windows x64 package, probe-only | PENDING |
-| Compiler/build path | **PASS** — CMake + MSVC 2022 | **PASS WITH LIMITATION** — published `PDFiumConfig.cmake` + MSVC; official source-build route unresolved | PENDING |
-| Package/archive SHA-256 | PENDING — Qt archive hash not separately captured | **PASS** — `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020` | PENDING |
-| Primary license surface | Qt module terms require release review | PDFium/Chromium third-party notices; distributor repo MIT; production audit PENDING | Apache-2.0/MIT port terms to verify on exact pin |
-| Production distribution decision | PENDING | PENDING — community binary remains probe-only | PENDING |
+| Exact version/revision tested | **6.10.3** | **156.0.8066.0 / `chromium/8066`** | **12.4.1** |
+| Acquisition path | Qt desktop MSVC 2022 x64 + `qtpdf` | **PASS WITH LIMITATION** — pinned community non-V8 Windows x64 package, probe-only | **PASS WITH LIMITATION** — pinned first-party official MSVC64 CLI ZIP; linked-library route not qualified |
+| Compiler/build path | **PASS** — CMake + MSVC 2022 | **PASS WITH LIMITATION** — published `PDFiumConfig.cmake` + MSVC; official source-build route unresolved | **N/A for current slice** — official prebuilt CLI; library build path pending if selected |
+| Package/archive SHA-256 | PENDING — Qt archive hash not separately captured | **PASS** — `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020` | **PASS** — `3cd016cd433ef7232e42f4c13348a49cc14907a3c7278ef4f99120593126f7a6` |
+| Primary license surface | Qt module terms require release review | PDFium/Chromium third-party notices; distributor repo MIT; production audit PENDING | **Apache-2.0 upstream**; exact binary notice/dependency audit PENDING |
+| Production distribution decision | PENDING | PENDING — community binary remains probe-only | PENDING — CLI-vs-library and notices/dependencies unresolved |
 
 ## Read/open and geometry
 
@@ -354,52 +385,52 @@ No absolute performance threshold is invented from these data. Final engine resp
 
 | Capability | qpdf result | Notes / fixture IDs |
 |---|---|---|
-| Valid document structural open | PENDING | |
-| Malformed-but-readable diagnostics | PENDING | |
-| Encryption algorithm/revision inspection | PENDING | |
-| User/owner password state | PENDING | |
-| Permission restriction inspection | PENDING | |
-| Page tree/basic geometry access | PENDING | |
-| Outline read hierarchy/order | PENDING | |
-| Outline destination read | PENDING | |
-| Signature/certification visibility needed by Atlas | PENDING | |
-| No-op/rewrite reopen check | PENDING | copied fixture only |
-| No-op/rewrite unrelated structure preservation | PENDING | |
-| Controlled outline transformation | PENDING | synthetic/redistributable fixture only |
-| Output `qpdf --check`/library validation | PENDING | |
-| Independent-reader reopen | PENDING | |
-| Exact qpdf version recorded | PENDING | |
-| Exact vcpkg baseline/override recorded | PENDING | |
+| Valid document structural open | **PASS WITH LIMITATION** | A003/A006 `--check` clean; synthetic corpus |
+| Malformed-but-readable diagnostics | **PASS WITH LIMITATION** | A007 hard truncation returns exit 2; recoverable malformed corpus pending |
+| Encryption algorithm/revision inspection | **PASS WITH LIMITATION** | A008 exposes R=2/P=-4 and method/capability state; broader schemes pending |
+| User/owner password state | **PASS WITH LIMITATION** | A008 no/wrong/correct user-password paths scriptable; owner-password distinction pending |
+| Permission restriction inspection | **PASS WITH LIMITATION** | qpdf exposes effective permission flags, but A008 permissions are all allowed; restricted fixture pending |
+| Page tree/basic geometry access | **PASS WITH LIMITATION** | Structural JSON + preservation snapshot covers current page boxes/rotation; broader raw geometry corpus pending |
+| Outline read hierarchy/order | **PASS** | A003/A006 expected depth-first hierarchy and Unicode titles visible |
+| Outline destination read | **PASS WITH LIMITATION** | Tested A003/A006 destinations preserved; broader destination forms pending |
+| Signature/certification visibility needed by Atlas | PENDING | signed/certified fixture not yet qualified |
+| No-op/rewrite reopen check | **PASS** | A003/A006 rewrite, qpdf re-check and pypdf reopen all pass |
+| No-op/rewrite unrelated structure preservation | **PASS WITH LIMITATION** | explicit invariant set passes on A003/A006; not universal corpus proof |
+| Controlled outline transformation | **PASS WITH LIMITATION** | existing ASCII + Unicode title-only mutation passes; add/remove/reparent pending |
+| Output `qpdf --check`/library validation | **PASS** | rewritten and mutated outputs re-check clean |
+| Independent-reader reopen | **PASS** | pypdf 5.9.0 independent reopen/snapshot comparison |
+| Exact qpdf version recorded | **PASS** | qpdf 12.4.1 |
+| Exact vcpkg baseline/override recorded | **N/A for current CLI slice** | official prebuilt CLI; linked library would require separate baseline |
 
 ## Preservation invariants for mutation probes
 
 | Invariant | Expected | qpdf evidence |
 |---|---|---|
-| Page count | unchanged unless operation explicitly changes pages | PENDING |
-| Page dimensions/rotation | unchanged | PENDING |
-| Page content streams | unchanged when outline-only operation is under test | PENDING |
-| Existing annotations | unchanged | PENDING |
-| Existing outline nodes not targeted | unchanged | PENDING |
-| Document Info | preserved unless explicitly edited | PENDING |
-| XMP presence/content | preserved unless explicitly edited | PENDING |
-| Encryption policy | preserved unless explicitly changed | PENDING |
+| Page count | unchanged unless operation explicitly changes pages | **PASS** — A003/A006 no-op and title mutation |
+| Page dimensions/rotation | unchanged | **PASS** — MediaBox/CropBox/rotation snapshot equality |
+| Page content streams | unchanged when outline-only operation is under test | **PASS** — decoded content stream hashes equal |
+| Existing annotations | unchanged | **PASS** — semantic annotation snapshots equal |
+| Existing outline nodes not targeted | unchanged | **PASS** — title/depth/destination comparison around one-node mutation |
+| Document Info | preserved unless explicitly edited | **PASS** |
+| XMP presence/content | preserved unless explicitly edited | **PASS** — raw XMP stream hash equality when present |
+| Encryption policy | preserved unless explicitly changed | **PASS WITH LIMITATION** — current rewrite/mutation fixtures A003/A006 are unencrypted; encrypted-write preservation not yet qualified |
 | Signatures/certification consequence | detected and never silently represented as preserved integrity | PENDING |
-| Attachments/other unrelated structures | preserved when writer touches document | PENDING |
+| Attachments/other unrelated structures | preserved when writer touches document | **PASS WITH LIMITATION** — snapshot equality on current deterministic fixtures |
 
 ## Build and maintenance comparison
 
 | Criterion | Qt PDF | PDFium | qpdf |
 |---|---|---|---|
-| Fits existing CMake flow | **PASS** | **PASS WITH LIMITATION** — probe package integrates; official source build differs | PENDING |
-| Fits existing MSVC toolchain | **PASS** | **PASS** for pinned Windows probe package | PENDING |
-| Extra toolchain required | **PASS** | **PASS WITH LIMITATION** — no extra compiler for binary probe; official source build needs Chromium tooling | PENDING |
-| CI setup cost | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | PENDING |
-| Package size delta | PENDING | PENDING | PENDING |
-| Runtime dependency delta | PENDING | PENDING | PENDING |
-| Cross-platform path | PENDING | PENDING | PENDING |
-| License/notices complexity | PENDING | PENDING — production notice audit required | PENDING |
-| Reproducible pinning | **PASS WITH LIMITATION** | **PASS** for N2 probe | PENDING |
-| Rollback/replaceability | **PASS** | **PASS** | PENDING |
+| Fits existing CMake flow | **PASS** | **PASS WITH LIMITATION** — probe package integrates; official source build differs | **PASS WITH LIMITATION** — isolated CLI workflow fits current qualification; production linked-library route not qualified |
+| Fits existing MSVC toolchain | **PASS** | **PASS** for pinned Windows probe package | **PASS** for official MSVC64 CLI package |
+| Extra toolchain required | **PASS** | **PASS WITH LIMITATION** — no extra compiler for binary probe; official source build needs Chromium tooling | **PASS WITH LIMITATION** — no extra compiler for CLI probe; linked-library build may differ |
+| CI setup cost | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** — exact first-party ZIP acquisition/checksum + Python validator/probes |
+| Package size delta | PENDING | PENDING | **PASS WITH LIMITATION** — qualification ZIP size recorded; product runtime/install delta pending |
+| Runtime dependency delta | PENDING | PENDING | PENDING — exact binary-package dependency footprint still requires product audit |
+| Cross-platform path | PENDING | PENDING | PENDING — current evidence is Windows CLI only |
+| License/notices complexity | PENDING | PENDING — production notice audit required | **PASS WITH LIMITATION** — Apache-2.0 upstream recorded; binary notices/dependencies audit pending |
+| Reproducible pinning | **PASS WITH LIMITATION** | **PASS** for N2 probe | **PASS** — exact 12.4.1 asset ID/SHA and version gate |
+| Rollback/replaceability | **PASS** | **PASS** | **PASS** — isolated workflow/probes; no product linkage |
 
 ## Hard blockers
 
@@ -423,9 +454,9 @@ A candidate/responsibility is not accepted if evidence shows any of the followin
 | Text extraction | PENDING | PENDING | Candidate Unicode + repeated synthetic timing evidence exists; no final responsibility selection yet |
 | Search | PENDING | PENDING | Candidate Unicode/search + repeated synthetic timing evidence exists; normalization contract still required |
 | Links/navigation | PENDING | PENDING | Candidate evidence exists; no final responsibility selection yet |
-| Outline read | PENDING | PENDING | Candidate evidence exists; no final responsibility selection yet |
-| Security/capability inspection | PENDING | PENDING | Basic malformed/password reader evidence exists; unsupported-security/permissions/signatures and qpdf inspection remain pending |
-| Structural transformation/write | PENDING | PENDING | |
-| Independent output validation | PENDING | PENDING | |
+| Outline read | PENDING | PENDING | Qt/PDFium semantic evidence plus qpdf structural read evidence exists; no final selection yet |
+| Security/capability inspection | PENDING | PENDING | Qt/PDFium malformed/password evidence plus qpdf R/P/capability inspection exists; restricted permissions/unsupported schemes/signatures remain pending |
+| Structural transformation/write | PENDING | PENDING | qpdf no-op preservation and controlled ASCII/Unicode existing-title mutation evidence exists; broader mutation/signed-state safety pending |
+| Independent output validation | PENDING | PENDING | qpdf `--check` + independent pypdf reopen proven on current rewrite/mutation outputs; final architecture not yet selected |
 
 The final entries above must match accepted ADR-0004. No decision is implied by candidate ordering or intermediate PASS rows.

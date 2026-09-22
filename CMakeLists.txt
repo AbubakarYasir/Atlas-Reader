@@ -87,6 +87,11 @@ target_compile_definitions(atlas_qt_pdf_search_probe PRIVATE ATLAS_VERSION_STRIN
 target_link_libraries(atlas_qt_pdf_search_probe PRIVATE Qt6::Core Qt6::Pdf)
 atlas_enable_warnings(atlas_qt_pdf_search_probe)
 
+add_executable(atlas_qt_pdf_security_probe tools/pdf/qt_pdf_security_probe.cpp)
+target_compile_definitions(atlas_qt_pdf_security_probe PRIVATE ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}")
+target_link_libraries(atlas_qt_pdf_security_probe PRIVATE Qt6::Core Qt6::Pdf)
+atlas_enable_warnings(atlas_qt_pdf_security_probe)
+
 if(ATLAS_ENABLE_PDFIUM_PROBE)
     add_executable(atlas_pdfium_probe tools/pdf/pdfium_probe.cpp)
     target_compile_definitions(atlas_pdfium_probe PRIVATE
@@ -106,6 +111,15 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
     target_link_libraries(atlas_pdfium_search_probe PRIVATE Qt6::Core pdfium)
     atlas_enable_warnings(atlas_pdfium_search_probe)
 
+    add_executable(atlas_pdfium_security_probe tools/pdf/pdfium_security_probe.cpp)
+    target_compile_definitions(atlas_pdfium_security_probe PRIVATE
+        ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}"
+        ATLAS_PDFIUM_PIN="chromium/8066"
+        ATLAS_PDFIUM_VERSION="156.0.8066.0"
+    )
+    target_link_libraries(atlas_pdfium_security_probe PRIVATE Qt6::Core pdfium)
+    atlas_enable_warnings(atlas_pdfium_security_probe)
+
     if(WIN32)
         add_custom_command(
             TARGET atlas_pdfium_probe
@@ -121,6 +135,14 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     $<TARGET_FILE:pdfium>
                     $<TARGET_FILE_DIR:atlas_pdfium_search_probe>
+            VERBATIM
+        )
+        add_custom_command(
+            TARGET atlas_pdfium_security_probe
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    $<TARGET_FILE:pdfium>
+                    $<TARGET_FILE_DIR:atlas_pdfium_security_probe>
             VERBATIM
         )
     endif()
@@ -305,6 +327,44 @@ add_test(
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
 )
 
+# A007/A008 are deterministic security fixtures regenerated before CI tests.
+# Password values are public test data; probes only emit password_supplied.
+add_test(
+    NAME n2_qt_pdf_security_a007_malformed
+    COMMAND atlas_qt_pdf_security_probe
+        --fixture-id A007-malformed
+        --expect-load-error invalid-file-format
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A007_malformed_truncated.pdf"
+)
+
+add_test(
+    NAME n2_qt_pdf_security_a008_no_password
+    COMMAND atlas_qt_pdf_security_probe
+        --fixture-id A008-no-password
+        --expect-load-error incorrect-password
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A008_password_rc4_40.pdf"
+)
+
+add_test(
+    NAME n2_qt_pdf_security_a008_wrong_password
+    COMMAND atlas_qt_pdf_security_probe
+        --fixture-id A008-wrong-password
+        --password atlas-wrong
+        --expect-load-error incorrect-password
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A008_password_rc4_40.pdf"
+)
+
+add_test(
+    NAME n2_qt_pdf_security_a008_correct_password
+    COMMAND atlas_qt_pdf_security_probe
+        --fixture-id A008-correct-password
+        --password atlas-user
+        --expect-load-error none
+        --expect-pages 1
+        --expect-labels 1
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A008_password_rc4_40.pdf"
+)
+
 if(ATLAS_ENABLE_PDFIUM_PROBE)
     add_test(
         NAME n2_pdfium_a001_simple_text
@@ -465,5 +525,41 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
             --expect-first-page 1
             --expect-first-ordinal 0
             "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_security_a007_malformed
+        COMMAND atlas_pdfium_security_probe
+            --fixture-id A007-malformed
+            --expect-load-error format
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A007_malformed_truncated.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_security_a008_no_password
+        COMMAND atlas_pdfium_security_probe
+            --fixture-id A008-no-password
+            --expect-load-error password
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A008_password_rc4_40.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_security_a008_wrong_password
+        COMMAND atlas_pdfium_security_probe
+            --fixture-id A008-wrong-password
+            --password atlas-wrong
+            --expect-load-error password
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A008_password_rc4_40.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_security_a008_correct_password
+        COMMAND atlas_pdfium_security_probe
+            --fixture-id A008-correct-password
+            --password atlas-user
+            --expect-load-error success
+            --expect-pages 1
+            --expect-labels 1
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A008_password_rc4_40.pdf"
     )
 endif()

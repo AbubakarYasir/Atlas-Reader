@@ -37,6 +37,12 @@ This project is a community binary distribution and explicitly states that it is
 
 The release also publishes an attestation artifact (`pdfium-attestation.json`), but Atlas does not treat the existence of that file alone as production supply-chain approval.
 
+## Licensing scope
+
+The pinned `bblanchon/pdfium-binaries` repository itself carries the MIT License at the pinned distribution commit. That describes the distributor repository's own code/packaging material; it is **not** sufficient evidence that distributing the bundled PDFium binary requires only that MIT notice.
+
+PDFium and its bundled third-party components have their own upstream licenses/notices. Before any production selection, Atlas must inventory the exact notices supplied or required for the pinned engine build and determine the distribution obligations for the platforms Atlas intends to ship. Until that audit is recorded in `docs/LICENSING.md` and the final ADR, the community binary route remains probe-only.
+
 ## Acquisition rule
 
 Qualification CI must download the **tagged** asset URL for `chromium/8066`, calculate SHA-256 locally, and fail before extraction if it does not equal:

@@ -2,17 +2,17 @@
 
 **Checkpoint:** N1 — Windows toolchain + empty-shell baseline  
 **Release:** `2.0.0-alpha.1`  
-**Status:** **Final qualification — keyboard activation retest pending**
+**Status:** **Accepted — owner PASS recorded 2026-09-22**
 
 This file preserves the N1 investigation history and points to the final qualification record in `N1_FINAL_QUALIFICATION.md`.
 
-## Canonical N1 result
+## Canonical accepted N1 result
 
-The final runtime candidate is built from exact head:
+The physically qualified and owner-accepted exact-head artifact is built from:
 
-`99b693713d3548fe3c309f37cfdd81be51eae94a`
+`73f567cf2c557f185371d7f944ebf6d69453105a`
 
-Windows CI run `35669134924` passed:
+Windows CI push run `35669313160` passed:
 
 - strict Debug Configure → Build → CTest;
 - strict Release Configure → Build → CTest;
@@ -21,17 +21,17 @@ Windows CI run `35669134924` passed:
 - `windeployqt` portable staging;
 - canonical artifact upload.
 
-Final artifact:
+Accepted artifact:
 
-`atlas-reader-n1-windows-x64-99b693713d3548fe3c309f37cfdd81be51eae94a`
+`atlas-reader-n1-windows-x64-73f567cf2c557f185371d7f944ebf6d69453105a`
 
 Digest:
 
-`sha256:c2a3248ea6d6332cc0ab92081fc4422591c9fd6826bce693ba68a76985610680`
+`sha256:0fa2b638c5e17e90a30f43c117f4c5f74b509fade31108cfe9119e7a86c17d88`
 
-The final head differs from the fully measured GDI candidate only by the contained keyboard-input correction and documentation. The correction explicitly maps Enter/Return on the two focused N1 buttons to `AbstractButton.animateClick()`; it does not alter layout, font backend, startup path, theme logic, DPI behavior, or product scope.
+The owner physically retested the contained keyboard-input correction on this artifact and confirmed that focused button activation passes. All other manual N1 checks had already passed and remained applicable because the correction touched only keyboard activation.
 
-For the complete final metrics, tradeoff statement, and manual checklist, see `N1_FINAL_QUALIFICATION.md`.
+For the complete final metrics, tradeoff statement, and acceptance record, see `N1_FINAL_QUALIFICATION.md`.
 
 ---
 
@@ -114,13 +114,15 @@ Because the English five-warm-sample p95 was too sensitive to one spike, the sam
 - private memory: `97.979 MiB`;
 - idle CPU: `1.107%`.
 
-The English confirmation was bimodal: most launches were approximately 312–394 ms, while a contiguous slow window reached approximately 831–1185 ms and then recovered without a code/configuration change. Pre-QML, QML-load, and post-QML-to-first-frame stages all rose together. N1 records this as measured system/workstation launch variance. The strict provisional `<800 ms p95` target therefore requires an explicit owner-approved tradeoff for English.
+The English confirmation was bimodal: most launches were approximately 312–394 ms, while a contiguous slow window reached approximately 831–1185 ms and then recovered without a code/configuration change. Pre-QML, QML-load, and post-QML-to-first-frame stages all rose together. N1 records this as measured system/workstation launch variance.
+
+The strict provisional `<800 ms p95` target was therefore not met for English on this uncontrolled Balanced-power workstation run. On 2026-09-22 the owner explicitly accepted the measured English startup tradeoff: median approximately 366 ms, p95 approximately 1.015 s, worst observed warm approximately 1.185 s in the confirmation run.
 
 ---
 
-## Manual qualification
+## Manual qualification — Accepted
 
-The owner reports all manual N1 checks pass except the keyboard activation defect discovered before acceptance:
+The owner confirmed all required N1 manual checks pass:
 
 - [x] English/LTR layout;
 - [x] Arabic/RTL mirroring;
@@ -131,9 +133,9 @@ The owner reports all manual N1 checks pass except the keyboard activation defec
 - [x] manual 200% Windows scale check;
 - [x] repeated open/close leaves no Atlas process;
 - [x] Tab traversal reaches the controls;
-- [ ] post-fix Enter/Return activation retest on both controls.
+- [x] post-fix Enter/Return activation on the focused controls.
 
-The Enter/Return defect was found **before N1 acceptance** and is fixed on final head `99b693713d3548fe3c309f37cfdd81be51eae94a`. Previously passed evidence does not need to be repeated for this contained input-only correction.
+The Enter/Return defect was found **before N1 acceptance** and corrected before the final owner PASS. The tested final artifact is the exact-head `73f567cf2c557f185371d7f944ebf6d69453105a` package recorded above.
 
 ## Product scope held during N1
 
@@ -148,16 +150,18 @@ N1 contains no:
 - migration implementation;
 - installer implementation.
 
-## N1 acceptance gate
-
-N1 becomes Accepted only when:
+## N1 acceptance gate — Complete
 
 1. exact-head Debug + Release CI passes — **PASS**;
 2. final portable artifact is produced — **PASS**;
 3. physical performance evidence is valid — **PASS**;
 4. 100%/200% and LTR/RTL/theme/process manual checks pass — **PASS**;
-5. Enter/Return keyboard activation retest passes — **PENDING**;
-6. owner explicitly accepts the measured English startup tradeoff — **PENDING**;
-7. owner explicitly records `N1 PASS` — **PENDING**.
+5. Enter/Return keyboard activation retest passes — **PASS**;
+6. owner explicitly accepts the measured English startup tradeoff — **PASS**;
+7. owner explicitly records `N1 PASS` — **PASS, 2026-09-22**.
 
-After explicit acceptance, `docs/DEVELOPMENT_WORKFLOW.md` applies: **a passed checkpoint cannot be reopened without new evidence of a user-facing regression.**
+## Acceptance and checkpoint immutability
+
+**N1 is Accepted.** The owner explicitly recorded: `Keyboard activation passes. I accept the measured English startup tradeoff. N1 PASS.`
+
+Per `docs/DEVELOPMENT_WORKFLOW.md`, **a passed checkpoint cannot be reopened without new evidence of a user-facing regression.** New preferences, theoretical risks, retrospective stricter criteria, or unrelated toolchain churn do not reopen N1. Any later work belongs to the appropriate later checkpoint unless concrete user-facing regression evidence demonstrates that an accepted N1 behavior has actually regressed.

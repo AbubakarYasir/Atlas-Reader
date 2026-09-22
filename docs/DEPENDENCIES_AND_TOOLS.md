@@ -261,3 +261,49 @@ Do not accept speculative refactors solely because an AI says they are cleaner/f
 No IDE is mandatory. Recommended developer conveniences:
 
 ### Visual Studio / VS Code / Qt Creator
+
+- CMake integration;
+- clangd/C++ language services;
+- QML language tooling;
+- CMake Tools where applicable;
+- EditorConfig;
+- clang-format integration;
+- Git/GitHub integration.
+
+Qt Creator is especially useful for QML Profiler and Qt diagnostics; Visual Studio remains useful for MSVC/native Windows profiling/debugging. We should not force a single editor when the build is command-line reproducible.
+
+## 12. Packaging tools
+
+Do not lock a Windows installer technology before N11. Evaluate at packaging time against licensing, update/repair/uninstall behavior, file association, signing, CI automation, and maintenance cost.
+
+WiX is a known option but current WiX project terms/maintenance requirements must be reviewed at selection time. CPack/NSIS/other approaches remain candidates. Packaging technology must never own application configuration/data formats.
+
+## 13. Tools/repositories intentionally rejected or deferred
+
+- Electron/Tauri/WebView as the Atlas UI runtime — rejected for the core document canvas architecture.
+- proprietary PDF SDK as an architectural dependency — rejected unless an explicit later business decision changes licensing/distribution and an open abstraction remains.
+- MuPDF integration — deferred because licensing/distribution needs a separate deliberate review; do not casually add it merely for performance.
+- cloud telemetry/crash upload — deferred; Atlas is local-first and must not silently transmit user/document data.
+- OCR engines — out of Windows 2.0 scope.
+- AI document analysis — out of Windows 2.0 scope.
+
+## 14. Dependency update policy
+
+Dependency updates are not background churn. Each update PR/checkpoint records:
+
+- old/new version;
+- security relevance;
+- license changes;
+- API/ABI impact;
+- binary size change where material;
+- benchmark delta for hot-path dependencies;
+- fixture/regression result;
+- rollback plan.
+
+Major dependency upgrades require an ADR when they change architecture or data behavior.
+
+For N2, exact dependency revision is part of the evidence. Changing a candidate version after measurements requires clearly identifying which results are stale and rerunning affected rows.
+
+## References checked
+
+Bootstrap references remain part of repository history. N2 additionally rechecked current Qt PDF APIs/licensing, current PDFium public API/build instructions, qpdf releases/docs, the Microsoft vcpkg qpdf port, and current availability of a vcpkg PDFium port on 2026-09-22. Detailed operational notes are in `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md`, `docs/baselines/N2_PDFIUM_PROVENANCE.md`, and `docs/UPSTREAM_CATALOG.md`.

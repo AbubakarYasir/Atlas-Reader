@@ -6,7 +6,7 @@
 
 ## Exact qualification pin
 
-Atlas N2 uses the first-party qpdf **12.4.1** Windows MSVC 64-bit release asset for the initial structural/security CLI qualification.
+Atlas N2 uses the first-party qpdf **12.4.1** Windows MSVC 64-bit release asset for structural/security/transformation CLI qualification.
 
 - Upstream repository: `qpdf/qpdf`
 - Release tag: `v12.4.1`
@@ -25,7 +25,7 @@ No floating `latest` identifier is used anywhere in the canonical qualification 
 
 The N2 Windows qualification downloads the exact official GitHub release ZIP above, verifies its SHA-256 before extraction, recursively locates the packaged `qpdf.exe`, and then requires `qpdf --version` to report `12.4.1` before any fixture is processed.
 
-This first qpdf slice intentionally qualifies the **official CLI distribution**, not a package-manager reconstruction and not a locally built qpdf library. Therefore:
+This qpdf slice intentionally qualifies the **official CLI distribution**, not a package-manager reconstruction and not a locally built qpdf library. Therefore:
 
 - a vcpkg baseline/override is **N/A for this CLI evidence slice**;
 - if Atlas later links qpdf as a production library, that library acquisition/build route must receive its own exact baseline, compiler configuration, transitive dependency and checksum/provenance record before N2 can accept it for shipping.
@@ -40,15 +40,22 @@ A production distribution decision still requires review of the exact binary pac
 
 qpdf is **not** being introduced as a competing page renderer in this checkpoint. Its intended N2 responsibilities are structural/security inspection and controlled transformation/validation, especially where Atlas must reason about PDF object structure or preserve unrelated content while modifying portable research metadata.
 
-The initial evidence slice covers:
+Canonical implementation `35888d8d09510c2366f68537fd5d2f2d3e05ea2d` now qualifies:
 
-1. structural check/JSON inspection on existing deterministic fixtures;
-2. encrypted/password-state inspection on A008;
+1. structural check/JSON inspection on A003/A006;
+2. encrypted/password-state and permission/security-revision inspection on A008;
 3. malformed-input diagnostics on A007;
 4. no-op rewrite and independent semantic-preservation checks on A003/A006;
-5. qpdf re-check and independent pypdf reopen of rewritten outputs.
+5. qpdf re-check and independent pypdf reopen of rewritten outputs;
+6. controlled existing-outline title update through qpdf JSON v2 `--update-from-json` on A003;
+7. controlled Unicode Urdu/Arabic existing-outline title update on A006;
+8. preservation of page/text/content/annotation/Info/XMP/attachment state and outline destination/hierarchy around those title-only transformations.
 
-Controlled outline mutation is a separate follow-up slice. qpdf JSON v2 supports bidirectional PDF/JSON and object-level updates, but Atlas will not mutate outline objects until the exact v12.4.1 object layout has been captured from our fixtures and explicit preservation assertions are in place.
+The first controlled-mutation diagnostic also establishes that qpdf may renumber indirect objects while serializing output. Atlas must therefore never use qpdf/PDF object numbers as portable bookmark, annotation or domain identity.
+
+The detailed evidence and current limitations are recorded in `N2_QPDF_BASELINE.md`.
+
+Still outside the proven mutation envelope are adding/removing/reparenting outline nodes, signature/certification consequences, unsupported encryption/security schemes and a restricted-permission fixture.
 
 ## Rollback / replaceability
 

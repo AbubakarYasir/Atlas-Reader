@@ -85,15 +85,16 @@ jobs:
           }
           Write-Host 'Inherited N1 Windows font backend config OK: GDI'
 
-      # Accepted N1 public Windows baseline inherited by N2. Candidate-specific
-      # PDF probe tooling/dependencies are added explicitly in focused commits.
-      - name: Install Qt
+      # Accepted N1 public Windows baseline inherited by N2. Qt PDF is installed
+      # explicitly for the N2.1 probe; atlas_reader itself does not link Qt6::Pdf.
+      - name: Install Qt + Qt PDF probe module
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.10.3'
           host: 'windows'
           target: 'desktop'
           arch: 'win64_msvc2022_64'
+          modules: 'qtpdf'
           cache: true
 
       - name: Report toolchain
@@ -104,6 +105,10 @@ jobs:
           Write-Host "Qt root: $env:QT_ROOT_DIR"
           Write-Host "Configuration: ${{ matrix.configuration }}"
           Write-Host 'Checkpoint: N2 PDF engine qualification'
+          if (-not (Test-Path (Join-Path $env:QT_ROOT_DIR 'lib/cmake/Qt6Pdf'))) {
+            throw 'Qt PDF CMake package is missing after qtpdf module installation'
+          }
+          Write-Host 'Qt PDF module available: Qt6Pdf'
 
       - name: Configure
         shell: pwsh
@@ -129,30 +134,77 @@ jobs:
           -C ${{ matrix.configuration }}
           --output-on-failure
 
-      # This is an engineering smoke artifact for the active N2 branch. It is
-      # not the already-Accepted N1 qualification artifact and not a user release.
-      - name: Stage N2 Windows engineering artifact
+      # This is an engineering smoke/evidence artifact for the active N2 branch.
+      # It is not the already-Accepted N1 artifact and not a user release.
+      - name: Stage N2 Windows engineering artifact + Qt PDF evidence
         if: matrix.configuration == 'Release'
         shell: pwsh
         run: |
           $stage = Join-Path $PWD 'artifact/n2-windows-x64'
-          New-Item -ItemType Directory -Force -Path $stage | Out-Null
-          New-Item -ItemType Directory -Force -Path (Join-Path $stage 'docs') | Out-Null
+          $docs = Join-Path $stage 'docs'
+          $probeStage = Join-Path $stage 'probes/qt-pdf'
+          $fixtureStage = Join-Path $stage 'fixtures/pdf'
+          $evidence = Join-Path $stage 'evidence/qt-pdf'
+
+          New-Item -ItemType Directory -Force -Path $stage, $docs, $probeStage, $fixtureStage, $evidence | Out-Null
 
           $exe = Join-Path $PWD 'build/ci-Release/Release/atlas_reader.exe'
+          $probe = Join-Path $PWD 'build/ci-Release/Release/atlas_qt_pdf_probe.exe'
           if (-not (Test-Path $exe)) {
             throw "Release executable not found at $exe"
+          }
+          if (-not (Test-Path $probe)) {
+            throw "Qt PDF probe not found at $probe"
           }
 
           Copy-Item $exe (Join-Path $stage 'atlas_reader.exe')
           Copy-Item 'qt.conf' (Join-Path $stage 'qt.conf')
-          Copy-Item 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md' (Join-Path $stage 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md')
-          Copy-Item 'docs/baselines/N2_PDF_ENGINE_MATRIX.md' (Join-Path $stage 'docs/N2_PDF_ENGINE_MATRIX.md')
+          Copy-Item $probe (Join-Path $probeStage 'atlas_qt_pdf_probe.exe')
+          Copy-Item 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md' (Join-Path $docs 'N2_PDF_ENGINE_QUALIFICATION_PLAN.md')
+          Copy-Item 'docs/baselines/N2_PDF_ENGINE_MATRIX.md' (Join-Path $docs 'N2_PDF_ENGINE_MATRIX.md')
+          Copy-Item 'tests/fixtures/pdf/manifest.json' (Join-Path $fixtureStage 'manifest.json')
+          Copy-Item 'tests/fixtures/pdf/generated/*.pdf' $fixtureStage
+
+          $fixtureRoot = Join-Path $PWD 'tests/fixtures/pdf/generated'
+          $probeCases = @(
+            @{
+              Id = 'A001'
+              File = 'A001_simple_text.pdf'
+              Args = @('--expect-pages','1','--expect-labels','1','--expect-text-contains','Atlas N2 Fixture A001','--render-page','0','--render-width','612','--render-height','792')
+            },
+            @{
+              Id = 'A002'
+              File = 'A002_geometry_labels.pdf'
+              Args = @('--expect-pages','3','--expect-labels','i,ii,1','--expect-text-contains','Atlas N2 Fixture A002 page 1')
+            },
+            @{
+              Id = 'A003'
+              File = 'A003_outlines_links.pdf'
+              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A003 page 1')
+            }
+          )
+
+          foreach ($case in $probeCases) {
+            $fixture = Join-Path $fixtureRoot $case.File
+            $output = Join-Path $evidence "$($case.Id).json"
+            $args = @('--fixture-id', $case.Id) + $case.Args + @($fixture)
+            & $probe @args | Set-Content -Encoding UTF8 $output
+            if ($LASTEXITCODE -ne 0) {
+              Get-Content $output
+              throw "Qt PDF probe failed for fixture $($case.Id) with exit code $LASTEXITCODE"
+            }
+            Write-Host "Qt PDF probe PASS: $($case.Id) -> $output"
+          }
 
           $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
           & $deploy --release --qmldir (Join-Path $PWD 'qml') (Join-Path $stage 'atlas_reader.exe')
           if ($LASTEXITCODE -ne 0) {
-            throw "windeployqt failed with exit code $LASTEXITCODE"
+            throw "windeployqt failed for atlas_reader with exit code $LASTEXITCODE"
+          }
+
+          & $deploy --release (Join-Path $probeStage 'atlas_qt_pdf_probe.exe')
+          if ($LASTEXITCODE -ne 0) {
+            throw "windeployqt failed for atlas_qt_pdf_probe with exit code $LASTEXITCODE"
           }
 
           @(
@@ -164,10 +216,12 @@ jobs:
             'Configuration: Release'
             'Generator: Visual Studio 17 2022 x64'
             'Qt baseline: 6.10.3 MSVC 2022 64-bit'
+            'N2.1 probe: Qt PDF 6.10.3 via qtpdf module'
+            'Product shell Qt PDF linkage: none'
             'Controls style: compile-time Basic'
             'Inherited Windows font backend: GDI via qt.conf'
-            'PDF engine selection: none yet unless a focused N2 probe in this commit says otherwise'
-            'Purpose: N2 engineering/CI smoke only; not a user release and not N1 requalification'
+            'PDF engine production selection: none; ADR-0004 remains Proposed'
+            'Purpose: N2 engineering/CI evidence only; not a user release and not N1 requalification'
           ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N2_BUILD_INFO.txt')
 
       - name: Upload N2 Windows engineering artifact

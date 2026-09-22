@@ -157,6 +157,13 @@ add_test(
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A003_outlines_links.pdf"
 )
 
+# This is an evidence sentinel, not a waiver. Qt PDF 6.10.3 currently returns
+# empty text for A003 while the independently validated fixture contains text.
+# WILL_FAIL keeps normal CI green only while that exact candidate failure is
+# reproduced; an unexpected future PASS forces this test red so the matrix and
+# ADR evidence must be revisited instead of silently becoming stale.
+set_tests_properties(n2_qt_pdf_a003_outlines_links_text PROPERTIES WILL_FAIL TRUE)
+
 add_test(
     NAME n2_qt_pdf_a004_outlines_only_text
     COMMAND atlas_qt_pdf_probe

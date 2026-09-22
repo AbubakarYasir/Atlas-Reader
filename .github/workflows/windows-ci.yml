@@ -110,6 +110,16 @@ jobs:
           }
           Write-Host 'Qt PDF module available: Qt6Pdf'
 
+      - name: Validate N2 synthetic PDF fixtures independently
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
+          python tests/fixtures/pdf/validate_n2_fixtures.py --output artifacts/n2/fixture-validation.json
+          if ($LASTEXITCODE -ne 0) {
+            throw "Independent N2 fixture validation failed with exit code $LASTEXITCODE"
+          }
+
       - name: Configure
         shell: pwsh
         run: >-
@@ -164,32 +174,40 @@ jobs:
           Copy-Item 'docs/baselines/N2_PDF_ENGINE_MATRIX.md' (Join-Path $docs 'N2_PDF_ENGINE_MATRIX.md')
           Copy-Item 'tests/fixtures/pdf/manifest.json' (Join-Path $fixtureStage 'manifest.json')
           Copy-Item 'tests/fixtures/pdf/generated/*.pdf' $fixtureStage
+          if (Test-Path 'artifacts/n2/fixture-validation.json') {
+            Copy-Item 'artifacts/n2/fixture-validation.json' (Join-Path $stage 'evidence/fixture-validation.json')
+          }
 
           $fixtureRoot = Join-Path $PWD 'tests/fixtures/pdf/generated'
           $probeCases = @(
             @{
               Id = 'A001'
               File = 'A001_simple_text.pdf'
+              ExpectFailure = $false
               Args = @('--expect-pages','1','--expect-labels','1','--expect-text-contains','Atlas N2 Fixture A001','--render-page','0','--render-width','612','--render-height','792')
             },
             @{
               Id = 'A002'
               File = 'A002_geometry_labels.pdf'
+              ExpectFailure = $false
               Args = @('--expect-pages','3','--expect-labels','i,ii,1','--expect-text-contains','Atlas N2 Fixture A002 page 1')
             },
             @{
               Id = 'A003'
               File = 'A003_outlines_links.pdf'
+              ExpectFailure = $true
               Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A003 page 1')
             },
             @{
               Id = 'A004'
               File = 'A004_outlines_only.pdf'
+              ExpectFailure = $false
               Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A004 page 1')
             },
             @{
               Id = 'A005'
               File = 'A005_links_only.pdf'
+              ExpectFailure = $false
               Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A005 page 1')
             }
           )
@@ -199,11 +217,22 @@ jobs:
             $output = Join-Path $evidence "$($case.Id).json"
             $args = @('--fixture-id', $case.Id) + $case.Args + @($fixture)
             & $probe @args | Set-Content -Encoding UTF8 $output
-            if ($LASTEXITCODE -ne 0) {
-              Get-Content $output
-              throw "Qt PDF probe failed for fixture $($case.Id) with exit code $LASTEXITCODE"
+            $exitCode = $LASTEXITCODE
+
+            if ($case.ExpectFailure) {
+              if ($exitCode -eq 0) {
+                Get-Content $output
+                throw "Known Qt PDF sentinel $($case.Id) unexpectedly passed; update N2 evidence before proceeding"
+              }
+              Write-Host "Qt PDF known limitation reproduced: $($case.Id) -> $output"
             }
-            Write-Host "Qt PDF probe PASS: $($case.Id) -> $output"
+            elseif ($exitCode -ne 0) {
+              Get-Content $output
+              throw "Qt PDF probe failed for fixture $($case.Id) with exit code $exitCode"
+            }
+            else {
+              Write-Host "Qt PDF probe PASS: $($case.Id) -> $output"
+            }
           }
 
           $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
@@ -228,6 +257,8 @@ jobs:
             'Qt baseline: 6.10.3 MSVC 2022 64-bit'
             'N2.1 probe: Qt PDF 6.10.3 via qtpdf module'
             'Product shell Qt PDF linkage: none'
+            'Known Qt PDF evidence sentinel: A003 combined outlines+links returns empty extracted text'
+            'Independent fixture validation: pypdf 5.9.0'
             'Controls style: compile-time Basic'
             'Inherited Windows font backend: GDI via qt.conf'
             'PDF engine production selection: none; ADR-0004 remains Proposed'

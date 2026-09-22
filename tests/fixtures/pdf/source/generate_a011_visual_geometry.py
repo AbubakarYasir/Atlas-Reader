@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "generated"
 OUT.mkdir(parents=True, exist_ok=True)
 
-EXPECTED_SHA256 = "ebf82d49391c4df27f50afc2eb785aa828effbdeb85039ec2bb4c26d1896f824"
+EXPECTED_SHA256 = "b25d6b6716fbbcf095cbd68bcf57913d4e14bca3e64be19f513c35fd3ddadd29"
 
 
 def stream_object(content: bytes) -> bytes:
@@ -70,32 +70,47 @@ BT /F1 10 Tf 68 145 Td (A011 PAGE 3) Tj ET
 Q
 """
 
+    # Link annotations are not guaranteed to synthesize a visible appearance
+    # from /Border and /C alone. Give the test annotation an explicit normal
+    # appearance so FPDF_ANNOT / Qt RenderFlag::Annotations have a concrete,
+    # renderer-independent object to draw.
+    annotation_appearance = b"""q
+1 0 1 RG
+6 w
+3 3 54 44 re S
+Q
+"""
+
     objects: dict[int, bytes] = {
         1: b"<< /Type /Catalog /Pages 2 0 R >>",
         2: b"<< /Type /Pages /Kids [3 0 R 7 0 R 9 0 R] /Count 3 >>",
         3: b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 300] /Resources << /Font << /F1 6 0 R >> >> /Contents 4 0 R /Annots [5 0 R] >>",
         4: stream_object(page_0_content),
-        5: b"<< /Type /Annot /Subtype /Link /Rect [70 125 130 175] /Border [0 0 6] /C [1 0 1] /A << /S /URI /URI (https://example.com/atlas-a011) >> >>",
+        5: b"<< /Type /Annot /Subtype /Link /Rect [70 125 130 175] /Border [0 0 6] /C [1 0 1] /AP << /N 11 0 R >> /A << /S /URI /URI (https://example.com/atlas-a011) >> >>",
         6: b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
         7: b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /CropBox [50 25 250 175] /Resources << /Font << /F1 6 0 R >> >> /Contents 8 0 R >>",
         8: stream_object(page_1_content),
         9: b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 300] /Rotate 90 /Resources << /Font << /F1 6 0 R >> >> /Contents 10 0 R >>",
         10: stream_object(page_2_content),
+        11: b"<< /Type /XObject /Subtype /Form /BBox [0 0 60 50] /Resources << >> /Length %d >>\nstream\n"
+        % len(annotation_appearance)
+        + annotation_appearance
+        + b"endstream",
     }
 
     output = bytearray(b"%PDF-1.7\n%\xe2\xe3\xcf\xd3\n")
-    offsets = [0] * 11
-    for object_id in range(1, 11):
+    offsets = [0] * 12
+    for object_id in range(1, 12):
         offsets[object_id] = len(output)
         output.extend(f"{object_id} 0 obj\n".encode("ascii"))
         output.extend(objects[object_id])
         output.extend(b"\nendobj\n")
 
     xref_offset = len(output)
-    output.extend(b"xref\n0 11\n0000000000 65535 f \n")
-    for object_id in range(1, 11):
+    output.extend(b"xref\n0 12\n0000000000 65535 f \n")
+    for object_id in range(1, 12):
         output.extend(f"{offsets[object_id]:010d} 00000 n \n".encode("ascii"))
-    output.extend(b"trailer\n<< /Size 11 /Root 1 0 R >>\n")
+    output.extend(b"trailer\n<< /Size 12 /Root 1 0 R >>\n")
     output.extend(f"startxref\n{xref_offset}\n%%EOF\n".encode("ascii"))
     return bytes(output)
 

@@ -15,7 +15,6 @@
 #include <fpdf_text.h>
 #include <fpdfview.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdio>
 #include <optional>
@@ -111,7 +110,8 @@ QString pageText(FPDF_PAGE page, double* elapsedMs, QJsonArray& failures)
     }
 
     const auto* utf16 = reinterpret_cast<const char16_t*>(buffer.data());
-    return QString::fromUtf16(utf16, static_cast<qsizetype>(std::max(0, written - 1)));
+    const int textCodeUnits = written > 1 ? written - 1 : 0;
+    return QString::fromUtf16(utf16, static_cast<qsizetype>(textCodeUnits));
 }
 
 } // namespace
@@ -183,6 +183,7 @@ int main(int argc, char* argv[])
     result.insert(QStringLiteral("engine"), QStringLiteral("pdfium"));
     result.insert(QStringLiteral("atlas_version"), QStringLiteral(ATLAS_VERSION_STRING));
     result.insert(QStringLiteral("pdfium_pin"), QStringLiteral(ATLAS_PDFIUM_PIN));
+    result.insert(QStringLiteral("pdfium_version"), QStringLiteral(ATLAS_PDFIUM_VERSION));
     result.insert(QStringLiteral("call_model"), QStringLiteral("serialized-single-thread"));
     result.insert(QStringLiteral("fixture_id"), fixtureId);
     result.insert(QStringLiteral("file_name"), QFileInfo(pdfPath).fileName());
@@ -206,7 +207,7 @@ int main(int argc, char* argv[])
     QElapsedTimer openTimer;
     openTimer.start();
     FPDF_DOCUMENT document = FPDF_LoadMemDocument64(
-        pdfBytes.constData(), static_cast<size_t>(pdfBytes.size()), nullptr);
+        pdfBytes.constData(), static_cast<std::size_t>(pdfBytes.size()), nullptr);
     const qint64 openElapsedNs = openTimer.nsecsElapsed();
 
     result.insert(QStringLiteral("open_ms"), static_cast<double>(openElapsedNs) / 1'000'000.0);

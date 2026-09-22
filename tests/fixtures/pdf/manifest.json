@@ -108,6 +108,37 @@
       "notes": "Synthetic Type3 glyphs map one PDF code to one Unicode scalar through ToUnicode. RTL content is stored in visual codepoint order so extraction can restore logical order without moving combining marks ahead of their base letters. This deliberately separates logical Unicode extraction/search semantics from Arabic/Urdu shaping and raster fidelity; do not use A006 as visual-shaping evidence.",
       "mutation_allowed": true,
       "password_fixture": false
+    },
+    {
+      "id": "A007",
+      "file": "generated/A007_malformed_truncated.pdf",
+      "sha256": "d6e2fb7962bb233083c110593f6e6968b067c155c713ebb9418c19493e48d79f",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "tests/fixtures/pdf/source/generate_a007_a008_security_semantics.py",
+      "purpose": ["malformed-invalid-open", "error-typing"],
+      "expected_open_failure": true,
+      "notes": "Starts with a PDF header/catalog object but is intentionally truncated before a complete page tree, xref, trailer or EOF marker.",
+      "mutation_allowed": true,
+      "password_fixture": false
+    },
+    {
+      "id": "A008",
+      "file": "generated/A008_password_rc4_40.pdf",
+      "sha256": "62a6b4e332b8296250b9f8d1076e7c5d717a01c54a7471418bc771f0e2d4a08e",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "tests/fixtures/pdf/source/generate_a007_a008_security_semantics.py",
+      "purpose": ["password-required", "incorrect-password", "encrypted-open"],
+      "expected_pages": 1,
+      "expected_labels": ["1"],
+      "expected_text": [],
+      "test_user_password": "atlas-user",
+      "test_wrong_password": "atlas-wrong",
+      "security_handler": "Standard V1/R2 RC4-40",
+      "notes": "Legacy weak RC4-40 exists only as deterministic password-control-flow evidence; it is not a production crypto recommendation.",
+      "mutation_allowed": true,
+      "password_fixture": true
     }
   ]
 }

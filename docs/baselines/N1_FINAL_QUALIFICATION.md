@@ -2,21 +2,23 @@
 
 **Checkpoint:** N1 — Windows toolchain + empty-shell baseline  
 **Release:** `2.0.0-alpha.1`  
-**Status:** **Pending keyboard-activation retest and explicit owner PASS**
+**Status:** **Accepted — owner PASS recorded 2026-09-22**
 
-This file is the final qualification record for N1. Earlier attempts and diagnostic history remain in `N1_WINDOWS_BASELINE.md`, `N1_STARTUP_DIAGNOSTICS.md`, and `N1_WINDOWS_FONT_BACKEND_DECISION.md`.
+This file is the final qualification and acceptance record for N1. Earlier attempts and diagnostic history remain in `N1_WINDOWS_BASELINE.md`, `N1_STARTUP_DIAGNOSTICS.md`, and `N1_WINDOWS_FONT_BACKEND_DECISION.md`.
 
-## Candidate lineage
+## Accepted exact-head artifact
 
-The measured GDI candidate before the keyboard fix was:
+The owner-accepted post-fix artifact is:
 
-- commit: `7c5a305894e30149abe276230f369e48cdf1cb5b`;
-- Windows CI run: `35666962902`;
-- artifact: `atlas-reader-n1-windows-x64-7c5a305894e30149abe276230f369e48cdf1cb5b`;
-- artifact digest: `sha256:329465ae8f285f4cd1de40b92351418b5035d072fe473d512830d1cd0210b853`;
+- commit: `73f567cf2c557f185371d7f944ebf6d69453105a`;
+- Windows CI push run: `35669313160`;
+- artifact: `atlas-reader-n1-windows-x64-73f567cf2c557f185371d7f944ebf6d69453105a`;
+- artifact digest: `sha256:0fa2b638c5e17e90a30f43c117f4c5f74b509fade31108cfe9119e7a86c17d88`;
 - Qt: 6.10.3 / MSVC 2022 x64;
 - Controls: compile-time Basic;
 - Windows font backend: GDI via `qt.conf`.
+
+Strict Debug + Release Configure → Build → CTest, qualification-script validation, portable staging, and artifact upload all passed on that exact head.
 
 N1 deliberately contains no PDF engine, qpdf, SQLite/FTS5, scanner, production Library/Reader/Bookmarks, annotations, migration, or installer implementation.
 
@@ -54,7 +56,7 @@ Arabic meets the provisional `<800 ms` warm-first-frame p95 target.
 - warm p95: `1247.782 ms`;
 - warm QML-loaded p95: `497.661 ms`.
 
-Because five warm samples were too small to distinguish a one-off spike from repeatable variance, the exact same artifact received a 22-run confirmation.
+Because five warm samples were too small to distinguish a one-off spike from repeatable variance, the exact same measured runtime candidate received a 22-run confirmation.
 
 ### English / system — 22-run confirmation
 
@@ -71,13 +73,13 @@ Because five warm samples were too small to distinguish a one-off spike from rep
 - warm private memory: `97.979 MiB`;
 - warm idle CPU: `1.107%`.
 
-The confirmation is bimodal: 14/21 warm launches are approximately 312–394 ms, followed by a contiguous seven-run slower window of approximately 831–1185 ms, after which startup returns to approximately 394/366 ms without an application change. Pre-QML, QML-load, and post-QML-to-first-frame timings rise together in the slower window. N1 therefore records the remaining English tail as measured workstation/system launch variance rather than a single remaining Atlas-specific stage.
+The confirmation is bimodal: 14/21 warm launches are approximately 312–394 ms, followed by a contiguous seven-run slower window of approximately 831–1185 ms, after which startup returns to approximately 394/366 ms without an application change. Pre-QML, QML-load, and post-QML-to-first-frame timings rise together in the slower window. N1 records the remaining English tail as measured workstation/system launch variance rather than a single remaining Atlas-specific stage.
 
-The strict provisional `<800 ms` English p95 target is not met in this uncontrolled Balanced-power run. N1 acceptance therefore requires explicit owner acceptance of the measured tradeoff: median approximately 366 ms, p95 approximately 1.015 s, worst observed warm approximately 1.185 s in the confirmation run.
+The strict provisional `<800 ms` English p95 target is not met in this uncontrolled Balanced-power run. The owner explicitly accepted the measured tradeoff on 2026-09-22: median approximately 366 ms, p95 approximately 1.015 s, worst observed warm approximately 1.185 s in the confirmation run.
 
-## Manual qualification
+## Manual qualification — PASS
 
-Owner reports that all final manual N1 checks pass except one keyboard-activation defect discovered before acceptance:
+The owner confirmed all final manual N1 checks pass:
 
 - **PASS:** English/LTR layout;
 - **PASS:** Arabic/RTL mirroring;
@@ -88,32 +90,34 @@ Owner reports that all final manual N1 checks pass except one keyboard-activatio
 - **PASS:** manual 200% scale check;
 - **PASS:** repeated open/close leaves no Atlas process;
 - **PASS:** Tab traversal reaches the controls;
-- **DEFECT FOUND:** focused buttons did not activate with Enter.
+- **PASS:** post-fix focused keyboard activation.
 
 ## Keyboard activation correction
 
-The defect was found **before N1 acceptance**, so correcting it does not reopen a passed checkpoint.
+A focused-button Enter activation defect was discovered **before N1 acceptance**, so correcting it did not reopen a passed checkpoint.
 
 The product fix explicitly handles both `Qt.Key_Return` and `Qt.Key_Enter` on the two N1 buttons and calls `AbstractButton.animateClick()` for non-auto-repeat key presses. Existing built-in Space activation remains untouched.
 
-Only the affected behavior must be retested on the post-fix artifact:
+The owner retested the final exact-head artifact and confirmed: **Keyboard activation passes.**
 
-1. use Tab to focus the language button;
-2. press Enter and confirm language toggles;
-3. use Tab to focus the theme button;
-4. press Enter and confirm theme toggles;
-5. optionally confirm numpad Enter/Return and Space still work.
+## Owner acceptance
 
-Previously passed manual/performance evidence does not need to be repeated solely because of this contained keyboard-input fix.
+On 2026-09-22 the owner explicitly recorded:
 
-## Acceptance rule
+> Keyboard activation passes. I accept the measured English startup tradeoff. N1 PASS.
 
-N1 may be accepted when:
+Therefore every N1 acceptance condition is satisfied:
 
-1. strict Debug + Release CI passes on the post-fix exact head;
-2. the post-fix portable artifact is produced successfully;
-3. the focused Enter/Return activation retest passes;
-4. the owner explicitly accepts the measured English startup tradeoff;
-5. the owner explicitly records `N1 PASS`.
+1. strict Debug + Release CI on the post-fix exact head — **PASS**;
+2. post-fix portable artifact produced successfully — **PASS**;
+3. focused Enter/Return activation retest — **PASS**;
+4. measured English startup tradeoff explicitly accepted — **PASS**;
+5. explicit `N1 PASS` — **PASS**.
 
-After explicit acceptance, the repository rule in `docs/DEVELOPMENT_WORKFLOW.md` applies: **a passed checkpoint cannot be reopened without new evidence of a user-facing regression.**
+## Final state
+
+**N1 is Accepted.** The accepted user-qualified runtime artifact remains the exact-head package `73f567cf2c557f185371d7f944ebf6d69453105a`. Subsequent acceptance-record commits are documentation-only and do not redefine the physically tested runtime.
+
+Per `docs/DEVELOPMENT_WORKFLOW.md`: **a passed checkpoint cannot be reopened without new evidence of a user-facing regression.** New preferences, theoretical risks, retrospective stricter criteria, or unrelated toolchain churn do not invalidate N1; they belong to later checkpoints unless concrete regression evidence appears.
+
+N2 may begin only as a new checkpoint after this accepted N1 state; no N2 implementation is included in N1.

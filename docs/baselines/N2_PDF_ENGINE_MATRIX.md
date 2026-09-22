@@ -44,7 +44,7 @@ The first passing PDFium core evidence is bound to **implementation head SHA** `
 - Downloaded asset: `pdfium-win-x64.tgz`, asset ID `579031518`, 3,823,498 bytes.
 - Archive SHA-256 verified in both CI lanes **before extraction**: `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020`.
 - Release engineering artifact ID: `10674712819`; digest `sha256:0972d8424b6d35c8f2c8c1612ddbea60b34f7038b59c5d8c5643ab37bfad4803`.
-- This PR-triggered run used GitHub's synthetic merge checkout SHA `df4f45e1a301508b81a4389a90b2d00d156730b6` in the artifact name/build-info while the workflow run's head SHA is `7874794e14b9cea54ec0723c15963621f65bebf6`. That is a CI identity-labeling issue, not an engine result; future artifacts must record both implementation head and checkout SHA explicitly.
+- This PR-triggered run used GitHub's synthetic merge checkout SHA `df4f45e1a301508b81a4389a90b2d00d156730b6` in the artifact name/build-info while the workflow run's head SHA is `7874794e14b9cea54ec0723c15963621f65bebf6`. That is a CI identity-labeling issue, not an engine result. It must be corrected before later evidence artifacts are treated as canonical so future artifacts record implementation head and checkout SHA separately.
 - `atlas_pdfium_probe` is isolated from `atlas_reader` and `atlas_core`. All PDFium calls in this probe are serialized on one thread, honoring the upstream non-thread-safe API contract.
 - A001–A005 passed strict PDFium CTests and Release evidence runs. The same independently validated fixture bytes were used for Qt PDF and PDFium.
 - Cross-engine text semantics are identical on the current English fixture corpus: **every page of A001–A005 has the same UTF-8 text SHA-256 from Qt PDF and PDFium**, with matching extracted text lengths.

@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <optional>
+#include <unordered_set>
 #include <vector>
 
 namespace {
@@ -32,6 +33,26 @@ std::optional<int> parseInt(const QString& value)
     bool ok = false;
     const int parsed = value.toInt(&ok);
     return ok ? std::optional<int>(parsed) : std::nullopt;
+}
+
+QList<int> parseIntList(const QString& value, bool* ok)
+{
+    QList<int> result;
+    *ok = true;
+    if (value.isEmpty()) {
+        return result;
+    }
+
+    const QStringList parts = value.split(QLatin1Char(','), Qt::KeepEmptyParts);
+    for (const QString& part : parts) {
+        const auto parsed = parseInt(part);
+        if (!parsed.has_value()) {
+            *ok = false;
+            return {};
+        }
+        result.append(*parsed);
+    }
+    return result;
 }
 
 void addFailure(QJsonArray& failures, const QString& message)
@@ -114,6 +135,188 @@ QString pageText(FPDF_PAGE page, double* elapsedMs, QJsonArray& failures)
     return QString::fromUtf16(utf16, static_cast<qsizetype>(textCodeUnits));
 }
 
+QString bookmarkTitle(FPDF_BOOKMARK bookmark)
+{
+    const unsigned long bytesRequired = FPDFBookmark_GetTitle(bookmark, nullptr, 0);
+    if (bytesRequired < 2) {
+        return {};
+    }
+
+    std::vector<unsigned char> buffer(bytesRequired);
+    const unsigned long written = FPDFBookmark_GetTitle(
+        bookmark, buffer.data(), static_cast<unsigned long>(buffer.size()));
+    if (written < 2 || written > buffer.size()) {
+        return {};
+    }
+
+    const auto* utf16 = reinterpret_cast<const char16_t*>(buffer.data());
+    return QString::fromUtf16(utf16, static_cast<qsizetype>((written / 2) - 1));
+}
+
+FPDF_DEST actionDestination(FPDF_DOCUMENT document, FPDF_ACTION action)
+{
+    if (action == nullptr || FPDFAction_GetType(action) != PDFACTION_GOTO) {
+        return nullptr;
+    }
+    return FPDFAction_GetDest(document, action);
+}
+
+FPDF_DEST bookmarkDestination(FPDF_DOCUMENT document, FPDF_BOOKMARK bookmark)
+{
+    FPDF_DEST dest = FPDFBookmark_GetDest(document, bookmark);
+    if (dest != nullptr) {
+        return dest;
+    }
+    return actionDestination(document, FPDFBookmark_GetAction(bookmark));
+}
+
+QString actionUri(FPDF_DOCUMENT document, FPDF_ACTION action)
+{
+    if (action == nullptr || FPDFAction_GetType(action) != PDFACTION_URI) {
+        return {};
+    }
+
+    const unsigned long bytesRequired = FPDFAction_GetURIPath(document, action, nullptr, 0);
+    if (bytesRequired < 1) {
+        return {};
+    }
+
+    QByteArray buffer(static_cast<qsizetype>(bytesRequired), '\0');
+    const unsigned long written = FPDFAction_GetURIPath(
+        document, action, buffer.data(), static_cast<unsigned long>(buffer.size()));
+    if (written < 1 || written > static_cast<unsigned long>(buffer.size())) {
+        return {};
+    }
+
+    if (!buffer.isEmpty() && buffer.at(buffer.size() - 1) == '\0') {
+        buffer.chop(1);
+    }
+    return QString::fromUtf8(buffer);
+}
+
+void appendDestination(QJsonObject& item, FPDF_DOCUMENT document, FPDF_DEST dest)
+{
+    const int page = dest != nullptr ? FPDFDest_GetDestPageIndex(document, dest) : -1;
+    item.insert(QStringLiteral("destination_page"), page);
+
+    FPDF_BOOL hasX = false;
+    FPDF_BOOL hasY = false;
+    FPDF_BOOL hasZoom = false;
+    FS_FLOAT x = 0;
+    FS_FLOAT y = 0;
+    FS_FLOAT zoom = 0;
+    if (dest != nullptr
+        && FPDFDest_GetLocationInPage(dest, &hasX, &hasY, &hasZoom, &x, &y, &zoom)) {
+        item.insert(QStringLiteral("has_location_x"), static_cast<bool>(hasX));
+        item.insert(QStringLiteral("has_location_y"), static_cast<bool>(hasY));
+        item.insert(QStringLiteral("has_zoom"), static_cast<bool>(hasZoom));
+        if (hasX) {
+            item.insert(QStringLiteral("location_x"), static_cast<double>(x));
+        }
+        if (hasY) {
+            item.insert(QStringLiteral("location_y"), static_cast<double>(y));
+        }
+        if (hasZoom) {
+            item.insert(QStringLiteral("zoom"), static_cast<double>(zoom));
+        }
+    }
+}
+
+void collectBookmarks(
+    FPDF_DOCUMENT document,
+    FPDF_BOOKMARK parent,
+    int depth,
+    QJsonArray& output,
+    QStringList& titles,
+    QList<int>& depths,
+    QList<int>& pages,
+    std::unordered_set<FPDF_BOOKMARK>& visited,
+    QJsonArray& failures)
+{
+    for (FPDF_BOOKMARK bookmark = FPDFBookmark_GetFirstChild(document, parent);
+         bookmark != nullptr;
+         bookmark = FPDFBookmark_GetNextSibling(document, bookmark)) {
+        if (!visited.insert(bookmark).second) {
+            addFailure(failures, QStringLiteral("outline-cycle-detected"));
+            return;
+        }
+
+        const QString title = bookmarkTitle(bookmark);
+        FPDF_DEST dest = bookmarkDestination(document, bookmark);
+        const int page = dest != nullptr ? FPDFDest_GetDestPageIndex(document, dest) : -1;
+
+        QJsonObject item;
+        item.insert(QStringLiteral("title"), title);
+        item.insert(QStringLiteral("depth"), depth);
+        appendDestination(item, document, dest);
+        output.append(item);
+
+        titles.append(title);
+        depths.append(depth);
+        pages.append(page);
+
+        collectBookmarks(document, bookmark, depth + 1, output, titles, depths, pages, visited, failures);
+    }
+}
+
+QJsonArray collectLinks(
+    FPDF_DOCUMENT document,
+    int pageCount,
+    QList<int>& internalPages,
+    QStringList& externalUris,
+    QJsonArray& failures)
+{
+    QJsonArray output;
+
+    for (int sourcePage = 0; sourcePage < pageCount; ++sourcePage) {
+        FPDF_PAGE page = FPDF_LoadPage(document, sourcePage);
+        if (page == nullptr) {
+            addFailure(failures, QStringLiteral("link-page-load-failed:%1").arg(sourcePage));
+            continue;
+        }
+
+        int position = 0;
+        FPDF_LINK link = nullptr;
+        while (FPDFLink_Enumerate(page, &position, &link)) {
+            QJsonObject item;
+            item.insert(QStringLiteral("source_page"), sourcePage);
+
+            FS_RECTF rect{};
+            if (FPDFLink_GetAnnotRect(link, &rect)) {
+                QJsonObject rectangle;
+                rectangle.insert(QStringLiteral("left"), static_cast<double>(rect.left));
+                rectangle.insert(QStringLiteral("top"), static_cast<double>(rect.top));
+                rectangle.insert(QStringLiteral("right"), static_cast<double>(rect.right));
+                rectangle.insert(QStringLiteral("bottom"), static_cast<double>(rect.bottom));
+                item.insert(QStringLiteral("rectangle"), rectangle);
+            }
+
+            FPDF_DEST dest = FPDFLink_GetDest(document, link);
+            FPDF_ACTION action = FPDFLink_GetAction(link);
+            if (dest == nullptr) {
+                dest = actionDestination(document, action);
+            }
+            appendDestination(item, document, dest);
+
+            const int destinationPage = dest != nullptr ? FPDFDest_GetDestPageIndex(document, dest) : -1;
+            const QString uri = actionUri(document, action);
+            item.insert(QStringLiteral("url"), uri);
+            output.append(item);
+
+            if (destinationPage >= 0 && uri.isEmpty()) {
+                internalPages.append(destinationPage);
+            }
+            if (!uri.isEmpty()) {
+                externalUris.append(uri);
+            }
+        }
+
+        FPDF_ClosePage(page);
+    }
+
+    return output;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -143,6 +346,34 @@ int main(int argc, char* argv[])
         QStringLiteral("expect-text-contains"),
         QStringLiteral("Fail unless concatenated extracted text contains this value."),
         QStringLiteral("text"));
+    const QCommandLineOption expectOutlineCountOption(
+        QStringLiteral("expect-outline-count"),
+        QStringLiteral("Expected flattened outline item count."),
+        QStringLiteral("count"));
+    const QCommandLineOption expectOutlineTitlesOption(
+        QStringLiteral("expect-outline-titles"),
+        QStringLiteral("Pipe-separated expected flattened outline titles."),
+        QStringLiteral("titles"));
+    const QCommandLineOption expectOutlineDepthsOption(
+        QStringLiteral("expect-outline-depths"),
+        QStringLiteral("Comma-separated expected outline tree depths."),
+        QStringLiteral("depths"));
+    const QCommandLineOption expectOutlinePagesOption(
+        QStringLiteral("expect-outline-pages"),
+        QStringLiteral("Comma-separated expected zero-based outline destination pages."),
+        QStringLiteral("pages"));
+    const QCommandLineOption expectLinkCountOption(
+        QStringLiteral("expect-link-count"),
+        QStringLiteral("Expected total link count across the document."),
+        QStringLiteral("count"));
+    const QCommandLineOption expectInternalLinkPageOption(
+        QStringLiteral("expect-internal-link-page"),
+        QStringLiteral("Expected zero-based internal link destination page."),
+        QStringLiteral("page"));
+    const QCommandLineOption expectExternalUriOption(
+        QStringLiteral("expect-external-uri"),
+        QStringLiteral("Expected external URI link."),
+        QStringLiteral("uri"));
     const QCommandLineOption renderPageOption(
         QStringLiteral("render-page"),
         QStringLiteral("Render one zero-based page and record timing/hash."),
@@ -162,6 +393,13 @@ int main(int argc, char* argv[])
     parser.addOption(expectPagesOption);
     parser.addOption(expectLabelsOption);
     parser.addOption(expectTextContainsOption);
+    parser.addOption(expectOutlineCountOption);
+    parser.addOption(expectOutlineTitlesOption);
+    parser.addOption(expectOutlineDepthsOption);
+    parser.addOption(expectOutlinePagesOption);
+    parser.addOption(expectLinkCountOption);
+    parser.addOption(expectInternalLinkPageOption);
+    parser.addOption(expectExternalUriOption);
     parser.addOption(renderPageOption);
     parser.addOption(renderWidthOption);
     parser.addOption(renderHeightOption);
@@ -179,7 +417,7 @@ int main(int argc, char* argv[])
         : parser.value(fixtureIdOption);
 
     QJsonObject result;
-    result.insert(QStringLiteral("schema"), QStringLiteral("atlas.n2.pdfium-probe.v1"));
+    result.insert(QStringLiteral("schema"), QStringLiteral("atlas.n2.pdfium-probe.v2"));
     result.insert(QStringLiteral("engine"), QStringLiteral("pdfium"));
     result.insert(QStringLiteral("atlas_version"), QStringLiteral(ATLAS_VERSION_STRING));
     result.insert(QStringLiteral("pdfium_pin"), QStringLiteral(ATLAS_PDFIUM_PIN));
@@ -236,9 +474,7 @@ int main(int argc, char* argv[])
         if (!expected.has_value()) {
             addFailure(failures, QStringLiteral("invalid-expect-pages"));
         } else if (pageCount != *expected) {
-            addFailure(
-                failures,
-                QStringLiteral("page-count:%1!=%2").arg(pageCount).arg(*expected));
+            addFailure(failures, QStringLiteral("page-count:%1!=%2").arg(pageCount).arg(*expected));
         }
     }
 
@@ -276,8 +512,7 @@ int main(int argc, char* argv[])
     result.insert(QStringLiteral("pages"), pages);
 
     if (parser.isSet(expectLabelsOption)) {
-        const QStringList expectedLabels = parser.value(expectLabelsOption).split(
-            QLatin1Char(','), Qt::KeepEmptyParts);
+        const QStringList expectedLabels = parser.value(expectLabelsOption).split(QLatin1Char(','), Qt::KeepEmptyParts);
         if (labels != expectedLabels) {
             addFailure(
                 failures,
@@ -290,6 +525,89 @@ int main(int argc, char* argv[])
         const QString allText = extractedTexts.join(QLatin1Char('\n'));
         if (!allText.contains(parser.value(expectTextContainsOption))) {
             addFailure(failures, QStringLiteral("expected-text-not-found"));
+        }
+    }
+
+    QJsonArray outlines;
+    QStringList outlineTitles;
+    QList<int> outlineDepths;
+    QList<int> outlinePages;
+    std::unordered_set<FPDF_BOOKMARK> visitedBookmarks;
+    collectBookmarks(
+        document,
+        nullptr,
+        0,
+        outlines,
+        outlineTitles,
+        outlineDepths,
+        outlinePages,
+        visitedBookmarks,
+        failures);
+    result.insert(QStringLiteral("outlines"), outlines);
+
+    if (parser.isSet(expectOutlineCountOption)) {
+        const auto expected = parseInt(parser.value(expectOutlineCountOption));
+        if (!expected.has_value()) {
+            addFailure(failures, QStringLiteral("invalid-expect-outline-count"));
+        } else if (outlines.size() != *expected) {
+            addFailure(failures, QStringLiteral("outline-count:%1!=%2").arg(outlines.size()).arg(*expected));
+        }
+    }
+
+    if (parser.isSet(expectOutlineTitlesOption)) {
+        const QStringList expected = parser.value(expectOutlineTitlesOption).split(QLatin1Char('|'), Qt::KeepEmptyParts);
+        if (outlineTitles != expected) {
+            addFailure(failures, QStringLiteral("outline-titles-mismatch"));
+        }
+    }
+
+    if (parser.isSet(expectOutlineDepthsOption)) {
+        bool ok = false;
+        const QList<int> expected = parseIntList(parser.value(expectOutlineDepthsOption), &ok);
+        if (!ok) {
+            addFailure(failures, QStringLiteral("invalid-expect-outline-depths"));
+        } else if (outlineDepths != expected) {
+            addFailure(failures, QStringLiteral("outline-depths-mismatch"));
+        }
+    }
+
+    if (parser.isSet(expectOutlinePagesOption)) {
+        bool ok = false;
+        const QList<int> expected = parseIntList(parser.value(expectOutlinePagesOption), &ok);
+        if (!ok) {
+            addFailure(failures, QStringLiteral("invalid-expect-outline-pages"));
+        } else if (outlinePages != expected) {
+            addFailure(failures, QStringLiteral("outline-pages-mismatch"));
+        }
+    }
+
+    QList<int> internalLinkPages;
+    QStringList externalUris;
+    const QJsonArray links = collectLinks(document, pageCount, internalLinkPages, externalUris, failures);
+    result.insert(QStringLiteral("links"), links);
+
+    if (parser.isSet(expectLinkCountOption)) {
+        const auto expected = parseInt(parser.value(expectLinkCountOption));
+        if (!expected.has_value()) {
+            addFailure(failures, QStringLiteral("invalid-expect-link-count"));
+        } else if (links.size() != *expected) {
+            addFailure(failures, QStringLiteral("link-count:%1!=%2").arg(links.size()).arg(*expected));
+        }
+    }
+
+    if (parser.isSet(expectInternalLinkPageOption)) {
+        const auto expected = parseInt(parser.value(expectInternalLinkPageOption));
+        if (!expected.has_value()) {
+            addFailure(failures, QStringLiteral("invalid-expect-internal-link-page"));
+        } else if (!internalLinkPages.contains(*expected)) {
+            addFailure(failures, QStringLiteral("internal-link-destination-missing:%1").arg(*expected));
+        }
+    }
+
+    if (parser.isSet(expectExternalUriOption)) {
+        const QString expected = parser.value(expectExternalUriOption);
+        if (!externalUris.contains(expected)) {
+            addFailure(failures, QStringLiteral("external-uri-missing:%1").arg(expected));
         }
     }
 
@@ -326,9 +644,7 @@ int main(int argc, char* argv[])
                 render.insert(QStringLiteral("actual_width"), FPDFBitmap_GetWidth(bitmap));
                 render.insert(QStringLiteral("actual_height"), FPDFBitmap_GetHeight(bitmap));
                 render.insert(QStringLiteral("stride"), stride);
-                render.insert(
-                    QStringLiteral("render_ms"),
-                    static_cast<double>(renderElapsedNs) / 1'000'000.0);
+                render.insert(QStringLiteral("render_ms"), static_cast<double>(renderElapsedNs) / 1'000'000.0);
                 render.insert(QStringLiteral("pixel_sha256"), sha256(pixelBytes));
                 result.insert(QStringLiteral("render"), render);
             }

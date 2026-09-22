@@ -64,6 +64,11 @@ jobs:
       - name: Prepare and verify benchmark fixtures
         shell: pwsh
         run: |
+          python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
+          if ($LASTEXITCODE -ne 0) {
+            throw "Fixture validation dependency install failed with exit code $LASTEXITCODE"
+          }
+
           python tests/fixtures/pdf/source/generate_a006_unicode_semantics.py
           if ($LASTEXITCODE -ne 0) {
             throw "A006 deterministic fixture generation failed with exit code $LASTEXITCODE"
@@ -146,7 +151,7 @@ jobs:
             Write-Host "  extract p50/p95: $($json.extract_all_pages.p50_ms) / $($json.extract_all_pages.p95_ms) ms"
             Write-Host "  search p50/p95: $($json.search.p50_ms) / $($json.search.p95_ms) ms"
             Write-Host "  render p50/p95: $($json.render.p50_ms) / $($json.render.p95_ms) ms"
-            Write-Host "  memory delta/peak: $($json.memory.working_set_delta_mib) / $($json.memory.peak_working_set_mib) MiB"
+            Write-Host "  peak working set: $($json.memory.peak_working_set_mib) MiB"
           }
 
           $common = @('--iterations','31','--warmups','3','--render-page','0','--render-width','612','--render-height','792')
@@ -175,6 +180,7 @@ jobs:
             'Render: 612 x 792, page 0'
             'Open input: already-loaded in-memory PDF bytes'
             'Corpus: synthetic A003 + deterministic Unicode A006'
+            'Memory comparison: peak working set only in this slice; end-delta fields are retained but not cross-engine evidence because persistent-document close timing differs'
             'Interpretation: comparative CI engineering evidence, not end-user performance promise'
           ) | Set-Content -Encoding UTF8 (Join-Path $out 'N2_PERFORMANCE_INFO.txt')
 

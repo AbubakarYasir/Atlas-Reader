@@ -161,6 +161,26 @@
       "notes": "Legacy weak RC4-40 is test data only. P=-64 clears the R2 print, modify, copy/extract and annotation permission bits so qpdf permission inspection can be tested deterministically.",
       "mutation_allowed": false,
       "password_fixture": true
+    },
+    {
+      "id": "A010",
+      "file": "generated/A010_certification_structure.pdf",
+      "sha256": "95bc8daabea7d46bb70432bb65fc2fd8af3ad6e590f0fbf539e443930ce8f668",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "tests/fixtures/pdf/source/generate_a010_certification_structure.py",
+      "purpose": ["signature-field-detection", "docmdp-certification-detection", "rewrite-safety-interlock"],
+      "expected_pages": 1,
+      "expected_labels": ["1"],
+      "expected_text": [],
+      "signature_structure_fixture": true,
+      "expected_signature_field_name": "Atlas Certification",
+      "expected_signature_subfilter": "/adbe.pkcs7.detached",
+      "expected_docmdp_permission": 2,
+      "cryptographically_valid": false,
+      "notes": "Contains synthetic /Sig and /DocMDP structure only. /Contents and /ByteRange are deliberately not a valid cryptographic signature. This fixture qualifies structural detection and the Atlas pre-mutation safety interlock, never cryptographic verification.",
+      "mutation_allowed": false,
+      "password_fixture": false
     }
   ]
 }

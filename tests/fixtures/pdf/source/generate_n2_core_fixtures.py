@@ -73,29 +73,86 @@ def make_a002() -> None:
     temporary.unlink()
 
 
+def add_outline(c: canvas.Canvas, index: int, prefix: str = "") -> None:
+    destination = f"{prefix}p{index + 1}"
+    c.bookmarkPage(destination)
+    if index == 0:
+        c.addOutlineEntry("Chapter 1", destination, level=0, closed=False)
+    elif index == 1:
+        c.addOutlineEntry("Section 1.1", destination, level=1, closed=False)
+    else:
+        c.addOutlineEntry("Chapter 2", destination, level=0, closed=False)
+
+
+def add_page_links(c: canvas.Canvas, page_index: int, destination_prefix: str = "") -> None:
+    if page_index != 0:
+        return
+
+    c.drawString(72, 690, "Internal destination link to page 3:")
+    c.linkRect(
+        "",
+        f"{destination_prefix}p3",
+        (72, 660, 250, 680),
+        relative=0,
+        thickness=1,
+    )
+    c.drawString(76, 664, "Go to Chapter 2")
+    c.drawString(72, 630, "External URI link:")
+    c.linkURL(
+        "https://example.com/atlas-n2-fixture",
+        (72, 600, 280, 620),
+        relative=0,
+    )
+    c.drawString(76, 604, "https://example.com/atlas-n2-fixture")
+
+
 def make_a003() -> None:
     path = OUT / "A003_outlines_links.pdf"
     c = canvas.Canvas(str(path), pagesize=letter, invariant=1)
     c.setTitle("Atlas N2 Outlines and Links Fixture")
 
     for index in range(3):
-        destination = f"p{index + 1}"
-        c.bookmarkPage(destination)
-        if index == 0:
-            c.addOutlineEntry("Chapter 1", destination, level=0, closed=False)
-        elif index == 1:
-            c.addOutlineEntry("Section 1.1", destination, level=1, closed=False)
-        else:
-            c.addOutlineEntry("Chapter 2", destination, level=0, closed=False)
-
+        add_outline(c, index)
         c.setFont("Helvetica", 16)
         c.drawString(72, 720, f"Atlas N2 Fixture A003 page {index + 1}")
         c.setFont("Helvetica", 11)
+        add_page_links(c, index)
+        c.showPage()
 
+    c.save()
+
+
+def make_a004() -> None:
+    path = OUT / "A004_outlines_only.pdf"
+    c = canvas.Canvas(str(path), pagesize=letter, invariant=1)
+    c.setTitle("Atlas N2 Outlines Only Fixture")
+
+    for index in range(3):
+        add_outline(c, index)
+        c.setFont("Helvetica", 16)
+        c.drawString(72, 720, f"Atlas N2 Fixture A004 page {index + 1}")
+        c.setFont("Helvetica", 11)
+        c.drawString(72, 690, "Outline-only diagnostic fixture.")
+        c.showPage()
+
+    c.save()
+
+
+def make_a005() -> None:
+    path = OUT / "A005_links_only.pdf"
+    c = canvas.Canvas(str(path), pagesize=letter, invariant=1)
+    c.setTitle("Atlas N2 Links Only Fixture")
+
+    for index in range(3):
+        destination = f"p{index + 1}"
+        c.bookmarkPage(destination)
+        c.setFont("Helvetica", 16)
+        c.drawString(72, 720, f"Atlas N2 Fixture A005 page {index + 1}")
+        c.setFont("Helvetica", 11)
         if index == 0:
             c.drawString(72, 690, "Internal destination link to page 3:")
             c.linkRect("", "p3", (72, 660, 250, 680), relative=0, thickness=1)
-            c.drawString(76, 664, "Go to Chapter 2")
+            c.drawString(76, 664, "Go to page 3")
             c.drawString(72, 630, "External URI link:")
             c.linkURL(
                 "https://example.com/atlas-n2-fixture",
@@ -103,7 +160,8 @@ def make_a003() -> None:
                 relative=0,
             )
             c.drawString(76, 604, "https://example.com/atlas-n2-fixture")
-
+        else:
+            c.drawString(72, 690, "Links-only diagnostic fixture.")
         c.showPage()
 
     c.save()
@@ -113,6 +171,8 @@ def main() -> None:
     make_a001()
     make_a002()
     make_a003()
+    make_a004()
+    make_a005()
     print(f"Generated deterministic fixtures in {OUT}")
     print("Verify SHA-256 against manifest.json after intentional changes.")
 

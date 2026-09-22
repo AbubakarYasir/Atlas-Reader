@@ -13,9 +13,11 @@ The durable qualification plan is `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md`, th
 Current integration facts that must not be lost during experiments:
 
 - Qt PDF is qualified through the existing Qt toolchain as a read/render/text/search/navigation candidate. Atlas will not adopt the complete Qt viewer widget architecture as its reader.
+- The first clean Qt PDF core evidence is bound to implementation SHA `213050ee75882ae5fa53f73b07fe2707bbaea5a8`; broader search/navigation/Arabic/security/performance rows remain open.
 - PDFium's current public API contract states that PDFium APIs are not thread-safe; Atlas must serialize calls and measure the consequence rather than run unsupported parallel API calls.
 - Official PDFium source builds use Chromium-style `depot_tools`/`gclient`, GN, Ninja and Clang/clang-cl tooling. The inspected Microsoft vcpkg registry has no standard `ports/pdfium` package.
-- A pinned community PDFium binary distribution may bootstrap **N2-only** probes if exact package/revision, SHA-256 and notices are recorded. That does not pre-approve a production supply chain.
+- The active N2.2 Windows probe pin is PDFium **156.0.8066.0 / `chromium/8066`** from `bblanchon/pdfium-binaries`, distribution source commit `f2e9a1c45bb17b85b540abf1af30146ef65416ac`, asset `pdfium-win-x64.tgz`, SHA-256 `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020`.
+- That community PDFium package is **probe-only**. Exact production supply-chain/license/notices/source-build strategy remains undecided and is tracked in `docs/baselines/N2_PDFIUM_PROVENANCE.md`.
 - qpdf is the structure/security/transformation candidate. At N2 opening, upstream release, generated documentation and Microsoft vcpkg currently expose different version surfaces; every experiment must record the exact qpdf version it actually uses.
 - The inspected vcpkg `qpdf` port is `12.4.0` with `Apache-2.0 AND MIT` metadata. The upstream release feed visible at N2 opening shows `12.4.1` published 2026-08-27, while current generated docs may identify `12.4.2`.
 
@@ -73,7 +75,7 @@ For N2, a dependency can be **probe-only** without being accepted for production
 
 **Role candidate:** page rendering, text extraction/search, links/navigation, outlines/destinations and document/page inspection.
 
-**Status:** **active N2 bake-off; no winner assumed.**
+**Status:** **active N2 bake-off; no winner assumed.** Core A001–A005 smoke is captured; Arabic/search/navigation/security/repeated-performance evidence remains pending.
 
 **Boundary:** infrastructure adapter/probe. Qt PDF types must not become Atlas domain/application types.
 
@@ -83,13 +85,15 @@ For N2, a dependency can be **probe-only** without being accepted for production
 
 **Role candidate:** page rendering, text extraction/search, links/navigation, outlines/destinations and low-level inspection.
 
-**Status:** **active N2 bake-off; no winner assumed.**
+**Status:** **active N2 bake-off; no winner assumed.** The first N2.2 core Windows smoke is captured on implementation SHA `7874794e14b9cea54ec0723c15963621f65bebf6`: A001–A005 open/page-count/page-label/normalized-visible-size/text expectations pass, and extracted text hashes match Qt PDF page-for-page. Broader navigation/Arabic/security/performance evidence remains pending.
 
-**Boundary:** infrastructure adapter/probe. PDFium handles/types do not escape into Atlas domain/application interfaces.
+**N2.2 probe pin:** PDFium `156.0.8066.0`, tag `chromium/8066`, `bblanchon/pdfium-binaries` source commit `f2e9a1c45bb17b85b540abf1af30146ef65416ac`, Windows x64 non-V8 archive SHA-256 `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020`. The exact provenance contract lives in `docs/baselines/N2_PDFIUM_PROVENANCE.md`.
 
-**Concurrency constraint:** current upstream public API says PDFium APIs are not thread-safe. An Atlas adapter must ensure calls are serialized according to the upstream contract. N2 measures the architectural/performance cost instead of violating it.
+**Boundary:** infrastructure adapter/probe. PDFium handles/types do not escape into Atlas domain/application interfaces. `atlas_reader` and `atlas_core` do not link PDFium.
 
-**Supply-chain constraint:** official source integration brings Chromium-style tooling; a community prebuilt may accelerate the spike only with exact pin/hash/provenance. Production distribution remains undecided until ADR-0004 is accepted.
+**Concurrency constraint:** current upstream public API says PDFium APIs are not thread-safe. The N2 probe uses a serialized single-thread call model. A later Atlas adapter/task-queue test must preserve that contract under concurrent app workloads.
+
+**Supply-chain constraint:** official source integration brings Chromium-style tooling. The current community prebuilt accelerates the spike only because exact tag/source commit/asset/checksum are pinned. Its distributor repository is MIT-licensed, but that does not replace PDFium/third-party notice obligations. Production distribution remains undecided until ADR-0004 is accepted.
 
 Atlas may intentionally use different engines for rendering and structural mutation.
 
@@ -257,49 +261,3 @@ Do not accept speculative refactors solely because an AI says they are cleaner/f
 No IDE is mandatory. Recommended developer conveniences:
 
 ### Visual Studio / VS Code / Qt Creator
-
-- CMake integration;
-- clangd/C++ language services;
-- QML language tooling;
-- CMake Tools where applicable;
-- EditorConfig;
-- clang-format integration;
-- Git/GitHub integration.
-
-Qt Creator is especially useful for QML Profiler and Qt diagnostics; Visual Studio remains useful for MSVC/native Windows profiling/debugging. We should not force a single editor when the build is command-line reproducible.
-
-## 12. Packaging tools
-
-Do not lock a Windows installer technology before N11. Evaluate at packaging time against licensing, update/repair/uninstall behavior, file association, signing, CI automation, and maintenance cost.
-
-WiX is a known option but current WiX project terms/maintenance requirements must be reviewed at selection time. CPack/NSIS/other approaches remain candidates. Packaging technology must never own application configuration/data formats.
-
-## 13. Tools/repositories intentionally rejected or deferred
-
-- Electron/Tauri/WebView as the Atlas UI runtime — rejected for the core document canvas architecture.
-- proprietary PDF SDK as an architectural dependency — rejected unless an explicit later business decision changes licensing/distribution and an open abstraction remains.
-- MuPDF integration — deferred because licensing/distribution needs a separate deliberate review; do not casually add it merely for performance.
-- cloud telemetry/crash upload — deferred; Atlas is local-first and must not silently transmit user/document data.
-- OCR engines — out of Windows 2.0 scope.
-- AI document analysis — out of Windows 2.0 scope.
-
-## 14. Dependency update policy
-
-Dependency updates are not background churn. Each update PR/checkpoint records:
-
-- old/new version;
-- security relevance;
-- license changes;
-- API/ABI impact;
-- binary size change where material;
-- benchmark delta for hot-path dependencies;
-- fixture/regression result;
-- rollback plan.
-
-Major dependency upgrades require an ADR when they change architecture or data behavior.
-
-For N2, exact dependency revision is part of the evidence. Changing a candidate version after measurements requires clearly identifying which results are stale and rerunning affected rows.
-
-## References checked
-
-Bootstrap references remain part of repository history. N2 additionally rechecked current Qt PDF APIs/licensing, current PDFium public API/build instructions, qpdf releases/docs, the Microsoft vcpkg qpdf port, and current availability of a vcpkg PDFium port on 2026-09-22. Detailed operational notes are in `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` and `docs/UPSTREAM_CATALOG.md`.

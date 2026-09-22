@@ -1,0 +1,35 @@
+{
+  "schema": "atlas.n2.pdf-fidelity-fixtures.v1",
+  "generated_at": "2026-09-22",
+  "fixtures": [
+    {
+      "id": "A011",
+      "file": "generated/A011_visual_geometry.pdf",
+      "sha256": "ebf82d49391c4df27f50afc2eb785aa828effbdeb85039ec2bb4c26d1896f824",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "tests/fixtures/pdf/source/generate_a011_visual_geometry.py",
+      "generator_policy": "Explicit LF-delimited PDF syntax + computed xref; no serializer-defined output bytes",
+      "purpose": [
+        "raw-page-geometry",
+        "cropbox",
+        "rotation",
+        "render-fidelity",
+        "high-dpi-render",
+        "annotation-rendering",
+        "external-uri-link"
+      ],
+      "expected_pages": 3,
+      "expected_labels": ["1", "2", "3"],
+      "expected_text": ["A011 PAGE 1", "A011 PAGE 2", "A011 PAGE 3"],
+      "expected_raw_geometry": [
+        {"index": 0, "media_box": [0.0, 0.0, 200.0, 300.0], "crop_box": [0.0, 0.0, 200.0, 300.0], "rotation": 0, "visible_points": [200.0, 300.0]},
+        {"index": 1, "media_box": [0.0, 0.0, 300.0, 200.0], "crop_box": [50.0, 25.0, 250.0, 175.0], "rotation": 0, "visible_points": [200.0, 150.0]},
+        {"index": 2, "media_box": [0.0, 0.0, 200.0, 300.0], "crop_box": [0.0, 0.0, 200.0, 300.0], "rotation": 90, "visible_points": [300.0, 200.0]}
+      ],
+      "expected_external_uri": "https://example.com/atlas-a011",
+      "visual_fidelity_fixture": true,
+      "notes": "Simple solid vector anchors permit stable interior color sampling at 1x/2x without requiring byte-identical raster output across engines. Page 1 carries a visible link-annotation border only when annotation rendering is enabled; page 2 verifies crop clipping; page 3 verifies 90-degree page rotation. This is synthetic vector fidelity evidence, not real-world Arabic/Urdu font-shaping evidence."
+    }
+  ]
+}

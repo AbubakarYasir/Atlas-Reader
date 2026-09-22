@@ -84,6 +84,82 @@ def signed_permissions(value: int) -> int:
     return value if value < 0x80000000 else value - 0x100000000
 
 
+def validate_signature_structure(reader: PdfReader, spec: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    failures: list[str] = []
+    root = resolve(reader.trailer.get("/Root"))
+    acroform = resolve(root.get("/AcroForm")) if root is not None else None
+    fields = resolve(acroform.get("/Fields", [])) if acroform is not None else []
+
+    signature_fields = []
+    for reference in fields or []:
+        field = resolve(reference)
+        if field is not None and str(field.get("/FT")) == "/Sig":
+            signature_fields.append(field)
+
+    expected_name = str(spec.get("expected_signature_field_name", ""))
+    if len(signature_fields) != 1:
+        failures.append(f"signature-field-count-mismatch:{len(signature_fields)}")
+        field = None
+    else:
+        field = signature_fields[0]
+        if str(field.get("/T")) != expected_name:
+            failures.append("signature-field-name-mismatch")
+
+    signature = resolve(field.get("/V")) if field is not None else None
+    if signature is None:
+        failures.append("signature-dictionary-missing")
+    else:
+        if str(signature.get("/Type")) != "/Sig":
+            failures.append("signature-type-mismatch")
+        if str(signature.get("/SubFilter")) != str(spec.get("expected_signature_subfilter")):
+            failures.append("signature-subfilter-mismatch")
+        byte_range = list(signature.get("/ByteRange", []))
+        if [int(value) for value in byte_range] != [0, 0, 0, 0]:
+            failures.append("signature-byte-range-sentinel-mismatch")
+        if signature.get("/Contents") is None:
+            failures.append("signature-contents-missing")
+
+    perms = resolve(root.get("/Perms")) if root is not None else None
+    catalog_docmdp = resolve(perms.get("/DocMDP")) if perms is not None else None
+    if catalog_docmdp is None:
+        failures.append("catalog-docmdp-missing")
+
+    references = resolve(signature.get("/Reference", [])) if signature is not None else []
+    docmdp_references = []
+    for reference in references or []:
+        item = resolve(reference)
+        if item is not None and str(item.get("/TransformMethod")) == "/DocMDP":
+            docmdp_references.append(item)
+
+    if len(docmdp_references) != 1:
+        failures.append(f"docmdp-reference-count-mismatch:{len(docmdp_references)}")
+        transform_params = None
+    else:
+        transform_params = resolve(docmdp_references[0].get("/TransformParams"))
+        if transform_params is None:
+            failures.append("docmdp-transform-params-missing")
+
+    actual_permission = int(transform_params.get("/P")) if transform_params is not None and transform_params.get("/P") is not None else None
+    expected_permission = int(spec.get("expected_docmdp_permission"))
+    if actual_permission != expected_permission:
+        failures.append(f"docmdp-permission-mismatch:{actual_permission}!={expected_permission}")
+
+    summary = {
+        "signature_field_count": len(signature_fields),
+        "signature_field_name": str(field.get("/T")) if field is not None else None,
+        "signature_type": str(signature.get("/Type")) if signature is not None else None,
+        "signature_subfilter": str(signature.get("/SubFilter")) if signature is not None else None,
+        "byte_range": [int(value) for value in signature.get("/ByteRange", [])] if signature is not None else [],
+        "contents_present": bool(signature is not None and signature.get("/Contents") is not None),
+        "catalog_docmdp_present": catalog_docmdp is not None,
+        "docmdp_reference_count": len(docmdp_references),
+        "docmdp_permission": actual_permission,
+        "cryptographic_validity_qualified": False,
+        "fixture_cryptographically_valid": bool(spec.get("cryptographically_valid", False)),
+    }
+    return summary, failures
+
+
 def validate_fixture(spec: dict[str, Any]) -> dict[str, Any]:
     fixture_path = ROOT / spec["file"]
     failures: list[str] = []
@@ -163,6 +239,11 @@ def validate_fixture(spec: dict[str, Any]) -> dict[str, Any]:
                     failures.append(
                         f"permission-integer-mismatch:{actual_permissions}!={int(expected_permissions)}"
                     )
+
+    if spec.get("signature_structure_fixture"):
+        signature_summary, signature_failures = validate_signature_structure(reader, spec)
+        result["signature_structure"] = signature_summary
+        failures.extend(signature_failures)
 
     page_count = len(reader.pages)
     result["page_count"] = page_count

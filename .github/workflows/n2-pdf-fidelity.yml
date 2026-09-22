@@ -60,13 +60,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "A011 generation failed with exit code $LASTEXITCODE" }
 
           $fixture = 'tests/fixtures/pdf/generated/A011_visual_geometry.pdf'
-          $expected = 'c4862d88c867dd893c742d21e30f922338c771c3caaf2e7e1a2ea4bc8e4de81d'
+          $expected = 'ebf82d49391c4df27f50afc2eb785aa828effbdeb85039ec2bb4c26d1896f824'
           $actual = (Get-FileHash $fixture -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -ne $expected) { throw "A011 SHA-256 mismatch: $actual != $expected" }
 
           New-Item -ItemType Directory -Force -Path artifacts/n2/fidelity | Out-Null
           python tests/fixtures/pdf/validate_a011_visual_geometry.py | Set-Content -Encoding UTF8 artifacts/n2/fidelity/a011-independent-geometry.json
           if ($LASTEXITCODE -ne 0) { throw "Independent A011 geometry validation failed with exit code $LASTEXITCODE" }
+          Copy-Item 'tests/fixtures/pdf/fidelity_manifest.json' 'artifacts/n2/fidelity/fidelity_manifest.json'
 
       - name: Configure isolated fidelity probes
         shell: pwsh
@@ -107,7 +108,9 @@ jobs:
             'PDFium: 156.0.8066.0 / chromium/8066'
             "PDFium archive SHA-256: $env:ATLAS_PDFIUM_ARCHIVE_SHA256"
             'Fixture: A011_visual_geometry.pdf'
-            'A011 SHA-256: c4862d88c867dd893c742d21e30f922338c771c3caaf2e7e1a2ea4bc8e4de81d'
+            'A011 SHA-256: ebf82d49391c4df27f50afc2eb785aa828effbdeb85039ec2bb4c26d1896f824'
+            'Fixture manifest: tests/fixtures/pdf/fidelity_manifest.json'
+            'Generator: explicit LF-delimited PDF objects/xref; serializer-independent output bytes'
             'Scales: 1x and 2x'
             'Raster rule: semantic landmark colors with bounded tolerance; cross-engine byte-identical pixel hashes are not required'
             'Geometry rule: raw MediaBox/CropBox/Rotate independently validated with pypdf 5.9.0; engine-visible size must match normalized crop/rotation result'

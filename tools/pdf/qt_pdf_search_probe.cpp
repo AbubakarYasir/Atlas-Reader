@@ -231,7 +231,7 @@ int main(int argc, char* argv[])
         } else if (hits.isEmpty()) {
             addFailure(failures, QStringLiteral("expected-first-hit-missing"));
         } else {
-            const QJsonObject first = hits.constFirst().toObject();
+            const QJsonObject first = hits.first().toObject();
             if (first.value(QStringLiteral("page")).toInt() != *expectedPage) {
                 addFailure(failures, QStringLiteral("first-hit-page-mismatch"));
             }

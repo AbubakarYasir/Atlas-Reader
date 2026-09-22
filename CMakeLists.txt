@@ -151,7 +151,7 @@ add_test(
         --expect-outline-titles "Chapter 1|Section 1.1|Chapter 2"
         --expect-outline-depths 0,1,0
         --expect-outline-pages 0,1,2
-        --expect-link-count 2
+        --expect-link-count 3
         --expect-internal-link-page 2
         --expect-external-uri "https://example.com/atlas-n2-fixture"
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A003_outlines_links.pdf"
@@ -180,7 +180,7 @@ add_test(
         --expect-labels 1,2,3
         --expect-text-contains "Atlas N2 Fixture A005 page 1"
         --expect-outline-count 0
-        --expect-link-count 2
+        --expect-link-count 3
         --expect-internal-link-page 2
         --expect-external-uri "https://example.com/atlas-n2-fixture"
         "${ATLAS_N2_PDF_FIXTURE_DIR}/A005_links_only.pdf"

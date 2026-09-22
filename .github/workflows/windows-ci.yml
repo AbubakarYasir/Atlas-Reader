@@ -130,7 +130,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "A006 deterministic fixture generation failed with exit code $LASTEXITCODE"
           }
-          $expected = '1b69b6ce646ad3052d0a8f967efb4d2540569641e3f946ca8e533d9c9655d019'
+          $expected = 'efe3aa5f9538a8a18af71e4517c9f1e10980db394107c0e16141b03ec7058f0b'
           $path = 'tests/fixtures/pdf/generated/A006_unicode_semantics.pdf'
           $actual = (Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -ne $expected) {

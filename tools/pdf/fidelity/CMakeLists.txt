@@ -8,10 +8,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Pdf)
 find_package(PDFium REQUIRED)
 
-add_executable(atlas_qt_pdf_fidelity_probe ../qt_pdf_fidelity_probe.cpp)
+add_executable(atlas_qt_pdf_fidelity_probe qt_pdf_fidelity_probe.cpp)
 target_link_libraries(atlas_qt_pdf_fidelity_probe PRIVATE Qt6::Core Qt6::Gui Qt6::Pdf)
 
-add_executable(atlas_pdfium_fidelity_probe ../pdfium_fidelity_probe.cpp)
+add_executable(atlas_pdfium_fidelity_probe pdfium_fidelity_probe.cpp)
 target_link_libraries(atlas_pdfium_fidelity_probe PRIVATE Qt6::Core pdfium)
 
 if(MSVC)

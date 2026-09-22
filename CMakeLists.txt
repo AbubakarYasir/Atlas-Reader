@@ -7,7 +7,7 @@ project(
     LANGUAGES CXX
 )
 
-set(ATLAS_PRERELEASE "alpha.1" CACHE STRING "Atlas prerelease identifier")
+set(ATLAS_PRERELEASE "alpha.2" CACHE STRING "Atlas prerelease identifier")
 set(ATLAS_VERSION_STRING "${PROJECT_VERSION}-${ATLAS_PRERELEASE}")
 option(ATLAS_WARNINGS_AS_ERRORS "Treat Atlas compiler warnings as errors" OFF)
 
@@ -16,9 +16,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# N1 canonical public baseline: Qt 6.10.3 / MSVC 2022. Application source
-# intentionally requires only the Qt 6.10 API floor so a newer qualified Qt
-# 6.11.x developer kit can build the same source. See docs/TOOLCHAIN.md.
+# N1's accepted canonical public baseline remains Qt 6.10.3 / MSVC 2022.
+# N2 inherits that toolchain while PDF engines are qualified behind Atlas-owned
+# adapters. Engine dependencies are introduced only by their focused probe
+# commits; opening N2 does not silently add Qt PDF, PDFium, or qpdf.
 find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Quick Qml QuickControls2)
 qt_standard_project_setup(REQUIRES 6.10)
 
@@ -82,9 +83,9 @@ target_link_libraries(atlas_reader
 )
 atlas_enable_warnings(atlas_reader)
 
-# N1 Windows candidate: keep the measured GDI font-backend configuration next
-# to every built executable so local and packaged qualification exercise the
-# same QPA configuration. Other platforms ignore the WindowsArguments key.
+# N1 Windows decision carried forward into N2: keep the measured GDI
+# font-backend configuration next to every built executable. N2 PDF-engine
+# probes must not casually reopen the accepted N1 shell decision.
 if(WIN32)
     add_custom_command(
         TARGET atlas_reader

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Independently validate the tracked N2 synthetic PDF fixtures.
+"""Independently validate the N2 synthetic PDF fixtures.
 
-This validator deliberately does not use Qt PDF. It checks the fixture bytes and
-expected structure/text with pinned pypdf test tooling so an engine probe failure
-is not automatically blamed on a malformed or stale synthetic fixture.
+This validator deliberately does not use Qt PDF or PDFium. It checks fixture
+bytes and expected structure/text/security behavior with pinned pypdf 5.9.0 so
+an engine probe failure is not automatically blamed on malformed/stale fixture
+bytes.
 """
 
 from __future__ import annotations
@@ -96,12 +97,49 @@ def validate_fixture(spec: dict[str, Any]) -> dict[str, Any]:
     if actual_sha.lower() != str(spec["sha256"]).lower():
         failures.append("sha256-mismatch")
 
+    if spec.get("expected_open_failure"):
+        try:
+            PdfReader(str(fixture_path), strict=False)
+        except Exception as exc:  # expected malformed fixture failure
+            result["open_failure"] = type(exc).__name__
+            result["passed"] = not failures
+            return result
+        failures.append("expected-open-failure-missing")
+        result["passed"] = False
+        return result
+
     try:
         reader = PdfReader(str(fixture_path), strict=False)
     except Exception as exc:  # fixture validation must report parser failures
         failures.append(f"pypdf-open-failed:{type(exc).__name__}")
         result["passed"] = False
         return result
+
+    if spec.get("password_fixture"):
+        result["is_encrypted"] = reader.is_encrypted
+        if not reader.is_encrypted:
+            failures.append("expected-encryption-missing")
+        else:
+            no_password_blocked = False
+            try:
+                _ = len(reader.pages)
+            except Exception:
+                no_password_blocked = True
+            result["no_password_page_access_blocked"] = no_password_blocked
+            if not no_password_blocked:
+                failures.append("no-password-page-access-unexpectedly-succeeded")
+
+            wrong_reader = PdfReader(str(fixture_path), strict=False)
+            wrong_result = int(wrong_reader.decrypt(str(spec["test_wrong_password"])))
+            result["wrong_password_result"] = wrong_result
+            if wrong_result != 0:
+                failures.append("wrong-password-unexpectedly-accepted")
+
+            reader = PdfReader(str(fixture_path), strict=False)
+            correct_result = int(reader.decrypt(str(spec["test_user_password"])))
+            result["correct_password_result"] = correct_result
+            if correct_result == 0:
+                failures.append("correct-password-rejected")
 
     page_count = len(reader.pages)
     result["page_count"] = page_count

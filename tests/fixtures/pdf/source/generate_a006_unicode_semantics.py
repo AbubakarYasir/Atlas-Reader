@@ -12,7 +12,6 @@ Pinned generator dependency: pypdf==5.9.0.
 from __future__ import annotations
 
 import hashlib
-import unicodedata
 from pathlib import Path
 
 from pypdf import PdfWriter
@@ -27,7 +26,7 @@ from pypdf.generic import (
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "generated" / "A006_unicode_semantics.pdf"
-EXPECTED_SHA256 = "1b69b6ce646ad3052d0a8f967efb4d2540569641e3f946ca8e533d9c9655d019"
+EXPECTED_SHA256 = "efe3aa5f9538a8a18af71e4517c9f1e10980db394107c0e16141b03ec7058f0b"
 
 RUNS: list[list[tuple[str, str]]] = [
     [("مرحبا بالعالم", "rtl")],
@@ -35,17 +34,6 @@ RUNS: list[list[tuple[str, str]]] = [
     [("Atlas PDF 123", "ltr"), ("مرحبا بالعالم", "rtl")],
     [("یہ اردو متن ہے", "rtl")],
 ]
-
-
-def graphemes(text: str) -> list[str]:
-    """Group a base code point with following combining marks."""
-    groups: list[str] = []
-    for char in text:
-        if unicodedata.combining(char) and groups:
-            groups[-1] += char
-        else:
-            groups.append(char)
-    return groups
 
 
 def stream(writer: PdfWriter, data: bytes):
@@ -57,23 +45,23 @@ def stream(writer: PdfWriter, data: bytes):
 def build() -> bytes:
     writer = PdfWriter()
 
-    clusters: list[str] = []
+    codepoints: list[str] = []
     for page_runs in RUNS:
         for text, _direction in page_runs:
-            for cluster in graphemes(text):
-                if cluster not in clusters:
-                    clusters.append(cluster)
+            for char in text:
+                if char not in codepoints:
+                    codepoints.append(char)
 
-    code_for = {cluster: index + 1 for index, cluster in enumerate(clusters)}
+    code_for = {char: index + 1 for index, char in enumerate(codepoints)}
 
     char_procs = DictionaryObject()
     widths = []
     differences = [NumberObject(1)]
 
-    for cluster, code in code_for.items():
+    for char, code in code_for.items():
         glyph_name = NameObject(f"/g{code}")
         glyph = DecodedStreamObject()
-        if cluster == " ":
+        if char == " ":
             glyph.set_data(b"300 0 d0\n")
             width = 300
         else:
@@ -95,8 +83,8 @@ def build() -> bytes:
         "endcodespacerange",
         f"{len(code_for)} beginbfchar",
     ]
-    for cluster, code in code_for.items():
-        cmap_lines.append(f"<{code:02X}> <{cluster.encode('utf-16-be').hex().upper()}>")
+    for char, code in code_for.items():
+        cmap_lines.append(f"<{code:02X}> <{char.encode('utf-16-be').hex().upper()}>")
     cmap_lines += [
         "endbfchar",
         "endcmap",
@@ -148,12 +136,14 @@ def build() -> bytes:
         commands: list[str] = []
         y = 720
         for text, direction in page_runs:
-            groups = graphemes(text)
+            chars = list(text)
             if direction == "rtl":
-                # PDF content is visual-order at this synthetic layer; ToUnicode
-                # preserves each logical grapheme cluster for extraction/search.
-                groups = list(reversed(groups))
-            encoded = bytes(code_for[group] for group in groups)
+                # The synthetic content stream is stored in visual order. Map
+                # one PDF code to one Unicode scalar so bidi extraction can
+                # restore logical order without moving combining marks ahead
+                # of their base letters.
+                chars.reverse()
+            encoded = bytes(code_for[char] for char in chars)
             commands.append(
                 f"BT /F1 14 Tf 72 {y} Td <{encoded.hex().upper()}> Tj ET"
             )

@@ -1,10 +1,12 @@
 # Building Atlas Reader Native
 
-N1 is still an empty-shell/toolchain checkpoint. It intentionally contains no production PDF/database/index/bookmark dependency.
+N0 and N1 are Accepted. N2 is the active PDF-engine qualification checkpoint (`2.0.0-alpha.2`).
 
-## Canonical Windows baseline
+The base N2 branch initially inherits the accepted N1 shell/toolchain and deliberately adds PDF candidate dependencies only in focused probe commits. A probe dependency compiling successfully does **not** mean that dependency is accepted for production.
 
-See `TOOLCHAIN.md` for the binding N1 toolchain policy.
+## Canonical Windows baseline inherited from N1
+
+See `TOOLCHAIN.md` and the accepted N1 records for the binding Windows baseline.
 
 For the public alpha baseline:
 
@@ -16,22 +18,16 @@ For the public alpha baseline:
 - Git;
 - Qt **6.10.3** MSVC 2022 64-bit for canonical public parity.
 
-Qt 6.11.2 may also be used as an additional developer compatibility build. It is not the public N1 canonical pin because the unauthenticated `aqtinstall` Windows 6.11.x binary path is currently unreliable.
+N2 starts from this accepted baseline instead of changing toolchains merely because a candidate library uses different upstream tooling. Candidate-specific tools are documented separately when needed.
 
 Qt Creator is optional. The repository command line remains the source of truth.
 
 ## Environment
 
-Canonical N1 public baseline:
+Canonical public baseline:
 
 ```powershell
 $env:CMAKE_PREFIX_PATH = 'C:\Qt\6.10.3\msvc2022_64'
-```
-
-Optional Qt 6.11.2 compatibility build:
-
-```powershell
-$env:CMAKE_PREFIX_PATH = 'C:\Qt\6.11.2\msvc2022_64'
 ```
 
 Verify:
@@ -41,13 +37,15 @@ cmake --version
 git --version
 ```
 
-The Visual Studio generator discovers MSVC without requiring a Ninja-specific Developer PowerShell workflow.
+The Visual Studio generator discovers MSVC without requiring a Ninja-specific Developer PowerShell workflow for ordinary Atlas targets.
 
 ## Configure once
 
 ```powershell
 cmake --preset windows-msvc2022
 ```
+
+The preset identifies the active engineering preview as `2.0.0-alpha.2`.
 
 ## Debug
 
@@ -77,9 +75,9 @@ Run:
 
 If the executable cannot locate Qt runtime DLLs, either launch from a Qt-aware environment or prepend the Qt kit's `bin` directory to `PATH`.
 
-## N1 shell command-line options
+## N1 shell diagnostics retained as regression tooling
 
-The alpha shell exposes test-only controls so startup/RTL/theme behavior is reproducible:
+The accepted shell still exposes test-only controls:
 
 ```text
 --language en|ar
@@ -102,42 +100,124 @@ Examples:
   --metrics-file .\artifacts\bench\manual.jsonl
 ```
 
-The metrics file contains only explicit N1 numeric lifecycle/frame measurements. Ordinary product/document content must never be written into it.
+These remain useful regression tools, but running them during N2 does not reopen or requalify Accepted N1 unless new user-facing regression evidence appears.
 
-## Windows baseline harness
+## N2 PDF-engine qualification documents
 
-Run:
+Before building a candidate probe, read:
+
+- `N2_PDF_ENGINE_QUALIFICATION_PLAN.md`;
+- `baselines/N2_PDF_ENGINE_MATRIX.md`;
+- `decisions/ADR-0004-pdf-engine-responsibilities.md`;
+- `../tests/fixtures/pdf/README.md`;
+- `DEPENDENCIES_AND_TOOLS.md`.
+
+Each probe must document exact candidate version/revision, acquisition route, checksum where applicable, fixture IDs and evidence output.
+
+## N2.0 baseline build
+
+At N2 opening there is intentionally no Qt PDF, PDFium or qpdf target yet. The first N2 CI baseline proves that documentation/version/CI changes did not break the inherited application.
+
+Canonical commands remain:
 
 ```powershell
-.\tools\bench\measure-windows-shell.ps1 `
-  -Iterations 6 `
-  -Language en `
-  -Theme system `
-  -QtBin C:\Qt\6.10.3\msvc2022_64\bin
+$env:CMAKE_PREFIX_PATH = 'C:\Qt\6.10.3\msvc2022_64'
+cmake --preset windows-msvc2022
+cmake --build --preset windows-debug
+ctest --preset windows-debug
+cmake --build --preset windows-release
+ctest --preset windows-release
 ```
 
-See `baselines/N1_WINDOWS_BASELINE.md` for the required evidence and interpretation.
+## Candidate-specific build rules
 
-Raw benchmark JSON is written under ignored `artifacts/bench/` by default. Do not commit machine-specific raw files merely to prove a number.
+### Qt PDF probe
+
+When N2.1 lands, the repository will add the Qt PDF module only to a focused probe/adapter target. The exact command/module list will be documented in this file in the same commit.
+
+Do not wire Qt PDF directly into QML/application domain code merely to prove it can render a page.
+
+### PDFium probe
+
+PDFium's official upstream source workflow uses Chromium-style tooling (`depot_tools`/`gclient`, GN, Ninja and Clang/clang-cl). Atlas's ordinary build remains CMake/MSVC.
+
+If N2 uses a pinned community prebuilt to accelerate the probe, this file must record:
+
+- exact package/tag/revision;
+- archive SHA-256;
+- header/binary provenance;
+- extraction/install location convention;
+- CMake discovery/link command;
+- license/notices location;
+- how to remove/replace the probe dependency.
+
+The upstream API is not thread-safe; build instructions must not imply that parallel Atlas jobs may call PDFium APIs concurrently without adapter serialization.
+
+### qpdf probe
+
+N2 intends to introduce qpdf through a pinned vcpkg manifest experiment first because a curated qpdf port exists.
+
+When that commit lands, this file must record:
+
+- exact `builtin-baseline`;
+- selected qpdf port version/features;
+- triplet;
+- install/bootstrap command;
+- CMake target/link configuration;
+- any override needed because the registry version differs from upstream;
+- how CI caches or installs it reproducibly.
+
+Do not create a floating “latest” dependency path.
+
+## PDF fixture location
+
+Tracked N2 fixtures belong under:
+
+```text
+tests/fixtures/pdf/
+```
+
+The fixture contract requires provenance, redistribution permission, SHA-256, expected capabilities and mutation permission.
+
+Private owner fixtures stay outside Git. Their paths, titles, extracted text and passwords must not leak into public CI logs or committed benchmark summaries.
+
+## Benchmark/output location
+
+Machine-specific raw output should live under ignored `artifacts/`, for example:
+
+```text
+artifacts/n2/
+artifacts/n2/qt-pdf/
+artifacts/n2/pdfium/
+artifacts/n2/qpdf/
+```
+
+Git history receives summarized evidence, exact candidate/fixture IDs and artifact/checksum references, not enormous raw dumps by default.
 
 ## Public Windows CI
 
-`.github/workflows/windows-ci.yml` uses a matrix for:
-
-- Debug;
-- Release.
+`.github/workflows/windows-ci.yml` uses a Debug + Release matrix.
 
 Each lane:
 
 1. checks out the exact commit;
 2. installs public Qt 6.10.3 MSVC 2022 x64;
-3. prints toolchain information;
-4. configures with Visual Studio 17 2022 x64;
+3. reports toolchain/checkpoint context;
+4. configures with Visual Studio 17 2022 x64 and `ATLAS_PRERELEASE=alpha.2`;
 5. enables `ATLAS_WARNINGS_AS_ERRORS=ON`;
 6. builds;
 7. runs CTest.
 
-CI intentionally does **not** run GUI performance numbers on hosted virtual hardware and then pretend they represent the user's Windows machine. Hardware/UI measurements belong to the local N1 baseline harness.
+Release additionally:
+
+- retains the inherited N1 shell/benchmark regression checks;
+- validates the accepted GDI `qt.conf` is still present;
+- stages an **N2 Windows engineering artifact** containing the current application plus N2 plan/matrix;
+- labels it as engineering/CI smoke, not a user release and not N1 requalification.
+
+Candidate probe CI steps are added in focused commits and must not silently change the inherited shell baseline.
+
+Hosted CI is useful for correctness/reproducibility, but physical rendering/performance evidence must state the actual machine/build conditions when hardware materially affects the result.
 
 ## Warnings and formatting
 
@@ -166,7 +246,7 @@ clang-format -i `
   src\app\diagnostics\ShellMetrics.h
 ```
 
-A repository-wide format-check script may be added once the source surface is large enough to justify it. N1 does not add a tool dependency solely for a badge.
+As N2 adds adapter/probe sources, include them in formatting/static checks rather than treating spike code as exempt.
 
 ## CodeGraph (optional local developer/agent tool)
 
@@ -179,7 +259,7 @@ codegraph init
 codegraph status
 ```
 
-`.codegraph/` is ignored and reproducible. Restart Codex/compatible clients after enabling project-local `.codex/config.toml` if MCP discovery requires it.
+`.codegraph/` is ignored and reproducible. Restart Codex/compatible clients after enabling project-local `.codex/config.toml` if connector discovery requires it.
 
 ## Troubleshooting
 
@@ -195,9 +275,17 @@ Add the selected Qt kit's `bin` directory to `PATH`, or run from Qt Creator/a Qt
 
 Confirm the kit contains Qt Declarative/Quick/Quick Controls.
 
-### Public CI cannot install Qt 6.11.x
+### A candidate probe cannot be found
 
-This is a known upstream repository/automation limitation. Do not add private Qt credentials to a public workflow just to hide the problem. Update the canonical pin only through `TOOLCHAIN.md`/ADR/checkpoint review.
+Do not “fix” this with an unpinned machine-global install. Read the candidate-specific N2 documentation and use the recorded acquisition path/version.
+
+### PDFium build is awkward in MSVC/CMake
+
+That integration cost is part of the N2 evidence. Do not hide it by silently replacing the official upstream build with an undocumented binary.
+
+### qpdf vcpkg version differs from upstream latest
+
+Record the exact registry port/baseline. If N2 needs a newer upstream qpdf, introduce an explicit override/acquisition change and mark which prior evidence used the older version.
 
 ### Benchmark numbers look unexpectedly high
 
@@ -206,11 +294,15 @@ Confirm:
 - Release build;
 - no debugger attached;
 - consistent power plan;
-- same display refresh/scale;
-- same Qt/compiler build;
+- same display/GPU context where relevant;
+- same engine/version/build flags;
+- same fixture bytes/SHA-256;
+- same requested raster dimensions/search work;
 - no heavy background workload;
 - same cold/warm interpretation.
 
 ## Dependency policy
 
-Do not add qpdf, PDFium, SQLite, FTS5, or unrelated libraries during N1. N2/N3 introduce production dependencies only with licensing, fixtures, benchmarks, and pinned dependency policy.
+N2 may add Qt PDF, PDFium and qpdf only as focused qualification dependencies behind Atlas-owned adapters/probes.
+
+SQLite/FTS5, scanner, production Reader, production Bookmarks, annotations/ink, migration and installer dependencies remain closed until their checkpoints.

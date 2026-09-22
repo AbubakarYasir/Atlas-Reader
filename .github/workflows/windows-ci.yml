@@ -24,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Validate qualification scripts
+      - name: Validate inherited qualification scripts and N1 shell contract
         if: matrix.configuration == 'Release'
         shell: pwsh
         run: |
@@ -51,10 +51,8 @@ jobs:
             Write-Host "PowerShell syntax OK: $file"
           }
 
-          # Runtime-contract smoke test for the live metrics poll. At process
-          # start the metrics file legitimately may not exist yet, so the first
-          # read returns @(). This exact case previously passed syntax checks but
-          # failed parameter binding on the physical qualification machine.
+          # Keep the regression check for the N1 benchmark bug even though N1
+          # is now Accepted. Later checkpoints must not silently reintroduce it.
           $tokens = $null
           $parseErrors = $null
           $measureAst = [System.Management.Automation.Language.Parser]::ParseFile(
@@ -79,16 +77,16 @@ jobs:
           }
           Write-Host 'PowerShell runtime contract OK: empty live metric poll'
 
+          # N2 inherits the user-qualified N1 Windows shell configuration. PDF
+          # engine experiments do not get to reopen this baseline casually.
           $qtConf = Get-Content 'qt.conf' -Raw
           if ($qtConf -notmatch '(?m)^WindowsArguments\s*=\s*fontengine=gdi\s*$') {
-            throw 'qt.conf must pin the N1 Windows GDI font backend candidate'
+            throw 'qt.conf must retain the Accepted N1 Windows GDI font backend configuration'
           }
-          Write-Host 'Qt Windows font backend config OK: GDI'
+          Write-Host 'Inherited N1 Windows font backend config OK: GDI'
 
-      # N1 canonical public alpha baseline. Qt 6.11.2 remains the preferred
-      # current product-generation line, but public aqt Windows 6.11.x binary
-      # installation is not reproducible without the official authenticated
-      # installer path. See docs/TOOLCHAIN.md.
+      # Accepted N1 public Windows baseline inherited by N2. Candidate-specific
+      # PDF probe tooling/dependencies are added explicitly in focused commits.
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
@@ -105,6 +103,7 @@ jobs:
           git --version
           Write-Host "Qt root: $env:QT_ROOT_DIR"
           Write-Host "Configuration: ${{ matrix.configuration }}"
+          Write-Host 'Checkpoint: N2 PDF engine qualification'
 
       - name: Configure
         shell: pwsh
@@ -113,7 +112,7 @@ jobs:
           -G "Visual Studio 17 2022"
           -A x64
           -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
-          -DATLAS_PRERELEASE=alpha.1
+          -DATLAS_PRERELEASE=alpha.2
           -DATLAS_WARNINGS_AS_ERRORS=ON
 
       - name: Build
@@ -130,13 +129,15 @@ jobs:
           -C ${{ matrix.configuration }}
           --output-on-failure
 
-      - name: Stage canonical N1 portable shell
+      # This is an engineering smoke artifact for the active N2 branch. It is
+      # not the already-Accepted N1 qualification artifact and not a user release.
+      - name: Stage N2 Windows engineering artifact
         if: matrix.configuration == 'Release'
         shell: pwsh
         run: |
-          $stage = Join-Path $PWD 'artifact/n1-windows-x64'
+          $stage = Join-Path $PWD 'artifact/n2-windows-x64'
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
-          New-Item -ItemType Directory -Force -Path (Join-Path $stage 'tools/bench') | Out-Null
+          New-Item -ItemType Directory -Force -Path (Join-Path $stage 'docs') | Out-Null
 
           $exe = Join-Path $PWD 'build/ci-Release/Release/atlas_reader.exe'
           if (-not (Test-Path $exe)) {
@@ -145,9 +146,8 @@ jobs:
 
           Copy-Item $exe (Join-Path $stage 'atlas_reader.exe')
           Copy-Item 'qt.conf' (Join-Path $stage 'qt.conf')
-          Copy-Item 'tools/bench/measure-windows-shell.ps1' (Join-Path $stage 'tools/bench/measure-windows-shell.ps1')
-          Copy-Item 'tools/bench/run-n1-packaged-qualification.ps1' (Join-Path $stage 'tools/bench/run-n1-packaged-qualification.ps1')
-          Copy-Item 'docs/baselines/N1_WINDOWS_BASELINE.md' (Join-Path $stage 'N1_WINDOWS_BASELINE.md')
+          Copy-Item 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md' (Join-Path $stage 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md')
+          Copy-Item 'docs/baselines/N2_PDF_ENGINE_MATRIX.md' (Join-Path $stage 'docs/N2_PDF_ENGINE_MATRIX.md')
 
           $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
           & $deploy --release --qmldir (Join-Path $PWD 'qml') (Join-Path $stage 'atlas_reader.exe')
@@ -156,23 +156,25 @@ jobs:
           }
 
           @(
-            'Atlas Reader Native N1 portable qualification artifact'
-            'Version: 2.0.0-alpha.1'
+            'Atlas Reader Native N2 Windows engineering artifact'
+            'Version: 2.0.0-alpha.2'
+            'Checkpoint: N2 PDF engine qualification spike'
             'Commit: ${{ github.sha }}'
             'GitHub run: ${{ github.run_id }}'
             'Configuration: Release'
             'Generator: Visual Studio 17 2022 x64'
-            'Qt: 6.10.3 MSVC 2022 64-bit'
+            'Qt baseline: 6.10.3 MSVC 2022 64-bit'
             'Controls style: compile-time Basic'
-            'Windows font backend: GDI via qt.conf'
-            'Purpose: physical Windows baseline qualification only; not a user release'
-          ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N1_BUILD_INFO.txt')
+            'Inherited Windows font backend: GDI via qt.conf'
+            'PDF engine selection: none yet unless a focused N2 probe in this commit says otherwise'
+            'Purpose: N2 engineering/CI smoke only; not a user release and not N1 requalification'
+          ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N2_BUILD_INFO.txt')
 
-      - name: Upload canonical N1 portable shell
+      - name: Upload N2 Windows engineering artifact
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
         with:
-          name: atlas-reader-n1-windows-x64-${{ github.sha }}
-          path: artifact/n1-windows-x64
+          name: atlas-reader-n2-windows-x64-${{ github.sha }}
+          path: artifact/n2-windows-x64
           if-no-files-found: error
           retention-days: 14

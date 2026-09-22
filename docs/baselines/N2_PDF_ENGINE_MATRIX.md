@@ -33,7 +33,7 @@ Single-run timings in the original core probe remain smoke evidence only. Canoni
 
 ## N2.2 PDFium core evidence baseline — 2026-09-22
 
-The first passing PDFium core evidence is bound to implementation head `7874794e14b9cea54f73b07fe2707bbaea5a8`.
+The first passing PDFium core evidence is bound to implementation head `7874794e14b9cea54ec0723c15963621f65bebf6`.
 
 - GitHub Actions run `35680738681` — Debug and Release PASS.
 - PDFium 156.0.8066.0 / `chromium/8066`.

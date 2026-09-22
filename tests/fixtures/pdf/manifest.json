@@ -5,13 +5,14 @@
     "python": "3.x",
     "reportlab": "4.4.9",
     "pypdf": "5.9.0",
-    "source": "tests/fixtures/pdf/source/generate_n2_core_fixtures.py"
+    "source": "tests/fixtures/pdf/source/generate_n2_core_fixtures.py",
+    "deterministic": true
   },
   "fixtures": [
     {
       "id": "A001",
       "file": "generated/A001_simple_text.pdf",
-      "sha256": "50748f207094d9e7d25c7ae52d0b17a8c9e3217d0bddccea5c5ca3c11ae916eb",
+      "sha256": "579897755d7d6672fd0d12b78bdc464792a43c24e1a335cdbce623f9131245c0",
       "source": "synthetic-atlas",
       "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
       "purpose": ["open", "page-count", "page-size", "page-label", "render", "english-text-extraction", "english-search", "metadata"],
@@ -41,7 +42,7 @@
     {
       "id": "A003",
       "file": "generated/A003_outlines_links.pdf",
-      "sha256": "048b97adc8c9f28e4441644ff29a0eabf9906bb6b2152bd8fba05335ec90d745",
+      "sha256": "77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5",
       "source": "synthetic-atlas",
       "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
       "purpose": ["outline-hierarchy", "internal-link", "external-uri-link", "destination-normalization"],

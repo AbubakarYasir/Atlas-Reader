@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Regenerate Atlas N2 synthetic core PDF fixtures.
+"""Regenerate Atlas N2 synthetic core PDF fixtures deterministically.
 
-This script is development/test tooling only. It intentionally uses standard
-Helvetica for the first engine-neutral fixtures and does not embed external font
-files. Arabic/Unicode fixtures are added separately with explicit redistributable
-font/source provenance.
+This script is development/test tooling only. ReportLab invariant mode fixes
+metadata/IDs so repeated runs with the pinned generator dependencies produce the
+same fixture bytes. It intentionally uses standard Helvetica for the first
+engine-neutral fixtures and does not embed external font files. Arabic/Unicode
+fixtures are added separately with explicit redistributable font/source
+provenance.
 """
 
 from __future__ import annotations
@@ -23,7 +25,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 def make_a001() -> None:
     path = OUT / "A001_simple_text.pdf"
-    c = canvas.Canvas(str(path), pagesize=letter)
+    c = canvas.Canvas(str(path), pagesize=letter, invariant=1)
     c.setTitle("Atlas N2 Simple Text Fixture")
     c.setAuthor("Atlas Reader Test Corpus")
     c.setSubject("N2 simple text extraction/render/open fixture")
@@ -38,7 +40,7 @@ def make_a001() -> None:
 
 def make_a002() -> None:
     temporary = OUT / "_A002_base.pdf"
-    c = canvas.Canvas(str(temporary), pagesize=letter)
+    c = canvas.Canvas(str(temporary), pagesize=letter, invariant=1)
     c.setTitle("Atlas N2 Geometry Fixture")
 
     for index, page_size in enumerate([letter, A4, (400, 600)]):
@@ -73,7 +75,7 @@ def make_a002() -> None:
 
 def make_a003() -> None:
     path = OUT / "A003_outlines_links.pdf"
-    c = canvas.Canvas(str(path), pagesize=letter)
+    c = canvas.Canvas(str(path), pagesize=letter, invariant=1)
     c.setTitle("Atlas N2 Outlines and Links Fixture")
 
     for index in range(3):
@@ -111,8 +113,8 @@ def main() -> None:
     make_a001()
     make_a002()
     make_a003()
-    print(f"Generated fixtures in {OUT}")
-    print("Recompute SHA-256 and update manifest.json after intentional changes.")
+    print(f"Generated deterministic fixtures in {OUT}")
+    print("Verify SHA-256 against manifest.json after intentional changes.")
 
 
 if __name__ == "__main__":

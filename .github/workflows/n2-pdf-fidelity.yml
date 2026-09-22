@@ -1,0 +1,123 @@
+name: N2 PDF Fidelity
+
+on:
+  push:
+    branches: ['native-v2-n2-pdf-engine-qualification']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  fidelity:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    env:
+      ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Qt + Qt PDF
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.3'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+          modules: 'qtpdf'
+          cache: true
+
+      - name: Acquire pinned PDFium probe package
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/bblanchon/pdfium-binaries/releases/download/chromium/8066/pdfium-win-x64.tgz'
+          $expected = '739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020'
+          $archive = Join-Path $env:RUNNER_TEMP 'pdfium-win-x64-chromium-8066.tgz'
+          $root = Join-Path $env:RUNNER_TEMP 'pdfium-chromium-8066'
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) {
+            throw "PDFium package SHA-256 mismatch: $actual != $expected"
+          }
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          tar.exe -xf $archive -C $root
+          if ($LASTEXITCODE -ne 0) { throw "PDFium extraction failed with exit code $LASTEXITCODE" }
+          foreach ($required in @('PDFiumConfig.cmake', 'include/fpdfview.h', 'lib/pdfium.dll.lib', 'bin/pdfium.dll')) {
+            if (-not (Test-Path (Join-Path $root $required))) {
+              throw "Pinned PDFium package missing expected path: $required"
+            }
+          }
+          "PDFium_DIR=$root" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ATLAS_PDFIUM_ARCHIVE_SHA256=$actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Generate and independently validate A011
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/source/requirements.txt
+          python tests/fixtures/pdf/source/generate_a011_visual_geometry.py
+          if ($LASTEXITCODE -ne 0) { throw "A011 generation failed with exit code $LASTEXITCODE" }
+
+          $fixture = 'tests/fixtures/pdf/generated/A011_visual_geometry.pdf'
+          $expected = 'c4862d88c867dd893c742d21e30f922338c771c3caaf2e7e1a2ea4bc8e4de81d'
+          $actual = (Get-FileHash $fixture -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "A011 SHA-256 mismatch: $actual != $expected" }
+
+          New-Item -ItemType Directory -Force -Path artifacts/n2/fidelity | Out-Null
+          python tests/fixtures/pdf/validate_a011_visual_geometry.py | Set-Content -Encoding UTF8 artifacts/n2/fidelity/a011-independent-geometry.json
+          if ($LASTEXITCODE -ne 0) { throw "Independent A011 geometry validation failed with exit code $LASTEXITCODE" }
+
+      - name: Configure isolated fidelity probes
+        shell: pwsh
+        run: >-
+          cmake -S tools/pdf/fidelity -B build/n2-fidelity
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          -DPDFium_DIR="$env:PDFium_DIR"
+
+      - name: Build Release fidelity probes
+        shell: pwsh
+        run: cmake --build build/n2-fidelity --config Release --parallel
+
+      - name: Run semantic raster fidelity checks
+        shell: pwsh
+        run: |
+          $fixture = (Resolve-Path 'tests/fixtures/pdf/generated/A011_visual_geometry.pdf').Path
+          $qt = (Resolve-Path 'build/n2-fidelity/Release/atlas_qt_pdf_fidelity_probe.exe').Path
+          $pdfium = (Resolve-Path 'build/n2-fidelity/Release/atlas_pdfium_fidelity_probe.exe').Path
+
+          & $qt $fixture | Set-Content -Encoding UTF8 artifacts/n2/fidelity/qt-a011.json
+          if ($LASTEXITCODE -ne 0) { throw "Qt PDF fidelity probe failed with exit code $LASTEXITCODE" }
+
+          & $pdfium $fixture | Set-Content -Encoding UTF8 artifacts/n2/fidelity/pdfium-a011.json
+          if ($LASTEXITCODE -ne 0) { throw "PDFium fidelity probe failed with exit code $LASTEXITCODE" }
+
+          python tools/pdf/fidelity/validate_fidelity_evidence.py `
+            --qt artifacts/n2/fidelity/qt-a011.json `
+            --pdfium artifacts/n2/fidelity/pdfium-a011.json `
+            --output artifacts/n2/fidelity/a011-fidelity-validation.json
+          if ($LASTEXITCODE -ne 0) { throw "A011 semantic raster fidelity validation failed with exit code $LASTEXITCODE" }
+
+          @(
+            'Atlas Reader N2 PDF fidelity qualification'
+            "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
+            'Qt PDF: 6.10.3'
+            'PDFium: 156.0.8066.0 / chromium/8066'
+            "PDFium archive SHA-256: $env:ATLAS_PDFIUM_ARCHIVE_SHA256"
+            'Fixture: A011_visual_geometry.pdf'
+            'A011 SHA-256: c4862d88c867dd893c742d21e30f922338c771c3caaf2e7e1a2ea4bc8e4de81d'
+            'Scales: 1x and 2x'
+            'Raster rule: semantic landmark colors with bounded tolerance; cross-engine byte-identical pixel hashes are not required'
+            'Geometry rule: raw MediaBox/CropBox/Rotate independently validated with pypdf 5.9.0; engine-visible size must match normalized crop/rotation result'
+            'Annotation rule: page-0 sentinel is white with annotations disabled and magenta with annotations enabled'
+          ) | Set-Content -Encoding UTF8 artifacts/n2/fidelity/BUILD_INFO.txt
+
+      - name: Upload fidelity evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n2-pdf-fidelity-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/n2/fidelity
+          if-no-files-found: error
+          retention-days: 14

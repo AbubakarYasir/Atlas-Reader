@@ -184,13 +184,17 @@ jobs:
           $fixtureStage = Join-Path $stage 'fixtures/pdf'
           $qtEvidence = Join-Path $stage 'evidence/qt-pdf'
           $pdfiumEvidence = Join-Path $stage 'evidence/pdfium'
-          New-Item -ItemType Directory -Force -Path $stage, $docs, $qtProbeStage, $pdfiumProbeStage, $fixtureStage, $qtEvidence, $pdfiumEvidence | Out-Null
+          $qtSearchEvidence = Join-Path $stage 'evidence/qt-pdf-search'
+          $pdfiumSearchEvidence = Join-Path $stage 'evidence/pdfium-search'
+          New-Item -ItemType Directory -Force -Path $stage, $docs, $qtProbeStage, $pdfiumProbeStage, $fixtureStage, $qtEvidence, $pdfiumEvidence, $qtSearchEvidence, $pdfiumSearchEvidence | Out-Null
 
           $exe = Join-Path $PWD 'build/ci-Release/Release/atlas_reader.exe'
           $qtProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_qt_pdf_probe.exe'
+          $qtSearchProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_qt_pdf_search_probe.exe'
           $pdfiumProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_pdfium_probe.exe'
+          $pdfiumSearchProbe = Join-Path $PWD 'build/ci-Release/Release/atlas_pdfium_search_probe.exe'
           $pdfiumDll = Join-Path $PWD 'build/ci-Release/Release/pdfium.dll'
-          foreach ($required in @($exe, $qtProbe, $pdfiumProbe, $pdfiumDll)) {
+          foreach ($required in @($exe, $qtProbe, $qtSearchProbe, $pdfiumProbe, $pdfiumSearchProbe, $pdfiumDll)) {
             if (-not (Test-Path $required)) {
               throw "Required Release artifact not found at $required"
             }
@@ -199,7 +203,9 @@ jobs:
           Copy-Item $exe (Join-Path $stage 'atlas_reader.exe')
           Copy-Item 'qt.conf' (Join-Path $stage 'qt.conf')
           Copy-Item $qtProbe (Join-Path $qtProbeStage 'atlas_qt_pdf_probe.exe')
+          Copy-Item $qtSearchProbe (Join-Path $qtProbeStage 'atlas_qt_pdf_search_probe.exe')
           Copy-Item $pdfiumProbe (Join-Path $pdfiumProbeStage 'atlas_pdfium_probe.exe')
+          Copy-Item $pdfiumSearchProbe (Join-Path $pdfiumProbeStage 'atlas_pdfium_search_probe.exe')
           Copy-Item $pdfiumDll (Join-Path $pdfiumProbeStage 'pdfium.dll')
           Copy-Item 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md' (Join-Path $docs 'N2_PDF_ENGINE_QUALIFICATION_PLAN.md')
           Copy-Item 'docs/baselines/N2_PDF_ENGINE_MATRIX.md' (Join-Path $docs 'N2_PDF_ENGINE_MATRIX.md')
@@ -208,6 +214,22 @@ jobs:
           Copy-Item 'tests/fixtures/pdf/generated/*.pdf' $fixtureStage
           if (Test-Path 'artifacts/n2/fixture-validation.json') {
             Copy-Item 'artifacts/n2/fixture-validation.json' (Join-Path $stage 'evidence/fixture-validation.json')
+          }
+
+          function Invoke-EvidenceProbe {
+            param(
+              [Parameter(Mandatory = $true)][string]$Executable,
+              [Parameter(Mandatory = $true)][object[]]$Arguments,
+              [Parameter(Mandatory = $true)][string]$OutputPath,
+              [Parameter(Mandatory = $true)][string]$Label
+            )
+            & $Executable @Arguments | Set-Content -Encoding UTF8 $OutputPath
+            $exitCode = $LASTEXITCODE
+            if ($exitCode -ne 0) {
+              Get-Content $OutputPath
+              throw "$Label failed with exit code $exitCode"
+            }
+            Write-Host "$Label PASS -> $OutputPath"
           }
 
           $fixtureRoot = Join-Path $PWD 'tests/fixtures/pdf/generated'
@@ -231,6 +253,10 @@ jobs:
             @{
               Id = 'A005'; File = 'A005_links_only.pdf'; QtLinkCount = '3'; PdfiumLinkCount = '2'
               Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A005 page 1','--expect-outline-count','0','--expect-internal-link-page','2','--expect-external-uri','https://example.com/atlas-n2-fixture')
+            },
+            @{
+              Id = 'A006'; File = 'A006_unicode_semantics.pdf'; QtLinkCount = '0'; PdfiumLinkCount = '0'
+              Args = @('--expect-pages','4','--expect-labels','1,2,3,4','--expect-text-contains','مرحبا بالعالم','--expect-outline-count','4','--expect-outline-titles','العربية|مُشَكَّل|Mixed العربية English|اردو','--expect-outline-depths','0,1,0,0','--expect-outline-pages','0,1,2,3')
             }
           )
 
@@ -239,30 +265,53 @@ jobs:
             $qtArgs = @('--fixture-id', $case.Id) + $case.Args + @('--expect-link-count', $case.QtLinkCount) + @($fixture)
             $pdfiumArgs = @('--fixture-id', $case.Id) + $case.Args + @('--expect-link-count', $case.PdfiumLinkCount) + @($fixture)
 
-            $qtOutput = Join-Path $qtEvidence "$($case.Id).json"
-            & $qtProbe @qtArgs | Set-Content -Encoding UTF8 $qtOutput
-            if ($LASTEXITCODE -ne 0) {
-              Get-Content $qtOutput
-              throw "Qt PDF probe failed for fixture $($case.Id) with exit code $LASTEXITCODE"
-            }
-            Write-Host "Qt PDF probe PASS: $($case.Id) -> $qtOutput"
-
-            $pdfiumOutput = Join-Path $pdfiumEvidence "$($case.Id).json"
-            & $pdfiumProbe @pdfiumArgs | Set-Content -Encoding UTF8 $pdfiumOutput
-            if ($LASTEXITCODE -ne 0) {
-              Get-Content $pdfiumOutput
-              throw "PDFium probe failed for fixture $($case.Id) with exit code $LASTEXITCODE"
-            }
-            Write-Host "PDFium probe PASS: $($case.Id) -> $pdfiumOutput"
+            Invoke-EvidenceProbe -Executable $qtProbe -Arguments $qtArgs -OutputPath (Join-Path $qtEvidence "$($case.Id).json") -Label "Qt PDF probe $($case.Id)"
+            Invoke-EvidenceProbe -Executable $pdfiumProbe -Arguments $pdfiumArgs -OutputPath (Join-Path $pdfiumEvidence "$($case.Id).json") -Label "PDFium probe $($case.Id)"
           }
+
+          $a006 = Join-Path $fixtureRoot 'A006_unicode_semantics.pdf'
+          $rawVocalized = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ'
+          $sourceVocalized = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ'
+          $urdu = 'یہ اردو متن ہے'
+
+          Invoke-EvidenceProbe -Executable $qtProbe -Arguments @('--fixture-id','A006-vocalized','--expect-pages','4','--expect-text-contains',$rawVocalized,$a006) -OutputPath (Join-Path $qtEvidence 'A006-vocalized.json') -Label 'Qt PDF A006 full vocalized extraction'
+          Invoke-EvidenceProbe -Executable $pdfiumProbe -Arguments @('--fixture-id','A006-vocalized','--expect-pages','4','--expect-text-contains',$rawVocalized,$a006) -OutputPath (Join-Path $pdfiumEvidence 'A006-vocalized.json') -Label 'PDFium A006 full vocalized extraction'
+          Invoke-EvidenceProbe -Executable $qtProbe -Arguments @('--fixture-id','A006-urdu','--expect-pages','4','--expect-text-contains',$urdu,$a006) -OutputPath (Join-Path $qtEvidence 'A006-urdu.json') -Label 'Qt PDF A006 Urdu extraction'
+          Invoke-EvidenceProbe -Executable $pdfiumProbe -Arguments @('--fixture-id','A006-urdu','--expect-pages','4','--expect-text-contains',$urdu,$a006) -OutputPath (Join-Path $pdfiumEvidence 'A006-urdu.json') -Label 'PDFium A006 Urdu extraction'
+
+          $searchCases = @(
+            @{ Name = 'A001-english'; File = 'A001_simple_text.pdf'; Query = 'Atlas N2 Fixture A001'; Count = '1'; Page = '0'; Ordinal = '0' },
+            @{ Name = 'A006-arabic'; File = 'A006_unicode_semantics.pdf'; Query = 'مرحبا بالعالم'; Count = '2'; Page = '0'; Ordinal = '0' },
+            @{ Name = 'A006-mixed-english'; File = 'A006_unicode_semantics.pdf'; Query = 'Atlas PDF 123'; Count = '1'; Page = '2'; Ordinal = '0' },
+            @{ Name = 'A006-urdu'; File = 'A006_unicode_semantics.pdf'; Query = $urdu; Count = '1'; Page = '3'; Ordinal = '0' },
+            @{ Name = 'A006-vocalized-raw'; File = 'A006_unicode_semantics.pdf'; Query = $rawVocalized; Count = '1'; Page = '1'; Ordinal = '0' }
+          )
+
+          foreach ($case in $searchCases) {
+            $fixture = Join-Path $fixtureRoot $case.File
+            $args = @('--fixture-id',$case.Name,'--query',$case.Query,'--expect-count',$case.Count,'--expect-first-page',$case.Page,'--expect-first-ordinal',$case.Ordinal,$fixture)
+            Invoke-EvidenceProbe -Executable $qtSearchProbe -Arguments $args -OutputPath (Join-Path $qtSearchEvidence "$($case.Name).json") -Label "Qt PDF search $($case.Name)"
+            Invoke-EvidenceProbe -Executable $pdfiumSearchProbe -Arguments $args -OutputPath (Join-Path $pdfiumSearchEvidence "$($case.Name).json") -Label "PDFium search $($case.Name)"
+          }
+
+          # Diagnostic only: preserve the user-facing/source-order vocalized query result
+          # without turning its current hit count into a pass/fail assumption. The query
+          # is hashed, not emitted verbatim, by both search probes.
+          $diagnosticArgs = @('--fixture-id','A006-vocalized-source-order','--query',$sourceVocalized,$a006)
+          Invoke-EvidenceProbe -Executable $qtSearchProbe -Arguments $diagnosticArgs -OutputPath (Join-Path $qtSearchEvidence 'A006-vocalized-source-order-diagnostic.json') -Label 'Qt PDF source-order vocalized search diagnostic'
+          Invoke-EvidenceProbe -Executable $pdfiumSearchProbe -Arguments $diagnosticArgs -OutputPath (Join-Path $pdfiumSearchEvidence 'A006-vocalized-source-order-diagnostic.json') -Label 'PDFium source-order vocalized search diagnostic'
 
           $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
           & $deploy --release --qmldir (Join-Path $PWD 'qml') (Join-Path $stage 'atlas_reader.exe')
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_reader with exit code $LASTEXITCODE" }
           & $deploy --release (Join-Path $qtProbeStage 'atlas_qt_pdf_probe.exe')
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_qt_pdf_probe with exit code $LASTEXITCODE" }
+          & $deploy --release (Join-Path $qtProbeStage 'atlas_qt_pdf_search_probe.exe')
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_qt_pdf_search_probe with exit code $LASTEXITCODE" }
           & $deploy --release (Join-Path $pdfiumProbeStage 'atlas_pdfium_probe.exe')
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_pdfium_probe with exit code $LASTEXITCODE" }
+          & $deploy --release (Join-Path $pdfiumProbeStage 'atlas_pdfium_search_probe.exe')
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_pdfium_search_probe with exit code $LASTEXITCODE" }
 
           @(
             'Atlas Reader Native N2 Windows engineering artifact'
@@ -277,6 +326,9 @@ jobs:
             'N2.1 probe: Qt PDF 6.10.3 via qtpdf module'
             'N2.2 probe: PDFium 156.0.8066.0 / chromium/8066 via pinned bblanchon Windows x64 package'
             'Navigation evidence: raw engine link rows preserved; semantic destination/URI assertions shared on A003-A005'
+            'Unicode evidence: deterministic A006 exact Arabic, Urdu, mixed-script page and Unicode outline coverage; raw combining-mark order retained as evidence'
+            'Search evidence: separate Qt PDF and PDFium probes; normalized page/per-page hit ordinal plus engine-native index/geometry fields'
+            'Search diagnostic: source-order fully vocalized Arabic query captured without a predetermined expected hit count'
             'PDFium archive SHA-256: 739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020'
             'PDFium call model: serialized single-thread only'
             'Product shell Qt PDF linkage: none'

@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/n2-qpdf-qualification.yml'
       - 'tools/pdf/qpdf_structural_probe.py'
+      - 'tools/pdf/qpdf_outline_mutation_probe.py'
       - 'docs/baselines/N2_QPDF_PROVENANCE.md'
       - 'tests/fixtures/pdf/**'
   workflow_dispatch:
@@ -112,6 +113,21 @@ jobs:
             throw "qpdf structural qualification failed with exit code $LASTEXITCODE"
           }
 
+      - name: Run controlled qpdf outline mutation probe
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'artifacts/n2-qpdf'
+          python tools/pdf/qpdf_outline_mutation_probe.py `
+            --qpdf "$env:QPDF_EXE" `
+            --fixture-root 'tests/fixtures/pdf/generated' `
+            --output-dir "$out"
+          if ($LASTEXITCODE -ne 0) {
+            if (Test-Path (Join-Path $out 'qpdf-controlled-outline-mutation.json')) {
+              Get-Content (Join-Path $out 'qpdf-controlled-outline-mutation.json')
+            }
+            throw "qpdf controlled outline mutation qualification failed with exit code $LASTEXITCODE"
+          }
+
       - name: Stage qpdf qualification identity
         if: always()
         shell: pwsh
@@ -119,7 +135,7 @@ jobs:
           $out = Join-Path $PWD 'artifacts/n2-qpdf'
           New-Item -ItemType Directory -Force -Path $out | Out-Null
           @(
-            'Atlas Reader N2 qpdf structural/security qualification evidence'
+            'Atlas Reader N2 qpdf structural/security/transformation qualification evidence'
             "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
             "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
             "qpdf version: $env:QPDF_VERSION"
@@ -130,12 +146,13 @@ jobs:
             'Acquisition: first-party qpdf GitHub release, MSVC64 ZIP'
             'vcpkg baseline: N/A for this CLI qualification slice'
             'Fixture validator: pypdf 5.9.0'
-            'Controlled outline mutation: not in this slice; pending exact JSON object-layout evidence'
+            'Controlled outline mutation: A003 ASCII title + A006 Unicode Urdu/Arabic title; hierarchy/destination and unrelated invariants asserted'
             'Product linkage: none'
           ) | Set-Content -Encoding UTF8 (Join-Path $out 'N2_QPDF_INFO.txt')
 
           Copy-Item 'docs/baselines/N2_QPDF_PROVENANCE.md' (Join-Path $out 'N2_QPDF_PROVENANCE.md')
           Copy-Item 'tools/pdf/qpdf_structural_probe.py' (Join-Path $out 'qpdf_structural_probe.py')
+          Copy-Item 'tools/pdf/qpdf_outline_mutation_probe.py' (Join-Path $out 'qpdf_outline_mutation_probe.py')
           if (Test-Path 'artifacts/n2/qpdf-fixture-validation.json') {
             Copy-Item 'artifacts/n2/qpdf-fixture-validation.json' (Join-Path $out 'qpdf-fixture-validation.json')
           }

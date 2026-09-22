@@ -11,7 +11,7 @@ from pypdf import PdfReader
 
 ROOT = Path(__file__).resolve().parent
 PDF = ROOT / "generated" / "A011_visual_geometry.pdf"
-EXPECTED_SHA256 = "c4862d88c867dd893c742d21e30f922338c771c3caaf2e7e1a2ea4bc8e4de81d"
+EXPECTED_SHA256 = "ebf82d49391c4df27f50afc2eb785aa828effbdeb85039ec2bb4c26d1896f824"
 
 EXPECTED = [
     {

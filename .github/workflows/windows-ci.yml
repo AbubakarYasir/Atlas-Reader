@@ -34,41 +34,28 @@ jobs:
             'tools/bench/run-n1-qualification.ps1',
             'tools/bench/run-n1-packaged-qualification.ps1'
           )
-
           foreach ($file in $files) {
             $tokens = $null
             $parseErrors = $null
-            [System.Management.Automation.Language.Parser]::ParseFile(
-              (Resolve-Path $file),
-              [ref]$tokens,
-              [ref]$parseErrors
-            ) | Out-Null
-
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$parseErrors) | Out-Null
             if ($parseErrors.Count -gt 0) {
               $parseErrors | ForEach-Object { Write-Error "${file}: $($_.Message)" }
               throw "PowerShell syntax validation failed for $file"
             }
-
             Write-Host "PowerShell syntax OK: $file"
           }
 
           $tokens = $null
           $parseErrors = $null
           $measureAst = [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path 'tools/bench/measure-windows-shell.ps1'),
-            [ref]$tokens,
-            [ref]$parseErrors
-          )
+            (Resolve-Path 'tools/bench/measure-windows-shell.ps1'), [ref]$tokens, [ref]$parseErrors)
           $getMetricFunction = $measureAst.Find({
             param($node)
-            $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
-              $node.Name -eq 'Get-MetricValue'
+            $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Get-MetricValue'
           }, $true)
-
           if ($null -eq $getMetricFunction) {
             throw 'Get-MetricValue function not found in measurement script'
           }
-
           Invoke-Expression $getMetricFunction.Extent.Text
           $emptyMetricResult = Get-MetricValue -Metrics @() -Name 'startup.first_frame_ms'
           if ($null -ne $emptyMetricResult) {
@@ -99,25 +86,21 @@ jobs:
           $expected = '739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020'
           $archive = Join-Path $env:RUNNER_TEMP 'pdfium-win-x64-chromium-8066.tgz'
           $root = Join-Path $env:RUNNER_TEMP 'pdfium-chromium-8066'
-
           Invoke-WebRequest -Uri $url -OutFile $archive
           $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -ne $expected) {
             throw "PDFium package SHA-256 mismatch: $actual != $expected"
           }
-
           New-Item -ItemType Directory -Force -Path $root | Out-Null
           tar.exe -xf $archive -C $root
           if ($LASTEXITCODE -ne 0) {
             throw "PDFium package extraction failed with exit code $LASTEXITCODE"
           }
-
           foreach ($required in @('PDFiumConfig.cmake', 'include/fpdfview.h', 'lib/pdfium.dll.lib', 'bin/pdfium.dll')) {
             if (-not (Test-Path (Join-Path $root $required))) {
               throw "Pinned PDFium package missing expected path: $required"
             }
           }
-
           "PDFium_DIR=$root" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "ATLAS_PDFIUM_ARCHIVE_SHA256=$actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Pinned PDFium package verified: chromium/8066 -> $actual"
@@ -186,7 +169,6 @@ jobs:
           $fixtureStage = Join-Path $stage 'fixtures/pdf'
           $qtEvidence = Join-Path $stage 'evidence/qt-pdf'
           $pdfiumEvidence = Join-Path $stage 'evidence/pdfium'
-
           New-Item -ItemType Directory -Force -Path $stage, $docs, $qtProbeStage, $pdfiumProbeStage, $fixtureStage, $qtEvidence, $pdfiumEvidence | Out-Null
 
           $exe = Join-Path $PWD 'build/ci-Release/Release/atlas_reader.exe'
@@ -216,38 +198,34 @@ jobs:
           $fixtureRoot = Join-Path $PWD 'tests/fixtures/pdf/generated'
           $probeCases = @(
             @{
-              Id = 'A001'
-              File = 'A001_simple_text.pdf'
-              Args = @('--expect-pages','1','--expect-labels','1','--expect-text-contains','Atlas N2 Fixture A001','--expect-outline-count','0','--expect-link-count','0','--render-page','0','--render-width','612','--render-height','792')
+              Id = 'A001'; File = 'A001_simple_text.pdf'; QtLinkCount = '0'; PdfiumLinkCount = '0'
+              Args = @('--expect-pages','1','--expect-labels','1','--expect-text-contains','Atlas N2 Fixture A001','--expect-outline-count','0','--render-page','0','--render-width','612','--render-height','792')
             },
             @{
-              Id = 'A002'
-              File = 'A002_geometry_labels.pdf'
-              Args = @('--expect-pages','3','--expect-labels','i,ii,1','--expect-text-contains','Atlas N2 Fixture A002 page 1','--expect-outline-count','0','--expect-link-count','0')
+              Id = 'A002'; File = 'A002_geometry_labels.pdf'; QtLinkCount = '0'; PdfiumLinkCount = '0'
+              Args = @('--expect-pages','3','--expect-labels','i,ii,1','--expect-text-contains','Atlas N2 Fixture A002 page 1','--expect-outline-count','0')
             },
             @{
-              Id = 'A003'
-              File = 'A003_outlines_links.pdf'
-              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A003 page 1','--expect-outline-count','3','--expect-outline-titles','Chapter 1|Section 1.1|Chapter 2','--expect-outline-depths','0,1,0','--expect-outline-pages','0,1,2','--expect-link-count','2','--expect-internal-link-page','2','--expect-external-uri','https://example.com/atlas-n2-fixture')
+              Id = 'A003'; File = 'A003_outlines_links.pdf'; QtLinkCount = '3'; PdfiumLinkCount = '2'
+              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A003 page 1','--expect-outline-count','3','--expect-outline-titles','Chapter 1|Section 1.1|Chapter 2','--expect-outline-depths','0,1,0','--expect-outline-pages','0,1,2','--expect-internal-link-page','2','--expect-external-uri','https://example.com/atlas-n2-fixture')
             },
             @{
-              Id = 'A004'
-              File = 'A004_outlines_only.pdf'
-              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A004 page 1','--expect-outline-count','3','--expect-outline-titles','Chapter 1|Section 1.1|Chapter 2','--expect-outline-depths','0,1,0','--expect-outline-pages','0,1,2','--expect-link-count','0')
+              Id = 'A004'; File = 'A004_outlines_only.pdf'; QtLinkCount = '0'; PdfiumLinkCount = '0'
+              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A004 page 1','--expect-outline-count','3','--expect-outline-titles','Chapter 1|Section 1.1|Chapter 2','--expect-outline-depths','0,1,0','--expect-outline-pages','0,1,2')
             },
             @{
-              Id = 'A005'
-              File = 'A005_links_only.pdf'
-              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A005 page 1','--expect-outline-count','0','--expect-link-count','2','--expect-internal-link-page','2','--expect-external-uri','https://example.com/atlas-n2-fixture')
+              Id = 'A005'; File = 'A005_links_only.pdf'; QtLinkCount = '3'; PdfiumLinkCount = '2'
+              Args = @('--expect-pages','3','--expect-labels','1,2,3','--expect-text-contains','Atlas N2 Fixture A005 page 1','--expect-outline-count','0','--expect-internal-link-page','2','--expect-external-uri','https://example.com/atlas-n2-fixture')
             }
           )
 
           foreach ($case in $probeCases) {
             $fixture = Join-Path $fixtureRoot $case.File
-            $args = @('--fixture-id', $case.Id) + $case.Args + @($fixture)
+            $qtArgs = @('--fixture-id', $case.Id) + $case.Args + @('--expect-link-count', $case.QtLinkCount) + @($fixture)
+            $pdfiumArgs = @('--fixture-id', $case.Id) + $case.Args + @('--expect-link-count', $case.PdfiumLinkCount) + @($fixture)
 
             $qtOutput = Join-Path $qtEvidence "$($case.Id).json"
-            & $qtProbe @args | Set-Content -Encoding UTF8 $qtOutput
+            & $qtProbe @qtArgs | Set-Content -Encoding UTF8 $qtOutput
             if ($LASTEXITCODE -ne 0) {
               Get-Content $qtOutput
               throw "Qt PDF probe failed for fixture $($case.Id) with exit code $LASTEXITCODE"
@@ -255,7 +233,7 @@ jobs:
             Write-Host "Qt PDF probe PASS: $($case.Id) -> $qtOutput"
 
             $pdfiumOutput = Join-Path $pdfiumEvidence "$($case.Id).json"
-            & $pdfiumProbe @args | Set-Content -Encoding UTF8 $pdfiumOutput
+            & $pdfiumProbe @pdfiumArgs | Set-Content -Encoding UTF8 $pdfiumOutput
             if ($LASTEXITCODE -ne 0) {
               Get-Content $pdfiumOutput
               throw "PDFium probe failed for fixture $($case.Id) with exit code $LASTEXITCODE"
@@ -265,19 +243,11 @@ jobs:
 
           $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
           & $deploy --release --qmldir (Join-Path $PWD 'qml') (Join-Path $stage 'atlas_reader.exe')
-          if ($LASTEXITCODE -ne 0) {
-            throw "windeployqt failed for atlas_reader with exit code $LASTEXITCODE"
-          }
-
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_reader with exit code $LASTEXITCODE" }
           & $deploy --release (Join-Path $qtProbeStage 'atlas_qt_pdf_probe.exe')
-          if ($LASTEXITCODE -ne 0) {
-            throw "windeployqt failed for atlas_qt_pdf_probe with exit code $LASTEXITCODE"
-          }
-
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_qt_pdf_probe with exit code $LASTEXITCODE" }
           & $deploy --release (Join-Path $pdfiumProbeStage 'atlas_pdfium_probe.exe')
-          if ($LASTEXITCODE -ne 0) {
-            throw "windeployqt failed for atlas_pdfium_probe with exit code $LASTEXITCODE"
-          }
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_pdfium_probe with exit code $LASTEXITCODE" }
 
           @(
             'Atlas Reader Native N2 Windows engineering artifact'
@@ -291,7 +261,7 @@ jobs:
             'Qt baseline: 6.10.3 MSVC 2022 64-bit'
             'N2.1 probe: Qt PDF 6.10.3 via qtpdf module'
             'N2.2 probe: PDFium 156.0.8066.0 / chromium/8066 via pinned bblanchon Windows x64 package'
-            'Navigation evidence: normalized outline/link/destination assertions on A003-A005'
+            'Navigation evidence: raw engine link rows preserved; semantic destination/URI assertions shared on A003-A005'
             'PDFium archive SHA-256: 739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020'
             'PDFium call model: serialized single-thread only'
             'Product shell Qt PDF linkage: none'

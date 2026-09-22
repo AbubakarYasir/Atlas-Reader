@@ -1,0 +1,150 @@
+name: N2 qpdf Qualification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/n2-qpdf-qualification.yml'
+      - 'tools/pdf/qpdf_structural_probe.py'
+      - 'docs/baselines/N2_QPDF_PROVENANCE.md'
+      - 'tests/fixtures/pdf/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qpdf-qualification:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      ATLAS_CHECKOUT_SHA: ${{ github.sha }}
+      QPDF_VERSION: '12.4.1'
+      QPDF_ASSET: 'qpdf-12.4.1-msvc64.zip'
+      QPDF_ASSET_ID: '533019080'
+      QPDF_ASSET_SHA256: '3cd016cd433ef7232e42f4c13348a49cc14907a3c7278ef4f99120593126f7a6'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Acquire exact official qpdf 12.4.1 MSVC64 package
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/qpdf/qpdf/releases/download/v12.4.1/qpdf-12.4.1-msvc64.zip'
+          $archive = Join-Path $env:RUNNER_TEMP $env:QPDF_ASSET
+          $root = Join-Path $env:RUNNER_TEMP 'qpdf-12.4.1-msvc64'
+
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:QPDF_ASSET_SHA256) {
+            throw "qpdf package SHA-256 mismatch: $actual != $env:QPDF_ASSET_SHA256"
+          }
+
+          Expand-Archive -LiteralPath $archive -DestinationPath $root -Force
+          $candidates = @(Get-ChildItem -Path $root -Recurse -Filter 'qpdf.exe' -File)
+          if ($candidates.Count -ne 1) {
+            throw "Expected exactly one qpdf.exe in official package; found $($candidates.Count)"
+          }
+          $qpdf = $candidates[0].FullName
+
+          $versionText = (& $qpdf --version 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $versionText -notmatch '(?<![0-9])12\.4\.1(?![0-9])') {
+            throw "Unexpected qpdf version response: $versionText"
+          }
+
+          "QPDF_EXE=$qpdf" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "QPDF_ARCHIVE_SHA256=$actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Pinned qpdf verified: $versionText"
+          Write-Host "Asset ID: $env:QPDF_ASSET_ID"
+          Write-Host "Archive SHA-256: $actual"
+
+      - name: Install independent fixture validator
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
+          if ($LASTEXITCODE -ne 0) {
+            throw "Fixture validation dependency install failed with exit code $LASTEXITCODE"
+          }
+
+      - name: Regenerate and verify deterministic N2 fixtures
+        shell: pwsh
+        run: |
+          python tests/fixtures/pdf/source/generate_a006_unicode_semantics.py
+          if ($LASTEXITCODE -ne 0) { throw "A006 generation failed: $LASTEXITCODE" }
+
+          python tests/fixtures/pdf/source/generate_a007_a008_security_semantics.py
+          if ($LASTEXITCODE -ne 0) { throw "A007/A008 generation failed: $LASTEXITCODE" }
+
+          $fixtures = @(
+            @{ Id = 'A003'; Path = 'tests/fixtures/pdf/generated/A003_outlines_links.pdf'; Expected = '77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5' },
+            @{ Id = 'A006'; Path = 'tests/fixtures/pdf/generated/A006_unicode_semantics.pdf'; Expected = 'efe3aa5f9538a8a18af71e4517c9f1e10980db394107c0e16141b03ec7058f0b' },
+            @{ Id = 'A007'; Path = 'tests/fixtures/pdf/generated/A007_malformed_truncated.pdf'; Expected = 'd6e2fb7962bb233083c110593f6e6968b067c155c713ebb9418c19493e48d79f' },
+            @{ Id = 'A008'; Path = 'tests/fixtures/pdf/generated/A008_password_rc4_40.pdf'; Expected = '62a6b4e332b8296250b9f8d1076e7c5d717a01c54a7471418bc771f0e2d4a08e' }
+          )
+          foreach ($fixture in $fixtures) {
+            $actual = (Get-FileHash $fixture.Path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $fixture.Expected) {
+              throw "$($fixture.Id) SHA-256 mismatch: $actual != $($fixture.Expected)"
+            }
+            Write-Host "$($fixture.Id) verified: $actual"
+          }
+
+          python tests/fixtures/pdf/validate_n2_fixtures.py --output artifacts/n2/qpdf-fixture-validation.json
+          if ($LASTEXITCODE -ne 0) {
+            throw "Independent pypdf fixture validation failed with exit code $LASTEXITCODE"
+          }
+
+      - name: Run qpdf structural security and preservation probe
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'artifacts/n2-qpdf'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          python tools/pdf/qpdf_structural_probe.py `
+            --qpdf "$env:QPDF_EXE" `
+            --fixture-root 'tests/fixtures/pdf/generated' `
+            --output-dir "$out"
+          if ($LASTEXITCODE -ne 0) {
+            if (Test-Path (Join-Path $out 'qpdf-structural-security-preservation.json')) {
+              Get-Content (Join-Path $out 'qpdf-structural-security-preservation.json')
+            }
+            throw "qpdf structural qualification failed with exit code $LASTEXITCODE"
+          }
+
+      - name: Stage qpdf qualification identity
+        if: always()
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'artifacts/n2-qpdf'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          @(
+            'Atlas Reader N2 qpdf structural/security qualification evidence'
+            "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
+            "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
+            "qpdf version: $env:QPDF_VERSION"
+            "Official asset: $env:QPDF_ASSET"
+            "Official asset ID: $env:QPDF_ASSET_ID"
+            "Official asset SHA-256: $env:QPDF_ASSET_SHA256"
+            "Verified archive SHA-256: $env:QPDF_ARCHIVE_SHA256"
+            'Acquisition: first-party qpdf GitHub release, MSVC64 ZIP'
+            'vcpkg baseline: N/A for this CLI qualification slice'
+            'Fixture validator: pypdf 5.9.0'
+            'Controlled outline mutation: not in this slice; pending exact JSON object-layout evidence'
+            'Product linkage: none'
+          ) | Set-Content -Encoding UTF8 (Join-Path $out 'N2_QPDF_INFO.txt')
+
+          Copy-Item 'docs/baselines/N2_QPDF_PROVENANCE.md' (Join-Path $out 'N2_QPDF_PROVENANCE.md')
+          Copy-Item 'tools/pdf/qpdf_structural_probe.py' (Join-Path $out 'qpdf_structural_probe.py')
+          if (Test-Path 'artifacts/n2/qpdf-fixture-validation.json') {
+            Copy-Item 'artifacts/n2/qpdf-fixture-validation.json' (Join-Path $out 'qpdf-fixture-validation.json')
+          }
+
+      - name: Upload qpdf qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n2-qpdf-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/n2-qpdf
+          if-no-files-found: error
+          retention-days: 14

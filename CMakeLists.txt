@@ -273,6 +273,17 @@ add_test(
 )
 
 add_test(
+    NAME n2_qt_pdf_search_a006_mixed_english
+    COMMAND atlas_qt_pdf_search_probe
+        --fixture-id A006
+        --query "Atlas PDF 123"
+        --expect-count 1
+        --expect-first-page 2
+        --expect-first-ordinal 0
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+)
+
+add_test(
     NAME n2_qt_pdf_search_a006_urdu
     COMMAND atlas_qt_pdf_search_probe
         --fixture-id A006
@@ -419,6 +430,17 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
             --query "مرحبا بالعالم"
             --expect-count 2
             --expect-first-page 0
+            --expect-first-ordinal 0
+            "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+    )
+
+    add_test(
+        NAME n2_pdfium_search_a006_mixed_english
+        COMMAND atlas_pdfium_search_probe
+            --fixture-id A006
+            --query "Atlas PDF 123"
+            --expect-count 1
+            --expect-first-page 2
             --expect-first-ordinal 0
             "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
     )

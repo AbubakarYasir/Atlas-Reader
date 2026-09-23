@@ -1,156 +1,164 @@
 # N2 PDF Stress / Concurrency Baseline
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Planned — evidence pending**  
+**Status:** **Evidence captured — functional stress PASS; memory trends recorded with limitation**  
 **Opened:** 2026-09-23  
+**Evidence date:** 2026-09-23  
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
-This file defines the stress/concurrency qualification gate before any result is recorded. It must be updated with exact implementation SHA, workflow run, artifact identity and measured results before the slice can be treated as canonical evidence.
+This file records the canonical stress/concurrency evidence for N2. It does not select a read engine and does not constitute `N2 PASS`.
 
-N2 remains Open. This file does not select a read engine and does not constitute `N2 PASS`.
+## 1. Canonical implementation and artifact
 
-## 1. Questions this slice must answer
+Physically tested implementation SHA:
 
-### A. Lifetime-symmetric resource behavior
+`72109de91aad5496a9e2fe16d5741581243a649f`
 
-For both Qt PDF and PDFium, repeatedly perform the same high-level lifetime:
+Exact-head workflow results:
 
-1. open a deterministic PDF;
-2. load page 0;
-3. render a bounded raster;
-4. extract page text;
-5. release page/document/render/text resources;
-6. record process working-set checkpoints periodically.
+- `N2 PDF Stress` run `35801464463` — **PASS**;
+- `Windows CI` run `35801464476` — **PASS**;
+- `N2 PDF Coordinates` run `35801464469` — **PASS**;
+- `N2 PDF Fidelity` run `35801464486` — **PASS**;
+- `N2 PDF Performance` run `35801464462` — **PASS**;
+- `N2 qpdf Qualification` run `35801464470` — **PASS**.
 
-The purpose is to detect crashes, resource-lifetime failures and obvious monotonic growth patterns under repeated complete document lifetimes.
+Canonical stress artifact:
 
-The test does **not** invent a universal leak threshold from one GitHub-hosted Windows runner. Working-set start/end/peak/checkpoints and observed growth are evidence. A memory difference by itself is not called a leak without stronger evidence.
+- artifact ID `10726420090`;
+- name `atlas-reader-n2-pdf-stress-72109de91aad5496a9e2fe16d5741581243a649f`;
+- digest `sha256:6fa983cc89745950b7d73c75d8aea9061dfa0723a348724c6063dac12058f34a`.
 
-### B. PDFium serialization under concurrent application producers
+## 2. Protocol
 
-PDFium's public API contract is not thread-safe. N2 must therefore never qualify or benchmark simultaneous PDFium API calls.
+Existing deterministic fixtures were reused:
 
-Instead, qualification will model the intended Atlas execution boundary:
+- A003 SHA-256 `77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5`;
+- A011 SHA-256 `b25d6b6716fbbcf095cbd68bcf57913d4e14bca3e64be19f513c35fd3ddadd29`.
 
-- four application producer threads;
-- each producer submits 250 PDF work requests;
-- exactly one PDFium worker/execution lane owns all PDFium calls;
-- 1,000 requests total;
-- each request performs bounded open/page/render/text work and closes its resources;
-- every request must complete successfully;
-- the worker must not deadlock or drop tasks;
-- measured maximum simultaneous PDFium API executions must equal **1**;
-- all engine API work must execute on the single worker thread.
+Lifetime stress per read engine:
 
-Queue wait/completion distributions may be recorded, but they are not compared directly with Qt timing as an engine-speed verdict.
+1. open the deterministic document;
+2. load/render bounded page content;
+3. extract text;
+4. release candidate-native page/document/render/text resources;
+5. repeat for **500 complete document lifetimes**;
+6. record process working set every 50 iterations plus start/end/OS peak.
 
-## 2. Initial deterministic corpus
+PDFium serialized-queue stress:
 
-Use existing, already-qualified fixtures rather than inventing a new stress-only PDF unless evidence requires one:
+- producers: **4**;
+- requests per producer: **250**;
+- submitted requests: **1,000**;
+- execution lanes allowed to call PDFium: **1**;
+- PDFium initialization, queued work and shutdown all occur on the dedicated worker lane;
+- producer-side PDFium API calls are forbidden.
 
-- A003 — small ordinary English/navigation PDF, SHA-256 `77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5`;
-- A011 — deterministic visual/geometry fixture, SHA-256 `b25d6b6716fbbcf095cbd68bcf57913d4e14bca3e64be19f513c35fd3ddadd29`.
+## 3. Functional lifetime result
 
-The first stress pass may use A003 for lifetime/open/text work and A011 for render/geometry work. These remain small synthetic documents; large-document scaling is not inferred.
+| Check | Qt PDF 6.10.3 | PDFium `chromium/8066` |
+|---|---:|---:|
+| requested lifetimes | 500 | 500 |
+| completed lifetimes | 500 | 500 |
+| render successes | 500 | 500 |
+| text successes | 500 | 500 |
+| operation failures | 0 | 0 |
+| result | **PASS** | **PASS** |
 
-## 3. Proposed protocol
+Qt completed the 500-lifetime workload in about `1629.95 ms` on the hosted runner. PDFium completed its 500-lifetime workload in about `623.47 ms`. These totals are stress-run observations, not a new performance ranking; the canonical repeated performance comparison remains `N2 PDF Performance`.
 
-### Lifetime loop
+## 4. PDFium serialized execution result
 
-Default qualification target:
+The queue result is **PASS**:
 
-- 500 complete document lifetimes per engine;
-- render target approximately 306 × 396 pixels or another explicitly fixed small raster;
-- working-set checkpoint every 50 iterations plus start/end;
-- failures recorded with iteration index and operation;
-- all candidate-native objects must be released before the next iteration begins.
+- submitted: `1000`;
+- completed: `1000`;
+- failed: `0`;
+- actual PDFium worker thread count: `1`;
+- producer-side PDFium API calls: `0`;
+- maximum simultaneously active PDFium API executions: `1`;
+- clean shutdown: `true`.
 
-Qt and PDFium probes should use equivalent high-level work. Candidate-specific initialization that necessarily lives for process lifetime must be documented separately rather than hidden.
+Observed queue latency under this intentionally serialized burst workload:
 
-### PDFium serialized queue
+- queue-wait p50: `447.7567 ms`;
+- queue-wait p95: `878.7624 ms`;
+- total-latency p50: `448.4745 ms`;
+- total-latency p95: `879.4784 ms`.
 
-Default qualification target:
+These queue latencies describe a 1,000-request synthetic serialized workload and are **not** a Qt-vs-PDFium speed comparison or a proposed UI latency budget.
 
-- producer threads: 4;
-- requests per producer: 250;
-- total: 1,000;
-- one worker thread calling PDFium;
-- bounded fixture/render workload per task;
-- maximum active PDFium API execution: exactly 1;
-- completed = submitted = 1,000;
-- failures = 0;
-- queue exits cleanly after all producers finish.
+## 5. Working-set evidence
 
-## 4. Evidence to capture
+The validator intentionally does not invent a universal leak threshold from one hosted-runner series.
 
-Each engine lifetime probe should emit machine-readable JSON containing at least:
+### Qt PDF
 
-- engine/version/pin;
-- fixture identity;
-- requested/completed iteration counts;
-- failures;
-- start/end/peak working set;
-- periodic working-set checkpoints;
-- first and last checkpoint deltas;
-- total elapsed time;
-- render/text/open success counts.
+- start: `10.03125 MiB`;
+- first checkpoint at iteration 50: `14.26172 MiB`;
+- last checkpoint at iteration 500: `18.56641 MiB`;
+- end: `18.56641 MiB`;
+- start → end delta: `+8.53516 MiB`;
+- first → last checkpoint delta: `+4.30469 MiB`;
+- observed checkpoint range: `14.26172–18.56641 MiB`;
+- linear fitted slope: about `9.94 KiB/iteration`;
+- increasing checkpoint steps: `8/9`.
 
-The PDFium queue probe should additionally emit:
+### PDFium
 
-- producer count;
-- requests per producer;
-- submitted/completed/failed totals;
-- worker thread count actually used for PDFium calls;
-- maximum simultaneous active PDFium execution count;
-- queue wait p50/p95 if measured;
-- task completion p50/p95 if measured;
-- clean shutdown state.
+- start: `8.71484 MiB`;
+- first checkpoint at iteration 50: `11.25 MiB`;
+- last checkpoint at iteration 500: `11.84375 MiB`;
+- end: `11.84375 MiB`;
+- start → end delta: `+3.12891 MiB`;
+- first → last checkpoint delta: `+0.59375 MiB`;
+- observed checkpoint range: `11.25–11.86719 MiB`;
+- linear fitted slope: about `1.23 KiB/iteration`;
+- increasing checkpoint steps: `7/9`.
 
-## 5. Pass / interpretation rules
+Interpretation:
 
-The functional gate passes only if:
+- there were **no crashes, failed closes, dropped operations or resource-lifetime failures** across the 500-cycle runs;
+- PDFium's working-set series is nearly flat after initial process/library growth under this tiny synthetic workload;
+- Qt's working set shows a measurable upward trend across this single 500-cycle hosted-runner series;
+- that trend is recorded as a **limitation / follow-up signal**, not automatically labeled a memory leak from one synthetic process-level working-set run;
+- if Qt PDF is selected for a production responsibility involving repeated document churn, a later real-document soak test should retain this series as the baseline comparator.
 
-- every requested lifetime iteration completes;
-- every requested PDFium queue task completes;
-- no crash/deadlock/timeout occurs;
-- engine resource close/destruction paths complete;
-- PDFium maximum active API execution is exactly 1;
-- no PDFium API calls occur from producer threads;
-- the artifact contains the full working-set/checkpoint evidence.
+Therefore lifetime/resource stress is **PASS WITH LIMITATION** for both candidates, with the stronger memory-growth caveat attached to Qt PDF.
 
-Memory interpretation is separate from functional pass/fail:
+## 6. Architectural conclusion for PDFium
 
-- a stable/noisy bounded series may be recorded as **PASS WITH LIMITATION** under this synthetic workload;
-- clear sustained monotonic growth should trigger investigation before responsibility selection;
-- one start/end delta on a hosted runner must not be labeled a leak by itself;
-- no absolute memory threshold is invented solely to make this gate pass.
+The qualification proves that the intended Atlas execution boundary is viable:
 
-## 6. Architectural contract under test
+> concurrent Atlas callers may submit immutable PDF work concurrently, but all PDFium public API execution is serialized through one Atlas-owned worker/executor lane.
 
-If PDFium remains a production candidate, Atlas must own a serialization boundary. Engine handles/types must not escape that lane into arbitrary concurrent application code.
+If PDFium is selected for a production responsibility:
 
-The likely production pattern is an Atlas-owned worker/executor with concurrent callers submitting immutable work requests and receiving normalized results. This qualification tests that pattern without prematurely implementing N3 Reader architecture.
+- PDFium handles/types must not escape the serialized adapter boundary;
+- producer/application threads must not call PDFium directly;
+- initialization and shutdown ownership must remain explicit;
+- queue cancellation/back-pressure policy belongs to the Atlas adapter/application layer, not the domain model.
 
-Qt PDF is not assumed to require the same serialization policy; this slice's Qt lifetime loop is resource-lifetime evidence, not a forced queue architecture.
+This is architecture evidence only; N2 does not implement the N3 Reader scheduler.
 
-## 7. Non-goals
+## 7. What this slice does not prove
 
-This slice does not:
+This evidence does not establish:
 
-- select Qt PDF or PDFium;
-- implement the production reader/task scheduler;
-- test simultaneous unsupported PDFium API calls;
-- establish large-document performance scaling;
-- establish a universal leak threshold;
-- start N3.
+- arbitrary large-document memory stability;
+- multi-hour desktop soak stability;
+- image-heavy or pathological-PDF memory behavior;
+- a universal acceptable RSS/working-set threshold;
+- that simultaneous PDFium API calls are safe — they were deliberately **not** attempted;
+- production queue fairness/cancellation/back-pressure UX;
+- a final read-engine selection.
 
-## 8. Evidence record
+## 8. Result
 
-Implementation SHA: **PENDING**  
-Workflow run: **PENDING**  
-Artifact: **PENDING**  
-Qt lifetime result: **PENDING**  
-PDFium lifetime result: **PENDING**  
-PDFium serialized queue result: **PENDING**
+- Qt PDF repeated lifetime correctness: **PASS**;
+- PDFium repeated lifetime correctness: **PASS**;
+- PDFium serialized multi-producer queue: **PASS**;
+- PDFium non-overlap contract: **PASS**;
+- memory-growth interpretation: **PASS WITH LIMITATION / measured evidence**, with Qt showing the larger upward trend.
 
-N2 remains **Open**.
+N2 remains **Open**. Production acquisition/licensing, scope review, responsibility assignment, final exact-head CI and explicit owner `N2 PASS` remain outstanding.

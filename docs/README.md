@@ -8,7 +8,7 @@ Use this page to find the authoritative document instead of duplicating requirem
 2. **`../PLAN.md`** — master product/engineering north star.
 3. **`../CHECKPOINTS.md`** — current checkpoint, release mapping, stop gates.
 4. **`N2_PDF_ENGINE_QUALIFICATION_PLAN.md`** — active N2 execution plan, engine responsibilities, fixtures, measurements, hard blockers and stop gate.
-5. **`baselines/N2_PDF_ENGINE_MATRIX.md`** — live N2 evidence matrix; `PENDING` means untested, not assumed.
+5. **`baselines/N2_PDF_ENGINE_MATRIX.md`** — binding N2 evidence matrix and remaining gates.
 6. **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — Proposed N2 responsibility split decision; not binding until owner N2 acceptance.
 7. **`../tests/fixtures/pdf/README.md`** — N2 PDF fixture provenance/privacy/checksum/mutation contract.
 8. **`FEATURE_SCOPE_2_0.md`** — binding Windows 2.0 feature scope.
@@ -42,17 +42,26 @@ N0 and N1 are Accepted. N2 is active. A passed checkpoint cannot be reopened wit
 N2 intentionally treats PDF responsibilities separately rather than assuming one universal library.
 
 - **Qt PDF** — read/render/text/search/link/outline candidate.
-- **PDFium** — competing read/render/text/search/link/outline candidate; upstream non-thread-safe API and build/supply-chain costs must be measured.
+- **PDFium** — competing read/render/text/search/link/outline candidate; upstream non-thread-safe API and build/supply-chain costs are measured explicitly.
 - **qpdf** — structure/security/transformation candidate.
 
 The permitted final result is a split architecture behind Atlas-owned normalized contracts.
 
 Primary N2 documents:
 
-- `N2_PDF_ENGINE_QUALIFICATION_PLAN.md` — phases N2.0 through N2.6 and evidence methodology;
-- `baselines/N2_PDF_ENGINE_MATRIX.md` — capability-by-capability results and final responsibility table;
-- `decisions/ADR-0004-pdf-engine-responsibilities.md` — remains **Proposed** until explicit owner `N2 PASS`;
-- `../tests/fixtures/pdf/README.md` — public/synthetic/private fixture rules.
+- **`N2_PDF_ENGINE_QUALIFICATION_PLAN.md`** — phases N2.0 through N2.6 and evidence methodology;
+- **`baselines/N2_PDF_ENGINE_MATRIX.md`** — binding capability-by-capability results, canonical evidence ledger, scope questions and remaining gates;
+- **`baselines/N2_PDFIUM_PROVENANCE.md`** — PDFium pin/acquisition/build constraints;
+- **`baselines/N2_QPDF_BASELINE.md`** — qpdf structural/security/transformation evidence;
+- **`baselines/N2_QPDF_PROVENANCE.md`** — exact qpdf package provenance;
+- **`baselines/N2_RENDERING_FIDELITY.md`** — A011 1×/2× crop/rotation/annotation/background rendering evidence;
+- **`baselines/N2_COORDINATE_NORMALIZATION.md`** — Atlas page-space contract, A003/A011 geometry and A012 `/XYZ` destination evidence;
+- **`baselines/N2_STRESS_CONCURRENCY.md`** — 500-lifetime read-engine stress and 1,000-job serialized PDFium queue evidence;
+- **`baselines/N2_PRODUCTION_DISTRIBUTION.md`** — candidate shippable acquisition/licensing/SBOM/update/rollback routes; route selection still pending;
+- **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — remains **Proposed** until final responsibility assignment and explicit owner `N2 PASS`;
+- **`../tests/fixtures/pdf/README.md`** — public/synthetic/private fixture rules.
+
+Current evidence has closed core correctness, navigation, Unicode/search, malformed/password behavior, repeated synthetic performance, vector fidelity, coordinate normalization, qpdf preservation/security/transformation, and stress/concurrency. The remaining N2 gates are production-route freeze, explicit scope review, final responsibility assignment, final exact-head CI and owner acceptance.
 
 N2 does not authorize production Reader UI, SQLite/FTS5, scanner, bookmarks editor/local overlay, annotations, migration, installer, OCR or AI document analysis. Those remain later checkpoints.
 

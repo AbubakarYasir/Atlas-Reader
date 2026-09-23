@@ -1,0 +1,113 @@
+name: N2 qpdf Outline Breadth
+
+on:
+  push:
+    branches: ['native-v2-n2-pdf-engine-qualification']
+  pull_request:
+    paths:
+      - '.github/workflows/n2-qpdf-outline-breadth.yml'
+      - 'tools/pdf/qpdf_outline_breadth_probe.py'
+      - 'tools/pdf/qpdf_structural_probe.py'
+      - 'tests/fixtures/pdf/generated/A003_outlines_links.pdf'
+
+permissions:
+  contents: read
+
+jobs:
+  outline-breadth:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      QPDF_VERSION: '12.4.1'
+      QPDF_ASSET: 'qpdf-12.4.1-msvc64.zip'
+      QPDF_ASSET_ID: '533019080'
+      QPDF_ASSET_SHA256: '3cd016cd433ef7232e42f4c13348a49cc14907a3c7278ef4f99120593126f7a6'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Acquire exact official qpdf 12.4.1 MSVC64 package
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/qpdf/qpdf/releases/download/v12.4.1/qpdf-12.4.1-msvc64.zip'
+          $archive = Join-Path $env:RUNNER_TEMP $env:QPDF_ASSET
+          $root = Join-Path $env:RUNNER_TEMP 'qpdf-12.4.1-msvc64'
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:QPDF_ASSET_SHA256) {
+            throw "qpdf package SHA-256 mismatch: $actual != $env:QPDF_ASSET_SHA256"
+          }
+          Expand-Archive -LiteralPath $archive -DestinationPath $root -Force
+          $candidates = @(Get-ChildItem -Path $root -Recurse -Filter 'qpdf.exe' -File)
+          if ($candidates.Count -ne 1) {
+            throw "Expected exactly one qpdf.exe; found $($candidates.Count)"
+          }
+          $qpdf = $candidates[0].FullName
+          $versionText = (& $qpdf --version 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $versionText -notmatch '(?<![0-9])12\.4\.1(?![0-9])') {
+            throw "Unexpected qpdf version response: $versionText"
+          }
+          "QPDF_EXE=$qpdf" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "QPDF_ARCHIVE_SHA256=$actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install independent validator dependency
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
+          if ($LASTEXITCODE -ne 0) { throw "pypdf install failed: $LASTEXITCODE" }
+
+      - name: Verify A003 source fixture
+        shell: pwsh
+        run: |
+          $fixture = 'tests/fixtures/pdf/generated/A003_outlines_links.pdf'
+          $expected = '77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5'
+          $actual = (Get-FileHash $fixture -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "A003 SHA-256 mismatch: $actual != $expected" }
+
+      - name: Run full outline-structure mutation qualification
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'artifacts/n2-qpdf-outline-breadth'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          python tools/pdf/qpdf_outline_breadth_probe.py `
+            --qpdf "$env:QPDF_EXE" `
+            --fixture-root 'tests/fixtures/pdf/generated' `
+            --output-dir "$out"
+          if ($LASTEXITCODE -ne 0) {
+            if (Test-Path (Join-Path $out 'qpdf-outline-breadth.json')) {
+              Get-Content (Join-Path $out 'qpdf-outline-breadth.json')
+            }
+            throw "qpdf outline breadth qualification failed with exit code $LASTEXITCODE"
+          }
+
+      - name: Stage qualification identity
+        if: always()
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'artifacts/n2-qpdf-outline-breadth'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          @(
+            'Atlas Reader N2 qpdf P0 outline-editing breadth evidence'
+            "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
+            "qpdf version: $env:QPDF_VERSION"
+            "Official asset: $env:QPDF_ASSET"
+            "Official asset ID: $env:QPDF_ASSET_ID"
+            "Verified archive SHA-256: $env:QPDF_ARCHIVE_SHA256"
+            'Source fixture: A003_outlines_links.pdf'
+            'Source SHA-256: 77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5'
+            'Operations under qualification: add Unicode node; delete node; reparent/move; reorder siblings; nest; unnest; duplicate visible title'
+            'Independent preservation oracle: pypdf 5.9.0 snapshot helpers from qpdf_structural_probe.py'
+            'Product linkage: none; fixture-copy mutation only'
+          ) | Set-Content -Encoding UTF8 (Join-Path $out 'BUILD_INFO.txt')
+          Copy-Item 'tools/pdf/qpdf_outline_breadth_probe.py' (Join-Path $out 'qpdf_outline_breadth_probe.py')
+
+      - name: Upload outline-breadth evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n2-qpdf-outline-breadth-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/n2-qpdf-outline-breadth
+          if-no-files-found: error
+          retention-days: 14

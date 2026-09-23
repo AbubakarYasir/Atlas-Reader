@@ -11,47 +11,46 @@ This file records the canonical coordinate-normalization evidence for the Qt PDF
 
 Canonical implementation head:
 
-`88c7badc5cf7bbcf4b7a211a0b2dda9c5218b08f`
+`0bbe1132872a946e9869945be20b8f9f174a1785`
 
 Exact-head workflows:
 
-- `N2 PDF Coordinates` run `35799660904` — PASS;
-- normal Windows CI run `35799660800` — PASS;
-- `N2 PDF Fidelity` run `35799660935` — PASS;
-- `N2 PDF Performance` run `35799660885` — PASS;
-- `N2 qpdf Qualification` run `35799660853` — PASS.
+- `N2 PDF Coordinates` run `35800654969` — PASS;
+- normal Windows CI run `35800654960` — Debug/Release PASS;
+- `N2 PDF Fidelity` run `35800654993` — PASS;
+- `N2 PDF Performance` run `35800654956` — PASS;
+- `N2 qpdf Qualification` run `35800655039` — PASS.
 
 Canonical coordinate artifact:
 
-- name: `atlas-reader-n2-pdf-coordinates-88c7badc5cf7bbcf4b7a211a0b2dda9c5218b08f`;
-- artifact ID: `10724844302`;
-- digest: `sha256:12226ea5eaa5d42f6c609f466e847c18606d46dea12758cf3d43578fda6ae494`;
-- size: 3,388 bytes.
+- name: `atlas-reader-n2-pdf-coordinates-0bbe1132872a946e9869945be20b8f9f174a1785`;
+- artifact ID: `10725573435`;
+- digest: `sha256:bf2ea40d545dc73d8b1bc521b040292a690a4a3b2be3d2bf5f83530ef8ec2427`;
+- size: 3,902 bytes.
+
+The previous rectangle-only implementation `88c7badc5cf7bbcf4b7a211a0b2dda9c5218b08f` remains valid historical evidence. The current head supersedes it by adding explicit `/XYZ` destination-point qualification without regressing the earlier rectangle tests.
 
 ## 2. Atlas page-space contract
 
-The qualification defines the portable application coordinate space as:
+The portable application coordinate space is:
 
 > effective visible page after crop/rotation; origin at the upper-left; X increases right; Y increases down; units are PDF points.
 
 Candidate-native coordinates remain diagnostic evidence only. Atlas-owned domain/application types must use the normalized convention above.
 
-PDFium normalization in this probe uses `FPDF_PageToDevice` at 100 device units per PDF point and divides back to point units. Qt PDF page/search rectangles are already expressed in effective page-point space, but raw `QRectF` values are normalized to positive width/height before entering Atlas page space.
+PDFium normalization uses `FPDF_PageToDevice` at 100 device units per PDF point and divides back to point units. Qt PDF page/search rectangles are already in effective page-point space, but raw `QRectF` values must be normalized to positive width/height before entering Atlas page space.
 
-## 3. Fixtures
+For hyperlink destination **points**, Qt has an additional bounded limitation documented in section 7: its `QPdfLink` location does not expose inherent target-page rotation, and `QPdfDocument` does not expose that stored page-rotation value through the qualified public API surface. Rotated destination normalization therefore needs structural page-rotation metadata or another destination provider if Qt owns link reading.
+
+## 3. Deterministic fixtures
 
 ### A003 — link source rectangles
 
-A003 SHA-256:
+SHA-256:
 
 `77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5`
 
-The source PDF defines two explicit link annotations on page 0:
-
-- internal link rectangle: `[72,660,250,680]` in PDF bottom-left coordinates;
-- external link rectangle: `[72,600,280,620]` in PDF bottom-left coordinates.
-
-In Atlas page space on the 612 × 792 point page, the expected rectangles are:
+Expected Atlas source rectangles on page 0:
 
 | Link | X | Y | Width | Height |
 |---|---:|---:|---:|---:|
@@ -60,43 +59,59 @@ In Atlas page space on the 612 × 792 point page, the expected rectangles are:
 
 ### A011 — normal/cropped/rotated search geometry
 
-A011 SHA-256:
+SHA-256:
 
 `b25d6b6716fbbcf095cbd68bcf57913d4e14bca3e64be19f513c35fd3ddadd29`
 
-The same deterministic fixture used for rendering fidelity exercises:
+A011 exercises:
 
 - page 0: normal 200 × 300 point page;
 - page 1: CropBox-normalized 200 × 150 point page;
 - page 2: 90° rotated 300 × 200 point page.
 
-Search queries are `A011 PAGE 1`, `A011 PAGE 2`, and `A011 PAGE 3` respectively.
+### A012 — explicit `/XYZ` destination points
+
+SHA-256:
+
+`0c710f3f6e4457a44b8d2dbaa42a476a5c5b429764a0a7569002b66222ef069d`
+
+A012 is generated from checked-in explicit PDF syntax. Page 0 has two internal links whose destination arrays both encode raw PDF point `/XYZ 40 250 null`:
+
+- target page 1: normal 200 × 300 page;
+- target page 2: stored `/Rotate 90`, effective 300 × 200 page.
+
+Expected Atlas points:
+
+| Target | Raw PDF `/XYZ` | Expected Atlas point |
+|---|---|---|
+| page 1, normal | `(40,250)` | `(40,50)` |
+| page 2, 90° rotated | `(40,250)` | `(250,40)` |
 
 ## 4. Link source-rectangle normalization
 
-Both engines normalize the explicit A003 annotations exactly to the expected Atlas coordinates.
+Both engines normalize the explicit A003 annotations exactly.
 
 ### Internal link
 
-| Engine | Normalized Atlas rectangle |
+| Engine | Atlas rectangle |
 |---|---|
 | Qt PDF | `x=72, y=112, w=178, h=20` |
 | PDFium | `x=72, y=112, w=178, h=20` |
 
 ### External URI annotation
 
-| Engine | Normalized Atlas rectangle |
+| Engine | Atlas rectangle |
 |---|---|
 | Qt PDF | `x=72, y=172, w=208, h=20` |
 | PDFium | `x=72, y=172, w=208, h=20` |
 
-Qt continues to expose a second raw row for the same external URI at `x=77, y=180, w=173, h=10`. This is the previously documented raw-link duplication behavior. It is preserved in evidence and does not replace the exact explicit annotation rectangle.
+Qt also exposes a second raw row for the same external URI at `x=77, y=180, w=173, h=10`. The previously documented semantic de-duplication requirement remains.
 
-Therefore source-link rectangle normalization is **PASS**, with the existing Qt semantic de-duplication limitation still applying at the raw link-model layer.
+Source-link rectangle normalization is therefore **PASS** for both engines on A003.
 
 ## 5. Search-hit rectangle normalization
 
-The cross-engine validator compares the union of each engine's normalized search rectangles. Tolerance is 4 points per X/Y/width/height field because text metrics may differ slightly while still describing the same visible hit region.
+The cross-engine validator compares the union of normalized search rectangles with a four-point per-field tolerance for small text-metric differences.
 
 ### Page 0 — normal
 
@@ -125,62 +140,93 @@ The cross-engine validator compares the union of each engine's normalized search
 | Width | 7.00 | 7.40 | 0.40 |
 | Height | 62.00 | 61.81 | 0.19 |
 
-The maximum observed field delta in the qualified corpus is **0.43 points**, comfortably inside the explicit 4-point tolerance.
-
-All normalized rectangles also remain inside the effective visible page bounds.
+Maximum observed field delta is **0.43 points**. All normalized rectangles stay inside effective visible page bounds.
 
 ## 6. Qt rotated-rectangle diagnostic
 
-The first coordinate run (`35799414250`, implementation `cbe36011b3e36e136dfd1be4b4d4162a76649b6b`) exposed a useful raw Qt representation detail on A011 page 2:
+Exploratory run `35799414250` exposed raw Qt A011 page-2 search geometry:
 
 `QRectF(x=152, y=68, width=-7, height=62)`
 
-The rectangle described the correct visible region but used negative width after page rotation. The initial Atlas normalization accidentally copied the raw rectangle unchanged, so the semantic validator failed.
+The region is correct but the width is negative after rotation. Atlas normalization must therefore canonicalize candidate-native rectangles.
 
-The canonical implementation preserves that raw rectangle for diagnostics but applies `QRectF::normalized()` before emitting Atlas page-space geometry. The resulting Atlas rectangle is:
+The canonical adapter-level representation applies `QRectF::normalized()` and produces:
 
 `x=145, y=68, width=7, height=62`
 
-That aligns with PDFium's independently converted result:
+PDFium independently converts to:
 
 `x=144.88, y=68, width=7.40, height=61.81`
 
-This establishes an important adapter rule: candidate-native rectangle orientation/sign is not portable Atlas geometry.
+This is **PASS WITH LIMITATION** for Qt raw rectangle representation and **PASS** for the Atlas-normalized rectangle contract.
 
-## 7. Current result
+## 7. Explicit `/XYZ` destination-point result
+
+A012 provides a real engine difference that must remain visible in the architecture decision.
+
+### Normal target page
+
+Both engines reach the expected Atlas destination `(40,50)`.
+
+- Qt native destination location: `(40,50)`;
+- PDFium raw PDF location: `(40,250)`;
+- PDFium Atlas-normalized location: `(40,50)`.
+
+Result: **PASS both**.
+
+### 90° rotated target page
+
+PDFium exposes raw page-space coordinates and can normalize them through the target page transform:
+
+- PDFium raw: `(40,250)`;
+- PDFium Atlas-normalized: `(250,40)`;
+- expected Atlas: `(250,40)`.
+
+Result: **PASS PDFium**.
+
+Qt returns the same native destination location `(40,50)` that it returns for the unrotated target. In other words, Qt has converted the PDF's bottom-left Y convention to a top-left point but has not incorporated the target page's stored inherent `/Rotate 90` into the destination location. The qualified `QPdfDocument` API provides the effective point size but not the stored page-rotation value needed to complete that transformation independently.
+
+Result: **PASS WITH LIMITATION Qt PDF** — page identity and destination location are available, but a rotated target's final Atlas point requires inherent page-rotation metadata from a structural source (for example the Atlas structural layer) or a different destination provider.
+
+This is not treated as a malformed fixture or tolerance issue. The first strict A012 run `35800288137` failed exactly the incorrect assumption that Qt and PDFium would both directly emit `(250,40)` for the rotated target; its artifact preserved the raw evidence that led to the bounded limitation classification.
+
+## 8. Current capability result
 
 | Capability | Qt PDF | PDFium | Bound limitation |
 |---|---|---|---|
 | Link source rectangle normalization | **PASS** | **PASS** | A003 explicit link annotations |
-| Search rectangle normalization — normal page | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A011 synthetic Helvetica text |
-| Search rectangle normalization — CropBox page | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A011 only |
-| Search rectangle normalization — 90° rotated page | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A011 only; Qt raw negative width requires canonicalization |
-| Effective-visible page bounds | **PASS** | **PASS** | current A011 pages |
-| Explicit destination `/XYZ` coordinate normalization | **PENDING** | **PENDING** | current A003/A011 destinations do not carry an explicit coordinate target |
+| Search rectangle — normal page | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | synthetic simple text |
+| Search rectangle — CropBox page | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A011 only |
+| Search rectangle — 90° rotated page | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Qt raw negative width requires canonicalization |
+| Effective-visible page bounds | **PASS** | **PASS** | A011 corpus |
+| `/XYZ` destination — normal target | **PASS** | **PASS** | A012 |
+| `/XYZ` destination — 90° rotated target | **PASS WITH LIMITATION** | **PASS** | Qt requires external inherent-rotation metadata |
+| Arbitrary destination modes (`Fit`, `FitH`, etc.) | **PENDING** | **PENDING** | not in current corpus |
 | Arbitrary multi-rectangle/bidi/real-font hit geometry | **PENDING** | **PENDING** | current fixture is synthetic/simple text |
 
-## 8. Architectural implication
+## 9. Architectural implication
 
-Atlas must own the page-space conversion boundary. Engine-native rectangles, destination points and sign/orientation conventions must not leak into portable state.
+Atlas must own the page-space conversion boundary. Candidate-native rectangles and destination points must not leak into portable state.
 
-The future normalized type should encode at least:
+The normalized type should encode at least:
 
 - zero-based page index;
 - X/Y in effective visible page points from top-left;
-- non-negative width/height;
-- optional source/raw diagnostics outside the portable type;
-- an explicit distinction between source link rectangles, search/extraction rectangles and destination points.
+- non-negative rectangle width/height;
+- optional raw diagnostics outside the portable type;
+- a distinction between source rectangles, text/search rectangles, and destination points;
+- whether a destination includes explicit X/Y/zoom or represents a non-XYZ fit mode.
 
-The Qt negative-width diagnostic proves why canonical rectangle normalization belongs at this boundary rather than in callers.
+If Qt PDF is selected for navigation/link reading, the adapter must receive inherent page-rotation metadata from the structural layer before normalizing rotated explicit destination points. PDFium does not require that additional source for the tested A012 `/XYZ` case because its public destination + page transform APIs expose enough information directly.
 
-## 9. Remaining coordinate work
+## 10. Remaining coordinate work
 
-This baseline closes the current N2 source-link and search-hit geometry gates for normal, cropped and rotated synthetic pages.
+The current N2 gates are closed for source-link rectangles, search-hit rectangles, and explicit `/XYZ` points on normal and 90°-rotated synthetic pages.
 
-Still pending:
+Still potentially useful, but not automatically a blocker unless required by Atlas v2 scope:
 
-1. explicit `/XYZ` destination-coordinate normalization;
-2. broader real-font/multi-line/bidi text rectangles if required before final read-engine selection;
-3. extraction-selection geometry if Atlas v2 requires it independently of search results.
+1. non-XYZ destination modes (`Fit`, `FitH`, `FitV`, etc.);
+2. broader real-font/multi-line/bidi text rectangles;
+3. extraction-selection geometry independently of search hits.
 
 N2 remains **Open** and ADR-0004 remains **Proposed**.

@@ -105,6 +105,49 @@ QJsonArray collectA003Links(QPdfDocument& document, QJsonArray& failures)
     return links;
 }
 
+QJsonArray collectA012Destinations(QPdfDocument& document, QJsonArray& failures)
+{
+    QPdfLinkModel model;
+    model.setDocument(&document);
+    model.setPage(0);
+
+    const int pageRole = static_cast<int>(QPdfLinkModel::Role::Page);
+    const int locationRole = static_cast<int>(QPdfLinkModel::Role::Location);
+    const int zoomRole = static_cast<int>(QPdfLinkModel::Role::Zoom);
+    const int rectangleRole = static_cast<int>(QPdfLinkModel::Role::Rectangle);
+
+    QJsonArray destinations;
+    for (int row = 0; row < model.rowCount(QModelIndex()); ++row) {
+        const QModelIndex index = model.index(row, 0, QModelIndex());
+        const int page = model.data(index, pageRole).toInt();
+        if (page < 0) {
+            continue;
+        }
+        const QPointF location = model.data(index, locationRole).toPointF();
+        const QRectF sourceRect = model.data(index, rectangleRole).toRectF();
+
+        QJsonObject atlasPoint;
+        atlasPoint.insert(QStringLiteral("x"), location.x());
+        atlasPoint.insert(QStringLiteral("y"), location.y());
+
+        QJsonObject item;
+        item.insert(QStringLiteral("row"), row);
+        item.insert(QStringLiteral("source_page"), 0);
+        item.insert(QStringLiteral("destination_page"), page);
+        item.insert(QStringLiteral("raw_qt_destination_x"), location.x());
+        item.insert(QStringLiteral("raw_qt_destination_y"), location.y());
+        item.insert(QStringLiteral("zoom"), model.data(index, zoomRole).toReal());
+        item.insert(QStringLiteral("source_atlas_rect"), rectJson(sourceRect.normalized()));
+        item.insert(QStringLiteral("atlas_destination"), atlasPoint);
+        destinations.append(item);
+    }
+
+    if (destinations.size() != 2) {
+        failures.append(QStringLiteral("a012-destination-count:%1").arg(destinations.size()));
+    }
+    return destinations;
+}
+
 QJsonObject searchOne(QPdfDocument& document, int page, const QString& query, QJsonArray& failures)
 {
     QPdfSearchModel model;
@@ -149,27 +192,31 @@ QJsonObject searchOne(QPdfDocument& document, int page, const QString& query, QJ
 int main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
-    if (argc != 3) {
-        std::fprintf(stderr, "usage: atlas_qt_pdf_coordinate_probe <A003.pdf> <A011.pdf>\n");
+    if (argc != 4) {
+        std::fprintf(stderr, "usage: atlas_qt_pdf_coordinate_probe <A003.pdf> <A011.pdf> <A012.pdf>\n");
         return 64;
     }
 
     const QString a003Path = QString::fromLocal8Bit(argv[1]);
     const QString a011Path = QString::fromLocal8Bit(argv[2]);
+    const QString a012Path = QString::fromLocal8Bit(argv[3]);
     QJsonArray failures;
 
     QPdfDocument a003;
     const auto a003Error = a003.load(a003Path);
     QPdfDocument a011;
     const auto a011Error = a011.load(a011Path);
+    QPdfDocument a012;
+    const auto a012Error = a012.load(a012Path);
 
     QJsonObject result;
-    result.insert(QStringLiteral("schema"), QStringLiteral("atlas.n2.qt-pdf-coordinate.v1"));
+    result.insert(QStringLiteral("schema"), QStringLiteral("atlas.n2.qt-pdf-coordinate.v2"));
     result.insert(QStringLiteral("engine"), QStringLiteral("qt-pdf"));
     result.insert(QStringLiteral("qt_version"), QString::fromLatin1(qVersion()));
     result.insert(QStringLiteral("atlas_page_space"), QStringLiteral("effective-visible-page; origin=top-left; x-right; y-down; units=points"));
     result.insert(QStringLiteral("a003_file"), QFileInfo(a003Path).fileName());
     result.insert(QStringLiteral("a011_file"), QFileInfo(a011Path).fileName());
+    result.insert(QStringLiteral("a012_file"), QFileInfo(a012Path).fileName());
 
     if (a003Error != QPdfDocument::Error::None) {
         failures.append(QStringLiteral("a003-load-failed"));
@@ -177,9 +224,13 @@ int main(int argc, char* argv[])
     if (a011Error != QPdfDocument::Error::None) {
         failures.append(QStringLiteral("a011-load-failed"));
     }
+    if (a012Error != QPdfDocument::Error::None) {
+        failures.append(QStringLiteral("a012-load-failed"));
+    }
 
     if (failures.isEmpty()) {
         result.insert(QStringLiteral("a003_links"), collectA003Links(a003, failures));
+        result.insert(QStringLiteral("a012_destinations"), collectA012Destinations(a012, failures));
 
         QJsonArray searches;
         searches.append(searchOne(a011, 0, QStringLiteral("A011 PAGE 1"), failures));

@@ -1,7 +1,7 @@
 # N2 PDF Scope Review
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Active scope decision — only explicitly listed blockers remain before responsibility assignment**  
+**Status:** **Active scope decision — B3 satisfied; B1, B2 and B4 remain before responsibility assignment**  
 **Date:** 2026-09-23  
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
@@ -55,23 +55,67 @@ The test must not silently rely on an unpinned Windows system font.
 
 ### B3 — P0 outline/bookmark structural mutation breadth
 
-**Decision: N2 BLOCKER for the structural-write responsibility.**
+**Decision: SATISFIED.**
 
-Windows 2.0 P0 requires complete bookmark editing: create, rename, delete, move/reparent, reorder siblings and nest/unnest. Current qpdf evidence proves preservation and title-only mutation, but that is not enough to select qpdf as the production structural writer.
+Windows 2.0 P0 requires complete bookmark editing: create, rename, delete, move/reparent, reorder siblings and nest/unnest. Title-only mutation was therefore insufficient evidence by itself.
 
-Required N2 evidence:
+The dedicated qpdf breadth probe closes this gap.
 
-- deterministic source outline with duplicate visible names and more than one nesting level;
-- add a node;
-- delete a node;
-- reparent/move a node;
+Exact implementation head:
+
+`21f3226b12b5f6b2aba37ae8b975f3882e1d4c43`
+
+Canonical run:
+
+- `N2 qpdf Outline Breadth` run `35811968277` — **PASS**.
+
+Artifact:
+
+- ID `10729912313`;
+- digest `sha256:633b09c9820177002abb6bb486da455c46e6dc7bad38435195fde9ca93c83c0b`.
+
+Source fixture:
+
+- A003 SHA-256 `77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5`.
+
+Output:
+
+- mutated PDF SHA-256 `6c740bebfa83ebe900e0b68b3788cbdbd6e5ef2a6d60380fccd765f1c752cad6`;
+- qpdf rebuild exit `0`;
+- rewritten `qpdf --check` exit `0`;
+- qpdf JSON reopen PASS;
+- independent pypdf snapshot exactly matches the intended final outline.
+
+The single deterministic mutation proves:
+
+- add a new Unicode node (`فوائد`);
+- delete an existing node;
+- move/reparent an existing node;
 - reorder siblings;
-- nest and unnest at least one node;
-- preserve destination pages/coordinates and unrelated PDF state;
-- include Unicode/Arabic or Urdu titles in the mutation path;
-- validate with qpdf and an independent reader after each final output.
+- nest a new child;
+- unnest an existing child;
+- preserve duplicate visible titles as distinct structural nodes.
 
-The fixture should exercise practical depth/duplicate-title semantics without inventing an arbitrary maximum-depth claim.
+Expected and actual final outline agree exactly:
+
+1. `Chapter 1`, depth 0, destination page 1;
+2. `فوائد`, depth 1, destination page 2;
+3. `Chapter 1`, depth 0, destination page 0.
+
+Every asserted unrelated invariant remains equal before/after:
+
+- encryption state;
+- page count and page labels;
+- page text hashes;
+- MediaBox/CropBox/rotation and decoded page-content streams;
+- existing annotations;
+- Document Info;
+- XMP;
+- attachments.
+
+All seven workflows on the same implementation head are green: Windows CI `35811968235`, Performance `35811968246`, Coordinates `35811968234`, Stress `35811968244`, Fidelity `35811968249`, qpdf Qualification `35811968263`, and qpdf Outline Breadth `35811968277`.
+
+B3 is therefore closed as an N2 blocker. Production bookmark transactions, undo/reconciliation, conflict handling and safe-save remain N5 responsibilities.
 
 ### B4 — encrypted writable structural mutation
 
@@ -91,7 +135,7 @@ Required N2 evidence:
 - unrelated preservation invariants remain intact;
 - no password/restriction bypass behavior is introduced.
 
-If the selected v2 policy instead forbids embedding into encrypted PDFs entirely and always uses local-only overlay, this blocker may be retired only by an explicit product/ADR scope decision. Current P0 wording does not make that narrower policy implicit.
+If the selected v2 policy instead forbids embedding into encrypted PDFs entirely and always uses local-only overlay/working-copy flow, this blocker may be retired only by an explicit product/ADR scope decision. Current P0 wording does not make that narrower policy implicit.
 
 ## 2. Not N2 blockers — later hardening or later checkpoint evidence
 
@@ -145,7 +189,7 @@ The canonical 500-cycle stress series remains a baseline. Qt's upward working-se
 
 This is a **proposal for the final ADR**, not an accepted decision yet.
 
-Based on evidence captured so far, the direction to validate through B1–B4 is:
+Based on evidence captured so far, the direction to validate through B1, B2 and B4 is:
 
 | Responsibility | Provisional implementation | Why this is the current direction |
 |---|---|---|
@@ -157,7 +201,7 @@ Based on evidence captured so far, the direction to validate through B1–B4 is:
 | links/navigation | **PDFium + Atlas normalized contracts** | current raw link model is simpler and rotated `/XYZ` normalization is complete without borrowing rotation metadata from another layer |
 | outline read | **PDFium for reader-facing navigation** | keeps read/navigation responsibility in one serialized adapter |
 | security/capability structural inspection | **qpdf** | strongest current permissions/encryption/signature-structure evidence |
-| structural bookmark mutation/write | **qpdf** | preservation/title-mutation evidence is strong; B3/B4 must close before selection |
+| structural bookmark mutation/write | **qpdf** | preservation, title mutation and full P0 outline mutation breadth now pass; B4 remains before selection |
 | independent post-write validation | **qpdf `--check` + independent Atlas test oracle in qualification** | already proven useful for mutation safety; production app must not depend on pypdf |
 
 Qt PDF remains a qualified fallback/read candidate and the UI stack remains Qt. Not selecting Qt PDF for a PDF responsibility would not reject Qt itself; it would avoid carrying a second PDF read/render abstraction merely for integration convenience.
@@ -185,16 +229,17 @@ Qt PDF's principal remaining advantage is substantially simpler official integra
 
 ## 5. Why the provisional structural direction is qpdf
 
-qpdf already provides evidence for:
+qpdf now provides evidence for:
 
 - structural checks/JSON inspection;
 - encryption/user-owner/permission inspection;
 - preservation-sensitive rewrites;
 - ASCII and Unicode existing-outline title mutation;
+- add/delete/reparent/reorder/nest/unnest outline operations with duplicate titles and Unicode content;
 - signed/certified pre-mutation safety detection;
 - first-party Windows CLI provenance and process isolation.
 
-B3 and B4 are the missing pieces before qpdf can be selected for the actual P0 embedded bookmark-writing responsibility.
+B4 is the remaining structural-write blocker unless Windows 2.0 explicitly adopts a local-overlay/working-copy-only policy for encrypted originals.
 
 ## 6. Exit from scope review
 
@@ -202,7 +247,6 @@ This scope review is complete when:
 
 - B1 image-only reading passes;
 - B2 real-font Arabic/Urdu rendering passes;
-- B3 structural bookmark mutation breadth passes;
 - B4 encrypted writable structural mutation passes or is explicitly retired by a narrower product decision;
 - the production route for the selected read engine and qpdf is frozen/requalified;
 - ADR-0004 is revised with the final responsibility assignment;

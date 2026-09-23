@@ -8,18 +8,35 @@ All notable changes to Atlas Reader Native are documented here.
 
 - N1 was explicitly Accepted by the owner on 2026-09-22 and merged into the accepted integration line at `f8bdc2e5bc74ccb94d593e7a7e5307ae6163afe2`.
 - Opened dedicated branch `native-v2-n2-pdf-engine-qualification` from that exact accepted N1 state; `main` remains untouched.
-- Advanced native prerelease identifier from `alpha.1` to `alpha.2` without adding a PDF engine dependency yet.
+- Advanced native prerelease identifier from `alpha.1` to `alpha.2` without adding a production PDF engine dependency.
 - Added `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` defining N2 scope, exclusions, phases, normalized responsibilities, fixture classes, performance rules, hard blockers and owner stop gate.
-- Added `docs/baselines/N2_PDF_ENGINE_MATRIX.md` as the durable evidence table. All untested capabilities remain explicitly `PENDING`; no candidate is pre-ranked or pre-selected.
-- Added Proposed `ADR-0004-pdf-engine-responsibilities.md`; it cannot become Accepted before sufficient matrix evidence, strict final CI and explicit owner `N2 PASS`.
-- Added `tests/fixtures/pdf/README.md` defining fixture provenance, redistribution, SHA-256, private-fixture privacy, password, mutation-safety and expected-data rules.
+- Added `docs/baselines/N2_PDF_ENGINE_MATRIX.md` as the binding evidence table. Untested or undecided capabilities remain explicit rather than guessed.
+- Added Proposed `ADR-0004-pdf-engine-responsibilities.md`; it cannot become Accepted before responsibility assignment, final strict CI and explicit owner `N2 PASS`.
+- Added deterministic PDF fixture provenance/privacy/checksum/mutation rules under `tests/fixtures/pdf/`.
 - Updated `AGENTS.md` so coding agents operate under N2 boundaries and cannot drift into production Reader, SQLite/index, bookmarks, annotations, migration or installer work.
-- Refreshed `docs/DEPENDENCIES_AND_TOOLS.md` and `docs/UPSTREAM_CATALOG.md` with the N2 upstream/integration snapshot.
-- Recorded current PDFium constraint that its public API is not thread-safe and qualification must serialize API calls rather than benchmark unsupported concurrency.
-- Recorded that official PDFium source integration uses Chromium-style `depot_tools`/`gclient`, GN/Ninja and Clang/clang-cl tooling, and that the inspected Microsoft vcpkg registry does not expose a standard `ports/pdfium` package.
-- Allowed a pinned community PDFium binary distribution only as an N2 spike bootstrap when exact package/revision, SHA-256 and notices are recorded; this does not pre-approve the production supply chain.
-- Recorded qpdf version-surface differences visible at N2 opening instead of collapsing them: current inspected vcpkg port `12.4.0`, upstream published release feed `12.4.1` (2026-08-27), and generated docs that may already identify `12.4.2`.
-- Preserved the split-engine possibility: Qt PDF or PDFium may own read/render/text/navigation while qpdf may own structure/security/transformation, all behind Atlas-owned normalized contracts.
+- Refreshed dependency/upstream catalogs with Qt PDF, PDFium and qpdf qualification constraints.
+- Preserved the split-engine possibility: read/render/search/navigation and structural/security/transformation responsibilities may be assigned separately behind Atlas-owned normalized contracts.
+- Qualified Qt PDF 6.10.3 core read/text/render behavior on the deterministic corpus without linking Qt PDF into the product shell/domain boundary.
+- Qualified PDFium `156.0.8066.0` / `chromium/8066` through a checksum-pinned non-V8 Windows x64 probe package; retained the upstream rule that public PDFium API execution must be serialized.
+- Qualified outline/link semantics in both read engines; recorded Qt's duplicate raw external-URI row and required Atlas semantic de-duplication.
+- Added deterministic A006 Unicode evidence covering Arabic, tashkīl, mixed Arabic/English, Urdu and Unicode outlines/search. Both engines preserve tested code points but require Unicode normalization before equality/index/search comparison for the vocalized source-order case.
+- Added malformed/password fixtures and semantic error-state qualification for Qt PDF/PDFium.
+- Added repeated Release performance probes with 3 warmups + 31 measured iterations, while explicitly avoiding a false winner claim from non-equivalent Qt/PDFium search execution models.
+- Added qpdf 12.4.1 structural/security/transformation qualification from the first-party MSVC64 package with exact asset checksum and preservation assertions.
+- Qualified qpdf user/owner password state and restricted permission inspection on deterministic R2 fixtures; legacy RC4 exists only as test data.
+- Qualified qpdf no-op rewrites and controlled ASCII/Unicode existing-outline title mutation while preserving explicit unrelated-document invariants.
+- Recorded that qpdf may renumber indirect objects, so PDF object numbers are not Atlas portable identity.
+- Added A010 synthetic `/Sig` + `/DocMDP` evidence and established the signed/certified pre-mutation interlock: Atlas must detect before mutation and must never equate surviving signature dictionaries with preserved cryptographic validity.
+- Added A011 rendering-fidelity evidence covering effective CropBox geometry, 90° rotation, semantic vector landmarks at 1×/2×, annotation off/on behavior and engine-specific native blank backgrounds. Atlas owns background/compositing policy.
+- Added the Atlas portable page-space contract: effective visible page, upper-left origin, X right, Y down, units PDF points.
+- Qualified link/search rectangle normalization across normal, cropped and rotated pages; recorded that Qt raw rotated search rectangles can have negative width and must be canonicalized.
+- Added A012 explicit `/XYZ` destination evidence. Normal targets pass in both engines; PDFium directly normalizes the 90° target, while Qt requires structural rotation metadata external to `QPdfLink` to complete portable destination normalization.
+- Added dedicated stress/concurrency evidence: 500 complete open/render/text/close lifetimes per read engine and a 4-producer × 250-request PDFium queue with exactly one PDFium worker/API lane. All 1,000 queued jobs completed, producer-side PDFium calls remained zero, maximum active PDFium API execution remained one, and shutdown was clean.
+- Recorded working-set trends from the 500-cycle stress run without inventing a universal leak threshold. Qt showed a larger upward working-set trend than PDFium in this one synthetic hosted-runner series; it is retained as follow-up evidence rather than declared a leak.
+- Added `docs/baselines/N2_STRESS_CONCURRENCY.md` with exact stress implementation/run/artifact identities and architectural serialization conclusions.
+- Added `docs/baselines/N2_PRODUCTION_DISTRIBUTION.md` separating qualification packages from shippable routes: official dynamic Qt if selected; Atlas-owned pinned upstream PDFium source build if selected; first-party qpdf CLI process boundary as the current lower-coupling structural route.
+- Recorded production compliance requirements for exact provenance, runtime-file inventory, license/NOTICE/SBOM bundle, security-update ownership and rollback before any selected component is promoted to a release dependency.
+- Refreshed the binding matrix so stress is no longer pending; remaining N2 work is production-route freeze, explicit scope review, final responsibility assignment/ADR update, final exact-head CI and explicit owner `N2 PASS`.
 - Kept N3 and all later product-feature checkpoints closed until N2 is explicitly Accepted.
 
 ### N1 — Windows toolchain + empty-shell baseline (`2.0.0-alpha.1`) — Accepted

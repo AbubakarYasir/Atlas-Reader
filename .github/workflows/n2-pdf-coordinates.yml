@@ -63,6 +63,13 @@ jobs:
           $a011Actual = (Get-FileHash $a011 -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($a011Actual -ne $a011Expected) { throw "A011 SHA-256 mismatch: $a011Actual != $a011Expected" }
 
+          python tests/fixtures/pdf/source/generate_a012_xyz_destinations.py
+          if ($LASTEXITCODE -ne 0) { throw "A012 generation failed with exit code $LASTEXITCODE" }
+          $a012 = 'tests/fixtures/pdf/generated/A012_xyz_destinations.pdf'
+          $a012Expected = '0c710f3f6e4457a44b8d2dbaa42a476a5c5b429764a0a7569002b66222ef069d'
+          $a012Actual = (Get-FileHash $a012 -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($a012Actual -ne $a012Expected) { throw "A012 SHA-256 mismatch: $a012Actual != $a012Expected" }
+
           New-Item -ItemType Directory -Force -Path artifacts/n2/coordinates | Out-Null
 
       - name: Configure isolated coordinate probes
@@ -83,13 +90,14 @@ jobs:
         run: |
           $a003 = (Resolve-Path 'tests/fixtures/pdf/generated/A003_outlines_links.pdf').Path
           $a011 = (Resolve-Path 'tests/fixtures/pdf/generated/A011_visual_geometry.pdf').Path
+          $a012 = (Resolve-Path 'tests/fixtures/pdf/generated/A012_xyz_destinations.pdf').Path
           $qt = (Resolve-Path 'build/n2-coordinates/Release/atlas_qt_pdf_coordinate_probe.exe').Path
           $pdfium = (Resolve-Path 'build/n2-coordinates/Release/atlas_pdfium_coordinate_probe.exe').Path
 
-          & $qt $a003 $a011 | Set-Content -Encoding UTF8 artifacts/n2/coordinates/qt-coordinate.json
+          & $qt $a003 $a011 $a012 | Set-Content -Encoding UTF8 artifacts/n2/coordinates/qt-coordinate.json
           if ($LASTEXITCODE -ne 0) { throw "Qt PDF coordinate probe failed with exit code $LASTEXITCODE" }
 
-          & $pdfium $a003 $a011 | Set-Content -Encoding UTF8 artifacts/n2/coordinates/pdfium-coordinate.json
+          & $pdfium $a003 $a011 $a012 | Set-Content -Encoding UTF8 artifacts/n2/coordinates/pdfium-coordinate.json
           if ($LASTEXITCODE -ne 0) { throw "PDFium coordinate probe failed with exit code $LASTEXITCODE" }
 
           python tools/pdf/coordinates/validate_coordinate_evidence.py `
@@ -107,9 +115,9 @@ jobs:
             'Atlas page space: effective visible page; origin top-left; x right; y down; units PDF points'
             'A003 SHA-256: 77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5'
             'A011 SHA-256: b25d6b6716fbbcf095cbd68bcf57913d4e14bca3e64be19f513c35fd3ddadd29'
+            'A012 SHA-256: 0c710f3f6e4457a44b8d2dbaa42a476a5c5b429764a0a7569002b66222ef069d'
             'PDFium normalization: FPDF_PageToDevice at 100 device units per PDF point, then divided back to point units'
-            'Current scope: link source rectangles + search result rectangles on normal/cropped/rotated pages'
-            'Explicit /XYZ destination-coordinate normalization remains a separate subcase'
+            'Scope: link source rectangles + search result rectangles + explicit /XYZ destination points on normal/cropped/rotated geometry'
           ) | Set-Content -Encoding UTF8 artifacts/n2/coordinates/BUILD_INFO.txt
 
       - name: Upload coordinate evidence

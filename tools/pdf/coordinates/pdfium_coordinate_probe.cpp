@@ -136,7 +136,6 @@ QJsonArray collectA003Links(FPDF_DOCUMENT document, QJsonArray& failures)
             failures.append(QStringLiteral("a003-link-rect-missing"));
             continue;
         }
-
         bool converted = false;
         const QJsonObject normalized = atlasRect(page, rect.left, rect.top, rect.right, rect.bottom, &converted);
         if (!converted) {
@@ -164,6 +163,74 @@ QJsonArray collectA003Links(FPDF_DOCUMENT document, QJsonArray& failures)
         failures.append(QStringLiteral("a003-link-count:%1").arg(links.size()));
     }
     return links;
+}
+
+QJsonArray collectA012Destinations(FPDF_DOCUMENT document, QJsonArray& failures)
+{
+    QJsonArray destinations;
+    FPDF_PAGE sourcePage = FPDF_LoadPage(document, 0);
+    if (sourcePage == nullptr) {
+        failures.append(QStringLiteral("a012-source-page-load-failed"));
+        return destinations;
+    }
+
+    int position = 0;
+    FPDF_LINK link = nullptr;
+    int row = 0;
+    while (FPDFLink_Enumerate(sourcePage, &position, &link)) {
+        FPDF_DEST dest = FPDFLink_GetDest(document, link);
+        if (dest == nullptr) {
+            continue;
+        }
+        const int destinationPage = FPDFDest_GetDestPageIndex(document, dest);
+        FPDF_BOOL hasX = false;
+        FPDF_BOOL hasY = false;
+        FPDF_BOOL hasZoom = false;
+        FS_FLOAT x = 0;
+        FS_FLOAT y = 0;
+        FS_FLOAT zoom = 0;
+        if (!FPDFDest_GetLocationInPage(dest, &hasX, &hasY, &hasZoom, &x, &y, &zoom)) {
+            failures.append(QStringLiteral("a012-destination-location-read-failed:%1").arg(row));
+            continue;
+        }
+
+        FPDF_PAGE targetPage = FPDF_LoadPage(document, destinationPage);
+        if (targetPage == nullptr) {
+            failures.append(QStringLiteral("a012-target-page-load-failed:%1").arg(destinationPage));
+            continue;
+        }
+
+        double atlasX = 0.0;
+        double atlasY = 0.0;
+        const bool converted = hasX && hasY && pagePointToAtlas(targetPage, x, y, &atlasX, &atlasY);
+        if (!converted) {
+            failures.append(QStringLiteral("a012-destination-conversion-failed:%1").arg(row));
+        }
+
+        QJsonObject atlasPoint;
+        atlasPoint.insert(QStringLiteral("x"), atlasX);
+        atlasPoint.insert(QStringLiteral("y"), atlasY);
+
+        QJsonObject item;
+        item.insert(QStringLiteral("row"), row++);
+        item.insert(QStringLiteral("source_page"), 0);
+        item.insert(QStringLiteral("destination_page"), destinationPage);
+        item.insert(QStringLiteral("raw_pdfium_x"), static_cast<double>(x));
+        item.insert(QStringLiteral("raw_pdfium_y"), static_cast<double>(y));
+        item.insert(QStringLiteral("has_x"), static_cast<bool>(hasX));
+        item.insert(QStringLiteral("has_y"), static_cast<bool>(hasY));
+        item.insert(QStringLiteral("has_zoom"), static_cast<bool>(hasZoom));
+        item.insert(QStringLiteral("zoom"), static_cast<double>(zoom));
+        item.insert(QStringLiteral("atlas_destination"), atlasPoint);
+        destinations.append(item);
+        FPDF_ClosePage(targetPage);
+    }
+
+    FPDF_ClosePage(sourcePage);
+    if (destinations.size() != 2) {
+        failures.append(QStringLiteral("a012-destination-count:%1").arg(destinations.size()));
+    }
+    return destinations;
 }
 
 QJsonObject searchOne(FPDF_DOCUMENT document, int pageIndex, const QString& query, QJsonArray& failures)
@@ -240,23 +307,26 @@ QJsonObject searchOne(FPDF_DOCUMENT document, int pageIndex, const QString& quer
 int main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
-    if (argc != 3) {
-        std::fprintf(stderr, "usage: atlas_pdfium_coordinate_probe <A003.pdf> <A011.pdf>\n");
+    if (argc != 4) {
+        std::fprintf(stderr, "usage: atlas_pdfium_coordinate_probe <A003.pdf> <A011.pdf> <A012.pdf>\n");
         return 64;
     }
 
     const QString a003Path = QString::fromLocal8Bit(argv[1]);
     const QString a011Path = QString::fromLocal8Bit(argv[2]);
+    const QString a012Path = QString::fromLocal8Bit(argv[3]);
     QJsonArray failures;
 
     FPDF_InitLibrary();
     QByteArray a003Bytes;
     QByteArray a011Bytes;
+    QByteArray a012Bytes;
     FPDF_DOCUMENT a003 = loadDocument(a003Path, &a003Bytes);
     FPDF_DOCUMENT a011 = loadDocument(a011Path, &a011Bytes);
+    FPDF_DOCUMENT a012 = loadDocument(a012Path, &a012Bytes);
 
     QJsonObject result;
-    result.insert(QStringLiteral("schema"), QStringLiteral("atlas.n2.pdfium-coordinate.v1"));
+    result.insert(QStringLiteral("schema"), QStringLiteral("atlas.n2.pdfium-coordinate.v2"));
     result.insert(QStringLiteral("engine"), QStringLiteral("pdfium"));
     result.insert(QStringLiteral("pdfium_pin"), QStringLiteral(ATLAS_PDFIUM_PIN));
     result.insert(QStringLiteral("pdfium_version"), QStringLiteral(ATLAS_PDFIUM_VERSION));
@@ -264,6 +334,7 @@ int main(int argc, char* argv[])
     result.insert(QStringLiteral("atlas_page_space"), QStringLiteral("effective-visible-page; origin=top-left; x-right; y-down; units=points"));
     result.insert(QStringLiteral("a003_file"), QFileInfo(a003Path).fileName());
     result.insert(QStringLiteral("a011_file"), QFileInfo(a011Path).fileName());
+    result.insert(QStringLiteral("a012_file"), QFileInfo(a012Path).fileName());
 
     if (a003 == nullptr) {
         failures.append(QStringLiteral("a003-load-failed"));
@@ -271,9 +342,13 @@ int main(int argc, char* argv[])
     if (a011 == nullptr) {
         failures.append(QStringLiteral("a011-load-failed"));
     }
+    if (a012 == nullptr) {
+        failures.append(QStringLiteral("a012-load-failed"));
+    }
 
     if (failures.isEmpty()) {
         result.insert(QStringLiteral("a003_links"), collectA003Links(a003, failures));
+        result.insert(QStringLiteral("a012_destinations"), collectA012Destinations(a012, failures));
         QJsonArray searches;
         searches.append(searchOne(a011, 0, QStringLiteral("A011 PAGE 1"), failures));
         searches.append(searchOne(a011, 1, QStringLiteral("A011 PAGE 2"), failures));
@@ -286,6 +361,9 @@ int main(int argc, char* argv[])
     }
     if (a011 != nullptr) {
         FPDF_CloseDocument(a011);
+    }
+    if (a012 != nullptr) {
+        FPDF_CloseDocument(a012);
     }
     FPDF_DestroyLibrary();
 

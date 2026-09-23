@@ -1,0 +1,126 @@
+name: N2 qpdf Encrypted Write
+
+on:
+  push:
+    branches: ['native-v2-n2-pdf-engine-qualification']
+  pull_request:
+    paths:
+      - '.github/workflows/n2-qpdf-encrypted-write.yml'
+      - 'tools/pdf/qpdf_encrypted_outline_mutation_probe.py'
+      - 'tests/fixtures/pdf/source/generate_a015_encrypted_outline.py'
+      - 'tools/pdf/qpdf_structural_probe.py'
+
+permissions:
+  contents: read
+
+jobs:
+  encrypted-write:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      QPDF_VERSION: '12.4.1'
+      QPDF_ASSET: 'qpdf-12.4.1-msvc64.zip'
+      QPDF_ASSET_ID: '533019080'
+      QPDF_ASSET_SHA256: '3cd016cd433ef7232e42f4c13348a49cc14907a3c7278ef4f99120593126f7a6'
+      A015_SHA256: 'd043e0ca6b0479f586c2df1bead9d6ec99586191eead06c602ad7e43b290afe0'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Acquire exact official qpdf 12.4.1 MSVC64 package
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/qpdf/qpdf/releases/download/v12.4.1/qpdf-12.4.1-msvc64.zip'
+          $archive = Join-Path $env:RUNNER_TEMP $env:QPDF_ASSET
+          $root = Join-Path $env:RUNNER_TEMP 'qpdf-12.4.1-msvc64'
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:QPDF_ASSET_SHA256) { throw "qpdf package SHA-256 mismatch: $actual != $env:QPDF_ASSET_SHA256" }
+          Expand-Archive -LiteralPath $archive -DestinationPath $root -Force
+          $candidates = @(Get-ChildItem -Path $root -Recurse -Filter 'qpdf.exe' -File)
+          if ($candidates.Count -ne 1) { throw "Expected exactly one qpdf.exe; found $($candidates.Count)" }
+          $qpdf = $candidates[0].FullName
+          $versionText = (& $qpdf --version 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $versionText -notmatch '(?<![0-9])12\.4\.1(?![0-9])') { throw "Unexpected qpdf version: $versionText" }
+          "QPDF_EXE=$qpdf" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "QPDF_ARCHIVE_SHA256=$actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install independent validator dependency
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
+          if ($LASTEXITCODE -ne 0) { throw "pypdf install failed: $LASTEXITCODE" }
+
+      - name: Generate and independently verify A015
+        shell: pwsh
+        run: |
+          python tests/fixtures/pdf/source/generate_a015_encrypted_outline.py
+          if ($LASTEXITCODE -ne 0) { throw "A015 generation failed: $LASTEXITCODE" }
+          $fixture = 'tests/fixtures/pdf/generated/A015_encrypted_outline_rc4_40.pdf'
+          $actual = (Get-FileHash $fixture -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:A015_SHA256) { throw "A015 SHA-256 mismatch: $actual != $env:A015_SHA256" }
+
+          @'
+          from pypdf import PdfReader
+          path = r"tests/fixtures/pdf/generated/A015_encrypted_outline_rc4_40.pdf"
+          wrong = PdfReader(path, strict=False); wr = int(wrong.decrypt("atlas-wrong"))
+          user = PdfReader(path, strict=False); ur = int(user.decrypt("atlas-user"))
+          owner = PdfReader(path, strict=False); orr = int(owner.decrypt("atlas-owner"))
+          assert (wr, ur, orr) == (0, 1, 2), (wr, ur, orr)
+          assert len(user.pages) == 1
+          outline = user.outline
+          assert len(outline) == 1 and getattr(outline[0], "title", None) == "Encrypted Root"
+          assert user.get_destination_page_number(outline[0]) == 0
+          enc = user.trailer["/Encrypt"].get_object()
+          assert int(enc["/V"]) == 1 and int(enc["/R"]) == 2 and int(enc["/P"]) == -4
+          print("A015 independent pypdf source validation PASS")
+          '@ | python -
+          if ($LASTEXITCODE -ne 0) { throw "A015 independent validation failed: $LASTEXITCODE" }
+
+      - name: Run encrypted outline mutation preservation probe
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'artifacts/n2-qpdf-encrypted-write'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          python tools/pdf/qpdf_encrypted_outline_mutation_probe.py `
+            --qpdf "$env:QPDF_EXE" `
+            --fixture-root 'tests/fixtures/pdf/generated' `
+            --output-dir "$out"
+          if ($LASTEXITCODE -ne 0) {
+            if (Test-Path (Join-Path $out 'qpdf-encrypted-outline-mutation.json')) {
+              Get-Content (Join-Path $out 'qpdf-encrypted-outline-mutation.json')
+            }
+            throw "Encrypted qpdf mutation qualification failed: $LASTEXITCODE"
+          }
+
+      - name: Stage encrypted-write identity
+        if: always()
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'artifacts/n2-qpdf-encrypted-write'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          @(
+            'Atlas Reader N2 B4 encrypted structural-write qualification'
+            "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
+            "qpdf version: $env:QPDF_VERSION"
+            "Official asset: $env:QPDF_ASSET (ID $env:QPDF_ASSET_ID)"
+            "Verified archive SHA-256: $env:QPDF_ARCHIVE_SHA256"
+            "A015 SHA-256: $env:A015_SHA256"
+            'A015 security: Standard V1/R2 RC4-40, P=-4, public test passwords; weak crypto test data only'
+            'Mutation authority: user password on permissive fixture; restricted A009 is intentionally not mutated'
+            'Required result: output remains encrypted; V/R/P and wrong/user/owner password identities preserved; intended Unicode title survives; unrelated invariants preserved'
+            'Product linkage: none; disposable fixture only'
+          ) | Set-Content -Encoding UTF8 (Join-Path $out 'BUILD_INFO.txt')
+          Copy-Item 'tests/fixtures/pdf/generated/A015_encrypted_outline_rc4_40.pdf' (Join-Path $out 'A015_encrypted_outline_rc4_40.pdf')
+          Copy-Item 'tools/pdf/qpdf_encrypted_outline_mutation_probe.py' (Join-Path $out 'qpdf_encrypted_outline_mutation_probe.py')
+
+      - name: Upload encrypted-write evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n2-qpdf-encrypted-write-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/n2-qpdf-encrypted-write
+          if-no-files-found: error
+          retention-days: 14

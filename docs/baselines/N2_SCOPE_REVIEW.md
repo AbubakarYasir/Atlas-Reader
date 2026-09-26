@@ -1,11 +1,21 @@
 # N2 PDF Scope Review
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Scope blockers satisfied — production-route freeze, final exact-head CI and overall owner acceptance remain**
+**Status:** **Historical scope review complete — final Qt PDF/qpdf route is
+frozen/requalified and strict CI is green; overall owner acceptance remains**
 **Date:** 2026-09-27
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
 This record prevents N2 from expanding indefinitely. It maps the remaining open evidence in `N2_PDF_ENGINE_MATRIX.md` to the binding Windows 2.0 product scope in `docs/FEATURE_SCOPE_2_0.md`.
+
+> **Superseded provisional direction:** Sections 3–5 preserve the decision at
+> the scope-review moment, when PDFium was provisionally favored on bounded
+> technical evidence. The later production-distribution gate rejected
+> standalone PDFium for N2 shipping because no official Atlas-controlled route
+> was frozen. The final Proposed ADR selects official dynamic Qt PDF 6.10.3 for
+> read/render/text/navigation and first-party qpdf 12.4.1 CLI for
+> structure/security/write. `N2_PDF_ENGINE_MATRIX.md`,
+> `N2_PRODUCTION_DISTRIBUTION.md` and ADR-0004 are authoritative.
 
 N2 still does not constitute product Reader implementation. The purpose here is only to gather enough evidence to choose safe, replaceable PDF responsibilities for later checkpoints.
 
@@ -181,21 +191,22 @@ Canonical implementation `28a072bbedf07808773068941fc8c7ed22252ba8`;
 Restricted A009 remains intentionally non-writable; this evidence does not
 authorize bypassing PDF permissions.
 
-## 2. Not N2 blockers — later hardening or later checkpoint evidence
+## 2. Not N2 blockers — named later-checkpoint evidence
 
 ### Fit / FitH / FitV destination modes
 
-**Decision: POST-N2 HARDENING unless later Reader implementation proves they are required for a core source document.**
+**Decision: N4.3/N4.4 implementation and navigation regression coverage.**
 
 N2 already proves exact page destination identity, source rectangles, search geometry and `/XYZ` coordinates. Windows 2.0 P0 requires exact page destinations and Reader fit-width/fit-page modes, but it does not require preserving every PDF destination view-mode token as a domain semantic at engine-selection time.
 
 ### Unsupported-security-scheme fixture
 
-**Decision: POST-N2 HARDENING.**
+**Decision: N5.1 capability-preflight fixture and N10 security regression.**
 
 Qt PDF and PDFium both expose candidate-level unsupported/security error surfaces, while malformed/password behavior is already fixture-qualified. An unsupported-scheme fixture is useful regression coverage, but it is not currently expected to change responsibility selection.
 
-Atlas still needs an `unsupported` application state in later Library/Reader workflows.
+Atlas must implement and test an explicit `unsupported` application state in
+N5.1 capability preflight; ambiguity or bypass blocks N5/N10.
 
 ### Cryptographic signature validity verification
 
@@ -207,29 +218,29 @@ If a future version reports cryptographic validity, qualify a dedicated verifier
 
 ### Advanced image/gradient/transparency-group corpus
 
-**Decision: POST-N2 HARDENING after the image-only blocker above.**
+**Decision: N4 rendering corpus and N10 reader regression.**
 
 N2 needs representative raster reading, not exhaustive PDF graphics conformance testing.
 
 ### Broad annotation-subtype raster fidelity
 
-**Decision: N6/P1 evidence, not N2.**
+**Decision: N6 annotation corpus and independent-reader evidence, not N2.**
 
 Annotations are a later product checkpoint. A011's explicit-appearance Link annotation is sufficient to establish the current rendering-policy boundary.
 
 ### Large-document viewport/cache behavior
 
-**Decision: N3+ Reader architecture/performance evidence, not N2 engine selection.**
+**Decision: N4.2 Reader viewport/cache evidence and N10 hardware soak.**
 
 N2 stress already proves repeated engine lifetimes and PDFium serialization. Bounded visible-page caches/cancellation/resource retention belong to the production Reader/viewport checkpoint.
 
 ### Multi-hour soak / universal memory-leak threshold
 
-**Decision: POST-N2 product stress.**
+**Decision: N4 repeated reader/session memory series and N10 multi-hour soak.**
 
 The canonical 500-cycle stress series remains a baseline. Qt's upward working-set trend must be retained as a follow-up signal, but N2 will not invent a leak verdict or universal RSS threshold from one hosted-runner series.
 
-## 3. Provisional responsibility direction
+## 3. Historical provisional responsibility direction — superseded
 
 This is a **proposal for the final ADR**, not an accepted decision yet.
 
@@ -250,7 +261,7 @@ With B1 through B4 now satisfied, the proposed final responsibility assignment i
 
 Qt PDF remains a qualified fallback/read candidate and the UI stack remains Qt. Not selecting Qt PDF for a PDF responsibility would not reject Qt itself; it would avoid carrying a second PDF read/render abstraction merely for integration convenience.
 
-## 4. Why the provisional read direction is PDFium rather than Qt PDF
+## 4. Historical rationale for the provisional PDFium direction — superseded
 
 This is not based on one benchmark score.
 
@@ -289,8 +300,8 @@ policy; N2 does not implement that production workflow.
 ## 6. Exit from scope review
 
 The scope review is complete: B1, corrected B2, B3 and B4 all have bounded PASS
-evidence. N2 still requires the selected PDFium/qpdf production routes to be
-frozen and requalified, ADR-0004 to remain synchronized with that result, final
-exact-head strict CI, and explicit overall owner `N2 PASS`.
+evidence. The later distribution review froze/requalified Qt PDF/qpdf and final
+exact-head strict CI is green. ADR-0004 remains Proposed and PR #4 remains
+draft/open/unmerged until explicit overall owner `N2 PASS`.
 
 Until then ADR-0004 remains **Proposed**, PR #4 remains draft/open/unmerged, and N3 remains **Not started**.

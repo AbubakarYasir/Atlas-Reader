@@ -103,6 +103,10 @@ Each accepted checkpoint must show:
 - performance regression comparison to previous accepted checkpoint;
 - unresolved known issues explicitly listed.
 
+It must also show that every requirement and carried limitation has an evidence
+owner under `CHECKPOINT_QA_MATRIX.md`; an unassigned “later” issue is a planning
+failure and blocks acceptance.
+
 For PDF mutation, preservation tests are more important than generic line coverage.
 
 ## 5. Competitive evaluation
@@ -110,6 +114,9 @@ For PDF mutation, preservation tests are more important than generic line covera
 Atlas does not need to "beat" Adobe/Foxit in total features. We compare the workflows Atlas chooses to own.
 
 For each beta, perform a structured manual comparison against relevant current versions of mature readers/editors using the same fixture where practical.
+
+Record the compared product/version/date and exact task. A comparison that was
+not run is marked untested, not implied from memory or marketing material.
 
 Compare:
 

@@ -1,6 +1,8 @@
 # Atlas Reader Native — Master Plan to 2.0
 
-**Status:** N2 PDF-engine qualification — In progress
+<!-- atlas-status: N2|ready-for-owner-test -->
+
+**Status:** N2 PDF-engine qualification — Ready for owner test; explicit owner `N2 PASS` remains
 
 **Current engineering preview:** `2.0.0-alpha.2`
 
@@ -67,9 +69,29 @@ Binding N2 documents:
 - `tests/fixtures/pdf/README.md`;
 - `docs/decisions/ADR-0004-pdf-engine-responsibilities.md`.
 
-ADR-0004 remains **Proposed** with PDFium assigned to the read/render/text/navigation path and qpdf to structural/security/write responsibilities. Neither becomes a production release dependency until its shipping route is frozen, requalified, and explicitly accepted.
+ADR-0004 remains **Proposed** with the frozen/requalified route assigning
+official dynamic Qt PDF 6.10.3 to read/render/text/navigation and the first-party
+qpdf 12.4.1 CLI to structural/security/write responsibilities. Standalone
+PDFium remains comparison evidence and a replaceable future candidate, not an N2
+production dependency. The route is not Accepted until explicit owner `N2 PASS`.
 
 N3 remains closed until explicit owner `N2 PASS`.
+
+Every future checkpoint is governed by `docs/CHECKPOINT_QA_MATRIX.md`: automated
+evidence, manual/owner evidence, blocking failures and transferred limitations
+must be named before work begins. Git/PR/status synchronization follows
+`docs/GIT_WORKFLOW.md`.
+
+### Recorded plan changes
+
+Plan changes are recorded instead of silently rewriting why a decision was
+made:
+
+| Date | Original direction | Evidence discovered | Binding change |
+|---|---|---|---|
+| 2026-09-27 | The first A014/PDFium reference raster was treated as the visual oracle | owner review found broken Arabic joining/diacritics, inappropriate Urdu typeface and later incorrect physical alignment | rebuilt A014 with pinned Noto Naskh Arabic + Noto Nastaliq Urdu and RTL layout; owner visual result now passes with bounded-corpus limitation |
+| 2026-09-27 | PDFium was provisionally favored for the combined read path on bounded capability/performance evidence | only a community binary was qualified; an official Atlas-controlled production source/build/notices route was not frozen, while official Qt PDF integrated with the accepted stack | final Proposed N2 route changed to official Qt PDF 6.10.3 + first-party qpdf 12.4.1 CLI; PDFium evidence is retained for future replacement comparison |
+| 2026-09-27 | Future checkpoint descriptions had uneven QA detail and several limitations said only “later” | cross-document audit found missing named owner tests for N6–N11 and no explicit checkpoint owner for Windows integration/settings/diagnostics | added the binding N0–N11 QA matrix, exact limitation ownership, Git documentation and CI documentation-governance check; product scope/order did not shrink |
 
 ## III. Windows 2.0 product pillars
 
@@ -397,7 +419,7 @@ Native V2 uses:
 
 - N0: `2.0.0-alpha.0` — Accepted;
 - N1: `2.0.0-alpha.1` — Accepted;
-- N2: `2.0.0-alpha.2` — In progress engineering qualification;
+- N2: `2.0.0-alpha.2` — Ready for owner test; explicit owner PASS pending;
 - N3 onward: `2.0.0-beta.N` usable milestone builds;
 - N10: `2.0.0-rc.N`;
 - N11: stable `2.0.0` Windows.

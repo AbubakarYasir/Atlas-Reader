@@ -54,7 +54,9 @@ A006 is regenerated deterministically before the benchmark. Its Type3 glyphs mak
 1. Benchmark JSON must report `passed: true`; failed correctness guards invalidate the timing sample.
 2. p50/p95 values are compared only for the same fixture, operation, build type and run environment.
 3. GitHub-hosted runner values are comparative engineering evidence, not a prediction of the user's physical Windows machine.
-4. The synthetic corpus is intentionally small. It can expose fixed engine overhead and obvious regressions, but it does **not** replace a later large/real-world PDF workload.
+4. The synthetic corpus is intentionally small. It can expose fixed engine
+   overhead and obvious regressions, but it does **not** replace the binding N4
+   long-document reader workload or N10 real-hardware soak.
 5. Search timings include each engine's own search model/API semantics. They are useful for observed end-to-end candidate behavior but must not be mistaken for identical internal work.
 6. Memory evidence is process working set before vs. after the workload and peak working set. It is a coarse leak/regression signal, not heap attribution.
 7. No absolute PASS threshold is invented during this slice. N2 records measured evidence first; responsibility selection happens only after correctness, preservation, security, licensing/provenance and performance evidence are considered together.

@@ -1,8 +1,10 @@
 # Atlas Reader Native
 
+<!-- atlas-status: N2|ready-for-owner-test -->
+
 > Native-performance, local-first reading and research software built around **Index → Reader → Bookmarks**.
 
-**Status:** N0 bootstrap **Accepted**. N1 Windows toolchain + empty-shell baseline **Accepted**. N2 PDF-engine qualification is **In progress**. No production Index/Reader/Bookmark implementation has started.
+**Status:** N0 bootstrap **Accepted**. N1 Windows toolchain + empty-shell baseline **Accepted**. N2 PDF-engine qualification is **Ready for owner test**; explicit owner `N2 PASS` remains. No production Index/Reader/Bookmark implementation has started.
 
 **Current native build:** `2.0.0-alpha.2`
 
@@ -52,7 +54,7 @@ We do **not** call an empty shell a beta.
 
 - N0: `2.0.0-alpha.0` — **Accepted** architecture/bootstrap.
 - N1: `2.0.0-alpha.1` — **Accepted** Windows toolchain + zero-feature performance baseline.
-- N2: `2.0.0-alpha.2` — **In progress** PDF-engine qualification.
+- N2: `2.0.0-alpha.2` — **Ready for owner test**; explicit owner PASS pending.
 - N3: `2.0.0-beta.1` — first useful native Library/Index beta.
 - N4: `2.0.0-beta.2` — native Reader.
 - N5: `2.0.0-beta.3` — complete resilient Bookmarks.
@@ -131,7 +133,10 @@ A valid N2 result may deliberately use more than one engine.
 - fixture rules: [`tests/fixtures/pdf/README.md`](tests/fixtures/pdf/README.md)
 - proposed architecture decision: [`docs/decisions/ADR-0004-pdf-engine-responsibilities.md`](docs/decisions/ADR-0004-pdf-engine-responsibilities.md)
 
-ADR-0004 remains **Proposed**. No engine is production-selected until evidence is complete and the owner explicitly records `N2 PASS`.
+ADR-0004 remains **Proposed**. The frozen/requalified route is Qt PDF 6.10.3
+for read/render/text/navigation plus qpdf 12.4.1 CLI for
+structure/security/write; it is not Accepted until the owner explicitly records
+`N2 PASS`.
 
 ### N2 non-scope
 
@@ -168,12 +173,14 @@ Every dependency must pass license, maintenance, portability, abstraction, perfo
 │   ├── N2_PDF_ENGINE_QUALIFICATION_PLAN.md
 │   ├── ARCHITECTURE.md
 │   ├── BUILDING.md
+│   ├── CHECKPOINT_QA_MATRIX.md
 │   ├── COMPETITIVE_BASELINE.md
 │   ├── CORE_WORKFLOWS.md
 │   ├── DATA_MODEL_AND_FORMATS.md
 │   ├── DEPENDENCIES_AND_TOOLS.md
 │   ├── DEVELOPMENT_WORKFLOW.md
 │   ├── FEATURE_SCOPE_2_0.md
+│   ├── GIT_WORKFLOW.md
 │   ├── LICENSING.md
 │   ├── MIGRATION_FROM_FLUTTER.md
 │   ├── PERFORMANCE.md
@@ -194,6 +201,7 @@ Every dependency must pass license, maintenance, portability, abstraction, perfo
 ├── tests/
 │   └── fixtures/pdf/        N2 tracked PDF fixture contract/corpus
 ├── tools/bench/             local physical-machine benchmark harnesses
+├── tools/docs/              Markdown/status/checkpoint governance validation
 ├── AGENTS.md
 ├── CHANGELOG.md
 ├── CHECKPOINTS.md
@@ -218,7 +226,9 @@ cmake --build --preset windows-release
 ctest --preset windows-release
 ```
 
-Candidate-specific N2 setup commands will be added only when each focused probe is introduced and pinned.
+Candidate-specific N2 setup/probe commands and exact pins are recorded in
+[`docs/BUILDING.md`](docs/BUILDING.md); the selected user package excludes the
+qualification-only standalone PDFium DLL.
 
 ## Documentation hierarchy
 
@@ -228,7 +238,7 @@ For current work, read `CHECKPOINTS.md` → `docs/N2_PDF_ENGINE_QUALIFICATION_PL
 
 ## Current checkpoint
 
-**N2 — PDF engine qualification spike:** **In progress**.
+**N2 — PDF engine qualification spike:** **Ready for owner test**.
 
 All bounded N2 capability blockers pass. The frozen Windows production route is
 official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the

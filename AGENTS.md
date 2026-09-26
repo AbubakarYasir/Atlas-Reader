@@ -1,5 +1,7 @@
 # Atlas Reader Native — Agent Rules
 
+<!-- atlas-status: N2|ready-for-owner-test -->
+
 Read this before changing the repository.
 
 ## Start with the current checkpoint
@@ -51,7 +53,9 @@ Before PDF-engine work, read:
 
 N2 rules:
 
-- no candidate is pre-selected;
+- the selected route is frozen as official dynamic Qt PDF 6.10.3 for
+  read/render/text/navigation plus first-party qpdf 12.4.1 CLI for
+  structure/security/write, but remains unaccepted until owner `N2 PASS`;
 - ADR-0004 remains **Proposed** until explicit owner `N2 PASS`;
 - use the same normalized fixture expectations when comparing Qt PDF and PDFium;
 - qpdf is primarily a structure/security/transformation candidate, not a raster engine;
@@ -131,6 +135,11 @@ Use `docs/RISK_REGISTER.md` when a change creates or changes a significant archi
 
 Keep README, PLAN, CHECKPOINTS, INFO, CHANGELOG, `docs/README.md`, relevant specialized docs, and ADRs consistent.
 
+Follow `docs/GIT_WORKFLOW.md` for branch/PR/merge/tag/remote verification and
+run `tools/docs/check-markdown.ps1` before push. Follow
+`docs/CHECKPOINT_QA_MATRIX.md` when transferring any limitation to another
+checkpoint; vague “later” work is not a valid handoff.
+
 Every meaningful N2 experiment updates the durable matrix with exact engine version/revision, fixture IDs, evidence, limitation/failure and decision impact.
 
 Use these meanings precisely:
@@ -183,7 +192,7 @@ Never inspect, print, commit, or request secrets unnecessarily. Password-protect
 
 ## Current stop gate
 
-**N0 Accepted. N1 Accepted. N2 is active and In progress.**
+**N0 Accepted. N1 Accepted. N2 is active and Ready for owner test.**
 
 N2 may add only the contracts, fixtures, probe/adaptor code, dependency/bootstrap configuration, benchmarks, preservation/security experiments, licensing evidence and documentation required to qualify Qt PDF, PDFium and qpdf and assign responsibilities.
 

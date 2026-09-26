@@ -41,6 +41,8 @@ This register is reviewed at every checkpoint. Risks may be added, retired, or r
 | No representative low-end hardware testing | Medium | Developer RTX/high-end hardware can hide inefficient code | N10 hardware matrix includes baseline/representative slower storage/GPU/display; budgets documented per machine |
 | Diagnostics leak sensitive document information | High | Local scholarly/private documents may expose text/paths/passwords | privacy-safe logs; no document contents/passwords; diagnostic-bundle preview/redaction; no telemetry in 2.0 |
 | Installer/uninstaller damages user data | Critical at N11 | Release packaging can undo all application safety work | app data/books separate; uninstall never deletes user PDFs/research backups; install/upgrade/uninstall regression matrix |
+| Plan/status documentation drifts from code or final ADR | High | Contributors may build the rejected engine route, skip QA, or start the wrong checkpoint | one active status marker; `CHECKPOINTS.md` authority; `CHECKPOINT_QA_MATRIX.md`; `GIT_WORKFLOW.md`; automated Markdown link/status/gate validation in CI |
+| Known limitation is postponed without an owner/test | High | “Later” becomes permanent and failures reach stable | every limitation names implementation checkpoint, regression evidence and blocking condition; owner PASS cannot waive an unrecorded P0 gap |
 
 ## Checkpoint-specific risk review
 

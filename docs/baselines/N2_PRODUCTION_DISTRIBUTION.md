@@ -270,4 +270,5 @@ Before final N2 acceptance only owner evidence review and explicit `N2 PASS`
 remain. Strict CI passed on synchronized head
 `925d90521c1410200ed2b467dc808372bda3ec0c`.
 
-N2 remains **Open** and ADR-0004 remains **Proposed**.
+N2 is **Ready for owner test** and ADR-0004 remains **Proposed** until explicit
+owner `N2 PASS`.

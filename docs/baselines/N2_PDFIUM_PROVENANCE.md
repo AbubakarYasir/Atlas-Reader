@@ -1,7 +1,8 @@
 # N2 PDFium Provenance and Probe Pin
 
 **Checkpoint:** N2.2 — PDFium qualification  
-**Status:** Qualification complete on probe package — Atlas-controlled production build and compliance freeze pending
+**Status:** **Qualification complete on probe package — retained as comparison
+evidence; standalone PDFium rejected for the selected N2 production route**
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Recorded:** 2026-09-22
 
@@ -29,7 +30,10 @@ Current PDFium public embedder headers state that PDFium APIs are **not thread-s
 
 Atlas therefore treats serialization as part of the candidate contract. N2 must not benchmark an unsupported parallel-call pattern and then claim that as representative PDFium behavior.
 
-The current probe records `serialized-single-thread` and makes PDFium calls serially. A later Atlas adapter/task-queue stress test is still required to prove concurrent application workloads never create simultaneous PDFium API calls.
+The current probe records `serialized-single-thread` and makes PDFium calls
+serially. PDFium is not in the selected N2 package. If a future ADR reconsiders
+it, production adapter/task-queue stress must prove concurrent application
+workloads never create simultaneous PDFium API calls.
 
 ## Probe distribution
 

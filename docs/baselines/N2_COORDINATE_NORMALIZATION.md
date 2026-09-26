@@ -1,7 +1,7 @@
 # N2 PDF Coordinate Normalization Baseline
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Canonical candidate evidence — N2 still Open**  
+**Status:** **Canonical candidate evidence — N2 Ready for owner test**
 **Recorded:** 2026-09-23  
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
@@ -201,8 +201,8 @@ This is not treated as a malformed fixture or tolerance issue. The first strict 
 | Effective-visible page bounds | **PASS** | **PASS** | A011 corpus |
 | `/XYZ` destination — normal target | **PASS** | **PASS** | A012 |
 | `/XYZ` destination — 90° rotated target | **PASS WITH LIMITATION** | **PASS** | Qt requires external inherent-rotation metadata |
-| Arbitrary destination modes (`Fit`, `FitH`, etc.) | **PENDING** | **PENDING** | not in current corpus |
-| Arbitrary multi-rectangle/bidi/real-font hit geometry | **PENDING** | **PENDING** | current fixture is synthetic/simple text |
+| Arbitrary destination modes (`Fit`, `FitH`, etc.) | **TRANSFERRED TO N4.3/N4.4** | **TRANSFERRED TO N4.3/N4.4** | binding Reader navigation corpus |
+| Arbitrary multi-rectangle/bidi/real-font hit geometry | **TRANSFERRED TO N4.4/N9** | **TRANSFERRED TO N4.4/N9** | Reader text/search plus final Arabic/RTL matrix |
 
 ## 9. Architectural implication
 
@@ -223,10 +223,11 @@ If Qt PDF is selected for navigation/link reading, the adapter must receive inhe
 
 The current N2 gates are closed for source-link rectangles, search-hit rectangles, and explicit `/XYZ` points on normal and 90°-rotated synthetic pages.
 
-Still potentially useful, but not automatically a blocker unless required by Atlas v2 scope:
+Binding later work under `../CHECKPOINT_QA_MATRIX.md`:
 
-1. non-XYZ destination modes (`Fit`, `FitH`, `FitV`, etc.);
-2. broader real-font/multi-line/bidi text rectangles;
-3. extraction-selection geometry independently of search hits.
+1. N4.3/N4.4: non-XYZ destination modes (`Fit`, `FitH`, `FitV`, etc.);
+2. N4.4/N9: broader real-font/multi-line/bidi text rectangles;
+3. N4.4: extraction-selection geometry independently of search hits.
 
-N2 remains **Open** and ADR-0004 remains **Proposed**.
+N2 is **Ready for owner test** and ADR-0004 remains **Proposed** until explicit
+owner `N2 PASS`.

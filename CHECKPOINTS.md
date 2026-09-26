@@ -1,5 +1,7 @@
 # Atlas Reader Native — Checkpoints to Windows 2.0
 
+<!-- atlas-status: N2|ready-for-owner-test -->
+
 This file controls implementation order. Only one checkpoint is active at a time. A checkpoint may be **Not started**, **In progress**, **Ready for owner test**, **Accepted**, or **Blocked**.
 
 `PLAN.md` defines the north star; `docs/FEATURE_SCOPE_2_0.md` defines Windows 2.0 scope; `docs/QUALITY_AND_TESTING.md` defines evidence; this file defines execution order and stop gates.
@@ -22,7 +24,11 @@ This file controls implementation order. Only one checkpoint is active at a time
 | Evidence sheet | `docs/baselines/N2_PDF_ENGINE_MATRIX.md` |
 | Proposed decision | `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` |
 
-N2 was deliberately opened on 2026-09-22 after explicit N1 acceptance. No PDF engine is pre-selected. N2 may end with a split architecture where one engine owns read/render/text/navigation and qpdf owns structure/security/transformation.
+N2 was deliberately opened on 2026-09-22 after explicit N1 acceptance. The
+qualification is now complete enough for owner review: the frozen route is
+official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
+first-party qpdf 12.4.1 CLI for structure/security/write. ADR-0004 remains
+Proposed and the route is not Accepted until explicit owner `N2 PASS`.
 
 **N3 remains Not started until N2 has sufficient evidence, final strict CI, an Accepted ADR-0004, and explicit owner `N2 PASS`.**
 
@@ -42,6 +48,8 @@ N2 was deliberately opened on 2026-09-22 after explicit N1 acceptance. No PDF en
 12. A passed checkpoint cannot be reopened without new evidence of a user-facing regression.
 13. N2 candidate experiments must use Atlas-owned normalized contracts; engine-native types cannot leak into portable domain/application code.
 14. N2 probe adoption is not production adoption: exact version, provenance, license, checksum/build path and rollback must be recorded before an engine responsibility can be accepted.
+15. `docs/CHECKPOINT_QA_MATRIX.md` is binding: every limitation needs a named implementation checkpoint, regression evidence and blocking condition.
+16. `docs/GIT_WORKFLOW.md` controls branch, PR, status synchronization, merge, tag and remote-verification behavior.
 
 ## Release ledger
 
@@ -49,7 +57,7 @@ N2 was deliberately opened on 2026-09-22 after explicit N1 acceptance. No PDF en
 |---|---|---|---|
 | N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Accepted** |
 | N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **Accepted** |
-| N2 | `2.0.0-alpha.2` | PDF engine qualification spike | **In progress** |
+| N2 | `2.0.0-alpha.2` | PDF engine qualification spike | **Ready for owner test** |
 | N3 | `2.0.0-beta.1` | Library/index foundation | Not started |
 | N4 | `2.0.0-beta.2` | Native reader foundation | Not started |
 | N5 | `2.0.0-beta.3` | Core resilience + complete bookmarks | Not started |
@@ -178,7 +186,7 @@ N2 was deliberately opened only after this acceptance and inherits N1 as its fro
 
 ---
 
-## N2 — PDF engine qualification spike (`2.0.0-alpha.2`) — In progress
+## N2 — PDF engine qualification spike (`2.0.0-alpha.2`) — Ready for owner test
 
 **Goal:** Select PDF responsibilities using real fixtures/benchmarks, not preference, before Atlas builds product features around an engine assumption.
 
@@ -383,9 +391,22 @@ N2 cannot be Accepted until:
 
 **N3.4 Library UX/search** — grid/list/folders, Recents/Favorites, filtering/sorting, Command Center book results, Arabic metadata.
 
+### Automated QA
+
+- schema migration, transaction rollback, repositories and FTS consistency;
+- progressive scan, cancellation, bounded worker/writer behavior and watcher coalescing;
+- overlapping/reparse roots, permission denial, corrupt/encrypted inputs and long Unicode paths;
+- rename/move/copy identity, unavailable-root retention and ambiguity handling;
+- Arabic/Unicode query correctness plus named SSD and slower-storage performance smoke;
+- keyboard, focus, UIA and 100%/200% checks for every new Library workflow.
+
 ### Owner test
 
 Use a representative multi-folder library including Arabic/English, nested roots, encrypted/corrupt files, a removable/offline root, rename/move and copied PDF. Confirm responsiveness and correct retained state.
+
+The N3 handoff also records a same-task comparison against relevant mature
+library/search software, exact artifact/checksum, known limitations and explicit
+owner result.
 
 **Stop gate:** publish first native beta only after library/index is genuinely useful without the Flutter app.
 
@@ -417,6 +438,23 @@ Use a representative multi-folder library including Arabic/English, nested roots
 - image-only PDF behavior;
 - mixed page sizes/rotations.
 
+### Automated QA
+
+- open/error/session and opt-in restoration contracts;
+- bounded viewport/cache/eviction, task priority and cancellation behavior;
+- page labels, crop/media boxes and 0°/90°/180°/270° navigation geometry;
+- link semantic de-duplication and exact rotated destination tests;
+- text/search correctness, cancellation and p50/p95/p99 long-document latency;
+- 2,000-page, multi-tab and repeated open/close memory series;
+- keyboard, focus/UIA, Arabic/Urdu and 100%/200% workflow checks.
+
+### Owner test
+
+Read image-only, corrected Arabic/Urdu, long, mixed-size/rotation and link-heavy
+PDFs. Exercise tabs, zoom, page labels, search, links, outlines and restoration
+with mouse and keyboard; confirm Narrator route, 200% layout, responsiveness and
+memory behavior. Compare the same core tasks with relevant mature readers.
+
 **Stop gate:** reader is comfortable enough for daily PDF reading before bookmark editing begins.
 
 ---
@@ -443,6 +481,23 @@ Implements the full contract in `docs/CORE_WORKFLOWS.md`.
 
 Normal writable, permission-restricted, read-only filesystem, transient lock, signed/certified, external outline change, offline/missing, Arabic/English deep tree, duplicate names, 10k-node search.
 
+### Automated QA
+
+- capability-state/password/restriction/signed/certified classification;
+- local overlay persistence, crash/reopen and storage-state transitions;
+- create/rename/delete/move/reparent/reorder/nest with duplicate Unicode names;
+- 10,000-node search/navigation and keyboard tree semantics;
+- external revision conflict/reconciliation and safe-save failure injection;
+- modern encrypted/unsupported-security fixtures without bypass;
+- Atlas JSON/Markdown/CSV round trips and forward-version rejection;
+- preservation plus independent-reader reopen after writable PDF mutation.
+
+### Owner test
+
+Run every owner fixture through edit, close/reopen, conflict and recovery. Verify
+that signed/certified/restricted originals are not silently mutated, local work
+is visibly local, and ordinary writable output agrees in an independent reader.
+
 **Stop gate:** no tested protected/conflicted state loses research or falsely reports embedding; writable PDF round-trip agrees externally.
 
 ---
@@ -463,6 +518,21 @@ Normal writable, permission-restricted, read-only filesystem, transient lock, si
 - text highlight/underline/strikeout/sticky note where engine support passes interop tests;
 - restricted/signed/conflict behavior reuses N5 local/safe-save rules.
 
+### Automated QA
+
+- pointer/stroke/page coordinate normalization and page isolation;
+- undo/redo, eraser/select/delete and pan/zoom/draw gesture separation;
+- overlay persistence and crash/reopen recovery;
+- standard ink and supported markup serialization/preservation;
+- restricted/signed/conflict fallback and safe-save regression suites;
+- supported annotation-subtype rendering corpus in Atlas plus an independent implementation.
+
+### Owner test
+
+On real pen/touch hardware, draw short/long/fast strokes while scrolling,
+zooming, rendering and scanning are active. Reopen normal and protected cases in
+Atlas and an independent reader; confirm latency, fidelity and fallback state.
+
 **Stop gate:** low-latency interaction + independent-reader round-trip + no collateral PDF loss.
 
 ---
@@ -479,6 +549,32 @@ Normal writable, permission-restricted, read-only filesystem, transient lock, si
 - selected metadata/XMP editing with before/after preview and preservation checks;
 - capability/safe-save integration.
 
+This checkpoint also completes the scoped desktop utilities that otherwise had
+no owner in the old plan:
+
+- PDF picker, launch-with-path, Open With, context menu, drag/drop and clipboard behavior;
+- long/Unicode path and power/session-close safety;
+- organized settings with documented defaults and migration behavior;
+- bounded privacy-safe logs and user-previewed/redacted diagnostic bundles.
+
+### Automated QA
+
+- cover queue, cancellation, invalidation and cache-bound tests;
+- print range/layout model and source-hash invariance;
+- metadata/XMP before/after preservation fixtures;
+- launch/open-with/drag-drop/clipboard/long-path/session-close behavior;
+- settings persistence, defaults, reset and forward/backward handling;
+- log redaction/rotation and diagnostic-bundle privacy tests;
+- Index/Reader/Bookmark regression suite.
+
+### Owner test
+
+Print representative ranges/layouts to a physical printer, inspect preview,
+edit permitted metadata, open through Windows entry points including drag/drop,
+review settings and
+preview a diagnostic bundle. Confirm printing leaves the source hash unchanged
+and no private page/bookmark/password content appears in ordinary logs.
+
 **Stop gate:** core P1 utilities pass without reader/index regression.
 
 ---
@@ -494,6 +590,21 @@ Normal writable, permission-restricted, read-only filesystem, transient lock, si
 - source PDFs excluded from backup by default;
 - no filename-only destructive relinking;
 - documented rollback/side-by-side behavior.
+
+### Automated QA
+
+- versioned backup schema/manifest validation and unsupported-version handling;
+- consistent snapshot and clean-profile restore;
+- read-only legacy import, unresolved/ambiguous identity and no filename-only relink;
+- repeat/idempotency, rollback and side-by-side behavior;
+- corrupted/partial input, interruption and insufficient-space failure paths;
+- source PDFs excluded by default and legacy source/profile hashes unchanged.
+
+### Owner test
+
+Using copied representative legacy data, preview unresolved matches, import
+twice, run the old and new app side by side, and restore the produced backup to
+a clean profile. Confirm the legacy profile and source PDFs remain unchanged.
 
 **Stop gate:** clean-profile restore and representative legacy migration pass.
 
@@ -515,6 +626,21 @@ Complete Library, Reader, Bookmarks, protected/local fallback, conflict, import/
 - 100%/200% scale;
 - high contrast;
 - reduced motion where applicable.
+
+### Automated QA
+
+- translation/resource completeness and no unintended fallback in core screens;
+- bidi isolation, exact Unicode round trip, normalization/search and collation fixtures;
+- keyboard/focus traversal and accessible role/name/state assertions;
+- 100%/200%, high-contrast and reduced-motion regression captures/checks where stable;
+- complete workflow-matrix coverage report with no unexplained blank core cell.
+
+### Owner test
+
+Repeat Library, Reader, Bookmarks, protected/local fallback, conflicts,
+import/export, ink, metadata, print and backup/migration with Arabic UI and mixed
+Arabic/English/Urdu data using keyboard-only and Narrator. Run Accessibility
+Insights, 100%/200%, high contrast and reduced motion.
 
 **Stop gate:** no core workflow untested/failed in the published matrix.
 
@@ -538,6 +664,21 @@ Complete Library, Reader, Bookmarks, protected/local fallback, conflict, import/
 - install/upgrade candidate packaging;
 - SBOM/notices/security/dependency review.
 
+### Automated QA
+
+- full Debug/Release functional, integration, preservation and migration regression;
+- benchmark thresholds and prolonged memory/handle/resource soak;
+- hostile/import fuzz targets available by this stage and malformed-input containment;
+- interrupted-save/conflict/offline-root failure injection;
+- clean package/install/upgrade dry runs and reproducibility checks;
+- dependency vulnerability, license, notice, SBOM and secrets review.
+
+### Owner test
+
+Run the complete hardware matrix on named machines/storage/display/input/printer
+setups and compare core workflows with relevant mature products using the same
+fixtures. Record every skipped item; a required missing item is a failure.
+
 **Stop gate:** any missing required hardware evidence or failed P0 threshold blocks stable.
 
 ---
@@ -556,6 +697,23 @@ Complete Library, Reader, Bookmarks, protected/local fallback, conflict, import/
 - source/tag/artifact/checksum/SBOM/notices archived;
 - final RC receives explicit owner PASS;
 - stable artifact is byte-for-byte/source-equivalent to accepted candidate except publication metadata that does not alter executable/package payload.
+
+### Automated QA
+
+- accepted-RC versus stable payload/source equivalence;
+- clean install, upgrade and uninstall matrix;
+- checksum, tag, source archive, SBOM and notices verification;
+- user documents, local research and backups survive uninstall;
+- final smoke test from the distributable artifact.
+
+### Owner test
+
+Install, upgrade, use and uninstall the exact candidate on a clean test profile;
+verify user-controlled file association and preserved user data, then explicitly
+record the final RC `N11 PASS` before tag/publication.
+
+**Stop gate:** no payload drift, missing release evidence, user-data deletion or
+failed final owner test may be promoted as `2.0.0`.
 
 ---
 

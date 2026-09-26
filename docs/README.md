@@ -1,5 +1,7 @@
 # Atlas Reader Native — Documentation Index
 
+<!-- atlas-status: N2|ready-for-owner-test -->
+
 Use this page to find the authoritative document instead of duplicating requirements across random files.
 
 ## Start here
@@ -13,8 +15,12 @@ Use this page to find the authoritative document instead of duplicating requirem
 7. **`../tests/fixtures/pdf/README.md`** — N2 PDF fixture provenance/privacy/checksum/mutation contract.
 8. **`FEATURE_SCOPE_2_0.md`** — binding Windows 2.0 feature scope.
 9. **`SUCCESS_METRICS.md`** — how we prove the rewrite is becoming a better product rather than merely larger.
+10. **`CHECKPOINT_QA_MATRIX.md`** — binding automated/manual QA, owner tests, blockers and limitation ownership for N0–N11.
+11. **`GIT_WORKFLOW.md`** — binding branch, commit, PR, merge, tag, status synchronization and remote-verification rules.
 
-N0 and N1 are Accepted. N2 is active. A passed checkpoint cannot be reopened without new evidence of a user-facing regression.
+N0 and N1 are Accepted. N2 is Ready for owner test; explicit owner `N2 PASS`
+remains. A passed checkpoint cannot be reopened without new evidence of a
+user-facing regression.
 
 ## Product behavior
 
@@ -57,11 +63,16 @@ Primary N2 documents:
 - **`baselines/N2_RENDERING_FIDELITY.md`** — A011 1×/2× crop/rotation/annotation/background rendering evidence;
 - **`baselines/N2_COORDINATE_NORMALIZATION.md`** — Atlas page-space contract, A003/A011 geometry and A012 `/XYZ` destination evidence;
 - **`baselines/N2_STRESS_CONCURRENCY.md`** — 500-lifetime read-engine stress and 1,000-job serialized PDFium queue evidence;
-- **`baselines/N2_PRODUCTION_DISTRIBUTION.md`** — selected PDFium/qpdf shippable acquisition/licensing/SBOM/update/rollback routes; compliance freeze still pending;
-- **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — records the Proposed PDFium/qpdf responsibility split and remains Proposed until production-route requalification and explicit owner `N2 PASS`;
+- **`baselines/N2_PRODUCTION_DISTRIBUTION.md`** — frozen/requalified official Qt PDF + first-party qpdf CLI acquisition/licensing/SBOM/update/rollback route;
+- **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — records the Proposed Qt PDF/qpdf responsibility split and remains Proposed until explicit owner `N2 PASS`;
 - **`../tests/fixtures/pdf/README.md`** — public/synthetic/private fixture rules.
 
-Current evidence has closed core correctness, navigation, Unicode/search, malformed/password behavior, repeated synthetic performance, vector and real-font/image-only fidelity, coordinate normalization, qpdf outline breadth and encrypted-write preservation, and stress/concurrency. The remaining N2 gates are production-route freeze/requalification, final exact-head CI and owner acceptance.
+Current evidence has closed core correctness, navigation, Unicode/search,
+malformed/password behavior, repeated synthetic performance, vector and
+real-font/image-only fidelity, coordinate normalization, qpdf outline breadth,
+encrypted-write preservation, stress/concurrency and selected-route
+distribution. Final exact-head strict CI is green. The remaining N2 gate is
+explicit owner acceptance.
 
 N2 does not authorize production Reader UI, SQLite/FTS5, scanner, bookmarks editor/local overlay, annotations, migration, installer, OCR or AI document analysis. Those remain later checkpoints.
 
@@ -79,6 +90,8 @@ The accepted N1 user-qualified runtime is commit `73f567cf2c557f185371d7f944ebf6
 
 - **`RELEASE_STRATEGY.md`** — `2.0.0-alpha` → beta → RC → stable rules.
 - **`DEVELOPMENT_WORKFLOW.md`** — branches, PRs, commits, ADRs, AI/agent workflow, CI tiers and checkpoint immutability.
+- **`GIT_WORKFLOW.md`** — exact Git tree, push, PR, merge, tag and documentation synchronization rules.
+- **`CHECKPOINT_QA_MATRIX.md`** — checkpoint-by-checkpoint QA and owner acceptance obligations.
 - **`PLATFORM_ROADMAP.md`** — Windows → Android → Linux → macOS → iOS/iPadOS.
 - **`MIGRATION_FROM_FLUTTER.md`** — side-by-side behavior and legacy profile migration policy.
 - **`N0_HANDOFF.md`** — frozen record of the accepted bootstrap review criteria.

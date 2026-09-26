@@ -2,7 +2,7 @@
 
 **Checkpoint:** N0 — Native repository bootstrap  
 **Release label:** `2.0.0-alpha.0` engineering bootstrap  
-**State:** Verified / Ready for owner review  
+**Historical state:** **Accepted — owner PASS recorded 2026-09-22**
 **Next checkpoint:** N1 — Windows toolchain + empty-shell baseline  
 
 N1 must not begin until the owner records **PASS** for N0.

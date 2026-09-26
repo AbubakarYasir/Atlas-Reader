@@ -1,8 +1,19 @@
 # Changelog
 
+<!-- atlas-status: N2|ready-for-owner-test -->
+
 All notable changes to Atlas Reader Native are documented here.
 
 ## [Unreleased]
+
+- Audited every tracked Markdown plan/evidence file for status, route and
+  checkpoint-ownership drift; corrected the live N2 state and the final Qt
+  PDF/qpdf responsibility route without rewriting historical measurements.
+- Added a binding N0–N11 QA/owner-test matrix, assigned every N2 limitation to a
+  named implementation checkpoint and release blocker, and filled missing QA
+  gates for N3–N11 including Windows integration, settings and diagnostics.
+- Added an explicit Git/documentation workflow plus automated Markdown link,
+  live-status and checkpoint-gate validation in CI.
 
 ### N2 — PDF engine qualification spike (`2.0.0-alpha.2`)
 
@@ -121,7 +132,7 @@ The native successor belongs to the `2.0.0` release line.
 
 - `2.0.0-alpha.0` — N0 bootstrap — **Accepted**
 - `2.0.0-alpha.1` — N1 Windows/toolchain baseline — **Accepted**
-- `2.0.0-alpha.2` — N2 PDF-engine qualification — **In progress**
+- `2.0.0-alpha.2` — N2 PDF-engine qualification — **Ready for owner test**
 - `2.0.0-beta.1` onward — usable feature checkpoints from N3
 - `2.0.0-rc.N` — release qualification
 - `2.0.0` — accepted stable Windows release

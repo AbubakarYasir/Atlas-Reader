@@ -1,8 +1,10 @@
 # N2 — PDF Engine Qualification Plan
 
+<!-- atlas-status: N2|ready-for-owner-test -->
+
 **Checkpoint:** N2 — PDF engine qualification spike  
 **Planned version:** `2.0.0-alpha.2`  
-**Status:** **In progress — planning and fixture contract**  
+**Status:** **Ready for owner test — selected Qt PDF/qpdf route frozen/requalified; explicit owner `N2 PASS` remains**
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Base:** accepted N1 integration commit `f8bdc2e5bc74ccb94d593e7a7e5307ae6163afe2`
 
@@ -269,7 +271,14 @@ Possible valid outcomes include:
 - mixed use where one read engine has a narrowly better capability and complexity remains justified;
 - rejection/blocking of a candidate due to reproducibility, licensing, correctness, preservation or performance.
 
-There is no predetermined winner.
+There was no predetermined winner at N2 opening.
+
+**Recorded N2.6 outcome:** the frozen/requalified Proposed route is official
+dynamic Qt PDF 6.10.3 for read/render/text/navigation plus first-party qpdf
+12.4.1 CLI for structure/security/write. Standalone PDFium remains valuable
+comparison/replacement evidence but is rejected for the selected N2 Windows
+package because an official Atlas-controlled source-build/distribution route was
+not frozen. Strict final CI is green; only explicit owner `N2 PASS` remains.
 
 ## 7. Fixture classes
 

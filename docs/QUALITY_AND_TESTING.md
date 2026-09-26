@@ -6,6 +6,9 @@ Atlas is document/research software. Correctness means more than “does not cra
 
 Every checkpoint therefore produces evidence across correctness, preservation, performance, accessibility, and recovery.
 
+`CHECKPOINT_QA_MATRIX.md` assigns these evidence types, owner tests and hard
+blockers to N0–N11. `CHECKPOINTS.md` may summarize them but may not weaken them.
+
 ## 1. Test layers
 
 ### Domain/unit tests
@@ -276,8 +279,18 @@ Owner result:
 
 A checkpoint cannot be Accepted with unexplained skipped core tests.
 
+The handoff must also show a requirement-to-evidence table: each checkpoint
+subgate or transferred limitation maps to its automated test, numbered manual
+test, measured artifact, or explicit not-applicable reason. A green aggregate
+test count does not close an unmapped requirement.
+
 ## 14. Regression ownership
 
 Every defect that reaches owner testing or a published beta should produce a regression test when technically reasonable. If it cannot be automated, add it to the numbered manual acceptance checklist and document why.
 
 The purpose of the checkpoint system is that Atlas gets harder to break as it grows.
+
+Phrases such as “later hardening,” “known limitation,” or “future work” are not
+valid by themselves. They must name the owning checkpoint, regression evidence
+and condition that blocks that checkpoint, as defined in
+`CHECKPOINT_QA_MATRIX.md`.

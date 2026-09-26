@@ -1,12 +1,17 @@
 # Atlas Reader Native — Dependencies, Tools, Plugins, and Reuse Policy
 
+<!-- atlas-status: N2|ready-for-owner-test -->
+
 ## Purpose
 
 Atlas should reuse mature open-source work where it clearly improves reliability or development speed, but third-party code must not control the product architecture. This document separates what ships in Atlas from what only helps us build it.
 
-## N2 status — 2026-09-22
+## N2 status — updated 2026-09-27
 
-N2 is now active. **No PDF engine has been accepted for production yet.**
+N2 is **Ready for owner test**. The selected Windows route is frozen and
+requalified as official dynamic Qt PDF 6.10.3 for the combined read path plus
+the first-party qpdf 12.4.1 CLI for structure/security/write. It remains
+unaccepted until explicit owner `N2 PASS`.
 
 The durable qualification plan is `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md`, the evidence sheet is `docs/baselines/N2_PDF_ENGINE_MATRIX.md`, and the architecture decision remains Proposed in `docs/decisions/ADR-0004-pdf-engine-responsibilities.md`.
 
@@ -21,7 +26,9 @@ Current integration facts that must not be lost during experiments:
 - qpdf is the structure/security/transformation candidate. At N2 opening, upstream release, generated documentation and Microsoft vcpkg currently expose different version surfaces; every experiment must record the exact qpdf version it actually uses.
 - The inspected vcpkg `qpdf` port is `12.4.0` with `Apache-2.0 AND MIT` metadata. The upstream release feed visible at N2 opening shows `12.4.1` published 2026-08-27, while current generated docs may identify `12.4.2`.
 
-The facts above are inputs to the bake-off, not winner declarations.
+The facts above preserve the comparison history. The final N2 route is recorded
+in ADR-0004 and `baselines/N2_PRODUCTION_DISTRIBUTION.md`; historical probe
+advantages do not override the frozen distribution decision.
 
 ## 1. Dependency rules
 
@@ -65,7 +72,7 @@ For N2, a dependency can be **probe-only** without being accepted for production
 
 **Role candidate:** structural PDF inspection/transformation, encryption/security information, preservation-sensitive operations.
 
-**Status:** **active N2 qualification; not yet production-selected.**
+**Status:** **selected/frozen for N2 structure/security/write; owner acceptance pending.**
 
 **Boundary:** PDF infrastructure adapter only. qpdf object types do not escape into Atlas domain/application interfaces.
 
@@ -75,7 +82,7 @@ For N2, a dependency can be **probe-only** without being accepted for production
 
 **Role candidate:** page rendering, text extraction/search, links/navigation, outlines/destinations and document/page inspection.
 
-**Status:** **active N2 bake-off; no winner assumed.** Core A001–A005 smoke is captured; Arabic/search/navigation/security/repeated-performance evidence remains pending.
+**Status:** **selected/frozen for the N2 combined read/render/text/navigation route; owner acceptance pending.** Core, Arabic/Urdu, search/navigation, security, performance, fidelity, coordinate, stress and selected-package evidence are recorded in the N2 baselines.
 
 **Boundary:** infrastructure adapter/probe. Qt PDF types must not become Atlas domain/application types.
 
@@ -85,15 +92,19 @@ For N2, a dependency can be **probe-only** without being accepted for production
 
 **Role candidate:** page rendering, text extraction/search, links/navigation, outlines/destinations and low-level inspection.
 
-**Status:** **active N2 bake-off; no winner assumed.** The first N2.2 core Windows smoke is captured on implementation SHA `7874794e14b9cea54ec0723c15963621f65bebf6`: A001–A005 open/page-count/page-label/normalized-visible-size/text expectations pass, and extracted text hashes match Qt PDF page-for-page. Broader navigation/Arabic/security/performance evidence remains pending.
+**Status:** **qualification/comparison only for N2; rejected as the selected Windows production route because no official Atlas-controlled source-build/distribution route was frozen.** The evidence remains valuable for replacement and regression comparisons.
 
 **N2.2 probe pin:** PDFium `156.0.8066.0`, tag `chromium/8066`, `bblanchon/pdfium-binaries` source commit `f2e9a1c45bb17b85b540abf1af30146ef65416ac`, Windows x64 non-V8 archive SHA-256 `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020`. The exact provenance contract lives in `docs/baselines/N2_PDFIUM_PROVENANCE.md`.
 
 **Boundary:** infrastructure adapter/probe. PDFium handles/types do not escape into Atlas domain/application interfaces. `atlas_reader` and `atlas_core` do not link PDFium.
 
-**Concurrency constraint:** current upstream public API says PDFium APIs are not thread-safe. The N2 probe uses a serialized single-thread call model. A later Atlas adapter/task-queue test must preserve that contract under concurrent app workloads.
+**Concurrency constraint:** current upstream public API says PDFium APIs are not
+thread-safe. The N2 probe uses a serialized single-thread call model. Because
+PDFium is not selected for the N2 package, a production queue test is required
+only if a future ADR reconsiders PDFium; it must preserve serialization under
+concurrent app workloads.
 
-**Supply-chain constraint:** official source integration brings Chromium-style tooling. The current community prebuilt accelerates the spike only because exact tag/source commit/asset/checksum are pinned. Its distributor repository is MIT-licensed, but that does not replace PDFium/third-party notice obligations. Production distribution remains undecided until ADR-0004 is accepted.
+**Supply-chain constraint:** official source integration brings Chromium-style tooling. The pinned community prebuilt is qualification-only; its distributor repository's MIT license does not replace PDFium/third-party notice obligations. No standalone `pdfium.dll` is allowed in the selected N2 package.
 
 Atlas may intentionally use different engines for rendering and structural mutation.
 

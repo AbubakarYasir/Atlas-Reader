@@ -1,7 +1,8 @@
 # N1 Windows font-backend decision
 
 **Checkpoint:** N1 — Windows toolchain + empty-shell baseline  
-**Status:** candidate configuration pending final physical qualification  
+**Status:** **Accepted for N1 Windows shell — owner PASS recorded 2026-09-22;
+later user-facing rendering regressions remain valid revisit triggers**
 **Candidate:** Qt Windows QPA `fontengine=gdi` through `qt.conf`
 
 ## Why this decision exists

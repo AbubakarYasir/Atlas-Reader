@@ -92,7 +92,8 @@ Every distributable beta/RC/stable build records:
 ## Branch/tag policy
 
 - `main` in the eventual native repository contains only accepted checkpoint state.
-- Feature work occurs on short-lived branches.
+- exactly one named checkpoint branch is active; feature work occurs on short-lived branches from it;
+- branch, PR, merge, remote verification and documentation synchronization follow `GIT_WORKFLOW.md`;
 - Tags are immutable.
 - Never retag a different artifact with the same version.
 - Experimental PDF-engine spikes stay on branches until a decision record accepts them.
@@ -108,3 +109,7 @@ Documentation must use these words precisely:
 - **Released** — an accepted artifact is published under a version/tag.
 
 The README may advertise only what is Released or clearly label beta/experimental behavior.
+
+No checkpoint becomes Accepted from CI alone. The exact-head automated gates,
+required owner/hardware tests and explicit `N# PASS` in
+`CHECKPOINT_QA_MATRIX.md` are release evidence, not optional ceremony.

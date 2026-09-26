@@ -25,6 +25,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Validate Markdown governance
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: ./tools/docs/check-markdown.ps1
+
       - name: Validate inherited qualification scripts and N1 shell contract
         if: matrix.configuration == 'Release'
         shell: pwsh
@@ -424,7 +429,7 @@ jobs:
             'A007-A010 fixture policy: deterministically regenerated from checked-in source before validation/tests'
             'Controls style: compile-time Basic'
             'Inherited Windows font backend: GDI via qt.conf'
-            'PDF engine production selection: none; ADR-0004 remains Proposed'
+            'PDF engine production route: official dynamic Qt PDF 6.10.3 + first-party qpdf 12.4.1 CLI; frozen/requalified, owner N2 PASS pending'
             'Purpose: N2 engineering/CI evidence only; not a user release and not N1 requalification'
           ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N2_BUILD_INFO.txt')
 

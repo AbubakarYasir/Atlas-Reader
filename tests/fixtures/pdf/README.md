@@ -79,7 +79,11 @@ The visible Type3 glyphs are simple synthetic rectangles. They do not resemble A
 
 This separation is intentional: a text/search engine should first prove that it preserves the correct logical Unicode mapping without the result being confounded by HarfBuzz/font/shaping differences.
 
-A later visual-shaping fixture may embed an open font only after its exact upstream revision, redistribution license, file/archive SHA-256, shaping/generator versions, and source are documented. Never substitute a system font and call the fixture reproducible.
+A014 now supplies the bounded visual-shaping fixture with separately pinned Noto
+Naskh Arabic and Noto Nastaliq Urdu inputs, deterministic generator/layout
+versions, licenses and checksums. Broader real-document coverage remains a
+binding N4/N9 regression gate. Never substitute a system font and call the
+fixture reproducible.
 
 A006 generator:
 

@@ -1,6 +1,8 @@
 # Contributing
 
-Atlas Reader Native is checkpoint-driven. Before contributing, read `AGENTS.md`, `PLAN.md`, and the active section of `CHECKPOINTS.md`.
+Atlas Reader Native is checkpoint-driven. Before contributing, read `AGENTS.md`,
+`PLAN.md`, the active section of `CHECKPOINTS.md`,
+`docs/CHECKPOINT_QA_MATRIX.md` and `docs/GIT_WORKFLOW.md`.
 
 ## Principles
 
@@ -34,3 +36,7 @@ A PR should state:
 - documentation changes.
 
 Do not merge feature work that advances the next checkpoint before the current owner stop gate is accepted.
+
+Before pushing, run `tools/docs/check-markdown.ps1` in addition to the relevant
+build/tests, inspect the complete diff and verify the local branch head matches
+the pushed remote head. Owner PASS, merge and release/tag are separate actions.

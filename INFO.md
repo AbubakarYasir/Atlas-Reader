@@ -1,5 +1,7 @@
 # Atlas Reader Native — Current Project Notes
 
+<!-- atlas-status: N2|ready-for-owner-test -->
+
 **State:** native successor PDF-engine qualification
 
 **Release line:** `2.0.0`
@@ -229,7 +231,7 @@ The research-data rule remains:
 
 - N0: `2.0.0-alpha.0` — **Accepted** bootstrap
 - N1: `2.0.0-alpha.1` — **Accepted** Windows/toolchain baseline
-- N2: `2.0.0-alpha.2` — **In progress** PDF-engine qualification
+- N2: `2.0.0-alpha.2` — **Ready for owner test**; explicit owner PASS pending
 - N3: first useful native `2.0.0-beta.1` — Not started
 - N4–N9: incremental `2.0.0-beta.N` milestones
 - N10: `2.0.0-rc.N`

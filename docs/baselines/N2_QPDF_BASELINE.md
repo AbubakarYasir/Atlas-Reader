@@ -1,7 +1,7 @@
 # N2 qpdf Structural / Security / Transformation Baseline
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Canonical candidate evidence — N2 still Open**  
+**Status:** **Canonical candidate evidence — qpdf route frozen; N2 Ready for owner test**
 **Recorded:** 2026-09-23  
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
@@ -55,7 +55,10 @@ The workflow verifies the ZIP hash before extraction and requires `qpdf --versio
 
 This evidence qualifies the official CLI distribution only. A future linked qpdf library integration would require its own exact CMake/compiler/package baseline and dependency audit.
 
-Primary upstream license recorded for this pin: Apache License 2.0. Production redistribution/third-party notice review remains separate and pending.
+Primary upstream license recorded for this pin: Apache License 2.0. The selected
+CLI route's exact runtime, notice and hash bundle is frozen in
+`N2_PRODUCTION_DISTRIBUTION.md`; final release-specific legal review remains an
+N10 gate.
 
 ## 3. Independently validated fixtures
 
@@ -300,11 +303,11 @@ That raw-ID assertion was removed because PDF indirect object numbers are serial
 | No-op unrelated-structure preservation | **PASS WITH LIMITATION** | explicit synthetic invariant set only |
 | Controlled ASCII outline title mutation | **PASS** | existing node title only |
 | Controlled Unicode outline title mutation | **PASS** | existing node title only |
-| Controlled add/remove/reparent outline nodes | **PENDING** | title mutation does not qualify pointer-tree construction |
+| Controlled add/remove/reparent outline nodes | **TRANSFERRED TO N5.3/N5.4** | full editor and safe-save gate |
 | Signature/certification structural visibility | **PASS WITH LIMITATION** | A010 synthetic `/Sig` + DocMDP P=2; cryptographic validity not qualified |
 | Pre-mutation signed/certified safety interlock | **PASS WITH LIMITATION** | policy/evidence established structurally; production enforcement adapter not built yet |
 | Cryptographic signature verification | **N/A for current qpdf evidence** | independent verifier responsibility still to be selected/qualified |
-| Unsupported-security distinction | **PENDING** | no deterministic unsupported-scheme fixture yet |
+| Unsupported-security distinction | **TRANSFERRED TO N5.1** | explicit capability state; ambiguity/bypass blocks N5 |
 
 ## 9. Architectural implications
 
@@ -324,4 +327,5 @@ Any future mutation path must continue to apply explicit preservation invariants
 4. encrypted rewrite-preservation if Atlas intends to mutate encrypted PDFs rather than block/defer that workflow;
 5. production CLI-vs-library packaging decision, runtime/dependency footprint and notice audit.
 
-N2 remains **Open**. This baseline supplies evidence for ADR-0004; it does not accept the ADR or authorize merge by itself.
+N2 is **Ready for owner test**. This baseline supplies evidence for ADR-0004;
+it does not accept the ADR or authorize merge by itself.

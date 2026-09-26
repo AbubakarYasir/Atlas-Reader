@@ -4,10 +4,15 @@
 
 Keep development fast without losing architectural discipline. Atlas is built checkpoint-by-checkpoint, not through a long-lived feature branch that becomes impossible to review.
 
+`GIT_WORKFLOW.md` is the binding command-level branch, push, PR, merge, tag and
+documentation synchronization policy. This file describes the engineering
+workflow around it.
+
 ## 1. Branch model
 
 - `main` in the eventual native repository: accepted checkpoint state only.
-- `checkpoint/N#-short-name`: active checkpoint integration branch if needed.
+- `native-v2-n#-short-name`: one active checkpoint branch from the exact
+  accepted predecessor commit.
 - short-lived feature/fix branches: one coherent change each.
 - engine experiments: `spike/...` branches; never silently merged into production architecture.
 
@@ -27,6 +32,10 @@ For every checkpoint:
 8. Update docs/status/changelog.
 9. Hand off for owner test.
 10. Stop. Do not begin the next checkpoint until accepted.
+
+Every handoff also satisfies `CHECKPOINT_QA_MATRIX.md`: each subgate and known
+limitation maps to automated evidence, a numbered manual/owner test, or a named
+later checkpoint with a hard blocking condition.
 
 ### Accepted-checkpoint immutability
 
@@ -138,6 +147,11 @@ Use read-only access for PR/diff/CI/repository context by default. Mutation shou
 ### Documentation
 
 Documentation is part of the source of truth, but code/runtime tests are the source of truth for shipped behavior. If docs and implementation disagree, fix the docs and/or code before acceptance.
+
+Run `tools/docs/check-markdown.ps1` before push. The check validates internal
+Markdown links, identical live-status markers and the presence of Automated QA,
+Owner test and Stop gate sections for N3–N11. Follow `GIT_WORKFLOW.md` for the
+full synchronization list and remote-head verification.
 
 ## 9. Local pre-push checklist
 

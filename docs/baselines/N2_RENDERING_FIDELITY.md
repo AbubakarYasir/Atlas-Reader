@@ -1,7 +1,7 @@
 # N2 Rendering Fidelity / Geometry Baseline
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Canonical candidate evidence — N2 still Open**  
+**Status:** **Canonical candidate evidence — N2 Ready for owner test**
 **Recorded:** 2026-09-23  
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
@@ -176,8 +176,8 @@ A future production render boundary should make at least these choices explicit:
 | Native untouched background behavior | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | policies differ; Atlas normalization required |
 | Cross-engine byte-identical pixels | **N/A** | **N/A** | explicitly not a requirement |
 | Real Arabic/Urdu shaped-font visual fidelity | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | corrected A014 at 1x/2x plus owner visual PASS; bounded single-page corpus |
-| Image/gradient/transparency-group fidelity | **PENDING** | **PENDING** | not present in A011 |
-| Broad annotation subtype fidelity | **PENDING** | **PENDING** | current link appearance sentinel only |
+| Image/gradient/transparency-group fidelity | **TRANSFERRED TO N4** | **TRANSFERRED TO N4** | required reader rendering corpus |
+| Broad annotation subtype fidelity | **TRANSFERRED TO N6** | **TRANSFERRED TO N6** | current link appearance sentinel only |
 
 ## 10. Architectural implication
 
@@ -211,7 +211,9 @@ It does **not** close:
 5. renderer stress/leak behavior under long repeated page lifetimes;
 6. final renderer responsibility selection.
 
-N2 remains **Open** and ADR-0004 remains **Proposed**.
+N2 is **Ready for owner test** and ADR-0004 remains **Proposed** until explicit
+owner `N2 PASS`. Items not required for engine selection are binding later gates
+in `../CHECKPOINT_QA_MATRIX.md`.
 
 ## 12. A014 owner-oracle correction (2026-09-27)
 
@@ -243,8 +245,8 @@ Corrected commit `6ac322d9ddb4c9f53da158acf69265d65cdd5106`
 passed run `36274881956`. Qt PDF and PDFium both reached the expected right edge
 at 1x and 2x, and their 2x rasters were byte-identical. The owner confirmed the
 result was working in visual review. A014 is therefore **PASS WITH LIMITATION**
-for this bounded fixture; broader real-world Arabic/Urdu documents remain later
-regression coverage.
+for this bounded fixture; broader real-world Arabic/Urdu documents are binding
+N4 reader fixtures and N9 final RTL/accessibility regression coverage.
 
 Automated checks still verify deterministic generation, non-empty bands,
 dimensions and cross-engine raster similarity. Human readability at 100% and

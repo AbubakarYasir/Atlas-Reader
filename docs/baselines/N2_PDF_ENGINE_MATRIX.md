@@ -95,7 +95,7 @@ A011 deterministic vector fixture SHA-256:
 | Native blank-background behavior | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Qt untouched pixels transparent; PDFium qualification bitmap prefilled white; Atlas policy required |
 | Cross-engine byte-identical pixels | **N/A** | **N/A** | deliberately not a requirement |
 | Real Arabic/Urdu shaped-font fidelity | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Corrected A014 uses Noto Naskh Arabic + Noto Nastaliq Urdu; full-layout joining/marks, 1x/2x right-edge checks and owner visual review pass; bounded corpus |
-| Image/gradient/transparency-group fidelity | **POST-N2 HARDENING** | **POST-N2 HARDENING** | bounded N2 image-only evidence is sufficient for selection |
+| Image/gradient/transparency-group fidelity | **N4 READER CORPUS** | **N4 READER CORPUS** | bounded N2 image-only evidence is sufficient for selection |
 | Broad annotation subtype fidelity | **N6/P1 EVIDENCE** | **N6/P1 EVIDENCE** | current explicit-appearance Link establishes only the N2 policy boundary |
 
 Detailed evidence: `N2_RENDERING_FIDELITY.md`.
@@ -120,7 +120,7 @@ A006 deterministic logical-Unicode fixture SHA-256:
 | Fully vocalized Arabic query | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | source-order form gets 0 hits; canonical-equivalent normalized/raw form hits |
 | Hit page/per-page ordinal | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | shared portable identity; native indexes differ |
 | Search-hit rectangles — normal/crop/90° | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A011 cross-engine maximum observed field delta 0.43 pt |
-| Multi-line/real-font/bidi geometry | **POST-N2 HARDENING** | **POST-N2 HARDENING** | current geometry corpus is simple/synthetic; not selection-changing |
+| Multi-line/real-font/bidi geometry | **N4.4/N9** | **N4.4/N9** | binding Reader text/search and final Arabic/RTL coverage |
 
 Atlas must Unicode-normalize before equality, indexing and user-query comparison. Qt and PDFium search timing APIs represent different execution models; timing evidence must not be treated as a pure internal algorithm ratio.
 
@@ -141,7 +141,7 @@ Atlas coordinate contract:
 | Search rectangle normalization | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Qt raw rotated QRect can have negative width and is canonicalized before portable exposure |
 | `/XYZ` destination — normal target | **PASS** | **PASS** | A012 expected `(40,50)` |
 | `/XYZ` destination — 90° target | **PASS WITH LIMITATION** | **PASS** | Qt needs external inherent-rotation metadata to transform `(40,50)` into Atlas `(250,40)`; PDFium normalizes directly |
-| Fit/FitH/FitV destination modes | **POST-N2 HARDENING** | **POST-N2 HARDENING** | not required at engine-selection time; preserve as later navigation coverage |
+| Fit/FitH/FitV destination modes | **N4.3/N4.4** | **N4.3/N4.4** | binding Reader navigation regression coverage |
 
 A012 SHA-256:
 
@@ -156,7 +156,7 @@ Detailed evidence: `N2_COORDINATE_NORMALIZATION.md`.
 | Malformed hard failure | **PASS** | **PASS** | **PASS WITH LIMITATION** on A007 |
 | Password-required / wrong-password state | **PASS** | **PASS** | inspectable on A008/A009 |
 | Correct supported encrypted open | **PASS** | **PASS** | N/A as reader responsibility |
-| Unsupported-security distinction | **POST-N2 HARDENING** | **POST-N2 HARDENING** | malformed/password states already qualify selection; later app state remains required |
+| Unsupported-security distinction | **N5.1** | **N5.1** | explicit capability state; ambiguity/bypass blocks N5 |
 | User-vs-owner password identity | N/A / not selected | N/A / not selected | **PASS WITH LIMITATION** on R2 fixtures |
 | Restricted permission inspection | N/A / not selected | N/A / not selected | **PASS WITH LIMITATION** on A009 `/P=-64` |
 | Signature/DocMDP structural visibility | N/A / not selected | N/A / not selected | **PASS WITH LIMITATION** on synthetic A010 |
@@ -181,7 +181,7 @@ Stress run `35801464463`; artifact `10726420090`; digest `sha256:6fa983cc8974595
 | Actual PDFium worker thread count | **PASS** | `1` |
 | Maximum simultaneously active PDFium API executions | **PASS** | exactly `1` |
 | Queue completion | **PASS** | submitted = completed = 1,000; failed = 0; clean shutdown |
-| Production queue cancellation/back-pressure policy | **PENDING — later adapter design** | not an N2 engine-safety blocker |
+| Production queue cancellation/back-pressure policy | **N4.2** | binding viewport/task scheduling and cancellation gate |
 | Exact package pin/checksum | **PASS** | `chromium/8066`; archive SHA recorded above |
 | Production source/package route | **PASS WITH LIMITATION — route defined, not frozen** | proposed Atlas-owned upstream source build if selected |
 
@@ -291,7 +291,7 @@ Production selection still requires, for each selected responsibility:
 |---|---|---|---|
 | Document open/read metadata | Qt PDF 6.10.3 | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
 | Page geometry/labels | Qt PDF + Atlas normalization | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
-| Page raster rendering | Qt PDF + Atlas background/compositing policy | FROZEN, ACCEPTANCE PENDING | broader graphics corpus is later hardening |
+| Page raster rendering | Qt PDF + Atlas background/compositing policy | FROZEN, ACCEPTANCE PENDING | broader graphics corpus is a binding N4 gate |
 | Text extraction | Qt PDF + Atlas Unicode normalization | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
 | Search | Qt PDF + Atlas normalization/index layer | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
 | Links/navigation | Qt PDF + structural rotation metadata + Atlas normalization/deduplication | FROZEN, ACCEPTANCE PENDING | bounded limitations tested; owner N2 PASS |
@@ -305,8 +305,8 @@ final exact-head CI set and explicit owner `N2 PASS`.
 
 ## Recorded scope decisions
 
-The scope review records the following as later hardening or later-checkpoint
-evidence rather than N2 selection blockers:
+The scope review records the following as named later-checkpoint evidence under
+`../CHECKPOINT_QA_MATRIX.md`, rather than N2 selection blockers:
 
 - broader image/gradient/transparency and multi-line/bidi geometry corpora;
 - Fit/FitH/FitV view-mode fidelity;

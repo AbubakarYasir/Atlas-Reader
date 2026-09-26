@@ -1,6 +1,13 @@
 # Building Atlas Reader Native
 
-N0 and N1 are Accepted. N2 is the active PDF-engine qualification checkpoint (`2.0.0-alpha.2`).
+N0 and N1 are Accepted. N2 is the active PDF-engine qualification checkpoint
+(`2.0.0-alpha.2`) and is Ready for owner test; explicit owner `N2 PASS` remains.
+
+Before push, run the documentation governance check:
+
+```powershell
+pwsh -File tools/docs/check-markdown.ps1
+```
 
 The base N2 branch initially inherits the accepted N1 shell/toolchain and deliberately adds PDF candidate dependencies only in focused probe commits. A probe dependency compiling successfully does **not** mean that dependency is accepted for production.
 

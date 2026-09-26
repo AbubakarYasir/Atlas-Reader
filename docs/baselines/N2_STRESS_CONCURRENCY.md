@@ -161,4 +161,6 @@ This evidence does not establish:
 - PDFium non-overlap contract: **PASS**;
 - memory-growth interpretation: **PASS WITH LIMITATION / measured evidence**, with Qt showing the larger upward trend.
 
-N2 remains **Open**. Production acquisition/licensing, scope review, responsibility assignment, final exact-head CI and explicit owner `N2 PASS` remain outstanding.
+N2 is **Ready for owner test**. Production acquisition/licensing, scope review,
+responsibility assignment and exact-head CI are complete; explicit owner
+`N2 PASS` remains.

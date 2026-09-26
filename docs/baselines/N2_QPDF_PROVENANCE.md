@@ -1,7 +1,8 @@
 # N2 qpdf Qualification Provenance
 
 **Checkpoint:** N2 — structural/security/transformation qualification  
-**Status:** Pinned qualification dependency; production integration decision pending  
+**Status:** **Pinned/frozen first-party qpdf 12.4.1 CLI route selected for N2;
+owner acceptance pending**
 **Recorded:** 2026-09-22
 
 ## Exact qualification pin

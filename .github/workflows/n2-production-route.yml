@@ -256,7 +256,7 @@ jobs:
           $fixture = (Resolve-Path 'tests/fixtures/pdf/generated/A006_unicode_semantics.pdf').Path
           Push-Location $package
           try {
-            & '.\atlas_qt_pdf_probe.exe' --expect-pages 1 --expect-text-contains 'اردو' $fixture
+            & '.\atlas_qt_pdf_probe.exe' --expect-pages 4 --expect-text-contains 'اردو' $fixture
             if ($LASTEXITCODE -ne 0) { throw "Staged Qt PDF smoke test failed: $LASTEXITCODE" }
             & '.\qpdf\qpdf.exe' --version
             if ($LASTEXITCODE -ne 0) { throw "Staged qpdf smoke test failed: $LASTEXITCODE" }

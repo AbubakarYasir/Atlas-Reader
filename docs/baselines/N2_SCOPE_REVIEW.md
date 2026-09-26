@@ -66,11 +66,12 @@ vocalized Arabic line read poorly/broke visually and Urdu was rendered in an
 Arabic rather than Urdu-appropriate face. Therefore run `35813475471` and
 artifact `10730227985` remain valid for B1/A013 only and no longer close B2.
 
-The replacement A014 pins Noto Naskh Arabic for Arabic and Noto Nastaliq Urdu
-for Urdu, keeps mixed Latin/Arabic visible on one line, and states explicitly
-that cross-engine similarity cannot replace owner readability review. B2 stays
-open until the replacement passes CI and the owner accepts its 100%/200%
-rendering.
+The first replacement joined the letters but misplaced the diacritics and was
+also owner-rejected. Manual presentation-form reshaping is excluded. The next
+A014 pins Noto Naskh Arabic for Arabic and Noto Nastaliq Urdu for Urdu and uses
+Qt's complete Unicode text-layout path to position base glyphs and combining
+marks together before writing the PDF. B2 stays open until that replacement
+passes CI and the owner accepts its 100%/200% rendering.
 
 ### B3 — P0 outline/bookmark structural mutation breadth
 

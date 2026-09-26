@@ -202,7 +202,7 @@ def main() -> int:
             "noto_naskh_archive_sha256": args.noto_naskh_archive_sha256,
             "noto_naskh_regular_ttf_sha256": args.noto_naskh_font_sha256,
             "noto_nastaliq_urdu_ttf_sha256": args.noto_nastaliq_font_sha256,
-            "generator": "fpdf2 2.8.8 + uharfbuzz 0.56.2 + arabic-reshaper 3.0.0 + python-bidi 0.6.11",
+            "generator": "Qt 6.10.3 QPdfWriter/QPainter full text layout",
             "details": a014_details,
         },
         "limits": [

@@ -8,7 +8,7 @@ on:
       - '.github/workflows/n2-pdf-content-fidelity.yml'
       - 'tools/pdf/content_fidelity/**'
       - 'tests/fixtures/pdf/source/generate_a013_image_only.py'
-      - 'tests/fixtures/pdf/source/generate_a014_real_font_arabic.py'
+      - 'tools/pdf/content_fidelity/qt_a014_fixture_generator.cpp'
 
 permissions:
   contents: read
@@ -61,11 +61,11 @@ jobs:
           "PDFium_DIR=$root" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "ATLAS_PDFIUM_ARCHIVE_SHA256=$actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Install pinned fixture and validation Python packages
+      - name: Install pinned validation Python packages
         shell: pwsh
         run: |
-          python -m pip install --disable-pip-version-check fpdf2==2.8.8 uharfbuzz==0.56.2 pillow==11.3.0 arabic-reshaper==3.0.0 python-bidi==0.6.11
-          if ($LASTEXITCODE -ne 0) { throw "Python fixture dependency install failed: $LASTEXITCODE" }
+          python -m pip install --disable-pip-version-check pillow==11.3.0
+          if ($LASTEXITCODE -ne 0) { throw "Python validation dependency install failed: $LASTEXITCODE" }
 
       - name: Acquire pinned Arabic and Urdu fixture fonts
         shell: pwsh
@@ -102,33 +102,6 @@ jobs:
           Write-Host "Noto Nastaliq Urdu commit: $env:NOTO_NASTALIQ_COMMIT"
           Write-Host "Noto Nastaliq Urdu font SHA-256: $nastaliqActual"
 
-      - name: Generate deterministic B1/B2 fixtures
-        shell: pwsh
-        run: |
-          python tests/fixtures/pdf/source/generate_a013_image_only.py
-          if ($LASTEXITCODE -ne 0) { throw "A013 generation failed: $LASTEXITCODE" }
-          $a013 = 'tests/fixtures/pdf/generated/A013_image_only.pdf'
-          $a013Actual = (Get-FileHash $a013 -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($a013Actual -ne $env:A013_SHA256) { throw "A013 SHA mismatch: $a013Actual != $env:A013_SHA256" }
-
-          $temp1 = Join-Path $env:RUNNER_TEMP 'A014-first.pdf'
-          $temp2 = Join-Path $env:RUNNER_TEMP 'A014-second.pdf'
-          python tests/fixtures/pdf/source/generate_a014_real_font_arabic.py --arabic-font "$env:NOTO_NASKH_FONT_PATH" --urdu-font "$env:NOTO_NASTALIQ_FONT_PATH" --output "$temp1"
-          if ($LASTEXITCODE -ne 0) { throw "A014 first generation failed: $LASTEXITCODE" }
-          python tests/fixtures/pdf/source/generate_a014_real_font_arabic.py --arabic-font "$env:NOTO_NASKH_FONT_PATH" --urdu-font "$env:NOTO_NASTALIQ_FONT_PATH" --output "$temp2"
-          if ($LASTEXITCODE -ne 0) { throw "A014 second generation failed: $LASTEXITCODE" }
-          $sha1 = (Get-FileHash $temp1 -Algorithm SHA256).Hash.ToLowerInvariant()
-          $sha2 = (Get-FileHash $temp2 -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($sha1 -ne $sha2) { throw "A014 generator is not byte-deterministic: $sha1 != $sha2" }
-          $a014 = 'tests/fixtures/pdf/generated/A014_real_font_arabic_urdu.pdf'
-          Copy-Item $temp1 $a014 -Force
-          "A014_SHA256=$sha1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "A014 deterministic SHA-256: $sha1"
-
-          New-Item -ItemType Directory -Force -Path artifacts/n2/content-fidelity | Out-Null
-          Copy-Item $a013 artifacts/n2/content-fidelity/A013_image_only.pdf
-          Copy-Item $a014 artifacts/n2/content-fidelity/A014_real_font_arabic_urdu.pdf
-
       - name: Configure isolated content fidelity probes
         shell: pwsh
         run: >-
@@ -141,6 +114,34 @@ jobs:
       - name: Build Release content fidelity probes
         shell: pwsh
         run: cmake --build build/n2-content-fidelity --config Release --parallel
+
+      - name: Generate deterministic B1/B2 fixtures
+        shell: pwsh
+        run: |
+          python tests/fixtures/pdf/source/generate_a013_image_only.py
+          if ($LASTEXITCODE -ne 0) { throw "A013 generation failed: $LASTEXITCODE" }
+          $a013 = 'tests/fixtures/pdf/generated/A013_image_only.pdf'
+          $a013Actual = (Get-FileHash $a013 -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($a013Actual -ne $env:A013_SHA256) { throw "A013 SHA mismatch: $a013Actual != $env:A013_SHA256" }
+
+          $generator = (Resolve-Path 'build/n2-content-fidelity/Release/atlas_a014_fixture_generator.exe').Path
+          $temp1 = Join-Path $env:RUNNER_TEMP 'A014-first.pdf'
+          $temp2 = Join-Path $env:RUNNER_TEMP 'A014-second.pdf'
+          & $generator "$env:NOTO_NASKH_FONT_PATH" "$env:NOTO_NASTALIQ_FONT_PATH" $temp1
+          if ($LASTEXITCODE -ne 0) { throw "A014 first generation failed: $LASTEXITCODE" }
+          & $generator "$env:NOTO_NASKH_FONT_PATH" "$env:NOTO_NASTALIQ_FONT_PATH" $temp2
+          if ($LASTEXITCODE -ne 0) { throw "A014 second generation failed: $LASTEXITCODE" }
+          $sha1 = (Get-FileHash $temp1 -Algorithm SHA256).Hash.ToLowerInvariant()
+          $sha2 = (Get-FileHash $temp2 -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($sha1 -ne $sha2) { throw "A014 generator is not byte-deterministic: $sha1 != $sha2" }
+          $a014 = 'tests/fixtures/pdf/generated/A014_real_font_arabic_urdu.pdf'
+          Copy-Item $temp1 $a014 -Force
+          "A014_SHA256=$sha1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "A014 deterministic SHA-256: $sha1"
+
+          New-Item -ItemType Directory -Force -Path artifacts/n2/content-fidelity | Out-Null
+          Copy-Item $a013 artifacts/n2/content-fidelity/A013_image_only.pdf
+          Copy-Item $a014 artifacts/n2/content-fidelity/A014_real_font_arabic_urdu.pdf
 
       - name: Run B1/B2 content fidelity qualification
         shell: pwsh
@@ -189,7 +190,7 @@ jobs:
             "NotoNaskhArabic-Regular.ttf SHA-256: $env:NOTO_NASKH_FONT_SHA256"
             "Noto Nastaliq Urdu google/fonts commit: $env:NOTO_NASTALIQ_COMMIT"
             "NotoNastaliqUrdu[wght].ttf SHA-256: $env:NOTO_NASTALIQ_FONT_SHA256"
-            'A014 generator: fpdf2 2.8.8 + uharfbuzz 0.56.2 + arabic-reshaper 3.0.0 + python-bidi 0.6.11; generated twice and required byte-identical output'
+            'A014 generator: Qt 6.10.3 QPdfWriter/QPainter full text layout; generated twice and required byte-identical output'
             'A013 policy: image-only PDF must render while exposing zero text and zero Atlas sentinel search hits; OCR not implied'
             'A014 policy: Noto Naskh Arabic for readable Arabic and Noto Nastaliq Urdu for idiomatic Urdu; owner visual readability is mandatory; A006 remains logical Unicode extraction/search evidence'
           ) | Set-Content -Encoding UTF8 artifacts/n2/content-fidelity/BUILD_INFO.txt

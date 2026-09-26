@@ -227,6 +227,12 @@ The replacement fixture uses separate pinned inputs:
 - Noto Nastaliq Urdu for Urdu;
 - explicit Latin and Arabic runs on the mixed-script visual line.
 
+An intermediate replacement that manually converted Arabic into presentation
+forms joined the letters but misplaced the diacritics; the owner rejected it.
+That path is removed. The current generator uses Qt's complete Unicode text
+layout with the original logical string so contextual shaping and mark
+positioning are solved in one pass before QPdfWriter embeds the result.
+
 Automated checks still verify deterministic generation, non-empty bands,
 dimensions and cross-engine raster similarity. Human readability at 100% and
 200% is now an explicit owner gate that automation cannot waive.

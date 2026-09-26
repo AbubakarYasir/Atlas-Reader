@@ -298,6 +298,9 @@ Owner visual review on 2026-09-27 accepted A013 image-only rendering and
 rejected the original A014 oracle: the vocalized Arabic line was not comfortably
 readable and Urdu used an Arabic rather than Urdu-appropriate typeface. A014 is
 reopened; automated cross-engine similarity is not owner readability evidence.
+The first replacement joined letters but misplaced Arabic diacritics and was
+also rejected. Manual presentation-form reshaping is therefore excluded from
+the fixture; the next candidate uses a full Qt text-layout pass.
 
 - [x] fill proposed final responsibility table in matrix;
 - [x] revise Proposed ADR-0004 with selected responsibilities and rejected alternatives/limitations;

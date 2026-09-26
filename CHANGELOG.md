@@ -8,6 +8,9 @@ All notable changes to Atlas Reader Native are documented here.
 
 ### N2 owner acceptance — 2026-09-27
 
+- Removed unreferenced `DO_NOT_USE.tmp` and obsolete encrypted A013 PDF/generator; canonical A013 is image-only and encrypted-write coverage uses manifest/CI-qualified A015. Deleted files remain recoverable from Git history.
+- Closed the superseded Flutter roadmap PR #2 after publishing the discontinued-development notice.
+
 - Owner explicitly tested and approved N2 with `N2 PASS`; ADR-0004 is Accepted.
 - Added `docs/baselines/N2_ACCEPTANCE.md` with evidence identity, integration route, future obligations and the stop before N3.
 - Corrected Git policy: native checkpoint PRs target `native-v2-bootstrap`; `main` retains the discontinued Flutter reference.

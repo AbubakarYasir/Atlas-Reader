@@ -26,4 +26,6 @@ These obligations must retain their tests and blocking conditions. Cryptographic
 
 ## Next checkpoint, not started
 
+Closure cleanup removed the unused `DO_NOT_USE.tmp` and obsolete encrypted A013 PDF/generator (not referenced by the fixture manifest or workflows). A013 image-only and A015 encrypted-write fixtures remain canonical. The removed files remain in Git history. Legacy Flutter roadmap PR #2 was closed as superseded; its branch/history were retained.
+
 N3 starts from the accepted native integration commit only after this report. Its order is storage/schema, bounded scanning, identity/reconciliation, then Library UX/search. The existing N3 QA and owner-test requirements in `CHECKPOINTS.md` apply. No N3 branch, schema, scanner or application code is part of N2 closure.

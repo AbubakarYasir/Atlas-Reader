@@ -1,5 +1,7 @@
 # Atlas Reader
 
+**OBSOLETE FLUTTER IMPLEMENTATION — BACKUP/REFERENCE ONLY. Development stopped.** The default repository project is now the C++23/Qt native successor; use the native link below.
+
 > **Development status — 2026-09-27:** Flutter development has stopped. This branch preserves the legacy Flutter implementation for historical and migration reference. Active Atlas Reader development is the **C++23/Qt native successor** on [native-v2-bootstrap](https://github.com/AbubakarYasir/Atlas-Reader/tree/native-v2-bootstrap).
 >
 > Native checkpoints N0, N1 and N2 are accepted. N3 (Library/Index) has not started. See the [native checkpoint ledger](https://github.com/AbubakarYasir/Atlas-Reader/blob/native-v2-bootstrap/CHECKPOINTS.md) for current progress. The Flutter versions and roadmap below are historical; they are not the active development plan.

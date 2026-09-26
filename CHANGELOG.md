@@ -2,6 +2,8 @@
 
 ## Development direction — 2026-09-27
 
+- Native `native-v2-bootstrap` becomes the default repository page/tree; this Flutter branch is secondary and explicitly obsolete, retained as backup/reference only.
+
 - Flutter development has stopped. This branch remains a historical/migration reference.
 - Active development is the C++23/Qt native successor on `native-v2-bootstrap`.
 - Native N2 was explicitly accepted by the owner; N3 is not started.

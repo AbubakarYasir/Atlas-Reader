@@ -1,7 +1,7 @@
 # N2 PDF Production Acquisition / Distribution Baseline
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Open — shippable candidate routes defined; final route selection and compliance freeze pending**  
+**Status:** **Open — PDFium/qpdf routes proposed; implementation/compliance freeze and requalification pending**
 **Opened:** 2026-09-23  
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
@@ -174,6 +174,30 @@ A future switch to linked `libqpdf` is a **new distribution/build baseline**, no
 
 **PASS WITH LIMITATION** for the first-party CLI distribution route. The exact minimal runtime file set and final notice/SBOM bundle still need to be frozen before release packaging.
 
+### Tested minimal Windows runtime candidate
+
+On 2026-09-27, the following self-contained subset from the exact official
+12.4.1 MSVC64 archive ran `qpdf --version`, strict A015 checking, and all six
+Atlas qpdf structural/permission/signature/title-mutation/outline-breadth/
+encrypted-write probes successfully. Total size is **9,104,336 bytes**.
+
+| File | Bytes | SHA-256 |
+|---|---:|---|
+| `qpdf.exe` | 19,456 | `57c003e868fb66cd343fd5afb91be8c2277f56434eea8635762499731bf9f60d` |
+| `qpdf30.dll` | 7,438,848 | `36fe5b2023f244e5785d96b8372dba26b75ea51b63adf4d4f1e66ad0aa1c8a61` |
+| `concrt140.dll` | 374,200 | `54716f0738af891f283d213b5c8d11b25896bb8ee3097d301eae718560cf974e` |
+| `msvcp140.dll` | 643,512 | `7c26614e1d733892c2deac7e245ce115504b1d80592dd0a01b08e3e5a55f89ca` |
+| `msvcp140_1.dll` | 35,768 | `206c931bf90fdad8816de3b5e2ef80b2bcaa9406c89ecc05fe6fddffe251e982` |
+| `msvcp140_2.dll` | 274,872 | `d50d7883f20d1dc6191768d3746f52dd9cac89c346ffaed5be1f110c2f34a838` |
+| `msvcp140_atomic_wait.dll` | 57,792 | `3d0cbfaa1bf3eecf5a3f4491d2960ee803cb994f30292c6adc4a07c498f60e2b` |
+| `msvcp140_codecvt_ids.dll` | 31,160 | `8a65c7596ef2e6938731f5a1058e7e40145b6d97967cc649231a076b9a608d78` |
+| `vcruntime140.dll` | 178,616 | `d1f4225df2cd877dbf130d5668a021dce3f94118455ff5ec952061c30afc9ce7` |
+| `vcruntime140_1.dll` | 50,112 | `a7146c08f89fe5b04541ab507cdb59ff7b44534d4ba3c668a426c6450a03434e` |
+
+This is a technical runtime candidate, not the completed compliance freeze.
+Final CI must reproduce this staging, preserve the applicable qpdf and Microsoft
+runtime license material, and emit the release notice/SBOM bundle.
+
 ## 5. Security/update ownership
 
 For every selected component, Atlas should maintain a small dependency record containing:
@@ -194,7 +218,9 @@ An upgrade is not complete merely because the dependency builds. It must run the
 
 ## 6. Current decision boundary
 
-This document deliberately does **not** select the final responsibilities.
+ADR-0004 now proposes standalone PDFium for read/render/text/navigation and the
+first-party qpdf CLI for structural/security/write responsibilities. This
+document defines what must still be frozen before that proposal can be accepted.
 
 What is now clear:
 
@@ -204,15 +230,14 @@ What is now clear:
 
 ## 7. Remaining production-distribution evidence
 
-Before final N2 responsibility assignment:
+Before final N2 acceptance:
 
-1. decide which read engine is actually selected;
-2. for that engine, freeze the exact production acquisition route and runtime-file inventory;
+1. freeze the proposed PDFium upstream source revision/build configuration and runtime-file inventory;
+2. build and requalify that Atlas-controlled PDFium binary;
 3. measure the selected runtime/package footprint in the Atlas portable package;
 4. stage the exact notice/license/SBOM bundle in CI;
 5. document security-update monitoring and rollback mechanics;
-6. if standalone PDFium is selected, build and requalify the Atlas-controlled source-built binary;
-7. if qpdf CLI is selected, freeze its minimal runtime file/dependency set;
-8. run final exact-head CI with only the selected production routes treated as release dependencies.
+6. freeze qpdf's minimal runtime file/dependency set;
+7. run final exact-head CI with only the selected production routes treated as release dependencies.
 
 N2 remains **Open** and ADR-0004 remains **Proposed**.

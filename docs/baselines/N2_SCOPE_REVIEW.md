@@ -1,8 +1,8 @@
 # N2 PDF Scope Review
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Active scope decision — B3 satisfied; B1, B2 and B4 remain before responsibility assignment**  
-**Date:** 2026-09-23  
+**Status:** **Scope blockers satisfied — production-route freeze, final exact-head CI and owner acceptance remain**
+**Date:** 2026-09-27
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
 This record prevents N2 from expanding indefinitely. It maps the remaining open evidence in `N2_PDF_ENGINE_MATRIX.md` to the binding Windows 2.0 product scope in `docs/FEATURE_SCOPE_2_0.md`.
@@ -24,7 +24,7 @@ Everything else becomes later hardening/regression coverage rather than an excus
 
 ### B1 — image-only PDF reading/rendering
 
-**Decision: N2 BLOCKER.**
+**Decision: SATISFIED.**
 
 Windows 2.0 Reader P0 explicitly states that an image-only PDF must remain readable while Atlas reports that no searchable text layer is available. OCR is deferred, but raster reading is not.
 
@@ -37,9 +37,16 @@ Required N2 evidence:
 
 This does not require OCR.
 
+The deterministic A013 image-only fixture passes in both Qt PDF and PDFium at
+1x and 2x. Both candidates produce a non-blank raster while reporting no text
+or search hits. Canonical content-fidelity run `35813475471` passed at
+implementation `213efb595b438e5b967c2e499dcb061eff8a8664`; artifact
+`10730227985`, digest
+`sha256:669e90dc03bf99a315b202dabc89e0ecab84d4ab38c54b7b0f58f1744b0a996b`.
+
 ### B2 — representative real-font Arabic/Urdu PDF rendering
 
-**Decision: N2 BLOCKER.**
+**Decision: SATISFIED.**
 
 Arabic/RTL is a P0 cross-cutting Atlas requirement and the project explicitly targets Arabic/Urdu research material. A006 proves logical Unicode extraction/search but deliberately does not prove real embedded-font raster fidelity.
 
@@ -51,7 +58,10 @@ Required N2 evidence:
 - Qt PDF and PDFium render non-corrupt, semantically equivalent visible output at at least 1× and 2×;
 - this fixture may remain visual-only if extraction semantics are already covered independently by A006.
 
-The test must not silently rely on an unpinned Windows system font.
+The test does not rely on an unpinned Windows system font. A014 embeds the
+pinned redistributable font input and both candidates pass the validator's
+Arabic, tashkil, Urdu and mixed-script visible-content checks at 1x and 2x.
+This evidence is in the same canonical content-fidelity run and artifact as B1.
 
 ### B3 — P0 outline/bookmark structural mutation breadth
 
@@ -119,7 +129,7 @@ B3 is therefore closed as an N2 blocker. Production bookmark transactions, undo/
 
 ### B4 — encrypted writable structural mutation
 
-**Decision: N2 BLOCKER if qpdf is selected for embedded bookmark writes.**
+**Decision: SATISFIED for the proposed qpdf structural-write responsibility.**
 
 Windows 2.0 distinguishes open password from permissions/owner authority, forbids bypass, allows local-only fallback for restricted/non-writable documents, and requires retrying embed when capability becomes available.
 
@@ -135,7 +145,20 @@ Required N2 evidence:
 - unrelated preservation invariants remain intact;
 - no password/restriction bypass behavior is introduced.
 
-If the selected v2 policy instead forbids embedding into encrypted PDFs entirely and always uses local-only overlay/working-copy flow, this blocker may be retired only by an explicit product/ADR scope decision. Current P0 wording does not make that narrower policy implicit.
+The repaired A015 fixture has an explicit valid empty page resource dictionary
+and SHA-256
+`f01c4422597f015eedd3c4216ba0097de3f6d90ee7f943d9a703a1ad84954694`.
+The source and rewritten output both pass strict qpdf checking. The mutation
+preserves encryption V/R/P, wrong/user/owner password identity, permissive
+capabilities, page and content invariants, metadata/XMP/attachments, and the
+intended Unicode outline title.
+
+Canonical implementation `28a072bbedf07808773068941fc8c7ed22252ba8`;
+`N2 qpdf Encrypted Write` run `36271839766` — **PASS**; artifact
+`10916290827`, digest
+`sha256:1ed550fa9eae089710ee5c2891bf9163f5477e6ab056afa23512a0d73aad4151`.
+Restricted A009 remains intentionally non-writable; this evidence does not
+authorize bypassing PDF permissions.
 
 ## 2. Not N2 blockers — later hardening or later checkpoint evidence
 
@@ -189,7 +212,7 @@ The canonical 500-cycle stress series remains a baseline. Qt's upward working-se
 
 This is a **proposal for the final ADR**, not an accepted decision yet.
 
-Based on evidence captured so far, the direction to validate through B1, B2 and B4 is:
+With B1 through B4 now satisfied, the proposed final responsibility assignment is:
 
 | Responsibility | Provisional implementation | Why this is the current direction |
 |---|---|---|
@@ -201,7 +224,7 @@ Based on evidence captured so far, the direction to validate through B1, B2 and 
 | links/navigation | **PDFium + Atlas normalized contracts** | current raw link model is simpler and rotated `/XYZ` normalization is complete without borrowing rotation metadata from another layer |
 | outline read | **PDFium for reader-facing navigation** | keeps read/navigation responsibility in one serialized adapter |
 | security/capability structural inspection | **qpdf** | strongest current permissions/encryption/signature-structure evidence |
-| structural bookmark mutation/write | **qpdf** | preservation, title mutation and full P0 outline mutation breadth now pass; B4 remains before selection |
+| structural bookmark mutation/write | **qpdf** | preservation, full P0 outline mutation breadth and permitted encrypted rewrite now pass |
 | independent post-write validation | **qpdf `--check` + independent Atlas test oracle in qualification** | already proven useful for mutation safety; production app must not depend on pypdf |
 
 Qt PDF remains a qualified fallback/read candidate and the UI stack remains Qt. Not selecting Qt PDF for a PDF responsibility would not reject Qt itself; it would avoid carrying a second PDF read/render abstraction merely for integration convenience.
@@ -223,7 +246,6 @@ Evidence against immediate final selection:
 
 - the current PDFium binary is a community qualification package, not the proposed production supply chain;
 - an Atlas-owned pinned upstream source build + notices/SBOM + requalification still has to be frozen;
-- B1/B2 representative rendering blockers still need to pass.
 
 Qt PDF's principal remaining advantage is substantially simpler official integration/distribution inside Atlas's existing Qt stack. That advantage remains relevant until the PDFium production build route is actually proven.
 
@@ -239,18 +261,15 @@ qpdf now provides evidence for:
 - signed/certified pre-mutation safety detection;
 - first-party Windows CLI provenance and process isolation.
 
-B4 is the remaining structural-write blocker unless Windows 2.0 explicitly adopts a local-overlay/working-copy-only policy for encrypted originals.
+B4 now passes for permitted encrypted writes. Restricted, signed/certified,
+read-only and conflicting documents still use the later local-overlay/safe-save
+policy; N2 does not implement that production workflow.
 
 ## 6. Exit from scope review
 
-This scope review is complete when:
-
-- B1 image-only reading passes;
-- B2 real-font Arabic/Urdu rendering passes;
-- B4 encrypted writable structural mutation passes or is explicitly retired by a narrower product decision;
-- the production route for the selected read engine and qpdf is frozen/requalified;
-- ADR-0004 is revised with the final responsibility assignment;
-- final exact-head strict CI is green;
-- the owner explicitly records `N2 PASS`.
+The scope review itself is complete: B1, B2, B3 and B4 all have bounded PASS
+evidence. N2 still requires the selected PDFium/qpdf production routes to be
+frozen and requalified, ADR-0004 to remain synchronized with that result, final
+exact-head strict CI, and explicit owner `N2 PASS`.
 
 Until then ADR-0004 remains **Proposed**, PR #4 remains draft/open/unmerged, and N3 remains **Not started**.

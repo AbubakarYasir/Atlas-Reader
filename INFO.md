@@ -6,7 +6,7 @@
 
 **Current checkpoint:** N2 — PDF engine qualification spike
 
-**Current N2 status:** **In progress — qualification plan/fixture contract established; engine probes not yet production-selected.**
+**Current N2 status:** **In progress — bounded capability blockers pass; PDFium/qpdf responsibility assignment is Proposed pending production-route freeze, final CI and owner acceptance.**
 
 **Current build:** `2.0.0-alpha.2`
 

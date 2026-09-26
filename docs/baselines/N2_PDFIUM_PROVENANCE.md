@@ -1,7 +1,7 @@
 # N2 PDFium Provenance and Probe Pin
 
 **Checkpoint:** N2.2 — PDFium qualification  
-**Status:** Core smoke captured — broader qualification pending; not a production dependency decision  
+**Status:** Qualification complete on probe package — Atlas-controlled production build and compliance freeze pending
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Recorded:** 2026-09-22
 
@@ -21,7 +21,7 @@ GitHub Actions run `35680738681` passed Debug and Release. The Release engineeri
 
 Because this was a pull-request-triggered run, GitHub checked out a synthetic merge commit and `${{ github.sha }}` was `df4f45e1a301508b81a4389a90b2d00d156730b6`; the workflow run's actual branch head is the implementation SHA above. Future artifact metadata must record implementation head and checkout SHA separately.
 
-A001–A005 passed strict PDFium tests. On the current English corpus, PDFium and Qt PDF returned identical page labels, normalized visible sizes, and page-by-page UTF-8 text SHA-256 values. A001 also returned a non-null 612×792 raster. Search, bookmarks, links/destinations, Arabic/Urdu/combining-mark semantics, password/security, malformed-input behavior, raw page-box/rotation decomposition, raster fidelity, and repeatable performance remain pending.
+A001–A005 passed the initial strict PDFium tests. Subsequent N2 evidence now also covers search, bookmarks, links/destinations, Arabic/Urdu/combining-mark semantics, password/security, malformed-input behavior, page boxes/rotation, content/raster fidelity, coordinates, repeated performance, and serialized stress. The canonical ledger is maintained in `N2_PDF_ENGINE_MATRIX.md`.
 
 ## Upstream API constraint
 

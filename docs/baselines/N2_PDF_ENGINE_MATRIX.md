@@ -1,7 +1,7 @@
 # N2 PDF Engine Qualification Matrix
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Open — core read/navigation/Unicode/search/security, repeated performance, rendering fidelity, coordinate normalization, stress/concurrency, and qpdf structural/security/transformation evidence captured; production-route freeze, scope review, final responsibility assignment and owner acceptance remain pending**  
+**Status:** **Open — all bounded N2 capability blockers pass; production-route freeze/requalification, final exact-head CI and owner acceptance remain pending**
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Opened:** 2026-09-22  
 **Last evidence refresh:** 2026-09-23
@@ -31,6 +31,8 @@ This is the binding comparison sheet for N2. Detailed evidence remains in the fo
 | rendering fidelity / geometry | `d9daf12cf3b1a7efc7118733279536585f8831fc` | fidelity `35796991213`; artifact `10724751540` | PASS / PASS WITH LIMITATION by capability |
 | coordinate normalization + explicit `/XYZ` | `0bbe1132872a946e9869945be20b8f9f174a1785` | coordinates `35800654969`; artifact `10725573435` | PASS; Qt rotated destination limitation recorded |
 | stress / concurrency | `72109de91aad5496a9e2fe16d5741581243a649f` | stress `35801464463`; artifact `10726420090` | functional PASS; memory trends PASS WITH LIMITATION |
+| image-only + real-font Arabic/Urdu content fidelity | `213efb595b438e5b967c2e499dcb061eff8a8664` | content fidelity `35813475471`; artifact `10730227985` | PASS |
+| permitted encrypted outline mutation | `28a072bbedf07808773068941fc8c7ed22252ba8` | encrypted write `36271839766`; artifact `10916290827` | PASS |
 
 Focused sources:
 
@@ -74,7 +76,7 @@ No candidate is linked into the production `atlas_reader`/portable domain bounda
 | Effective visible page size | **PASS** | **PASS** | A002/A011 normal, cropped, rotated pages |
 | CropBox normalization | **PASS** | **PASS** | A011 200×150 effective visible page |
 | 90° inherent rotation normalization | **PASS** | **PASS** | A011 300×200 effective page |
-| Image-only page handling | **PENDING — scope review** | **PENDING — scope review** | dedicated fixture not yet justified as an N2 blocker |
+| Image-only page handling | **PASS** | **PASS** | A013 opens/renders at 1x/2x and safely reports no text/search layer |
 
 ## Rendering fidelity
 
@@ -91,9 +93,9 @@ A011 deterministic vector fixture SHA-256:
 | Annotation off/on behavior | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | explicit normal appearance Link annotation |
 | Native blank-background behavior | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Qt untouched pixels transparent; PDFium qualification bitmap prefilled white; Atlas policy required |
 | Cross-engine byte-identical pixels | **N/A** | **N/A** | deliberately not a requirement |
-| Real Arabic/Urdu shaped-font fidelity | **PENDING — scope review** | **PENDING — scope review** | A006 is logical Unicode, not visual shaping evidence |
-| Image/gradient/transparency-group fidelity | **PENDING — scope review** | **PENDING — scope review** | not covered by A011 |
-| Broad annotation subtype fidelity | **PENDING — scope review** | **PENDING — scope review** | current explicit-appearance Link only |
+| Real Arabic/Urdu shaped-font fidelity | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A014 embedded pinned font; Arabic/tashkil/Urdu/mixed visible-content checks pass at 1x/2x; bounded corpus |
+| Image/gradient/transparency-group fidelity | **POST-N2 HARDENING** | **POST-N2 HARDENING** | bounded N2 image-only evidence is sufficient for selection |
+| Broad annotation subtype fidelity | **N6/P1 EVIDENCE** | **N6/P1 EVIDENCE** | current explicit-appearance Link establishes only the N2 policy boundary |
 
 Detailed evidence: `N2_RENDERING_FIDELITY.md`.
 
@@ -117,7 +119,7 @@ A006 deterministic logical-Unicode fixture SHA-256:
 | Fully vocalized Arabic query | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | source-order form gets 0 hits; canonical-equivalent normalized/raw form hits |
 | Hit page/per-page ordinal | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | shared portable identity; native indexes differ |
 | Search-hit rectangles — normal/crop/90° | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | A011 cross-engine maximum observed field delta 0.43 pt |
-| Multi-line/real-font/bidi geometry | **PENDING — scope review** | **PENDING — scope review** | current geometry corpus is simple/synthetic |
+| Multi-line/real-font/bidi geometry | **POST-N2 HARDENING** | **POST-N2 HARDENING** | current geometry corpus is simple/synthetic; not selection-changing |
 
 Atlas must Unicode-normalize before equality, indexing and user-query comparison. Qt and PDFium search timing APIs represent different execution models; timing evidence must not be treated as a pure internal algorithm ratio.
 
@@ -138,7 +140,7 @@ Atlas coordinate contract:
 | Search rectangle normalization | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Qt raw rotated QRect can have negative width and is canonicalized before portable exposure |
 | `/XYZ` destination — normal target | **PASS** | **PASS** | A012 expected `(40,50)` |
 | `/XYZ` destination — 90° target | **PASS WITH LIMITATION** | **PASS** | Qt needs external inherent-rotation metadata to transform `(40,50)` into Atlas `(250,40)`; PDFium normalizes directly |
-| Fit/FitH/FitV destination modes | **PENDING — scope review** | **PENDING — scope review** | not currently established as a v2 blocker |
+| Fit/FitH/FitV destination modes | **POST-N2 HARDENING** | **POST-N2 HARDENING** | not required at engine-selection time; preserve as later navigation coverage |
 
 A012 SHA-256:
 
@@ -153,7 +155,7 @@ Detailed evidence: `N2_COORDINATE_NORMALIZATION.md`.
 | Malformed hard failure | **PASS** | **PASS** | **PASS WITH LIMITATION** on A007 |
 | Password-required / wrong-password state | **PASS** | **PASS** | inspectable on A008/A009 |
 | Correct supported encrypted open | **PASS** | **PASS** | N/A as reader responsibility |
-| Unsupported-security distinction | **PENDING — scope review** | **PENDING — scope review** | **PENDING — scope review** |
+| Unsupported-security distinction | **POST-N2 HARDENING** | **POST-N2 HARDENING** | malformed/password states already qualify selection; later app state remains required |
 | User-vs-owner password identity | N/A / not selected | N/A / not selected | **PASS WITH LIMITATION** on R2 fixtures |
 | Restricted permission inspection | N/A / not selected | N/A / not selected | **PASS WITH LIMITATION** on A009 `/P=-64` |
 | Signature/DocMDP structural visibility | N/A / not selected | N/A / not selected | **PASS WITH LIMITATION** on synthetic A010 |
@@ -234,8 +236,8 @@ Exact first-party qpdf package:
 | Controlled Unicode outline title mutation | **PASS** | `اردو` → `اردو — فوائد` |
 | Signature/DocMDP structural visibility | **PASS WITH LIMITATION** | A010 synthetic structure; not crypto verification |
 | Signed/certified pre-mutation safety interlock | **PASS WITH LIMITATION** | source state detectable; rewrite bytes change while signature dictionaries can remain |
-| Add/remove/reparent outline nodes | **PENDING — scope review** | only existing-title mutation qualified |
-| Encrypted rewrite preservation | **PENDING — scope review** | required only if v2 will mutate encrypted PDFs |
+| Add/remove/reparent outline nodes | **PASS** | A003 breadth probe also covers delete/reorder/nest/unnest, Unicode and duplicate titles |
+| Encrypted rewrite preservation | **PASS WITH LIMITATION** | A015 permitted R2 fixture; encryption/password/permission identities and unrelated invariants preserved; restricted writes remain forbidden |
 | Linked-library production route | **N/A for current proposed route** | current proposed production route remains first-party CLI process boundary |
 
 Atlas must never use qpdf indirect object numbers as portable document identity because qpdf may renumber objects during serialization.
@@ -282,45 +284,44 @@ Production selection still requires, for each selected responsibility:
 5. previous-qualified-pin rollback path;
 6. final regression qualification against the production route.
 
-## Final responsibility decision — intentionally not selected yet
+## Proposed final responsibility decision — acceptance pending
 
 | Responsibility | Selected implementation | Status | Evidence still needed before selection |
 |---|---|---|---|
-| Document open/read metadata | PENDING | PENDING | production route + scope review + final assignment |
-| Page geometry/labels | PENDING | PENDING | final split decision |
-| Page raster rendering | PENDING | PENDING | decide whether broader real-font/image-heavy fidelity is an N2 blocker or later hardening |
-| Text extraction | PENDING | PENDING | production route + final assignment |
-| Search | PENDING | PENDING | normalization boundary + final assignment |
-| Links/navigation | PENDING | PENDING | weigh Qt duplicate rows/rotated `/XYZ` dependency vs PDFium serialized adapter |
-| Outline read | PENDING | PENDING | final responsibility boundary |
-| Security/capability inspection | PENDING | PENDING | qpdf evidence strong; production route/adapter boundary still to choose |
-| Structural transformation/write | PENDING | PENDING | qpdf route strong; decide whether broader mutation/encrypted-write is v2 scope |
-| Independent output validation | PENDING | PENDING | qpdf check + independent pypdf reopen proven; final architecture pending |
+| Document open/read metadata | PDFium | PROPOSED | freeze/requalify Atlas-controlled production build |
+| Page geometry/labels | PDFium + Atlas normalization | PROPOSED | freeze/requalify production build |
+| Page raster rendering | PDFium + Atlas background/compositing policy | PROPOSED | freeze/requalify production build; broader graphics corpus is later hardening |
+| Text extraction | PDFium + Atlas Unicode normalization | PROPOSED | freeze/requalify production build |
+| Search | PDFium + Atlas normalization/index layer | PROPOSED | freeze/requalify production build |
+| Links/navigation | PDFium + Atlas normalized contracts | PROPOSED | freeze/requalify production build |
+| Outline read | PDFium | PROPOSED | freeze/requalify production build |
+| Security/capability inspection | qpdf 12.4.1 CLI adapter | PROPOSED | freeze minimal runtime/notices/SBOM bundle |
+| Structural transformation/write | qpdf 12.4.1 CLI adapter | PROPOSED | freeze minimal runtime/notices/SBOM bundle |
+| Independent output validation | qpdf `--check`; independent oracle in qualification only | PROPOSED | production app must not depend on pypdf |
 
 No ordering above implies a selected candidate.
 
-## Scope-review questions before responsibility assignment
+## Recorded scope decisions
 
-The following are now **explicit scope decisions**, not automatically mandatory new probes:
+The scope review records the following as later hardening or later-checkpoint
+evidence rather than N2 selection blockers:
 
-- Is real shaped Arabic/Urdu font raster fidelity required to choose the v2 read/render engine, or can it be a post-N2 hardening corpus?
-- Are image-heavy/transparency-group PDFs an N2 blocker or a later regression corpus?
-- Must v2 support Fit/FitH/FitV destination coordinate semantics at launch?
-- Does v2 need an explicit unsupported-security-scheme user state beyond the already proven malformed/password semantics?
-- Does v2 need qpdf add/remove/reparent outline operations, or is existing-title mutation enough for the first structural-write scope?
-- Will v2 mutate encrypted PDFs? If not, encrypted-write preservation is not an N2 blocker.
-- Will v2 report cryptographic signature validity? If not, structural signature/DocMDP detection + pre-mutation interlock is the required safety boundary and crypto verification remains out of scope.
+- broader image/gradient/transparency and multi-line/bidi geometry corpora;
+- Fit/FitH/FitV view-mode fidelity;
+- unsupported-security-scheme regression fixtures;
+- broad annotation subtype fidelity (N6/P1);
+- cryptographic signature validity (out of Windows 2.0 scope).
 
-Decisions on these questions must be recorded in ADR-0004 or an adjacent scope record before final N2 responsibility assignment.
+B1/B2 real rendering, B3 full outline breadth, and B4 permitted encrypted
+mutation are complete and therefore are not deferred by this classification.
 
 ## Remaining N2 gates
 
 Before ADR-0004 can move from **Proposed** to **Accepted** and before owner `N2 PASS`:
 
 1. **Production route freeze:** choose the actual selected components and freeze exact shippable provenance, runtime files/footprint, licenses/notices/SBOM, security-update and rollback procedure.
-2. **Scope review:** explicitly classify the optional hardening items above as N2 blockers or post-N2 work.
-3. **Responsibility assignment:** fill the final table and ADR-0004 with explicit Atlas-owned normalization boundaries and replaceability/rollback.
-4. **Final strict CI:** all selected production-route probes/builds green on one implementation head.
-5. **Owner acceptance:** explicit `N2 PASS`.
+2. **Responsibility freeze:** synchronize ADR-0004 with the requalified production routes and retain explicit Atlas-owned normalization/serialization boundaries and rollback.
+3. **Final strict CI:** all selected production-route probes/builds green on one implementation head.
+4. **Owner acceptance:** explicit `N2 PASS`.
 
 N2 is **Open**. N3 is **Not started**. PR #4 remains **draft/open/unmerged** until explicit N2 acceptance.

@@ -67,7 +67,7 @@ Binding N2 documents:
 - `tests/fixtures/pdf/README.md`;
 - `docs/decisions/ADR-0004-pdf-engine-responsibilities.md`.
 
-ADR-0004 remains **Proposed** and no PDF engine is production-selected while N2 is In progress.
+ADR-0004 remains **Proposed** with PDFium assigned to the read/render/text/navigation path and qpdf to structural/security/write responsibilities. Neither becomes a production release dependency until its shipping route is frozen, requalified, and explicitly accepted.
 
 N3 remains closed until explicit owner `N2 PASS`.
 

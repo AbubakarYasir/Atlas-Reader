@@ -57,11 +57,11 @@ Primary N2 documents:
 - **`baselines/N2_RENDERING_FIDELITY.md`** — A011 1×/2× crop/rotation/annotation/background rendering evidence;
 - **`baselines/N2_COORDINATE_NORMALIZATION.md`** — Atlas page-space contract, A003/A011 geometry and A012 `/XYZ` destination evidence;
 - **`baselines/N2_STRESS_CONCURRENCY.md`** — 500-lifetime read-engine stress and 1,000-job serialized PDFium queue evidence;
-- **`baselines/N2_PRODUCTION_DISTRIBUTION.md`** — candidate shippable acquisition/licensing/SBOM/update/rollback routes; route selection still pending;
-- **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — remains **Proposed** until final responsibility assignment and explicit owner `N2 PASS`;
+- **`baselines/N2_PRODUCTION_DISTRIBUTION.md`** — selected PDFium/qpdf shippable acquisition/licensing/SBOM/update/rollback routes; compliance freeze still pending;
+- **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — records the Proposed PDFium/qpdf responsibility split and remains Proposed until production-route requalification and explicit owner `N2 PASS`;
 - **`../tests/fixtures/pdf/README.md`** — public/synthetic/private fixture rules.
 
-Current evidence has closed core correctness, navigation, Unicode/search, malformed/password behavior, repeated synthetic performance, vector fidelity, coordinate normalization, qpdf preservation/security/transformation, and stress/concurrency. The remaining N2 gates are production-route freeze, explicit scope review, final responsibility assignment, final exact-head CI and owner acceptance.
+Current evidence has closed core correctness, navigation, Unicode/search, malformed/password behavior, repeated synthetic performance, vector and real-font/image-only fidelity, coordinate normalization, qpdf outline breadth and encrypted-write preservation, and stress/concurrency. The remaining N2 gates are production-route freeze/requalification, final exact-head CI and owner acceptance.
 
 N2 does not authorize production Reader UI, SQLite/FTS5, scanner, bookmarks editor/local overlay, annotations, migration, installer, OCR or AI document analysis. Those remain later checkpoints.
 

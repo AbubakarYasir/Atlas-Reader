@@ -11,7 +11,7 @@ All notable changes to Atlas Reader Native are documented here.
 - Advanced native prerelease identifier from `alpha.1` to `alpha.2` without adding a production PDF engine dependency.
 - Added `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` defining N2 scope, exclusions, phases, normalized responsibilities, fixture classes, performance rules, hard blockers and owner stop gate.
 - Added `docs/baselines/N2_PDF_ENGINE_MATRIX.md` as the binding evidence table. Untested or undecided capabilities remain explicit rather than guessed.
-- Added Proposed `ADR-0004-pdf-engine-responsibilities.md`; it cannot become Accepted before responsibility assignment, final strict CI and explicit owner `N2 PASS`.
+- Added Proposed `ADR-0004-pdf-engine-responsibilities.md`; it now records the evidence-backed PDFium/qpdf responsibility split but cannot become Accepted before production-route requalification, final strict CI and explicit owner `N2 PASS`.
 - Added deterministic PDF fixture provenance/privacy/checksum/mutation rules under `tests/fixtures/pdf/`.
 - Updated `AGENTS.md` so coding agents operate under N2 boundaries and cannot drift into production Reader, SQLite/index, bookmarks, annotations, migration or installer work.
 - Refreshed dependency/upstream catalogs with Qt PDF, PDFium and qpdf qualification constraints.
@@ -36,7 +36,9 @@ All notable changes to Atlas Reader Native are documented here.
 - Added `docs/baselines/N2_STRESS_CONCURRENCY.md` with exact stress implementation/run/artifact identities and architectural serialization conclusions.
 - Added `docs/baselines/N2_PRODUCTION_DISTRIBUTION.md` separating qualification packages from shippable routes: official dynamic Qt if selected; Atlas-owned pinned upstream PDFium source build if selected; first-party qpdf CLI process boundary as the current lower-coupling structural route.
 - Recorded production compliance requirements for exact provenance, runtime-file inventory, license/NOTICE/SBOM bundle, security-update ownership and rollback before any selected component is promoted to a release dependency.
-- Refreshed the binding matrix so stress is no longer pending; remaining N2 work is production-route freeze, explicit scope review, final responsibility assignment/ADR update, final exact-head CI and explicit owner `N2 PASS`.
+- Closed B1 image-only rendering, B2 real-font Arabic/Urdu rendering, B3 full outline mutation breadth, and B4 permitted encrypted-write preservation with bounded CI evidence.
+- Repaired A015's invalid missing resource dictionary, added strict source validation, and corrected the qpdf permission assertion to read the JSON v2 `encrypt.parameters.P` field.
+- Refreshed the binding matrix and Proposed ADR with the PDFium read/render/text/navigation plus qpdf structural/security/write assignment. Remaining N2 work is production-route freeze/requalification, final exact-head CI and explicit owner `N2 PASS`.
 - Kept N3 and all later product-feature checkpoints closed until N2 is explicitly Accepted.
 
 ### N1 — Windows toolchain + empty-shell baseline (`2.0.0-alpha.1`) — Accepted

@@ -10,7 +10,7 @@ This file controls implementation order. Only one checkpoint is active at a time
 |---|---|
 | Checkpoint | **N2 — PDF engine qualification spike** |
 | Planned version | `2.0.0-alpha.2` (engineering alpha; not normal user release) |
-| Status | **In progress — qualification plan, fixture contract, and engine probes** |
+| Status | **In progress — capability qualification complete; production-route freeze and owner handoff remain** |
 | Previous checkpoint | **N1 Accepted by owner on 2026-09-22** |
 | Branch | `native-v2-n2-pdf-engine-qualification` |
 | Base | accepted N1 integration commit `f8bdc2e5bc74ccb94d593e7a7e5307ae6163afe2` |
@@ -244,58 +244,58 @@ qpdf is not being evaluated as Atlas's page raster engine.
 - [x] fixture corpus contract;
 - [x] N2 dependency/upstream rules;
 - [x] advance prerelease identifier to `alpha.2` without adding an engine dependency;
-- [ ] strict Debug + Release CI on the N2.0 baseline head.
+- [x] strict Debug + Release CI on the N2.0 baseline head.
 
 **N2.1 — Qt PDF probe**
 
-- [ ] focused adapter/probe target;
-- [ ] normalized fixture runner output;
-- [ ] open/page/label/geometry evidence;
-- [ ] render evidence/timing;
-- [ ] English/Arabic/mixed Unicode extraction and search;
-- [ ] links/outlines/destinations;
-- [ ] encrypted/malformed states;
-- [ ] package/memory notes;
-- [ ] matrix update.
+- [x] focused adapter/probe target;
+- [x] normalized fixture runner output;
+- [x] open/page/label/geometry evidence;
+- [x] render evidence/timing;
+- [x] English/Arabic/mixed Unicode extraction and search;
+- [x] links/outlines/destinations;
+- [x] encrypted/malformed states;
+- [x] package/memory notes;
+- [x] matrix update.
 
 **N2.2 — PDFium probe**
 
-- [ ] exact upstream/binary revision and acquisition provenance;
-- [ ] checksum where binary/archive is used;
-- [ ] focused adapter/probe target;
-- [ ] same normalized fixture expectations as Qt PDF;
-- [ ] serialized-call correctness under non-thread-safe API contract;
-- [ ] render/text/search/navigation evidence;
-- [ ] encrypted/malformed states;
-- [ ] build/package/memory cost;
-- [ ] matrix update.
+- [x] exact upstream/binary revision and acquisition provenance for qualification;
+- [x] checksum where binary/archive is used;
+- [x] focused adapter/probe target;
+- [x] same normalized fixture expectations as Qt PDF;
+- [x] serialized-call correctness under non-thread-safe API contract;
+- [x] render/text/search/navigation evidence;
+- [x] encrypted/malformed states;
+- [x] qualification build/package/memory cost;
+- [x] matrix update.
 
 **N2.3 — qpdf structural/security probe**
 
-- [ ] pinned qpdf/version path;
-- [ ] structural/security inspection evidence;
-- [ ] outline/destination read evidence needed for later workflows;
-- [ ] copied-fixture no-op/rewrite preservation evidence;
-- [ ] controlled structural transformation evidence;
-- [ ] validation/independent reopen evidence;
-- [ ] matrix update.
+- [x] pinned qpdf/version path;
+- [x] structural/security inspection evidence;
+- [x] outline/destination read evidence needed for later workflows;
+- [x] copied-fixture no-op/rewrite preservation evidence;
+- [x] controlled structural transformation evidence;
+- [x] validation/independent reopen evidence;
+- [x] matrix update.
 
 **N2.4 — normalized cross-engine comparison**
 
-- [ ] resolve/record meaningful Qt PDF versus PDFium semantic differences;
-- [ ] classify disagreements as engine limitation, Atlas normalization bug, fixture ambiguity, expected difference, or unresolved blocker;
-- [ ] compare integration/reproducibility/footprint costs.
+- [x] resolve/record meaningful Qt PDF versus PDFium semantic differences;
+- [x] classify disagreements as engine limitation, Atlas normalization bug, fixture ambiguity, expected difference, or unresolved blocker;
+- [x] compare qualification integration/reproducibility/footprint costs.
 
 **N2.5 — preservation/security comparison**
 
-- [ ] verify relevant page/content/annotation/outline/metadata/XMP/encryption/signature/attachment invariants on mutation probes;
-- [ ] independent validation where practical;
-- [ ] no unsafe claim that signed integrity remains valid after mutation.
+- [x] verify relevant page/content/annotation/outline/metadata/XMP/encryption/signature/attachment invariants on mutation probes;
+- [x] independent validation where practical;
+- [x] no unsafe claim that signed integrity remains valid after mutation.
 
 **N2.6 — decision/owner handoff**
 
-- [ ] fill final responsibility table in matrix;
-- [ ] finalize ADR-0004 with selected responsibilities and rejected alternatives/limitations;
+- [x] fill proposed final responsibility table in matrix;
+- [x] revise Proposed ADR-0004 with selected responsibilities and rejected alternatives/limitations;
 - [ ] document exact dependency versions, licenses/notices and rollback route;
 - [ ] strict final CI;
 - [ ] owner evidence review;

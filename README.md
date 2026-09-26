@@ -230,7 +230,7 @@ For current work, read `CHECKPOINTS.md` → `docs/N2_PDF_ENGINE_QUALIFICATION_PL
 
 **N2 — PDF engine qualification spike:** **In progress**.
 
-N2 does not pass because documentation exists or a probe compiles. It requires comparable engine evidence, qpdf preservation/security evidence, exact dependency/provenance/license records, final strict CI, completed ADR-0004, and explicit owner `N2 PASS`.
+All bounded N2 capability blockers now pass. N2 still requires frozen and requalified PDFium/qpdf production routes, exact dependency/provenance/license records, final strict CI, synchronized ADR-0004, and explicit owner `N2 PASS`.
 
 ## License
 

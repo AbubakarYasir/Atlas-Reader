@@ -22,11 +22,22 @@ The accepted architecture already requires Atlas-owned PDF contracts and explici
 
 N2 therefore compares Qt PDF, PDFium and qpdf with real fixtures and repeatable evidence before assigning production responsibilities.
 
-## Proposed decision shape
+## Proposed decision
 
-**No engine is selected by this ADR yet.**
+N2 evidence now supports the following assignment, still **Proposed** until the
+production routes are frozen/requalified and the owner records `N2 PASS`:
 
-The decision N2 is testing is a responsibility split behind Atlas-owned ports:
+| Responsibility | Proposed implementation |
+|---|---|
+| open, metadata, page geometry/labels | PDFium behind Atlas normalization |
+| raster rendering | PDFium behind Atlas background/compositing policy |
+| text extraction and search | PDFium behind Atlas Unicode/search contracts |
+| links, destinations and reader-facing outline read | PDFium behind Atlas coordinate/navigation contracts |
+| structural security/capability inspection | qpdf 12.4.1 CLI adapter |
+| structural bookmark mutation/write | qpdf 12.4.1 CLI adapter |
+| qualification output validation | strict qpdf `--check` plus an independent test oracle; pypdf is never a production dependency |
+
+The assignment remains a responsibility split behind Atlas-owned ports:
 
 ```text
 Atlas domain/application
@@ -38,10 +49,24 @@ normalized Atlas PDF contracts
         |                      |                      |
         v                      v                      v
 read/render/text          navigation/outline     structure/write
-Qt PDF or PDFium          Qt PDF or PDFium            qpdf
+PDFium                    PDFium                       qpdf
 ```
 
-A single engine may ultimately cover more than one column if evidence supports it, but application/domain code must not depend directly on Qt PDF, PDFium or qpdf types.
+Application/domain code must not depend directly on Qt PDF, PDFium or qpdf
+types. All public PDFium calls run through one serialized execution lane. qpdf
+object numbers and vendor-native objects never become portable Atlas identity.
+
+Qt PDF remains the qualified fallback because its official Qt distribution path
+is simpler, but the measured N2 corpus favors PDFium for the combined read path:
+it avoids the duplicate URI row and rotated-destination dependency observed in
+Qt, has substantially lower measured search completion on this bounded corpus,
+and has the smaller synthetic lifetime working-set trend. These measurements do
+not claim universal superiority.
+
+The community PDFium probe DLL is not approved for shipping. Final acceptance
+requires an Atlas-controlled pinned upstream build, notices/SBOM/runtime
+inventory and requalification. The qpdf route requires a frozen minimal
+first-party runtime and notices/SBOM bundle.
 
 ## Candidates
 

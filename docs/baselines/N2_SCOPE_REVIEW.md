@@ -1,7 +1,7 @@
 # N2 PDF Scope Review
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Scope blockers satisfied — production-route freeze, final exact-head CI and owner acceptance remain**
+**Status:** **B2 reopened after owner visual failure — corrected fixture and renewed owner review pending**
 **Date:** 2026-09-27
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
@@ -46,7 +46,7 @@ implementation `213efb595b438e5b967c2e499dcb061eff8a8664`; artifact
 
 ### B2 — representative real-font Arabic/Urdu PDF rendering
 
-**Decision: SATISFIED.**
+**Decision: REOPENED — OWNER VISUAL FAIL.**
 
 Arabic/RTL is a P0 cross-cutting Atlas requirement and the project explicitly targets Arabic/Urdu research material. A006 proves logical Unicode extraction/search but deliberately does not prove real embedded-font raster fidelity.
 
@@ -58,10 +58,19 @@ Required N2 evidence:
 - Qt PDF and PDFium render non-corrupt, semantically equivalent visible output at at least 1× and 2×;
 - this fixture may remain visual-only if extraction semantics are already covered independently by A006.
 
-The test does not rely on an unpinned Windows system font. A014 embeds the
-pinned redistributable font input and both candidates pass the validator's
-Arabic, tashkil, Urdu and mixed-script visible-content checks at 1x and 2x.
-This evidence is in the same canonical content-fidelity run and artifact as B1.
+The original A014 used Amiri for both Arabic and Urdu. Automated comparison
+proved only that Qt PDF and PDFium rendered the same source similarly; it did
+not prove that the source itself was readable or typographically appropriate.
+On 2026-09-27 the owner rejected the original oracle because the fully
+vocalized Arabic line read poorly/broke visually and Urdu was rendered in an
+Arabic rather than Urdu-appropriate face. Therefore run `35813475471` and
+artifact `10730227985` remain valid for B1/A013 only and no longer close B2.
+
+The replacement A014 pins Noto Naskh Arabic for Arabic and Noto Nastaliq Urdu
+for Urdu, keeps mixed Latin/Arabic visible on one line, and states explicitly
+that cross-engine similarity cannot replace owner readability review. B2 stays
+open until the replacement passes CI and the owner accepts its 100%/200%
+rendering.
 
 ### B3 — P0 outline/bookmark structural mutation breadth
 
@@ -267,9 +276,10 @@ policy; N2 does not implement that production workflow.
 
 ## 6. Exit from scope review
 
-The scope review itself is complete: B1, B2, B3 and B4 all have bounded PASS
-evidence. N2 still requires the selected PDFium/qpdf production routes to be
-frozen and requalified, ADR-0004 to remain synchronized with that result, final
-exact-head strict CI, and explicit owner `N2 PASS`.
+The scope review found one reopened blocker: B2 requires corrected automated
+evidence and renewed owner visual acceptance. B1, B3 and B4 retain bounded PASS
+evidence. N2 also still requires the selected PDFium/qpdf production routes to
+be frozen and requalified, ADR-0004 to remain synchronized with that result,
+final exact-head strict CI, and explicit owner `N2 PASS`.
 
 Until then ADR-0004 remains **Proposed**, PR #4 remains draft/open/unmerged, and N3 remains **Not started**.

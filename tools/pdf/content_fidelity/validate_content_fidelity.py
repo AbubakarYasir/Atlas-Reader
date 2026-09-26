@@ -119,13 +119,13 @@ def validate_a014(qt: dict[str, Any], pdfium: dict[str, Any], failures: list[str
             failures.append(f"{engine}:A014-probe-failed")
         if int(evidence.get("page_count", -1)) != 1:
             failures.append(f"{engine}:A014-page-count")
-        if abs(float(evidence.get("width_points", -1)) - 600.0) > 0.1 or abs(float(evidence.get("height_points", -1)) - 400.0) > 0.1:
+        if abs(float(evidence.get("width_points", -1)) - 600.0) > 0.1 or abs(float(evidence.get("height_points", -1)) - 480.0) > 0.1:
             failures.append(f"{engine}:A014-page-size")
 
     for scale in (1, 2):
         qt_img = composite_white(render_path(qt, scale))
         pdfium_img = composite_white(render_path(pdfium, scale))
-        expected_size = (600 * scale, 400 * scale)
+        expected_size = (600 * scale, 480 * scale)
         if qt_img.size != expected_size:
             failures.append(f"qt-pdf:A014-{scale}x-size:{qt_img.size}!={expected_size}")
         if pdfium_img.size != expected_size:
@@ -143,7 +143,7 @@ def validate_a014(qt: dict[str, Any], pdfium: dict[str, Any], failures: list[str
         if rgb_diff > A014_MEAN_RGB_DIFF_MAX:
             failures.append(f"A014-{scale}x-mean-rgb-diff:{rgb_diff:.3f}>{A014_MEAN_RGB_DIFF_MAX}")
 
-        bands = [(18, 92), (102, 178), (186, 262), (270, 352)]
+        bands = [(12, 90), (95, 190), (200, 315), (335, 420)]
         band_details: list[dict[str, Any]] = []
         for index, (top, bottom) in enumerate(bands):
             box = (0, top * scale, expected_size[0], bottom * scale)
@@ -172,8 +172,9 @@ def main() -> int:
     parser.add_argument("--qt-a014", type=Path, required=True)
     parser.add_argument("--pdfium-a014", type=Path, required=True)
     parser.add_argument("--a014-sha256", required=True)
-    parser.add_argument("--amiri-archive-sha256", required=True)
-    parser.add_argument("--amiri-font-sha256", required=True)
+    parser.add_argument("--noto-naskh-archive-sha256", required=True)
+    parser.add_argument("--noto-naskh-font-sha256", required=True)
+    parser.add_argument("--noto-nastaliq-font-sha256", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
@@ -188,7 +189,7 @@ def main() -> int:
     a014_details = validate_a014(qt_a014, pdfium_a014, failures)
 
     evidence = {
-        "schema": "atlas.n2.content-fidelity-validation.v1",
+        "schema": "atlas.n2.content-fidelity-validation.v2",
         "a013": {
             "sha256": "f6b1173e34bbd7dab6ad5d91c3000190e1de9f6c156536f06d7f48812bd40021",
             "purpose": "image-only-read-render-no-text-layer",
@@ -196,17 +197,19 @@ def main() -> int:
         },
         "a014": {
             "sha256": args.a014_sha256,
-            "purpose": "real-embedded-Amiri-Arabic-Urdu-mixed-raster-fidelity",
-            "amiri_release": "1.003",
-            "amiri_archive_sha256": args.amiri_archive_sha256,
-            "amiri_regular_ttf_sha256": args.amiri_font_sha256,
-            "generator": "fpdf2 2.8.8 + uharfbuzz 0.56.2",
+            "purpose": "readable-real-font-Arabic-Urdu-mixed-raster-fidelity",
+            "noto_naskh_arabic_release": "2.021",
+            "noto_naskh_archive_sha256": args.noto_naskh_archive_sha256,
+            "noto_naskh_regular_ttf_sha256": args.noto_naskh_font_sha256,
+            "noto_nastaliq_urdu_ttf_sha256": args.noto_nastaliq_font_sha256,
+            "generator": "fpdf2 2.8.8 + uharfbuzz 0.56.2 + arabic-reshaper 3.0.0 + python-bidi 0.6.11",
             "details": a014_details,
         },
         "limits": [
             "A013 proves raster reading and safe absence of a text layer; OCR remains out of scope",
             "A014 is visual real-font evidence; A006 remains the logical Unicode extraction/search oracle",
             "cross-engine visual comparison uses bounded mask/color similarity and does not require byte-identical PNGs",
+            "automated cross-engine similarity cannot certify human readability; explicit owner visual acceptance remains mandatory",
         ],
         "failures": failures,
         "passed": not failures,

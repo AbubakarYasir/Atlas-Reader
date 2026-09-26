@@ -294,6 +294,11 @@ qpdf is not being evaluated as Atlas's page raster engine.
 
 **N2.6 — decision/owner handoff**
 
+Owner visual review on 2026-09-27 accepted A013 image-only rendering and
+rejected the original A014 oracle: the vocalized Arabic line was not comfortably
+readable and Urdu used an Arabic rather than Urdu-appropriate typeface. A014 is
+reopened; automated cross-engine similarity is not owner readability evidence.
+
 - [x] fill proposed final responsibility table in matrix;
 - [x] revise Proposed ADR-0004 with selected responsibilities and rejected alternatives/limitations;
 - [ ] document exact dependency versions, licenses/notices and rollback route;

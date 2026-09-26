@@ -19,10 +19,13 @@ jobs:
     timeout-minutes: 30
     env:
       ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      AMIRI_VERSION: '1.003'
-      AMIRI_ASSET: 'Amiri-1.003.zip'
-      AMIRI_ASSET_ID: '263644198'
-      AMIRI_ARCHIVE_SHA256: '81af0aff7d2086d8af24cea7202f7546130997982534691373485cd96744d05e'
+      NOTO_NASKH_VERSION: '2.021'
+      NOTO_NASKH_ASSET: 'NotoNaskhArabic-v2.021.zip'
+      NOTO_NASKH_ASSET_ID: '341390069'
+      NOTO_NASKH_ARCHIVE_SHA256: '6c050ab9bd087d69b733c505a7576e60c528c2f33cd7b91005a5bd7da4514032'
+      NOTO_NASKH_FONT_SHA256: '6f0a92031367b2f5a2078fe9d24f3433122b61a0bad57c423aad8f3c39aa2e6e'
+      NOTO_NASTALIQ_COMMIT: '23e54b51ddffbc7713c583748e3bd86f62b1fa4a'
+      NOTO_NASTALIQ_FONT_SHA256: '98a4787f34eb6fde57fb9a1121a8f216301196ab0da98ea110cad581be8abbcd'
       A013_SHA256: 'f6b1173e34bbd7dab6ad5d91c3000190e1de9f6c156536f06d7f48812bd40021'
 
     steps:
@@ -61,30 +64,43 @@ jobs:
       - name: Install pinned fixture and validation Python packages
         shell: pwsh
         run: |
-          python -m pip install --disable-pip-version-check fpdf2==2.8.8 uharfbuzz==0.56.2 pillow==11.3.0
+          python -m pip install --disable-pip-version-check fpdf2==2.8.8 uharfbuzz==0.56.2 pillow==11.3.0 arabic-reshaper==3.0.0 python-bidi==0.6.11
           if ($LASTEXITCODE -ne 0) { throw "Python fixture dependency install failed: $LASTEXITCODE" }
 
-      - name: Acquire exact Amiri 1.003 font release
+      - name: Acquire pinned Arabic and Urdu fixture fonts
         shell: pwsh
         run: |
-          $url = 'https://github.com/aliftype/amiri/releases/download/1.003/Amiri-1.003.zip'
-          $archive = Join-Path $env:RUNNER_TEMP $env:AMIRI_ASSET
-          $root = Join-Path $env:RUNNER_TEMP 'amiri-1.003'
-          Invoke-WebRequest -Uri $url -OutFile $archive
-          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actual -ne $env:AMIRI_ARCHIVE_SHA256) {
-            throw "Amiri archive SHA-256 mismatch: $actual != $env:AMIRI_ARCHIVE_SHA256"
+          $naskhUrl = 'https://github.com/notofonts/arabic/releases/download/NotoNaskhArabic-v2.021/NotoNaskhArabic-v2.021.zip'
+          $naskhArchive = Join-Path $env:RUNNER_TEMP $env:NOTO_NASKH_ASSET
+          $naskhRoot = Join-Path $env:RUNNER_TEMP 'noto-naskh-arabic-2.021'
+          Invoke-WebRequest -Uri $naskhUrl -OutFile $naskhArchive
+          $naskhArchiveActual = (Get-FileHash $naskhArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($naskhArchiveActual -ne $env:NOTO_NASKH_ARCHIVE_SHA256) {
+            throw "Noto Naskh archive SHA-256 mismatch: $naskhArchiveActual != $env:NOTO_NASKH_ARCHIVE_SHA256"
           }
-          Expand-Archive -LiteralPath $archive -DestinationPath $root -Force
-          $fonts = @(Get-ChildItem -Path $root -Recurse -Filter 'Amiri-Regular.ttf' -File)
-          if ($fonts.Count -ne 1) { throw "Expected exactly one Amiri-Regular.ttf; found $($fonts.Count)" }
-          $font = $fonts[0].FullName
-          $fontHash = (Get-FileHash $font -Algorithm SHA256).Hash.ToLowerInvariant()
-          "AMIRI_FONT_PATH=$font" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AMIRI_FONT_SHA256=$fontHash" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "Amiri release asset ID: $env:AMIRI_ASSET_ID"
-          Write-Host "Amiri archive SHA-256: $actual"
-          Write-Host "Amiri-Regular.ttf SHA-256: $fontHash"
+          Expand-Archive -LiteralPath $naskhArchive -DestinationPath $naskhRoot -Force
+          $naskhFont = Join-Path $naskhRoot 'NotoNaskhArabic/hinted/ttf/NotoNaskhArabic-Regular.ttf'
+          if (-not (Test-Path -LiteralPath $naskhFont)) { throw "Noto Naskh font missing: $naskhFont" }
+          $naskhFontActual = (Get-FileHash $naskhFont -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($naskhFontActual -ne $env:NOTO_NASKH_FONT_SHA256) {
+            throw "Noto Naskh font SHA-256 mismatch: $naskhFontActual != $env:NOTO_NASKH_FONT_SHA256"
+          }
+
+          $nastaliqUrl = "https://raw.githubusercontent.com/google/fonts/$env:NOTO_NASTALIQ_COMMIT/ofl/notonastaliqurdu/NotoNastaliqUrdu%5Bwght%5D.ttf"
+          $nastaliqFont = Join-Path $env:RUNNER_TEMP 'NotoNastaliqUrdu-wght.ttf'
+          Invoke-WebRequest -Uri $nastaliqUrl -OutFile $nastaliqFont
+          $nastaliqActual = (Get-FileHash $nastaliqFont -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($nastaliqActual -ne $env:NOTO_NASTALIQ_FONT_SHA256) {
+            throw "Noto Nastaliq Urdu SHA-256 mismatch: $nastaliqActual != $env:NOTO_NASTALIQ_FONT_SHA256"
+          }
+
+          "NOTO_NASKH_FONT_PATH=$naskhFont" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NOTO_NASTALIQ_FONT_PATH=$nastaliqFont" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Noto Naskh release asset ID: $env:NOTO_NASKH_ASSET_ID"
+          Write-Host "Noto Naskh archive SHA-256: $naskhArchiveActual"
+          Write-Host "Noto Naskh font SHA-256: $naskhFontActual"
+          Write-Host "Noto Nastaliq Urdu commit: $env:NOTO_NASTALIQ_COMMIT"
+          Write-Host "Noto Nastaliq Urdu font SHA-256: $nastaliqActual"
 
       - name: Generate deterministic B1/B2 fixtures
         shell: pwsh
@@ -97,9 +113,9 @@ jobs:
 
           $temp1 = Join-Path $env:RUNNER_TEMP 'A014-first.pdf'
           $temp2 = Join-Path $env:RUNNER_TEMP 'A014-second.pdf'
-          python tests/fixtures/pdf/source/generate_a014_real_font_arabic.py --font "$env:AMIRI_FONT_PATH" --output "$temp1"
+          python tests/fixtures/pdf/source/generate_a014_real_font_arabic.py --arabic-font "$env:NOTO_NASKH_FONT_PATH" --urdu-font "$env:NOTO_NASTALIQ_FONT_PATH" --output "$temp1"
           if ($LASTEXITCODE -ne 0) { throw "A014 first generation failed: $LASTEXITCODE" }
-          python tests/fixtures/pdf/source/generate_a014_real_font_arabic.py --font "$env:AMIRI_FONT_PATH" --output "$temp2"
+          python tests/fixtures/pdf/source/generate_a014_real_font_arabic.py --arabic-font "$env:NOTO_NASKH_FONT_PATH" --urdu-font "$env:NOTO_NASTALIQ_FONT_PATH" --output "$temp2"
           if ($LASTEXITCODE -ne 0) { throw "A014 second generation failed: $LASTEXITCODE" }
           $sha1 = (Get-FileHash $temp1 -Algorithm SHA256).Hash.ToLowerInvariant()
           $sha2 = (Get-FileHash $temp2 -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -150,8 +166,9 @@ jobs:
             --qt-a014 artifacts/n2/content-fidelity/qt-a014.json `
             --pdfium-a014 artifacts/n2/content-fidelity/pdfium-a014.json `
             --a014-sha256 "$env:A014_SHA256" `
-            --amiri-archive-sha256 "$env:AMIRI_ARCHIVE_SHA256" `
-            --amiri-font-sha256 "$env:AMIRI_FONT_SHA256" `
+            --noto-naskh-archive-sha256 "$env:NOTO_NASKH_ARCHIVE_SHA256" `
+            --noto-naskh-font-sha256 "$env:NOTO_NASKH_FONT_SHA256" `
+            --noto-nastaliq-font-sha256 "$env:NOTO_NASTALIQ_FONT_SHA256" `
             --output artifacts/n2/content-fidelity/content-fidelity-validation.json
           if ($LASTEXITCODE -ne 0) {
             Get-Content artifacts/n2/content-fidelity/content-fidelity-validation.json
@@ -166,13 +183,15 @@ jobs:
             "PDFium archive SHA-256: $env:ATLAS_PDFIUM_ARCHIVE_SHA256"
             "A013 SHA-256: $env:A013_SHA256"
             "A014 SHA-256: $env:A014_SHA256"
-            "Amiri version: $env:AMIRI_VERSION"
-            "Amiri release asset: $env:AMIRI_ASSET (ID $env:AMIRI_ASSET_ID)"
-            "Amiri archive SHA-256: $env:AMIRI_ARCHIVE_SHA256"
-            "Amiri-Regular.ttf SHA-256: $env:AMIRI_FONT_SHA256"
-            'A014 generator: fpdf2 2.8.8 + uharfbuzz 0.56.2; generated twice and required byte-identical output'
+            "Noto Naskh Arabic version: $env:NOTO_NASKH_VERSION"
+            "Noto Naskh Arabic asset: $env:NOTO_NASKH_ASSET (ID $env:NOTO_NASKH_ASSET_ID)"
+            "Noto Naskh Arabic archive SHA-256: $env:NOTO_NASKH_ARCHIVE_SHA256"
+            "NotoNaskhArabic-Regular.ttf SHA-256: $env:NOTO_NASKH_FONT_SHA256"
+            "Noto Nastaliq Urdu google/fonts commit: $env:NOTO_NASTALIQ_COMMIT"
+            "NotoNastaliqUrdu[wght].ttf SHA-256: $env:NOTO_NASTALIQ_FONT_SHA256"
+            'A014 generator: fpdf2 2.8.8 + uharfbuzz 0.56.2 + arabic-reshaper 3.0.0 + python-bidi 0.6.11; generated twice and required byte-identical output'
             'A013 policy: image-only PDF must render while exposing zero text and zero Atlas sentinel search hits; OCR not implied'
-            'A014 policy: real embedded Amiri visual fidelity only; A006 remains logical Unicode extraction/search evidence'
+            'A014 policy: Noto Naskh Arabic for readable Arabic and Noto Nastaliq Urdu for idiomatic Urdu; owner visual readability is mandatory; A006 remains logical Unicode extraction/search evidence'
           ) | Set-Content -Encoding UTF8 artifacts/n2/content-fidelity/BUILD_INFO.txt
 
       - name: Upload B1/B2 content fidelity evidence

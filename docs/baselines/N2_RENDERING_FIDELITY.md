@@ -212,3 +212,21 @@ It does **not** close:
 6. final renderer responsibility selection.
 
 N2 remains **Open** and ADR-0004 remains **Proposed**.
+
+## 12. A014 owner-oracle correction (2026-09-27)
+
+The first A014 artifact was not acceptable owner evidence. Its automated check
+established that Qt PDF and PDFium produced similar rasters from the same PDF,
+but the owner found the fully vocalized Arabic line difficult/broken to read and
+correctly noted that Urdu was displayed with the same Arabic typeface. The
+prior A014 result is withdrawn; A013 remains valid.
+
+The replacement fixture uses separate pinned inputs:
+
+- Noto Naskh Arabic for Arabic and tashkīl;
+- Noto Nastaliq Urdu for Urdu;
+- explicit Latin and Arabic runs on the mixed-script visual line.
+
+Automated checks still verify deterministic generation, non-empty bands,
+dimensions and cross-engine raster similarity. Human readability at 100% and
+200% is now an explicit owner gate that automation cannot waive.

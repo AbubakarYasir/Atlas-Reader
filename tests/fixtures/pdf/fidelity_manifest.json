@@ -1,0 +1,41 @@
+{
+  "schema": "atlas.n2.pdf-fidelity-fixtures.v1",
+  "generated_at": "2026-09-22",
+  "fixtures": [
+    {
+      "id": "A011",
+      "file": "generated/A011_visual_geometry.pdf",
+      "sha256": "b25d6b6716fbbcf095cbd68bcf57913d4e14bca3e64be19f513c35fd3ddadd29",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "tests/fixtures/pdf/source/generate_a011_visual_geometry.py",
+      "generator_policy": "Explicit LF-delimited PDF syntax + computed xref; no serializer-defined output bytes",
+      "purpose": [
+        "raw-page-geometry",
+        "cropbox",
+        "rotation",
+        "render-fidelity",
+        "high-dpi-render",
+        "annotation-rendering",
+        "external-uri-link",
+        "transparent-background-behavior"
+      ],
+      "expected_pages": 3,
+      "expected_labels": ["1", "2", "3"],
+      "expected_text": ["A011 PAGE 1", "A011 PAGE 2", "A011 PAGE 3"],
+      "expected_raw_geometry": [
+        {"index": 0, "media_box": [0.0, 0.0, 200.0, 300.0], "crop_box": [0.0, 0.0, 200.0, 300.0], "rotation": 0, "visible_points": [200.0, 300.0]},
+        {"index": 1, "media_box": [0.0, 0.0, 300.0, 200.0], "crop_box": [50.0, 25.0, 250.0, 175.0], "rotation": 0, "visible_points": [200.0, 150.0]},
+        {"index": 2, "media_box": [0.0, 0.0, 200.0, 300.0], "crop_box": [0.0, 0.0, 200.0, 300.0], "rotation": 90, "visible_points": [300.0, 200.0]}
+      ],
+      "expected_external_uri": "https://example.com/atlas-a011",
+      "annotation_appearance": {
+        "normal_appearance_present": true,
+        "appearance_bbox": [0.0, 0.0, 60.0, 50.0],
+        "expected_border_color": "magenta"
+      },
+      "visual_fidelity_fixture": true,
+      "notes": "Simple solid vector anchors permit stable interior color sampling at 1x/2x without requiring byte-identical raster output across engines. Page 1 carries an explicit normal annotation appearance stream so annotation-on/off behavior is testable rather than renderer-synthesized; page 2 verifies crop clipping; page 3 verifies 90-degree page rotation. Blank native render background is engine-specific evidence: Qt PDF may return transparent pixels while the PDFium probe deliberately pre-fills its bitmap white. This is synthetic vector fidelity evidence, not real-world Arabic/Urdu font-shaping evidence."
+    }
+  ]
+}

@@ -8,17 +8,23 @@ This file controls implementation order. Only one checkpoint is active at a time
 
 | Field | Value |
 |---|---|
-| Checkpoint | **N1 — Windows toolchain + empty-shell baseline** |
-| Planned version | `2.0.0-alpha.1` (engineering alpha; not normal user release) |
-| Status | **Accepted — owner PASS recorded 2026-09-22** |
-| Previous checkpoint | **N0 Accepted by owner on 2026-09-22** |
-| Scope | Canonical Windows build/CI, empty shell, RTL/theme proof, privacy-safe logging, lifecycle/benchmark harness, zero-feature measurements |
-| Explicitly excluded | PDF engines, qpdf, SQLite/FTS5, scanner, production Library/Reader/Bookmarks, annotations, migration, installer |
-| Primary platform | Windows 11 |
-| Canonical public alpha toolchain | Windows 2022 CI family · Visual Studio 17 2022 x64 · MSVC v143 · Qt 6.10.3 MSVC 2022 64-bit · C++23 |
-| Evidence sheet | `docs/baselines/N1_WINDOWS_BASELINE.md` |
+| Checkpoint | **N2 — PDF engine qualification spike** |
+| Planned version | `2.0.0-alpha.2` (engineering alpha; not normal user release) |
+| Status | **In progress — capability qualification complete; production-route freeze and owner handoff remain** |
+| Previous checkpoint | **N1 Accepted by owner on 2026-09-22** |
+| Branch | `native-v2-n2-pdf-engine-qualification` |
+| Base | accepted N1 integration commit `f8bdc2e5bc74ccb94d593e7a7e5307ae6163afe2` |
+| Scope | Qt PDF/PDFium read-render-text-navigation qualification; qpdf structure/security/transformation qualification; normalized contracts; fixtures; benchmarks; preservation/licensing/reproducibility evidence; final ADR |
+| Explicitly excluded | Production Reader UI/viewport, SQLite/FTS5 index, scanner, production bookmark editor/local overlay, annotations/ink, migration, installer, OCR, AI document analysis |
+| Primary platform | Windows 11, while preserving cross-platform adapter boundaries |
+| Inherited toolchain | accepted N1 Qt 6.10.3/MSVC 2022/C++23 baseline; candidate-specific probe tooling must be documented separately |
+| Plan | `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` |
+| Evidence sheet | `docs/baselines/N2_PDF_ENGINE_MATRIX.md` |
+| Proposed decision | `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` |
 
-N1 is accepted. The owner passed the final keyboard activation retest, explicitly accepted the measured English startup tradeoff, and recorded `N1 PASS` on 2026-09-22. The accepted user-qualified artifact is `73f567cf2c557f185371d7f944ebf6d69453105a`. N2 remains **Not started** until it is deliberately opened as the next checkpoint.
+N2 was deliberately opened on 2026-09-22 after explicit N1 acceptance. No PDF engine is pre-selected. N2 may end with a split architecture where one engine owns read/render/text/navigation and qpdf owns structure/security/transformation.
+
+**N3 remains Not started until N2 has sufficient evidence, final strict CI, an Accepted ADR-0004, and explicit owner `N2 PASS`.**
 
 ## Operating contract
 
@@ -34,6 +40,8 @@ N1 is accepted. The owner passed the final keyboard activation retest, explicitl
 10. P0 Windows 2.0 scope in `docs/FEATURE_SCOPE_2_0.md` cannot be silently deferred; changing scope requires an explicit docs/owner decision.
 11. Canonical toolchain changes follow `docs/TOOLCHAIN.md` and require recorded evidence rather than silent workstation drift.
 12. A passed checkpoint cannot be reopened without new evidence of a user-facing regression.
+13. N2 candidate experiments must use Atlas-owned normalized contracts; engine-native types cannot leak into portable domain/application code.
+14. N2 probe adoption is not production adoption: exact version, provenance, license, checksum/build path and rollback must be recorded before an engine responsibility can be accepted.
 
 ## Release ledger
 
@@ -41,7 +49,7 @@ N1 is accepted. The owner passed the final keyboard activation retest, explicitl
 |---|---|---|---|
 | N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Accepted** |
 | N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **Accepted** |
-| N2 | `2.0.0-alpha.2` | PDF engine qualification spike | Not started |
+| N2 | `2.0.0-alpha.2` | PDF engine qualification spike | **In progress** |
 | N3 | `2.0.0-beta.1` | Library/index foundation | Not started |
 | N4 | `2.0.0-beta.2` | Native reader foundation | Not started |
 | N5 | `2.0.0-beta.3` | Core resilience + complete bookmarks | Not started |
@@ -105,7 +113,7 @@ For N1 public reproducibility:
 - Debug + Release;
 - warnings-as-errors in CI.
 
-Qt 6.10.3 is the alpha reproducibility pin because unauthenticated public `aqtinstall` Windows 6.11.x binaries are currently unreliable. This is not a claim that 6.10.3 is preferable to newer Qt; re-qualification is required before release.
+Qt 6.10.3 is the alpha reproducibility pin because unauthenticated public `aqtinstall` Windows 6.11.x binaries were not reproducibly available during N1. This is not a claim that 6.10.3 is preferable to newer Qt; re-qualification is required before release.
 
 ### Implemented work
 
@@ -166,47 +174,198 @@ See `docs/baselines/N1_WINDOWS_BASELINE.md` and `docs/baselines/N1_FINAL_QUALIFI
 
 N1 is frozen as the accepted `2.0.0-alpha.1` Windows empty-shell/toolchain baseline. Per the repository operating contract, it cannot be reopened without new evidence of a user-facing regression.
 
-**N2 remains Not started until deliberately opened as the next checkpoint.**
+N2 was deliberately opened only after this acceptance and inherits N1 as its frozen baseline.
 
 ---
 
-## N2 — PDF engine qualification spike
+## N2 — PDF engine qualification spike (`2.0.0-alpha.2`) — In progress
 
-**Goal:** Select PDF responsibilities using real fixtures/benchmarks, not preference.
+**Goal:** Select PDF responsibilities using real fixtures/benchmarks, not preference, before Atlas builds product features around an engine assumption.
+
+### Binding N2 documents
+
+- plan: `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md`;
+- evidence matrix: `docs/baselines/N2_PDF_ENGINE_MATRIX.md`;
+- fixture contract: `tests/fixtures/pdf/README.md`;
+- proposed architecture decision: `docs/decisions/ADR-0004-pdf-engine-responsibilities.md`;
+- dependency/upstream rules: `docs/DEPENDENCIES_AND_TOOLS.md` and `docs/UPSTREAM_CATALOG.md`.
 
 ### Evaluate
 
-- Qt PDF;
-- PDFium;
-- qpdf for structure/security/transformation;
-- combinations where rendering and structural mutation use separate engines.
+#### Qt PDF
 
-### Fixture classes
+Qualify for:
 
-- Arabic/English mixed outlines;
-- deep/duplicate outlines;
-- encrypted/restricted;
-- signed/certified;
-- rotated/mixed-size/crop boxes;
+- document/page open and metadata;
+- page labels/sizes/geometry;
+- raster rendering;
+- Unicode text extraction/search;
+- links/navigation;
+- outlines/destinations;
+- encrypted/malformed behavior relevant to read workflows;
+- performance/memory/package impact.
+
+Qt's ready-made PDF viewer UI is **not** the future Atlas reader architecture. Atlas owns its viewport.
+
+#### PDFium
+
+Qualify against the same normalized read/render/text/navigation responsibilities and fixtures as Qt PDF.
+
+N2 must additionally record:
+
+- impact of PDFium's public non-thread-safe API contract;
+- the serialization/mutex model required by an Atlas adapter;
+- official source build/acquisition complexity;
+- any community binary bootstrap provenance/hash separately from upstream source revision;
+- runtime/package footprint and update/rollback route.
+
+#### qpdf
+
+Qualify for:
+
+- structural inspection;
+- encryption/password/restriction information;
+- outline/object-level access needed by later bookmark workflows;
+- malformed-file diagnostics/recovery observations;
+- preservation-sensitive no-op/rewrite and controlled structural transformation on copied fixtures;
+- validation/reopen behavior;
+- exact upstream/vcpkg version used.
+
+qpdf is not being evaluated as Atlas's page raster engine.
+
+### N2 phases
+
+**N2.0 — planning/fixture/upstream contract**
+
+- [x] branch from accepted N1 integration state;
+- [x] qualification plan;
+- [x] durable evidence matrix;
+- [x] Proposed ADR-0004;
+- [x] fixture corpus contract;
+- [x] N2 dependency/upstream rules;
+- [x] advance prerelease identifier to `alpha.2` without adding an engine dependency;
+- [x] strict Debug + Release CI on the N2.0 baseline head.
+
+**N2.1 — Qt PDF probe**
+
+- [x] focused adapter/probe target;
+- [x] normalized fixture runner output;
+- [x] open/page/label/geometry evidence;
+- [x] render evidence/timing;
+- [x] English/Arabic/mixed Unicode extraction and search;
+- [x] links/outlines/destinations;
+- [x] encrypted/malformed states;
+- [x] package/memory notes;
+- [x] matrix update.
+
+**N2.2 — PDFium probe**
+
+- [x] exact upstream/binary revision and acquisition provenance for qualification;
+- [x] checksum where binary/archive is used;
+- [x] focused adapter/probe target;
+- [x] same normalized fixture expectations as Qt PDF;
+- [x] serialized-call correctness under non-thread-safe API contract;
+- [x] render/text/search/navigation evidence;
+- [x] encrypted/malformed states;
+- [x] qualification build/package/memory cost;
+- [x] matrix update.
+
+**N2.3 — qpdf structural/security probe**
+
+- [x] pinned qpdf/version path;
+- [x] structural/security inspection evidence;
+- [x] outline/destination read evidence needed for later workflows;
+- [x] copied-fixture no-op/rewrite preservation evidence;
+- [x] controlled structural transformation evidence;
+- [x] validation/independent reopen evidence;
+- [x] matrix update.
+
+**N2.4 — normalized cross-engine comparison**
+
+- [x] resolve/record meaningful Qt PDF versus PDFium semantic differences;
+- [x] classify disagreements as engine limitation, Atlas normalization bug, fixture ambiguity, expected difference, or unresolved blocker;
+- [x] compare qualification integration/reproducibility/footprint costs.
+
+**N2.5 — preservation/security comparison**
+
+- [x] verify relevant page/content/annotation/outline/metadata/XMP/encryption/signature/attachment invariants on mutation probes;
+- [x] independent validation where practical;
+- [x] no unsafe claim that signed integrity remains valid after mutation.
+
+**N2.6 — decision/owner handoff**
+
+Owner visual review on 2026-09-27 accepted A013 image-only rendering and
+rejected the original A014 oracle: the vocalized Arabic line was not comfortably
+readable and Urdu used an Arabic rather than Urdu-appropriate typeface. A014 is
+reopened; automated cross-engine similarity is not owner readability evidence.
+The first replacement joined letters but misplaced Arabic diacritics and was
+also rejected. Manual presentation-form reshaping is therefore excluded from
+the fixture; the next candidate uses a full Qt text-layout pass.
+The full-layout candidate corrected joining and diacritics, but owner review
+found the Arabic/Urdu paragraphs physically left-aligned. Word order was RTL;
+paragraph alignment was not. A014 was left open until absolute right alignment
+passed automated edge checks and owner review.
+Corrected commit `6ac322d9ddb4c9f53da158acf69265d65cdd5106`
+passed the right-edge regression checks in both Qt PDF and PDFium. The owner
+then confirmed the corrected artifact was working from their visual review.
+This records focused **A014 owner visual PASS**; it is not overall `N2 PASS`.
+
+- [x] fill proposed final responsibility table in matrix;
+- [x] revise Proposed ADR-0004 with selected responsibilities and rejected alternatives/limitations;
+- [ ] document exact dependency versions, licenses/notices and rollback route;
+- [ ] strict final CI;
+- [ ] owner evidence review;
+- [ ] explicit owner `N2 PASS`.
+
+### Minimum fixture classes
+
+- simple text;
+- page labels;
+- Arabic-only text;
+- mixed Arabic/English text;
+- Arabic/English outlines;
+- duplicate/deep outlines;
+- internal/external links and destinations;
+- rotated/mixed-size/non-default box pages;
 - image-only;
-- unusual page labels;
-- malformed outlines;
-- long/large PDFs;
-- existing annotations/XMP.
+- annotations;
+- metadata/XMP;
+- password/restriction encryption;
+- malformed-but-readable;
+- signed/certified test document where redistributable;
+- long document for timing/memory.
 
-### Outputs
+Each tracked fixture requires provenance, redistribution permission, SHA-256, expected behavior and mutation permission. Private owner PDFs may supplement local qualification but never enter public Git/CI logs with personal metadata or passwords.
 
-- adapter prototypes only;
-- benchmark/render-fidelity/text/search results;
-- coordinate/destination normalization findings;
-- preservation/security findings;
-- license/notices assessment;
-- ADR selecting responsibilities;
-- vcpkg manifest/baseline introduced for accepted non-Qt native dependencies.
+### Evidence policy
 
-**Do not build the final reader here.**
+Candidate rows use only:
 
-**Stop gate:** engine decision accepted with rollback/replaceability preserved.
+- **PASS**;
+- **PASS WITH LIMITATION**;
+- **FAIL**;
+- **BLOCKED**;
+- **N/A**;
+- **PENDING**.
+
+N2 does not use an opaque aggregate score that can hide a correctness or preservation failure.
+
+Hard blockers include silent unrelated-content loss, unreliable required Arabic/Unicode semantics, unacceptable legal/reproducibility constraints, unsafe concurrency assumptions, inability to distinguish critical security states, or engine-native types leaking across the portable Atlas boundary.
+
+### Stop gate
+
+N2 cannot be Accepted until:
+
+1. Qt PDF and PDFium have comparable evidence for required read/render capabilities, or one is explicitly rejected/blocked with documented evidence;
+2. qpdf has structural/security/preservation evidence on copied fixtures;
+3. Arabic/Unicode, labels, outlines/destinations, rotations/boxes, links, encryption and malformed cases are represented;
+4. exact build/acquisition/version/license implications are recorded;
+5. engine types remain behind Atlas-owned normalized ports;
+6. ADR-0004 assigns responsibilities and rollback/replaceability rules;
+7. strict Debug + Release CI passes on the final N2 branch head;
+8. the owner explicitly records `N2 PASS`.
+
+**Do not build the final Reader here. N3 does not begin before N2 Accepted.**
 
 ---
 

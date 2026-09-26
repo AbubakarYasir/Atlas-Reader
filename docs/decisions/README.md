@@ -44,8 +44,9 @@ Ordinary implementation details do not need an ADR.
 
 ## Current records
 
-- `ADR-0001-native-stack.md` — C++23 + Qt Quick native successor architecture.
-- `ADR-0002-vcpkg-manifest.md` — vcpkg manifest mode for non-Qt native production dependencies.
-- `ADR-0003-n1-qt-toolchain-pin.md` — public N1 Qt 6.10.3/MSVC 2022 baseline while 6.11.2 remains the preferred compatibility target.
+- `ADR-0001-native-stack.md` — **Accepted** — C++23 + Qt Quick native successor architecture.
+- `ADR-0002-vcpkg-manifest.md` — **Accepted** — vcpkg manifest mode for non-Qt native production dependencies.
+- `ADR-0003-n1-qt-toolchain-pin.md` — **Accepted** — public N1 Qt 6.10.3/MSVC 2022 baseline while newer compatible Qt kits may be separately qualified.
+- `ADR-0004-pdf-engine-responsibilities.md` — **Proposed** — N2 evidence-driven assignment of read/render/text/navigation versus structure/security/transformation responsibilities.
 
-The PDF rendering/transformation split remains deliberately **Proposed/undecided** until N2 evidence is available; do not create an Accepted ADR before that bake-off.
+ADR-0004 must remain **Proposed** while N2 is in progress. The candidate order in the qualification plan/matrix is not a ranking and does not select a winner. It becomes Accepted only after sufficient evidence, final responsibility assignment, strict CI, and explicit owner `N2 PASS`.

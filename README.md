@@ -2,9 +2,11 @@
 
 > Native-performance, local-first reading and research software built around **Index → Reader → Bookmarks**.
 
-**Status:** N0 bootstrap **Accepted**. N1 Windows toolchain + empty-shell baseline is **In progress**. No production index/reader/bookmark implementation has started.
+**Status:** N0 bootstrap **Accepted**. N1 Windows toolchain + empty-shell baseline **Accepted**. N2 PDF-engine qualification is **In progress**. No production Index/Reader/Bookmark implementation has started.
 
-**Current native build:** `2.0.0-alpha.1`
+**Current native build:** `2.0.0-alpha.2`
+
+**Active branch:** `native-v2-n2-pdf-engine-qualification`
 
 **Primary platform:** Windows 11 first
 
@@ -20,10 +22,10 @@ The native architecture is therefore designed around:
 
 - **C++23** shared core and performance-sensitive services;
 - **Qt 6 + Qt Quick/QML** GPU-backed cross-platform presentation;
-- **SQLite + FTS5** local index/search;
-- a replaceable **PDF engine abstraction** with Qt PDF/PDFium rendering candidates and qpdf structural-transformation candidate;
+- **SQLite + FTS5** local index/search, beginning in N3 rather than N2;
+- a replaceable **Atlas-owned PDF abstraction** with Qt PDF/PDFium read-render candidates and qpdf structural-transformation candidate;
 - **CMake**;
-- planned **vcpkg manifest mode** for non-Qt native dependencies;
+- **vcpkg manifest mode** for qualified non-Qt native dependencies from N2 onward;
 - thin platform adapters for Windows now and Android/Linux/Apple later.
 
 ## Product priority
@@ -36,6 +38,8 @@ Atlas is not trying to reproduce every function in Acrobat or Foxit. The order i
 4. Standard ink/annotations.
 5. Printing, covers, portable metadata, migration/backup, and Windows integration.
 
+N2 is a deliberate pre-feature qualification checkpoint: it selects the PDF responsibilities that later Reader/Bookmark work will depend on without building those features early.
+
 The core data rule is:
 
 > **Portable when possible, local when necessary, never lost silently.**
@@ -46,9 +50,9 @@ A writable ordinary PDF is the preferred authority for PDF-native data. Restrict
 
 We do **not** call an empty shell a beta.
 
-- N0: `2.0.0-alpha.0` — accepted architecture/bootstrap.
-- N1: `2.0.0-alpha.1` — active Windows toolchain + zero-feature performance baseline.
-- N2: `2.0.0-alpha.2` — PDF-engine qualification.
+- N0: `2.0.0-alpha.0` — **Accepted** architecture/bootstrap.
+- N1: `2.0.0-alpha.1` — **Accepted** Windows toolchain + zero-feature performance baseline.
+- N2: `2.0.0-alpha.2` — **In progress** PDF-engine qualification.
 - N3: `2.0.0-beta.1` — first useful native Library/Index beta.
 - N4: `2.0.0-beta.2` — native Reader.
 - N5: `2.0.0-beta.3` — complete resilient Bookmarks.
@@ -77,61 +81,80 @@ See [`docs/RELEASE_STRATEGY.md`](docs/RELEASE_STRATEGY.md) and [`CHECKPOINTS.md`
 │ identity · capability · index · bookmark · reconciliation  │
 └───────────────┬────────────────┬────────────────┬───────────┘
                 │                │                │
-         PDF engine         SQLite/FTS5      Platform ports
+         PDF contracts      SQLite/FTS5      Platform ports
       render / inspect     search / state     filesystem etc.
                 │                                 │
-      Qt PDF / PDFium / qpdf              Win → Android → ...
+     adapters: Qt PDF / PDFium / qpdf      Win → Android → ...
 ```
 
-The shared domain/core must not depend on Win32, Android APIs, Objective-C/Swift, or QML. Platform-specific behavior lives behind interfaces.
+The shared domain/core must not depend on Win32, Android APIs, Objective-C/Swift, QML, Qt PDF types, PDFium handles, or qpdf objects. Platform and engine-specific behavior lives behind interfaces/adapters.
 
-## N1: measure before adding features
+## N1: accepted zero-feature baseline
 
-N1 exists so later regressions have a known zero-feature baseline.
+N1 established the reproducible Windows shell/toolchain and performance floor before PDF/index work.
 
-The alpha shell now provides:
+Accepted evidence includes:
 
-- reproducible Visual Studio 2022 x64 CMake presets;
-- public Debug + Release CI;
-- strict compiler warnings-as-errors in CI;
-- privacy-safe logging categories;
-- startup/QML-load/first-frame/shutdown metrics;
-- deterministic resize/frame-pacing exercise;
-- English/LTR ↔ Arabic/RTL shell proof;
-- light/dark shell proof;
-- repeatable automatic startup/shutdown;
-- local PowerShell memory/CPU/startup benchmark harness.
+- Visual Studio 2022 x64 / MSVC v143 / C++23;
+- public Qt 6.10.3 Windows baseline;
+- Debug + Release strict CI;
+- privacy-safe startup/frame metrics;
+- English/LTR, Arabic/RTL and mixed-script proof;
+- light/dark proof;
+- 100% and 200% scale qualification;
+- clean repeated process lifecycle;
+- keyboard Tab and Enter/Return activation;
+- measured Windows GDI font-backend decision.
 
-No PDF renderer, SQLite schema, folder scanner, Library, Reader, Bookmark editor, or annotation engine is permitted in N1.
+The accepted user-qualified runtime is commit `73f567cf2c557f185371d7f944ebf6d69453105a` with artifact digest `sha256:0fa2b638c5e17e90a30f43c117f4c5f74b509fade31108cfe9119e7a86c17d88`.
 
-### N1 toolchain
+N1 is frozen. Per repository policy, a passed checkpoint cannot be reopened without new evidence of a user-facing regression.
 
-Canonical public alpha baseline:
+See [`docs/baselines/N1_FINAL_QUALIFICATION.md`](docs/baselines/N1_FINAL_QUALIFICATION.md).
 
-- Visual Studio 17 2022 x64 / MSVC v143;
-- C++23;
-- Qt **6.10.3** MSVC 2022 64-bit;
-- CMake >= 3.28.
+## N2: qualify PDF responsibilities before building the Reader
 
-Qt 6.11.2 is the preferred current product-generation line and may be used as an additional compatibility build, but public Windows `aqtinstall` 6.11.x binary installation is currently unreliable. Atlas therefore keeps public alpha CI on the reproducible 6.10.3 pin instead of requiring private Qt-account credentials.
+N2 is not “pick a favorite PDF library.” It tests responsibility boundaries using the same documented fixtures and normalized Atlas expectations.
 
-See [`docs/TOOLCHAIN.md`](docs/TOOLCHAIN.md) and [`docs/decisions/ADR-0003-n1-qt-toolchain-pin.md`](docs/decisions/ADR-0003-n1-qt-toolchain-pin.md).
+### Candidates
 
-### N1 evidence
+- **Qt PDF** — read/page metadata/render/text/search/links/outlines candidate with the lowest expected Qt integration cost.
+- **PDFium** — read/render/text/search/navigation candidate with mature low-level APIs, but its upstream public API is not thread-safe and official source integration uses a Chromium-style build stack. These costs are part of the qualification.
+- **qpdf** — structure/security/transformation candidate for preservation-sensitive operations; not a page raster engine.
 
-Target-machine performance and manual RTL/scale checks live in:
+A valid N2 result may deliberately use more than one engine.
 
-[`docs/baselines/N1_WINDOWS_BASELINE.md`](docs/baselines/N1_WINDOWS_BASELINE.md)
+### N2 evidence system
 
-Raw machine-specific benchmark files are ignored by Git and should not be committed by default.
+- plan: [`docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md`](docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md)
+- live matrix: [`docs/baselines/N2_PDF_ENGINE_MATRIX.md`](docs/baselines/N2_PDF_ENGINE_MATRIX.md)
+- fixture rules: [`tests/fixtures/pdf/README.md`](tests/fixtures/pdf/README.md)
+- proposed architecture decision: [`docs/decisions/ADR-0004-pdf-engine-responsibilities.md`](docs/decisions/ADR-0004-pdf-engine-responsibilities.md)
+
+ADR-0004 remains **Proposed**. No engine is production-selected until evidence is complete and the owner explicitly records `N2 PASS`.
+
+### N2 non-scope
+
+N2 does not implement:
+
+- production Reader UI/virtual viewport;
+- SQLite/FTS5 library/index;
+- scanner/watcher;
+- production bookmark editor/local overlay;
+- annotations/ink;
+- migration/backup;
+- installer;
+- OCR or AI analysis.
+
+N3 stays closed until N2 Accepted.
 
 ## Open-source reuse without lock-in
 
-Planned production candidates include Qt, SQLite/FTS5, qpdf, Qt PDF/PDFium, Catch2, nlohmann/json, Google Benchmark, and small utilities only when they solve a measured need.
+Planned/qualified candidates include Qt, SQLite/FTS5, qpdf, Qt PDF/PDFium, Catch2, nlohmann/json, Google Benchmark, and small utilities only when they solve a measured need.
 
 Development-only tools include Qt QML Profiler, Tracy, RenderDoc, Windows Performance Analyzer/Recorder, Accessibility Insights, clang-format/tidy, GitHub Actions/CodeQL, and CodeGraph.
 
-Every dependency must pass license, maintenance, portability, abstraction, performance, and fixture tests. See [`docs/DEPENDENCIES_AND_TOOLS.md`](docs/DEPENDENCIES_AND_TOOLS.md) and [`docs/UPSTREAM_CATALOG.md`](docs/UPSTREAM_CATALOG.md).
+Every dependency must pass license, maintenance, portability, abstraction, performance, reproducibility, rollback, and fixture tests. See [`docs/DEPENDENCIES_AND_TOOLS.md`](docs/DEPENDENCIES_AND_TOOLS.md) and [`docs/UPSTREAM_CATALOG.md`](docs/UPSTREAM_CATALOG.md).
 
 ## Repository map
 
@@ -142,6 +165,7 @@ Every dependency must pass license, maintenance, portability, abstraction, perfo
 ├── docs/
 │   ├── baselines/           checkpoint performance/evidence summaries
 │   ├── decisions/           Architecture decision records
+│   ├── N2_PDF_ENGINE_QUALIFICATION_PLAN.md
 │   ├── ARCHITECTURE.md
 │   ├── BUILDING.md
 │   ├── COMPETITIVE_BASELINE.md
@@ -167,7 +191,8 @@ Every dependency must pass license, maintenance, portability, abstraction, perfo
 ├── src/
 │   ├── app/                 process/shell/diagnostics infrastructure
 │   └── core/                portable C++ contracts/domain logic
-├── tests/                   native core and later integration tests
+├── tests/
+│   └── fixtures/pdf/        N2 tracked PDF fixture contract/corpus
 ├── tools/bench/             local physical-machine benchmark harnesses
 ├── AGENTS.md
 ├── CHANGELOG.md
@@ -182,7 +207,7 @@ Every dependency must pass license, maintenance, portability, abstraction, perfo
 
 See [`docs/BUILDING.md`](docs/BUILDING.md) for canonical commands.
 
-In short:
+The N2 branch still builds the inherited N1 shell with the accepted Qt toolchain before any engine-specific probe dependency is enabled:
 
 ```powershell
 $env:CMAKE_PREFIX_PATH = 'C:\Qt\6.10.3\msvc2022_64'
@@ -193,15 +218,19 @@ cmake --build --preset windows-release
 ctest --preset windows-release
 ```
 
+Candidate-specific N2 setup commands will be added only when each focused probe is introduced and pinned.
+
 ## Documentation hierarchy
 
 Start with [`docs/README.md`](docs/README.md). It points to the authoritative product, architecture, data, toolchain, quality, performance, security, accessibility, dependency, migration, and release documents.
 
+For current work, read `CHECKPOINTS.md` → `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` → `docs/baselines/N2_PDF_ENGINE_MATRIX.md` → Proposed ADR-0004.
+
 ## Current checkpoint
 
-**N1 — Windows toolchain + empty-shell baseline:** **In progress**.
+**N2 — PDF engine qualification spike:** **In progress**.
 
-N2 must not begin until N1 has strict Debug/Release CI evidence, real Windows target-machine baseline measurements, RTL/scale manual checks, and explicit owner PASS.
+All bounded N2 capability blockers now pass. N2 still requires frozen and requalified PDFium/qpdf production routes, exact dependency/provenance/license records, final strict CI, synchronized ADR-0004, and explicit owner `N2 PASS`.
 
 ## License
 

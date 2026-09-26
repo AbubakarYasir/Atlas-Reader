@@ -1,0 +1,229 @@
+name: N2 PDF Content Fidelity
+
+on:
+  push:
+    branches: ['native-v2-n2-pdf-engine-qualification']
+  pull_request:
+    paths:
+      - '.github/workflows/n2-pdf-content-fidelity.yml'
+      - 'tools/pdf/content_fidelity/**'
+      - 'tests/fixtures/pdf/source/generate_a013_image_only.py'
+      - 'tools/pdf/content_fidelity/qt_a014_fixture_generator.cpp'
+
+permissions:
+  contents: read
+
+jobs:
+  content-fidelity:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    env:
+      ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      NOTO_NASKH_VERSION: '2.021'
+      NOTO_NASKH_ASSET: 'NotoNaskhArabic-v2.021.zip'
+      NOTO_NASKH_ASSET_ID: '341390069'
+      NOTO_NASKH_ARCHIVE_SHA256: '6c050ab9bd087d69b733c505a7576e60c528c2f33cd7b91005a5bd7da4514032'
+      NOTO_NASKH_FONT_SHA256: '6f0a92031367b2f5a2078fe9d24f3433122b61a0bad57c423aad8f3c39aa2e6e'
+      NOTO_NASTALIQ_COMMIT: '23e54b51ddffbc7713c583748e3bd86f62b1fa4a'
+      NOTO_NASTALIQ_FONT_SHA256: '98a4787f34eb6fde57fb9a1121a8f216301196ab0da98ea110cad581be8abbcd'
+      A013_SHA256: 'f6b1173e34bbd7dab6ad5d91c3000190e1de9f6c156536f06d7f48812bd40021'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Qt + Qt PDF
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.3'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+          modules: 'qtpdf'
+          cache: true
+
+      - name: Acquire pinned PDFium probe package
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/bblanchon/pdfium-binaries/releases/download/chromium/8066/pdfium-win-x64.tgz'
+          $expected = '739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020'
+          $archive = Join-Path $env:RUNNER_TEMP 'pdfium-win-x64-chromium-8066.tgz'
+          $root = Join-Path $env:RUNNER_TEMP 'pdfium-chromium-8066'
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "PDFium package SHA-256 mismatch: $actual != $expected" }
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          tar.exe -xf $archive -C $root
+          if ($LASTEXITCODE -ne 0) { throw "PDFium extraction failed: $LASTEXITCODE" }
+          foreach ($required in @('PDFiumConfig.cmake', 'include/fpdfview.h', 'include/fpdf_text.h', 'lib/pdfium.dll.lib', 'bin/pdfium.dll')) {
+            if (-not (Test-Path (Join-Path $root $required))) { throw "PDFium package missing: $required" }
+          }
+          "PDFium_DIR=$root" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ATLAS_PDFIUM_ARCHIVE_SHA256=$actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install pinned validation Python packages
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check pillow==11.3.0
+          if ($LASTEXITCODE -ne 0) { throw "Python validation dependency install failed: $LASTEXITCODE" }
+
+      - name: Acquire pinned Arabic and Urdu fixture fonts
+        shell: pwsh
+        run: |
+          $naskhUrl = 'https://github.com/notofonts/arabic/releases/download/NotoNaskhArabic-v2.021/NotoNaskhArabic-v2.021.zip'
+          $naskhArchive = Join-Path $env:RUNNER_TEMP $env:NOTO_NASKH_ASSET
+          $naskhRoot = Join-Path $env:RUNNER_TEMP 'noto-naskh-arabic-2.021'
+          Invoke-WebRequest -Uri $naskhUrl -OutFile $naskhArchive
+          $naskhArchiveActual = (Get-FileHash $naskhArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($naskhArchiveActual -ne $env:NOTO_NASKH_ARCHIVE_SHA256) {
+            throw "Noto Naskh archive SHA-256 mismatch: $naskhArchiveActual != $env:NOTO_NASKH_ARCHIVE_SHA256"
+          }
+          Expand-Archive -LiteralPath $naskhArchive -DestinationPath $naskhRoot -Force
+          $naskhFont = Join-Path $naskhRoot 'NotoNaskhArabic/hinted/ttf/NotoNaskhArabic-Regular.ttf'
+          if (-not (Test-Path -LiteralPath $naskhFont)) { throw "Noto Naskh font missing: $naskhFont" }
+          $naskhFontActual = (Get-FileHash $naskhFont -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($naskhFontActual -ne $env:NOTO_NASKH_FONT_SHA256) {
+            throw "Noto Naskh font SHA-256 mismatch: $naskhFontActual != $env:NOTO_NASKH_FONT_SHA256"
+          }
+
+          $nastaliqUrl = "https://raw.githubusercontent.com/google/fonts/$env:NOTO_NASTALIQ_COMMIT/ofl/notonastaliqurdu/NotoNastaliqUrdu%5Bwght%5D.ttf"
+          $nastaliqFont = Join-Path $env:RUNNER_TEMP 'NotoNastaliqUrdu-wght.ttf'
+          Invoke-WebRequest -Uri $nastaliqUrl -OutFile $nastaliqFont
+          $nastaliqActual = (Get-FileHash $nastaliqFont -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($nastaliqActual -ne $env:NOTO_NASTALIQ_FONT_SHA256) {
+            throw "Noto Nastaliq Urdu SHA-256 mismatch: $nastaliqActual != $env:NOTO_NASTALIQ_FONT_SHA256"
+          }
+
+          "NOTO_NASKH_FONT_PATH=$naskhFont" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NOTO_NASTALIQ_FONT_PATH=$nastaliqFont" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Noto Naskh release asset ID: $env:NOTO_NASKH_ASSET_ID"
+          Write-Host "Noto Naskh archive SHA-256: $naskhArchiveActual"
+          Write-Host "Noto Naskh font SHA-256: $naskhFontActual"
+          Write-Host "Noto Nastaliq Urdu commit: $env:NOTO_NASTALIQ_COMMIT"
+          Write-Host "Noto Nastaliq Urdu font SHA-256: $nastaliqActual"
+
+      - name: Configure isolated content fidelity probes
+        shell: pwsh
+        run: >-
+          cmake -S tools/pdf/content_fidelity -B build/n2-content-fidelity
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          -DPDFium_DIR="$env:PDFium_DIR"
+
+      - name: Build Release content fidelity probes
+        shell: pwsh
+        run: cmake --build build/n2-content-fidelity --config Release --parallel
+
+      - name: Generate deterministic B1/B2 fixtures
+        shell: pwsh
+        run: |
+          python tests/fixtures/pdf/source/generate_a013_image_only.py
+          if ($LASTEXITCODE -ne 0) { throw "A013 generation failed: $LASTEXITCODE" }
+          $a013 = 'tests/fixtures/pdf/generated/A013_image_only.pdf'
+          $a013Actual = (Get-FileHash $a013 -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($a013Actual -ne $env:A013_SHA256) { throw "A013 SHA mismatch: $a013Actual != $env:A013_SHA256" }
+
+          $generator = (Resolve-Path 'build/n2-content-fidelity/Release/atlas_a014_fixture_generator.exe').Path
+          $temp1 = Join-Path $env:RUNNER_TEMP 'A014-first.pdf'
+          $temp2 = Join-Path $env:RUNNER_TEMP 'A014-second.pdf'
+          & $generator "$env:NOTO_NASKH_FONT_PATH" "$env:NOTO_NASTALIQ_FONT_PATH" $temp1
+          if ($LASTEXITCODE -ne 0) { throw "A014 first generation failed: $LASTEXITCODE" }
+          & $generator "$env:NOTO_NASKH_FONT_PATH" "$env:NOTO_NASTALIQ_FONT_PATH" $temp2
+          if ($LASTEXITCODE -ne 0) { throw "A014 second generation failed: $LASTEXITCODE" }
+          $sha1 = (Get-FileHash $temp1 -Algorithm SHA256).Hash.ToLowerInvariant()
+          $sha2 = (Get-FileHash $temp2 -Algorithm SHA256).Hash.ToLowerInvariant()
+          $a014 = 'tests/fixtures/pdf/generated/A014_real_font_arabic_urdu.pdf'
+          Copy-Item $temp1 $a014 -Force
+          "A014_SHA256=$sha1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "A014_REPEAT_PATH=$temp2" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "A014_REPEAT_SHA256=$sha2" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "A014 first container SHA-256: $sha1"
+          Write-Host "A014 second container SHA-256: $sha2"
+          if ($sha1 -ne $sha2) {
+            Write-Warning 'QPdfWriter container metadata differs; rendered-output determinism is checked after both engines run.'
+          }
+
+          New-Item -ItemType Directory -Force -Path artifacts/n2/content-fidelity | Out-Null
+          Copy-Item $a013 artifacts/n2/content-fidelity/A013_image_only.pdf
+          Copy-Item $a014 artifacts/n2/content-fidelity/A014_real_font_arabic_urdu.pdf
+
+      - name: Run B1/B2 content fidelity qualification
+        shell: pwsh
+        run: |
+          $qt = (Resolve-Path 'build/n2-content-fidelity/Release/atlas_qt_pdf_content_probe.exe').Path
+          $pdfium = (Resolve-Path 'build/n2-content-fidelity/Release/atlas_pdfium_content_probe.exe').Path
+          $a013 = (Resolve-Path 'tests/fixtures/pdf/generated/A013_image_only.pdf').Path
+          $a014 = (Resolve-Path 'tests/fixtures/pdf/generated/A014_real_font_arabic_urdu.pdf').Path
+          $out = (Resolve-Path 'artifacts/n2/content-fidelity').Path
+
+          & $qt A013 $a013 $out | Set-Content -Encoding UTF8 artifacts/n2/content-fidelity/qt-a013.json
+          if ($LASTEXITCODE -ne 0) { throw "Qt A013 probe failed: $LASTEXITCODE" }
+          & $pdfium A013 $a013 $out | Set-Content -Encoding UTF8 artifacts/n2/content-fidelity/pdfium-a013.json
+          if ($LASTEXITCODE -ne 0) { throw "PDFium A013 probe failed: $LASTEXITCODE" }
+          & $qt A014 $a014 $out | Set-Content -Encoding UTF8 artifacts/n2/content-fidelity/qt-a014.json
+          if ($LASTEXITCODE -ne 0) { throw "Qt A014 probe failed: $LASTEXITCODE" }
+          & $pdfium A014 $a014 $out | Set-Content -Encoding UTF8 artifacts/n2/content-fidelity/pdfium-a014.json
+          if ($LASTEXITCODE -ne 0) { throw "PDFium A014 probe failed: $LASTEXITCODE" }
+
+          $repeatOut = Join-Path $out 'repeat'
+          New-Item -ItemType Directory -Force -Path $repeatOut | Out-Null
+          & $qt A014-repeat "$env:A014_REPEAT_PATH" $repeatOut | Set-Content -Encoding UTF8 artifacts/n2/content-fidelity/repeat/qt-a014-repeat.json
+          if ($LASTEXITCODE -ne 0) { throw "Qt A014 repeat probe failed: $LASTEXITCODE" }
+          & $pdfium A014-repeat "$env:A014_REPEAT_PATH" $repeatOut | Set-Content -Encoding UTF8 artifacts/n2/content-fidelity/repeat/pdfium-a014-repeat.json
+          if ($LASTEXITCODE -ne 0) { throw "PDFium A014 repeat probe failed: $LASTEXITCODE" }
+          foreach ($engine in @('qt', 'pdfium')) {
+            foreach ($scale in @(1, 2)) {
+              $first = Join-Path $out "$engine-A014-$($scale)x.png"
+              $second = Join-Path $repeatOut "$engine-A014-repeat-$($scale)x.png"
+              $firstHash = (Get-FileHash $first -Algorithm SHA256).Hash.ToLowerInvariant()
+              $secondHash = (Get-FileHash $second -Algorithm SHA256).Hash.ToLowerInvariant()
+              if ($firstHash -ne $secondHash) {
+                throw "A014 rendered output is not deterministic for $engine at $($scale)x: $firstHash != $secondHash"
+              }
+            }
+          }
+
+          python tools/pdf/content_fidelity/validate_content_fidelity.py `
+            --qt-a013 artifacts/n2/content-fidelity/qt-a013.json `
+            --pdfium-a013 artifacts/n2/content-fidelity/pdfium-a013.json `
+            --qt-a014 artifacts/n2/content-fidelity/qt-a014.json `
+            --pdfium-a014 artifacts/n2/content-fidelity/pdfium-a014.json `
+            --a014-sha256 "$env:A014_SHA256" `
+            --noto-naskh-archive-sha256 "$env:NOTO_NASKH_ARCHIVE_SHA256" `
+            --noto-naskh-font-sha256 "$env:NOTO_NASKH_FONT_SHA256" `
+            --noto-nastaliq-font-sha256 "$env:NOTO_NASTALIQ_FONT_SHA256" `
+            --output artifacts/n2/content-fidelity/content-fidelity-validation.json
+          if ($LASTEXITCODE -ne 0) {
+            Get-Content artifacts/n2/content-fidelity/content-fidelity-validation.json
+            throw "Content fidelity validation failed: $LASTEXITCODE"
+          }
+
+          @(
+            'Atlas Reader N2 B1/B2 content fidelity qualification'
+            "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
+            'Qt PDF: 6.10.3'
+            'PDFium: 156.0.8066.0 / chromium/8066'
+            "PDFium archive SHA-256: $env:ATLAS_PDFIUM_ARCHIVE_SHA256"
+            "A013 SHA-256: $env:A013_SHA256"
+            "A014 SHA-256: $env:A014_SHA256"
+            "A014 repeat container SHA-256: $env:A014_REPEAT_SHA256"
+            "Noto Naskh Arabic version: $env:NOTO_NASKH_VERSION"
+            "Noto Naskh Arabic asset: $env:NOTO_NASKH_ASSET (ID $env:NOTO_NASKH_ASSET_ID)"
+            "Noto Naskh Arabic archive SHA-256: $env:NOTO_NASKH_ARCHIVE_SHA256"
+            "NotoNaskhArabic-Regular.ttf SHA-256: $env:NOTO_NASKH_FONT_SHA256"
+            "Noto Nastaliq Urdu google/fonts commit: $env:NOTO_NASTALIQ_COMMIT"
+            "NotoNastaliqUrdu[wght].ttf SHA-256: $env:NOTO_NASTALIQ_FONT_SHA256"
+            'A014 generator: Qt 6.10.3 QPdfWriter/QPainter full text layout; generated twice and required byte-identical Qt/PDFium rasters at 1x/2x (container metadata may differ)'
+            'A013 policy: image-only PDF must render while exposing zero text and zero Atlas sentinel search hits; OCR not implied'
+            'A014 policy: Noto Naskh Arabic for readable Arabic and Noto Nastaliq Urdu for idiomatic Urdu; owner visual readability is mandatory; A006 remains logical Unicode extraction/search evidence'
+          ) | Set-Content -Encoding UTF8 artifacts/n2/content-fidelity/BUILD_INFO.txt
+
+      - name: Upload B1/B2 content fidelity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n2-content-fidelity-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/n2/content-fidelity
+          if-no-files-found: error
+          retention-days: 14

@@ -8,6 +8,8 @@ All notable changes to Atlas Reader Native are documented here.
 
 ### N2 owner acceptance — 2026-09-27
 
+- Repository landing page and default file tree now target native development (`native-v2-bootstrap`); Flutter `main` is a secondary obsolete backup/reference, with development stopped.
+
 - Removed unreferenced `DO_NOT_USE.tmp` and obsolete encrypted A013 PDF/generator; canonical A013 is image-only and encrypted-write coverage uses manifest/CI-qualified A015. Deleted files remain recoverable from Git history.
 - Closed the superseded Flutter roadmap PR #2 after publishing the discontinued-development notice.
 

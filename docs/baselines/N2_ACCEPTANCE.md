@@ -14,7 +14,7 @@ The owner tested N2 and explicitly stated: “i have tested n2 and approve of it
 
 ## Git integration
 
-[PR #4](https://github.com/AbubakarYasir/Atlas-Reader/pull/4) integrates the N2 branch into `native-v2-bootstrap`, the established native integration branch. Its merge event and final checks record the exact closure commit. `main` retains the discontinued Flutter reference with a public notice directing readers to native development. No Flutter feature development is authorized by this closure.
+[PR #4](https://github.com/AbubakarYasir/Atlas-Reader/pull/4) integrates the N2 branch into `native-v2-bootstrap`, the native integration and default GitHub branch. Its merge event and final checks record the exact closure commit. The repository opens on the current native project. `main` retains the secondary, obsolete Flutter backup/reference with a public notice directing readers to native development. No Flutter feature development is authorized by this closure.
 
 The closure change records owner acceptance, synchronizes status/ADR/PR documentation, corrects the native branch policy and publishes the Flutter discontinuation notice. It does not introduce N3 functionality or change the accepted product version.
 

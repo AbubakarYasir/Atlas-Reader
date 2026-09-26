@@ -6,7 +6,7 @@ repository matches the reviewed local work.
 
 ## Branch model
 
-- `native-v2-bootstrap` contains accepted native checkpoint state. `main` is the frozen Flutter reference and public entry point; Flutter development has stopped.
+- `native-v2-bootstrap` is the default GitHub branch and contains accepted native checkpoint state. `main` is the secondary, obsolete Flutter backup/reference; Flutter development has stopped. The repository opens on the native project.
 - One checkpoint branch is active at a time, named
   `native-v2-n<number>-short-name`.
 - The checkpoint branch starts from the exact accepted predecessor commit.

@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "generated"
 OUTPUT = OUT / "A015_encrypted_outline_rc4_40.pdf"
-EXPECTED_SHA256 = "d043e0ca6b0479f586c2df1bead9d6ec99586191eead06c602ad7e43b290afe0"
+EXPECTED_SHA256 = "f01c4422597f015eedd3c4216ba0097de3f6d90ee7f943d9a703a1ad84954694"
 
 USER_PASSWORD = "atlas-user"
 OWNER_PASSWORD = "atlas-owner"
@@ -78,7 +78,7 @@ def build_pdf() -> bytes:
     objects: dict[int, bytes] = {
         1: b"<< /Type /Catalog /Pages 2 0 R /Outlines 4 0 R /PageMode /UseOutlines >>",
         2: b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-        3: b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+        3: b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> >>",
         4: b"<< /Type /Outlines /First 5 0 R /Last 5 0 R /Count 1 >>",
         5: (
             b"<< /Title <"

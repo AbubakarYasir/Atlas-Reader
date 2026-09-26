@@ -23,7 +23,7 @@ jobs:
       QPDF_ASSET: 'qpdf-12.4.1-msvc64.zip'
       QPDF_ASSET_ID: '533019080'
       QPDF_ASSET_SHA256: '3cd016cd433ef7232e42f4c13348a49cc14907a3c7278ef4f99120593126f7a6'
-      A015_SHA256: 'd043e0ca6b0479f586c2df1bead9d6ec99586191eead06c602ad7e43b290afe0'
+      A015_SHA256: 'f01c4422597f015eedd3c4216ba0097de3f6d90ee7f943d9a703a1ad84954694'
 
     steps:
       - name: Checkout
@@ -61,6 +61,9 @@ jobs:
           $fixture = 'tests/fixtures/pdf/generated/A015_encrypted_outline_rc4_40.pdf'
           $actual = (Get-FileHash $fixture -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -ne $env:A015_SHA256) { throw "A015 SHA-256 mismatch: $actual != $env:A015_SHA256" }
+
+          & $env:QPDF_EXE --password=atlas-user --check $fixture
+          if ($LASTEXITCODE -ne 0) { throw "A015 strict qpdf source validation failed: $LASTEXITCODE" }
 
           @'
           from pypdf import PdfReader

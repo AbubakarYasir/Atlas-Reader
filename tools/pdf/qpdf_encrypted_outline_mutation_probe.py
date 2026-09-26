@@ -26,7 +26,7 @@ OWNER_PASSWORD = "atlas-owner"
 WRONG_PASSWORD = "atlas-wrong"
 OLD_TITLE = "Encrypted Root"
 NEW_TITLE = "Encrypted Root — مشفر"
-EXPECTED_SOURCE_SHA256 = "d043e0ca6b0479f586c2df1bead9d6ec99586191eead06c602ad7e43b290afe0"
+EXPECTED_SOURCE_SHA256 = "f01c4422597f015eedd3c4216ba0097de3f6d90ee7f943d9a703a1ad84954694"
 
 
 def find_outline_object(data: dict[str, Any], title: str) -> tuple[str, dict[str, Any]]:
@@ -165,6 +165,8 @@ def main() -> int:
         owner_json, owner_json_run = qpdf_json(qpdf, output_pdf, password=OWNER_PASSWORD)
         user_encrypt = user_json.get("encrypt") if user_json else None
         owner_encrypt = owner_json.get("encrypt") if owner_json else None
+        user_parameters = user_encrypt.get("parameters") if isinstance(user_encrypt, dict) else None
+        user_capabilities = user_encrypt.get("capabilities") if isinstance(user_encrypt, dict) else None
 
         checks = {
             "source_password_identities": source_wrong == 0 and source_user == 1 and source_owner == 2,
@@ -179,7 +181,12 @@ def main() -> int:
             "qpdf_owner_json_reopen": owner_json is not None and owner_json_run["exit_code"] in (0, 3),
             "qpdf_user_password_identity": bool(isinstance(user_encrypt, dict) and user_encrypt.get("userpasswordmatched") is True and user_encrypt.get("ownerpasswordmatched") is False),
             "qpdf_owner_password_identity": bool(isinstance(owner_encrypt, dict) and owner_encrypt.get("ownerpasswordmatched") is True),
-            "permissions_remain_permissive": bool(isinstance(user_encrypt, dict) and int(user_encrypt.get("P", 0)) == -4),
+            "permissions_remain_permissive": bool(
+                isinstance(user_parameters, dict)
+                and int(user_parameters.get("P", 0)) == -4
+                and isinstance(user_capabilities, dict)
+                and all(bool(value) for value in user_capabilities.values())
+            ),
         }
 
         evidence.update(

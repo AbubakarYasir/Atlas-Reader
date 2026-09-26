@@ -181,6 +181,29 @@
       "notes": "Contains synthetic /Sig and /DocMDP structure only. /Contents and /ByteRange are deliberately not a valid cryptographic signature. This fixture qualifies structural detection and the Atlas pre-mutation safety interlock, never cryptographic verification.",
       "mutation_allowed": false,
       "password_fixture": false
+    },
+    {
+      "id": "A015",
+      "file": "generated/A015_encrypted_outline_rc4_40.pdf",
+      "sha256": "f01c4422597f015eedd3c4216ba0097de3f6d90ee7f943d9a703a1ad84954694",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "tests/fixtures/pdf/source/generate_a015_encrypted_outline.py",
+      "purpose": ["encrypted-outline-read", "encrypted-outline-mutation", "password-identity-preservation", "permission-preservation"],
+      "expected_pages": 1,
+      "expected_labels": ["1"],
+      "expected_text": [],
+      "expected_outline": [
+        {"title": "Encrypted Root", "page_index": 0}
+      ],
+      "test_user_password": "atlas-user",
+      "test_owner_password": "atlas-owner",
+      "test_wrong_password": "atlas-wrong",
+      "expected_permissions_signed": -4,
+      "security_handler": "Standard V1/R2 RC4-40",
+      "notes": "Legacy weak RC4-40 is deterministic test data only. The page has an explicit valid empty resource dictionary so strict qpdf validation can distinguish writer behavior from fixture damage.",
+      "mutation_allowed": true,
+      "password_fixture": true
     }
   ]
 }

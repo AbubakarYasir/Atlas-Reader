@@ -1,10 +1,10 @@
 # N2 PDF Engine Qualification Matrix
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Open — B2 owner visual failure is being corrected; production-route freeze/requalification and final acceptance remain pending**
+**Status:** **Open — bounded capability blockers pass; production-route freeze/requalification and final acceptance remain pending**
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Opened:** 2026-09-22  
-**Last evidence refresh:** 2026-09-23
+**Last evidence refresh:** 2026-09-27
 
 This is the binding comparison sheet for N2. Detailed evidence remains in the focused baseline files linked below. Intermediate PASS rows are responsibility evidence only and do **not** constitute `N2 PASS`.
 
@@ -31,7 +31,7 @@ This is the binding comparison sheet for N2. Detailed evidence remains in the fo
 | rendering fidelity / geometry | `d9daf12cf3b1a7efc7118733279536585f8831fc` | fidelity `35796991213`; artifact `10724751540` | PASS / PASS WITH LIMITATION by capability |
 | coordinate normalization + explicit `/XYZ` | `0bbe1132872a946e9869945be20b8f9f174a1785` | coordinates `35800654969`; artifact `10725573435` | PASS; Qt rotated destination limitation recorded |
 | stress / concurrency | `72109de91aad5496a9e2fe16d5741581243a649f` | stress `35801464463`; artifact `10726420090` | functional PASS; memory trends PASS WITH LIMITATION |
-| image-only + real-font Arabic/Urdu content fidelity | `213efb595b438e5b967c2e499dcb061eff8a8664` | content fidelity `35813475471`; artifact `10730227985` | A013 PASS; A014 OWNER FAIL — superseded evidence pending |
+| image-only + real-font Arabic/Urdu content fidelity | `6ac322d9ddb4c9f53da158acf69265d65cdd5106` | content fidelity `36274881956`; artifact `10917256207` | A013 PASS; corrected A014 automated + owner visual PASS |
 | permitted encrypted outline mutation | `28a072bbedf07808773068941fc8c7ed22252ba8` | encrypted write `36271839766`; artifact `10916290827` | PASS |
 
 Focused sources:
@@ -93,7 +93,7 @@ A011 deterministic vector fixture SHA-256:
 | Annotation off/on behavior | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | explicit normal appearance Link annotation |
 | Native blank-background behavior | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Qt untouched pixels transparent; PDFium qualification bitmap prefilled white; Atlas policy required |
 | Cross-engine byte-identical pixels | **N/A** | **N/A** | deliberately not a requirement |
-| Real Arabic/Urdu shaped-font fidelity | **PENDING OWNER RETEST** | **PENDING OWNER RETEST** | Original A014 was owner-rejected despite cross-engine similarity; replacement uses pinned Noto Naskh Arabic plus Noto Nastaliq Urdu |
+| Real Arabic/Urdu shaped-font fidelity | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | Corrected A014 uses Noto Naskh Arabic + Noto Nastaliq Urdu; full-layout joining/marks, 1x/2x right-edge checks and owner visual review pass; bounded corpus |
 | Image/gradient/transparency-group fidelity | **POST-N2 HARDENING** | **POST-N2 HARDENING** | bounded N2 image-only evidence is sufficient for selection |
 | Broad annotation subtype fidelity | **N6/P1 EVIDENCE** | **N6/P1 EVIDENCE** | current explicit-appearance Link establishes only the N2 policy boundary |
 
@@ -312,9 +312,9 @@ evidence rather than N2 selection blockers:
 - broad annotation subtype fidelity (N6/P1);
 - cryptographic signature validity (out of Windows 2.0 scope).
 
-B1 image-only rendering, B3 full outline breadth, and B4 permitted encrypted
-mutation are complete. B2 real-font Arabic/Urdu rendering was reopened by an
-owner visual failure and is not deferred.
+B1 image-only rendering, corrected B2 real-font Arabic/Urdu rendering, B3 full
+outline breadth, and B4 permitted encrypted mutation are complete and are not
+deferred by this classification.
 
 ## Remaining N2 gates
 

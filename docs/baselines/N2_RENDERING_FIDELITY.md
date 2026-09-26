@@ -175,7 +175,7 @@ A future production render boundary should make at least these choices explicit:
 | Annotation-off/on explicit appearance | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | one Link annotation with explicit `/AP` only |
 | Native untouched background behavior | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | policies differ; Atlas normalization required |
 | Cross-engine byte-identical pixels | **N/A** | **N/A** | explicitly not a requirement |
-| Real Arabic/Urdu shaped-font visual fidelity | **PENDING** | **PENDING** | A006 is logical Unicode only; A011 uses simple vector/Helvetica content |
+| Real Arabic/Urdu shaped-font visual fidelity | **PASS WITH LIMITATION** | **PASS WITH LIMITATION** | corrected A014 at 1x/2x plus owner visual PASS; bounded single-page corpus |
 | Image/gradient/transparency-group fidelity | **PENDING** | **PENDING** | not present in A011 |
 | Broad annotation subtype fidelity | **PENDING** | **PENDING** | current link appearance sentinel only |
 
@@ -204,7 +204,7 @@ This evidence closes the previous N2 synthetic gates for:
 
 It does **not** close:
 
-1. real-world Arabic/Urdu shaped-font raster fidelity;
+1. broader real-world Arabic/Urdu shaped-font coverage beyond corrected A014;
 2. image/gradient/transparency-heavy PDFs;
 3. broad annotation subtype rendering;
 4. normalized text/search-hit rectangles and destination coordinates;
@@ -238,6 +238,13 @@ found the RTL paragraphs physically left-aligned. Qt had interpreted alignment
 relative to text direction. The corrected generator uses absolute physical
 right alignment, and the validator requires the rightmost ink of each Arabic
 and Urdu band to reach the expected right-side margin.
+
+Corrected commit `6ac322d9ddb4c9f53da158acf69265d65cdd5106`
+passed run `36274881956`. Qt PDF and PDFium both reached the expected right edge
+at 1x and 2x, and their 2x rasters were byte-identical. The owner confirmed the
+result was working in visual review. A014 is therefore **PASS WITH LIMITATION**
+for this bounded fixture; broader real-world Arabic/Urdu documents remain later
+regression coverage.
 
 Automated checks still verify deterministic generation, non-empty bands,
 dimensions and cross-engine raster similarity. Human readability at 100% and

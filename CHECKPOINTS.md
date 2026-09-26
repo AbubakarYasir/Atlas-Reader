@@ -303,8 +303,12 @@ also rejected. Manual presentation-form reshaping is therefore excluded from
 the fixture; the next candidate uses a full Qt text-layout pass.
 The full-layout candidate corrected joining and diacritics, but owner review
 found the Arabic/Urdu paragraphs physically left-aligned. Word order was RTL;
-paragraph alignment was not. A014 remains open until absolute right alignment
-passes automated edge checks and owner review.
+paragraph alignment was not. A014 was left open until absolute right alignment
+passed automated edge checks and owner review.
+Corrected commit `6ac322d9ddb4c9f53da158acf69265d65cdd5106`
+passed the right-edge regression checks in both Qt PDF and PDFium. The owner
+then confirmed the corrected artifact was working from their visual review.
+This records focused **A014 owner visual PASS**; it is not overall `N2 PASS`.
 
 - [x] fill proposed final responsibility table in matrix;
 - [x] revise Proposed ADR-0004 with selected responsibilities and rejected alternatives/limitations;

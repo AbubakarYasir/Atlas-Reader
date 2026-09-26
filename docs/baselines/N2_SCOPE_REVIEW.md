@@ -1,7 +1,7 @@
 # N2 PDF Scope Review
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **B2 reopened after owner visual failure — corrected fixture and renewed owner review pending**
+**Status:** **Scope blockers satisfied — production-route freeze, final exact-head CI and overall owner acceptance remain**
 **Date:** 2026-09-27
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
@@ -46,7 +46,7 @@ implementation `213efb595b438e5b967c2e499dcb061eff8a8664`; artifact
 
 ### B2 — representative real-font Arabic/Urdu PDF rendering
 
-**Decision: REOPENED — OWNER VISUAL FAIL.**
+**Decision: SATISFIED after corrected fixture and owner retest.**
 
 Arabic/RTL is a P0 cross-cutting Atlas requirement and the project explicitly targets Arabic/Urdu research material. A006 proves logical Unicode extraction/search but deliberately does not prove real embedded-font raster fidelity.
 
@@ -73,8 +73,16 @@ Qt's complete Unicode text-layout path to position base glyphs and combining
 marks together before writing the PDF. Owner review confirmed that improvement
 but found the Arabic/Urdu paragraphs physically left-aligned despite correct
 RTL word order. The generator now requires absolute physical right alignment,
-backed by automated right-edge assertions. B2 stays open until the corrected
-artifact passes CI and the owner accepts its 100%/200% rendering.
+backed by automated right-edge assertions. B2 remained open until the corrected
+artifact passed CI and the owner accepted its 100%/200% rendering.
+
+Corrected implementation
+`6ac322d9ddb4c9f53da158acf69265d65cdd5106` passed content-fidelity run
+`36274881956`; artifact `10917256207`, digest
+`sha256:5976b05c903f1babd22f60da87bc78b1b06cd51604572b03f37a8b22537e96b`.
+The validator confirmed both engines' Arabic/Urdu bands reached the physical
+right margin at 1x and 2x. The owner then reported the corrected artifact was
+working from their visual review, closing the bounded A014 owner gate.
 
 ### B3 — P0 outline/bookmark structural mutation breadth
 
@@ -280,10 +288,9 @@ policy; N2 does not implement that production workflow.
 
 ## 6. Exit from scope review
 
-The scope review found one reopened blocker: B2 requires corrected automated
-evidence and renewed owner visual acceptance. B1, B3 and B4 retain bounded PASS
-evidence. N2 also still requires the selected PDFium/qpdf production routes to
-be frozen and requalified, ADR-0004 to remain synchronized with that result,
-final exact-head strict CI, and explicit owner `N2 PASS`.
+The scope review is complete: B1, corrected B2, B3 and B4 all have bounded PASS
+evidence. N2 still requires the selected PDFium/qpdf production routes to be
+frozen and requalified, ADR-0004 to remain synchronized with that result, final
+exact-head strict CI, and explicit overall owner `N2 PASS`.
 
 Until then ADR-0004 remains **Proposed**, PR #4 remains draft/open/unmerged, and N3 remains **Not started**.

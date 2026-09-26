@@ -2,7 +2,7 @@
 
 **Checkpoint:** N2 — PDF engine qualification spike  
 **Status:** **Historical scope review complete — final Qt PDF/qpdf route is
-frozen/requalified and strict CI is green; overall owner acceptance remains**
+frozen/requalified; owner N2 PASS recorded 2026-09-27**
 **Date:** 2026-09-27
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 

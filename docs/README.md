@@ -72,8 +72,8 @@ Current evidence has closed core correctness, navigation, Unicode/search,
 malformed/password behavior, repeated synthetic performance, vector and
 real-font/image-only fidelity, coordinate normalization, qpdf outline breadth,
 encrypted-write preservation, stress/concurrency and selected-route
-distribution. Final exact-head strict CI is green. The remaining N2 gate is
-explicit owner acceptance.
+distribution. Strict CI passed and explicit owner acceptance was recorded on
+2026-09-27. No N2 selection gate remains.
 
 N2 does not authorize production Reader UI, SQLite/FTS5, scanner, bookmarks editor/local overlay, annotations, migration, installer, OCR or AI document analysis. Those remain later checkpoints.
 

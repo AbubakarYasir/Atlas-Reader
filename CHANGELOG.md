@@ -60,7 +60,7 @@ All notable changes to Atlas Reader Native are documented here.
 - Froze the selected production route as official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the first-party qpdf 12.4.1 CLI for structural/security/write; standalone PDFium remains qualification-only because an official Atlas-controlled source-build route was not frozen.
 - Added selected-route CI that disables standalone PDFium, runs the Qt PDF and six qpdf regression slices, stages and smoke-tests the actual Windows runtime, enforces qpdf file hashes, rejects `pdfium.dll`, and emits deployed-file, SPDX, license, attribution, update and rollback evidence.
 - Measured the staged qualification package at 64,069,704 bytes across 30 files: 54,965,368 bytes for the deployed Qt/read route and 9,104,336 bytes for qpdf.
-- Strict CI passed on the synchronized implementation/documentation head; remaining N2 work is owner evidence review and explicit owner `N2 PASS`.
+- Strict CI passed on the synchronized implementation/documentation head; owner review and explicit `N2 PASS` followed on 2026-09-27.
 - Kept N3 and all later product-feature checkpoints closed until N2 is explicitly Accepted.
 
 ### N1 — Windows toolchain + empty-shell baseline (`2.0.0-alpha.1`) — Accepted

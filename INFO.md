@@ -1,6 +1,6 @@
 # Atlas Reader — Current Project Notes
 
-**Flutter development stopped — 2026-09-27.** The information below describes the legacy Flutter app. Active work is the [C++23/Qt native successor](https://github.com/AbubakarYasir/Atlas-Reader/tree/native-v2-bootstrap); N0–N2 are accepted and N3 is not started.
+**Flutter development stopped — 2026-09-27.** The information below describes the legacy Flutter app. Active work is the [C++23/Qt native successor](https://github.com/AbubakarYasir/Atlas-Reader/tree/main); N0–N2 are accepted and N3 is not started.
 
 **Release candidate:** `0.8.0-beta.2` (build 4)
 

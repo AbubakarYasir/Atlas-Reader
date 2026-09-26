@@ -1,11 +1,15 @@
 # Changelog
 
+## Repository naming — 2026-09-27
+
+- This stopped Flutter backup now has the permanent branch name `legacy/flutter`. Native development uses permanent `main`. Updated public links and notices; no Flutter application code changed.
+
 ## Development direction — 2026-09-27
 
-- Native `native-v2-bootstrap` becomes the default repository page/tree; this Flutter branch is secondary and explicitly obsolete, retained as backup/reference only.
+- Native `main` becomes the default repository page/tree; this Flutter branch is secondary and explicitly obsolete, retained as backup/reference only.
 
 - Flutter development has stopped. This branch remains a historical/migration reference.
-- Active development is the C++23/Qt native successor on `native-v2-bootstrap`.
+- Active development is the C++23/Qt native successor on `main`.
 - Native N2 was explicitly accepted by the owner; N3 is not started.
 - This update changes documentation only; no Flutter build/version or source behavior changed.
 

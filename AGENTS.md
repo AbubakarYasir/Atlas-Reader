@@ -1,7 +1,7 @@
 <!-- CODEGRAPH_START -->
 ## Development status — 2026-09-27
 
-Flutter development has stopped. This worktree is historical/migration reference only. Active C++23/Qt development is on `native-v2-bootstrap`. Do not resume the Flutter plan unless the owner explicitly changes this decision. Documentation notices may be maintained here.
+Flutter development has stopped. This worktree is historical/migration reference only. Active C++23/Qt development is on `main`. Do not resume the Flutter plan unless the owner explicitly changes this decision. Documentation notices may be maintained here.
 
 ## CodeGraph
 

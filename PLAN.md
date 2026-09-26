@@ -1,6 +1,6 @@
 # Atlas Reader — Master Plan
 
-**Historical Flutter plan — development stopped 2026-09-27.** Active development uses C++23/Qt on [native-v2-bootstrap](https://github.com/AbubakarYasir/Atlas-Reader/tree/native-v2-bootstrap). This document is retained for reference and migration; do not resume its Flutter checkpoints.
+**Historical Flutter plan — development stopped 2026-09-27.** Active development uses C++23/Qt on [main](https://github.com/AbubakarYasir/Atlas-Reader/tree/main). This document is retained for reference and migration; do not resume its Flutter checkpoints.
 
 ## Universal Embedding Protocol · Maximum Accessibility · Production Quality
 

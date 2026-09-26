@@ -1,7 +1,7 @@
 # N2 PDF Engine Qualification Matrix
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Open — bounded capability blockers pass; production-route freeze/requalification and final acceptance remain pending**
+**Status:** **Open — selected production route frozen/requalified; final exact-head CI and owner acceptance pending**
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Opened:** 2026-09-22  
 **Last evidence refresh:** 2026-09-27
@@ -33,6 +33,7 @@ This is the binding comparison sheet for N2. Detailed evidence remains in the fo
 | stress / concurrency | `72109de91aad5496a9e2fe16d5741581243a649f` | stress `35801464463`; artifact `10726420090` | functional PASS; memory trends PASS WITH LIMITATION |
 | image-only + real-font Arabic/Urdu content fidelity | `6ac322d9ddb4c9f53da158acf69265d65cdd5106` | content fidelity `36274881956`; artifact `10917256207` | A013 PASS; corrected A014 automated + owner visual PASS |
 | permitted encrypted outline mutation | `28a072bbedf07808773068941fc8c7ed22252ba8` | encrypted write `36271839766`; artifact `10916290827` | PASS |
+| selected Qt PDF + qpdf production route | `a186076b46e26b4d7ad9d78b43839de082eaf8af` | selected route `36276264281`; artifact `10917655425`; digest `sha256:afdc9b7934209135e0c92db2428584818f73d4826072c50a3862edf86326e5fe` | PASS |
 
 Focused sources:
 
@@ -54,10 +55,10 @@ Later documentation-only commits do not redefine which binaries/probes were phys
 | Intended responsibility | read/render/text/search/navigation candidate | read/render/text/search/navigation candidate | structural/security/transformation candidate |
 | Exact version tested | **6.10.3** | **156.0.8066.0 / `chromium/8066`** | **12.4.1** |
 | Qualification acquisition | official Qt 6.10.3 MSVC 2022 x64 + `qtpdf` | pinned `bblanchon/pdfium-binaries` non-V8 x64 package | official first-party qpdf MSVC64 ZIP |
-| Exact package hash | Qt release/module provenance still needs release freeze | **PASS** — `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020` | **PASS** — `3cd016cd433ef7232e42f4c13348a49cc14907a3c7278ef4f99120593126f7a6` |
+| Exact package hash | official 6.10.3 installer identity plus deployed-file hashes in CI inventory | **PASS** — `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020` | **PASS** — `3cd016cd433ef7232e42f4c13348a49cc14907a3c7278ef4f99120593126f7a6` |
 | Probe build integration | **PASS** | **PASS WITH LIMITATION** — community prebuilt probe package | **PASS WITH LIMITATION** — CLI route |
-| Proposed production route | official dynamic Qt distribution if selected | Atlas-owned pinned upstream source build if selected; community binary remains probe-only | first-party qpdf CLI process boundary unless a measured need justifies `libqpdf` |
-| Production route frozen? | **PENDING** | **PENDING** | **PENDING** — route defined, minimal runtime/notice bundle not frozen |
+| Proposed production route | **SELECTED** — official dynamic Qt 6.10.3 distribution | **REJECTED FOR N2 PRODUCTION** — community binary remains probe-only | **SELECTED** — first-party qpdf CLI process boundary |
+| Production route frozen? | **PASS WITH LIMITATION** — runtime/SBOM/license bundle frozen; final legal license choice is release-specific | **N/A** — excluded from production package | **PASS WITH LIMITATION** — exact ten-file runtime and compliance bundle frozen |
 | Replaceability in N2 | **PASS** — isolated probe | **PASS** — isolated probe | **PASS** — isolated CLI workflow |
 
 No candidate is linked into the production `atlas_reader`/portable domain boundary by N2 qualification work.
@@ -269,10 +270,10 @@ This section records **defined candidate shipping routes**, not final responsibi
 
 | Surface | Current production-route evidence | Status |
 |---|---|---|
-| Qt PDF | official Qt 6.10.3 dynamic module route; Qt commercial or open-source licensing surface identified; module includes PDFium + multiple third-party components; Qt SBOM/third-party material available | **PASS WITH LIMITATION — route defined, exact Atlas release provenance/files/notices/SBOM not frozen** |
-| standalone PDFium | upstream BSD-style + third-party obligations identified; official source build uses Chromium `depot_tools`/`gclient`/GN/Ninja | **PASS WITH LIMITATION — proposed Atlas-owned pinned upstream source build if selected; production-built DLL still needs requalification** |
+| Qt PDF | official Qt 6.10.3 dynamic route; deployed inventory/footprint, installed SPDX files, immutable source-license commits and official PDF attribution pages staged in selected-route CI | **PASS WITH LIMITATION — selected Windows read route; final legal license choice remains release-specific** |
+| standalone PDFium | upstream build uses Chromium `depot_tools`/`gclient`/GN/Ninja; only qualified DLL is community/probe-only | **REJECTED FOR N2 PRODUCTION — evidence retained; no standalone `pdfium.dll` in selected package** |
 | `bblanchon/pdfium-binaries` | exact qualification asset pinned and hashed | **PROBE-ONLY — not production approval** |
-| qpdf | official 12.4.1 MSVC64 package qualified; Apache-2.0 primary license; CLI process boundary already matches tested architecture | **PASS WITH LIMITATION — proposed first-party CLI route; minimal runtime DLL set and notice/SBOM bundle not frozen** |
+| qpdf | official 12.4.1 MSVC64 package; exact ten-file 9,104,336-byte runtime; source license/NOTICE, binary license and SPDX inventory staged | **PASS WITH LIMITATION — selected structural route; bounded capability limitations retained** |
 | Cross-platform acquisition | N2 runtime evidence is Windows-focused | **PENDING — not required to select Windows N2 responsibilities unless product scope changes** |
 
 Production selection still requires, for each selected responsibility:
@@ -286,20 +287,21 @@ Production selection still requires, for each selected responsibility:
 
 ## Proposed final responsibility decision — acceptance pending
 
-| Responsibility | Selected implementation | Status | Evidence still needed before selection |
+| Responsibility | Selected implementation | Status | Remaining acceptance evidence |
 |---|---|---|---|
-| Document open/read metadata | PDFium | PROPOSED | freeze/requalify Atlas-controlled production build |
-| Page geometry/labels | PDFium + Atlas normalization | PROPOSED | freeze/requalify production build |
-| Page raster rendering | PDFium + Atlas background/compositing policy | PROPOSED | freeze/requalify production build; broader graphics corpus is later hardening |
-| Text extraction | PDFium + Atlas Unicode normalization | PROPOSED | freeze/requalify production build |
-| Search | PDFium + Atlas normalization/index layer | PROPOSED | freeze/requalify production build |
-| Links/navigation | PDFium + Atlas normalized contracts | PROPOSED | freeze/requalify production build |
-| Outline read | PDFium | PROPOSED | freeze/requalify production build |
-| Security/capability inspection | qpdf 12.4.1 CLI adapter | PROPOSED | freeze minimal runtime/notices/SBOM bundle |
-| Structural transformation/write | qpdf 12.4.1 CLI adapter | PROPOSED | freeze minimal runtime/notices/SBOM bundle |
-| Independent output validation | qpdf `--check`; independent oracle in qualification only | PROPOSED | production app must not depend on pypdf |
+| Document open/read metadata | Qt PDF 6.10.3 | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
+| Page geometry/labels | Qt PDF + Atlas normalization | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
+| Page raster rendering | Qt PDF + Atlas background/compositing policy | FROZEN, ACCEPTANCE PENDING | broader graphics corpus is later hardening |
+| Text extraction | Qt PDF + Atlas Unicode normalization | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
+| Search | Qt PDF + Atlas normalization/index layer | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
+| Links/navigation | Qt PDF + structural rotation metadata + Atlas normalization/deduplication | FROZEN, ACCEPTANCE PENDING | bounded limitations tested; owner N2 PASS |
+| Outline read | Qt PDF | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
+| Security/capability inspection | qpdf 12.4.1 CLI adapter | FROZEN, ACCEPTANCE PENDING | bounded security scope; owner N2 PASS |
+| Structural transformation/write | qpdf 12.4.1 CLI adapter | FROZEN, ACCEPTANCE PENDING | bounded preservation scope; owner N2 PASS |
+| Independent output validation | qpdf `--check`; independent oracle in qualification only | FROZEN, ACCEPTANCE PENDING | production app must not depend on pypdf |
 
-No ordering above implies a selected candidate.
+This is the frozen responsibility order; ADR-0004 remains Proposed until the
+final exact-head CI set and explicit owner `N2 PASS`.
 
 ## Recorded scope decisions
 
@@ -320,9 +322,8 @@ deferred by this classification.
 
 Before ADR-0004 can move from **Proposed** to **Accepted** and before owner `N2 PASS`:
 
-1. **Production route freeze:** choose the actual selected components and freeze exact shippable provenance, runtime files/footprint, licenses/notices/SBOM, security-update and rollback procedure.
-2. **Responsibility freeze:** synchronize ADR-0004 with the requalified production routes and retain explicit Atlas-owned normalization/serialization boundaries and rollback.
-3. **Final strict CI:** all selected production-route probes/builds green on one implementation head.
-4. **Owner acceptance:** explicit `N2 PASS`.
+1. **Final strict CI:** all selected production-route and existing qualification checks green on one implementation head.
+2. **Owner evidence review:** review the frozen decision/evidence summary.
+3. **Owner acceptance:** explicit `N2 PASS`.
 
 N2 is **Open**. N3 is **Not started**. PR #4 remains **draft/open/unmerged** until explicit N2 acceptance.

@@ -230,7 +230,12 @@ For current work, read `CHECKPOINTS.md` → `docs/N2_PDF_ENGINE_QUALIFICATION_PL
 
 **N2 — PDF engine qualification spike:** **In progress**.
 
-All bounded N2 capability blockers now pass. N2 still requires frozen and requalified PDFium/qpdf production routes, exact dependency/provenance/license records, final strict CI, synchronized ADR-0004, and explicit owner `N2 PASS`.
+All bounded N2 capability blockers pass. The frozen Windows production route is
+official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
+first-party qpdf 12.4.1 CLI for structure/security/write. Standalone PDFium is
+retained as qualification evidence but excluded from the production package.
+N2 still requires final exact-head CI, owner evidence review and explicit
+`N2 PASS`.
 
 ## License
 

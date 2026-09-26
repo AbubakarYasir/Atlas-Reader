@@ -11,7 +11,7 @@ All notable changes to Atlas Reader Native are documented here.
 - Advanced native prerelease identifier from `alpha.1` to `alpha.2` without adding a production PDF engine dependency.
 - Added `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` defining N2 scope, exclusions, phases, normalized responsibilities, fixture classes, performance rules, hard blockers and owner stop gate.
 - Added `docs/baselines/N2_PDF_ENGINE_MATRIX.md` as the binding evidence table. Untested or undecided capabilities remain explicit rather than guessed.
-- Added Proposed `ADR-0004-pdf-engine-responsibilities.md`; it now records the evidence-backed PDFium/qpdf responsibility split but cannot become Accepted before production-route requalification, final strict CI and explicit owner `N2 PASS`.
+- Added Proposed `ADR-0004-pdf-engine-responsibilities.md`; its frozen decision now selects official dynamic Qt PDF 6.10.3 plus the qpdf 12.4.1 CLI, but it cannot become Accepted before final strict CI and explicit owner `N2 PASS`.
 - Added deterministic PDF fixture provenance/privacy/checksum/mutation rules under `tests/fixtures/pdf/`.
 - Updated `AGENTS.md` so coding agents operate under N2 boundaries and cannot drift into production Reader, SQLite/index, bookmarks, annotations, migration or installer work.
 - Refreshed dependency/upstream catalogs with Qt PDF, PDFium and qpdf qualification constraints.
@@ -38,7 +38,10 @@ All notable changes to Atlas Reader Native are documented here.
 - Recorded production compliance requirements for exact provenance, runtime-file inventory, license/NOTICE/SBOM bundle, security-update ownership and rollback before any selected component is promoted to a release dependency.
 - Closed B1 image-only rendering, B2 real-font Arabic/Urdu rendering, B3 full outline mutation breadth, and B4 permitted encrypted-write preservation with bounded CI evidence.
 - Repaired A015's invalid missing resource dictionary, added strict source validation, and corrected the qpdf permission assertion to read the JSON v2 `encrypt.parameters.P` field.
-- Refreshed the binding matrix and Proposed ADR with the PDFium read/render/text/navigation plus qpdf structural/security/write assignment. Remaining N2 work is production-route freeze/requalification, final exact-head CI and explicit owner `N2 PASS`.
+- Froze the selected production route as official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the first-party qpdf 12.4.1 CLI for structural/security/write; standalone PDFium remains qualification-only because an official Atlas-controlled source-build route was not frozen.
+- Added selected-route CI that disables standalone PDFium, runs the Qt PDF and six qpdf regression slices, stages and smoke-tests the actual Windows runtime, enforces qpdf file hashes, rejects `pdfium.dll`, and emits deployed-file, SPDX, license, attribution, update and rollback evidence.
+- Measured the staged qualification package at 64,069,704 bytes across 30 files: 54,965,368 bytes for the deployed Qt/read route and 9,104,336 bytes for qpdf.
+- Remaining N2 work is final exact-head CI, owner evidence review and explicit owner `N2 PASS`.
 - Kept N3 and all later product-feature checkpoints closed until N2 is explicitly Accepted.
 
 ### N1 — Windows toolchain + empty-shell baseline (`2.0.0-alpha.1`) — Accepted

@@ -24,15 +24,16 @@ N2 therefore compares Qt PDF, PDFium and qpdf with real fixtures and repeatable 
 
 ## Proposed decision
 
-N2 evidence now supports the following assignment, still **Proposed** until the
-production routes are frozen/requalified and the owner records `N2 PASS`:
+N2 evidence now supports the following frozen assignment. The production routes
+are requalified, but the ADR remains **Proposed** until final exact-head CI and
+the owner's explicit `N2 PASS`:
 
 | Responsibility | Proposed implementation |
 |---|---|
-| open, metadata, page geometry/labels | PDFium behind Atlas normalization |
-| raster rendering | PDFium behind Atlas background/compositing policy |
-| text extraction and search | PDFium behind Atlas Unicode/search contracts |
-| links, destinations and reader-facing outline read | PDFium behind Atlas coordinate/navigation contracts |
+| open, metadata, page geometry/labels | Qt PDF 6.10.3 behind Atlas normalization |
+| raster rendering | Qt PDF 6.10.3 behind Atlas background/compositing policy |
+| text extraction and search | Qt PDF 6.10.3 behind Atlas Unicode/search contracts |
+| links, destinations and reader-facing outline read | Qt PDF 6.10.3 behind Atlas coordinate/navigation contracts |
 | structural security/capability inspection | qpdf 12.4.1 CLI adapter |
 | structural bookmark mutation/write | qpdf 12.4.1 CLI adapter |
 | qualification output validation | strict qpdf `--check` plus an independent test oracle; pypdf is never a production dependency |
@@ -49,24 +50,33 @@ normalized Atlas PDF contracts
         |                      |                      |
         v                      v                      v
 read/render/text          navigation/outline     structure/write
-PDFium                    PDFium                       qpdf
+Qt PDF                    Qt PDF                       qpdf
 ```
 
 Application/domain code must not depend directly on Qt PDF, PDFium or qpdf
-types. All public PDFium calls run through one serialized execution lane. qpdf
-object numbers and vendor-native objects never become portable Atlas identity.
+types. qpdf object numbers and vendor-native objects never become portable
+Atlas identity.
 
-Qt PDF remains the qualified fallback because its official Qt distribution path
-is simpler, but the measured N2 corpus favors PDFium for the combined read path:
-it avoids the duplicate URI row and rotated-destination dependency observed in
-Qt, has substantially lower measured search completion on this bounded corpus,
-and has the smaller synthetic lifetime working-set trend. These measurements do
-not claim universal superiority.
+PDFium won several bounded capability/performance comparisons: it avoided Qt's
+duplicate raw URI row and rotated-destination metadata dependency, completed the
+synthetic search workload much faster, and had the smaller lifetime working-set
+trend. Those advantages do not override the production hard gates. The only
+qualified PDFium binary is a community build that is explicitly probe-only,
+while an official Atlas-controlled build requires Chromium's large
+`depot_tools`/`gclient`/GN/Ninja/Clang supply chain and was not frozen as a
+supportable Windows release route in N2.
 
-The community PDFium probe DLL is not approved for shipping. Final acceptance
-requires an Atlas-controlled pinned upstream build, notices/SBOM/runtime
-inventory and requalification. The qpdf route requires a frozen minimal
-first-party runtime and notices/SBOM bundle.
+Qt PDF is therefore selected for the combined read path through the official
+dynamic Qt 6.10.3 distribution already used by Atlas. The adapter must
+semantically de-duplicate raw URI rows and obtain inherent rotation metadata
+from the structural layer for rotated explicit destinations. Both limitations
+are documented and regression-tested. Standalone PDFium remains qualified
+comparison evidence and a future replacement candidate, but no `pdfium.dll` is
+allowed in the selected N2 production package.
+
+The first-party qpdf CLI remains selected behind a process boundary for
+structure/security/write. Its exact minimal Windows runtime, license/NOTICE
+bundle and hashes are enforced by the selected-route CI gate.
 
 ## Candidates
 

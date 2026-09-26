@@ -6,7 +6,7 @@
 
 **Current checkpoint:** N2 — PDF engine qualification spike
 
-**Current N2 status:** **In progress — bounded capability blockers pass; PDFium/qpdf responsibility assignment is Proposed pending production-route freeze, final CI and owner acceptance.**
+**Current N2 status:** **In progress — selected Qt PDF/qpdf production route is frozen and requalified; final exact-head CI and owner acceptance remain.**
 
 **Current build:** `2.0.0-alpha.2`
 
@@ -62,7 +62,7 @@ Read these in order:
 2. `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` — detailed experiment program;
 3. `docs/baselines/N2_PDF_ENGINE_MATRIX.md` — durable live evidence;
 4. `tests/fixtures/pdf/README.md` — fixture/provenance/privacy/mutation contract;
-5. `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` — Proposed responsibility decision;
+5. `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` — frozen responsibility decision, Proposed until owner PASS;
 6. `docs/DEPENDENCIES_AND_TOOLS.md` and `docs/UPSTREAM_CATALOG.md` — acquisition/tool policy.
 
 ADR-0004 remains **Proposed** until N2 evidence is complete and the owner records `N2 PASS`.

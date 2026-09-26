@@ -1,7 +1,7 @@
 # N2 PDF Production Acquisition / Distribution Baseline
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Open — PDFium/qpdf routes proposed; implementation/compliance freeze and requalification pending**
+**Status:** **Selected route frozen and requalified — final exact-head CI/owner N2 PASS pending**
 **Opened:** 2026-09-23  
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
@@ -75,7 +75,12 @@ Release work required:
 
 ### Current status
 
-**PASS WITH LIMITATION** as a technically shippable route. Final Atlas license choice, exact release-file inventory, source/SBOM/notice bundle and package-size delta remain to be frozen.
+**PASS WITH LIMITATION — selected Windows read route.** CI deploys the exact
+dynamic runtime with `windeployqt`, copies the installed Qt 6.10.3 SPDX files,
+and stages license texts from immutable Qt source commits plus the ten official
+Qt PDF attribution pages. The remaining limitation is the release-time legal
+choice between applicable Qt commercial/open-source terms; this engineering
+bundle does not make that legal choice.
 
 ## 3. Standalone PDFium production route
 
@@ -124,7 +129,11 @@ The existing PDFium API serialization rule remains mandatory regardless of packa
 
 ### Current status
 
-**PASS WITH LIMITATION** as a candidate production route. The probe binary is reproducible and functionally qualified, but an Atlas-controlled source-build pipeline, notice/SBOM bundle, runtime dependency inventory and production-built-binary requalification are still pending if standalone PDFium is selected.
+**REJECTED FOR THE N2 PRODUCTION ROUTE; QUALIFICATION EVIDENCE RETAINED.** The
+community binary remains probe-only. Atlas did not freeze an official-source
+Chromium-style build/toolchain and therefore cannot promote standalone PDFium
+as a release dependency in this checkpoint. Reconsideration requires the same
+tests against a supportable, Atlas-controlled provenance route.
 
 ## 4. qpdf production route
 
@@ -172,7 +181,11 @@ A future switch to linked `libqpdf` is a **new distribution/build baseline**, no
 
 ### Current status
 
-**PASS WITH LIMITATION** for the first-party CLI distribution route. The exact minimal runtime file set and final notice/SBOM bundle still need to be frozen before release packaging.
+**PASS WITH LIMITATION — selected structural route.** The first-party CLI
+process boundary, exact minimal runtime, source license/NOTICE, binary manual
+license and Atlas SPDX/file inventory are now enforced in CI. The bounded
+qualification limitations recorded in `N2_QPDF_BASELINE.md` remain; notably,
+this is not cryptographic signature validation.
 
 ### Tested minimal Windows runtime candidate
 
@@ -218,26 +231,42 @@ An upgrade is not complete merely because the dependency builds. It must run the
 
 ## 6. Current decision boundary
 
-ADR-0004 now proposes standalone PDFium for read/render/text/navigation and the
-first-party qpdf CLI for structural/security/write responsibilities. This
-document defines what must still be frozen before that proposal can be accepted.
+ADR-0004 now proposes official dynamic Qt PDF 6.10.3 for
+read/render/text/navigation and the first-party qpdf CLI for
+structural/security/write responsibilities.
 
 What is now clear:
 
-- Qt PDF has a plausible official-module shipping route, but Atlas must freeze its Qt license/compliance/SBOM packaging for the exact release;
-- standalone PDFium has a plausible production route, but Atlas should own a pinned source-build pipeline rather than silently promoting the community qualification binary;
-- qpdf has a strong first-party CLI shipping route already aligned with the tested transformation boundary.
+- Qt PDF has the selected official-module route with deployed-file inventory,
+  upstream SPDX material and a verified license/attribution bundle;
+- standalone PDFium remains valuable comparison evidence but is rejected from
+  the N2 production package because its official source-build route was not
+  frozen and the community DLL is probe-only;
+- qpdf uses the selected first-party CLI route with a ten-file, 9,104,336-byte
+  runtime and process boundary aligned with the tested transformation path.
 
 ## 7. Remaining production-distribution evidence
 
-Before final N2 acceptance:
+The selected-route gate builds with `ATLAS_ENABLE_PDFIUM_PROBE=OFF`, runs the
+strict Qt PDF and six qpdf regression slices, deploys and smoke-tests the staged
+runtime, rejects an unexpected qpdf identity or any standalone `pdfium.dll`,
+and emits:
 
-1. freeze the proposed PDFium upstream source revision/build configuration and runtime-file inventory;
-2. build and requalify that Atlas-controlled PDFium binary;
-3. measure the selected runtime/package footprint in the Atlas portable package;
-4. stage the exact notice/license/SBOM bundle in CI;
-5. document security-update monitoring and rollback mechanics;
-6. freeze qpdf's minimal runtime file/dependency set;
-7. run final exact-head CI with only the selected production routes treated as release dependencies.
+- a 30-file, 64,069,704-byte staged qualification package;
+- 54,965,368 bytes in the Qt/read-route portion;
+- 9,104,336 bytes in the qpdf portion;
+- SHA-256 file inventory and Atlas SPDX 2.3 document;
+- installed Qt SPDX documents;
+- Qt/qpdf license and attribution material;
+- update and rollback instructions.
+
+Canonical production-route implementation `a186076b46e26b4d7ad9d78b43839de082eaf8af`
+passed workflow run `36276264281`. Artifact `10917655425` has digest
+`sha256:afdc9b7934209135e0c92db2428584818f73d4826072c50a3862edf86326e5fe`;
+the generated Atlas SPDX JSON inside that artifact has SHA-256
+`4be98fb609038adcabee32fbdda48d66b7d9c6d7039917b68bf4ae9f629e50a9`.
+
+Before final N2 acceptance only the final exact-head CI set, owner evidence
+review and explicit `N2 PASS` remain.
 
 N2 remains **Open** and ADR-0004 remains **Proposed**.

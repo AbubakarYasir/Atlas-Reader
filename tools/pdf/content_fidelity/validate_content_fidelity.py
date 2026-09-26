@@ -202,7 +202,7 @@ def main() -> int:
             "noto_naskh_archive_sha256": args.noto_naskh_archive_sha256,
             "noto_naskh_regular_ttf_sha256": args.noto_naskh_font_sha256,
             "noto_nastaliq_urdu_ttf_sha256": args.noto_nastaliq_font_sha256,
-            "generator": "Qt 6.10.3 QPdfWriter/QPainter full text layout",
+            "generator": "Qt 6.10.3 QPdfWriter/QPainter full text layout with repeat-render determinism",
             "details": a014_details,
         },
         "limits": [

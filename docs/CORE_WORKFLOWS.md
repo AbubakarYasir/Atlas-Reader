@@ -2,7 +2,8 @@
 
 **Priority:** Index / Library → Reader → Bookmarks / Outlines
 
-**Status:** product requirements. N0 does not implement these behaviors.
+**Status:** binding product requirements; implementation is assigned across
+N3–N8 and final qualification across N9–N10.
 
 ## Product rule
 

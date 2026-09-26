@@ -1,0 +1,195 @@
+name: N2 PDF Performance
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/n2-pdf-performance.yml'
+      - 'tools/pdf/bench/**'
+      - 'tools/pdf/bench_common.h'
+      - 'tools/pdf/qt_pdf_bench.cpp'
+      - 'tools/pdf/pdfium_bench.cpp'
+      - 'tests/fixtures/pdf/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    env:
+      ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      ATLAS_CHECKOUT_SHA: ${{ github.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Qt + Qt PDF
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.3'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+          modules: 'qtpdf'
+          cache: true
+
+      - name: Acquire pinned PDFium probe package
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/bblanchon/pdfium-binaries/releases/download/chromium/8066/pdfium-win-x64.tgz'
+          $expected = '739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020'
+          $archive = Join-Path $env:RUNNER_TEMP 'pdfium-win-x64-chromium-8066.tgz'
+          $root = Join-Path $env:RUNNER_TEMP 'pdfium-chromium-8066'
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) {
+            throw "PDFium package SHA-256 mismatch: $actual != $expected"
+          }
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          tar.exe -xf $archive -C $root
+          if ($LASTEXITCODE -ne 0) {
+            throw "PDFium package extraction failed with exit code $LASTEXITCODE"
+          }
+          foreach ($required in @('PDFiumConfig.cmake', 'include/fpdfview.h', 'lib/pdfium.dll.lib', 'bin/pdfium.dll')) {
+            if (-not (Test-Path (Join-Path $root $required))) {
+              throw "Pinned PDFium package missing expected path: $required"
+            }
+          }
+          "PDFium_DIR=$root" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ATLAS_PDFIUM_ARCHIVE_SHA256=$actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Prepare and verify benchmark fixtures
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
+          if ($LASTEXITCODE -ne 0) {
+            throw "Fixture validation dependency install failed with exit code $LASTEXITCODE"
+          }
+
+          python tests/fixtures/pdf/source/generate_a006_unicode_semantics.py
+          if ($LASTEXITCODE -ne 0) {
+            throw "A006 deterministic fixture generation failed with exit code $LASTEXITCODE"
+          }
+
+          $fixtures = @(
+            @{
+              Id = 'A003'
+              Path = 'tests/fixtures/pdf/generated/A003_outlines_links.pdf'
+              Expected = '77aec987979e995b940efabc2faf34da62b19be8b7acb800b95f993a720f42d5'
+            },
+            @{
+              Id = 'A006'
+              Path = 'tests/fixtures/pdf/generated/A006_unicode_semantics.pdf'
+              Expected = 'efe3aa5f9538a8a18af71e4517c9f1e10980db394107c0e16141b03ec7058f0b'
+            }
+          )
+
+          foreach ($fixture in $fixtures) {
+            $actual = (Get-FileHash $fixture.Path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $fixture.Expected) {
+              throw "$($fixture.Id) fixture SHA-256 mismatch: $actual != $($fixture.Expected)"
+            }
+            Write-Host "$($fixture.Id) fixture verified: $actual"
+          }
+
+      - name: Configure isolated benchmark project
+        shell: pwsh
+        run: >-
+          cmake -S tools/pdf/bench -B build/n2-pdf-performance
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          -DPDFium_DIR="$env:PDFium_DIR"
+          "-DATLAS_VERSION_STRING:STRING=2.0.0-alpha.2"
+          "-DATLAS_PDFIUM_PIN:STRING=chromium/8066"
+          "-DATLAS_PDFIUM_VERSION:STRING=156.0.8066.0"
+
+      - name: Build Release benchmark probes
+        shell: pwsh
+        run: >-
+          cmake --build build/n2-pdf-performance
+          --config Release
+          --parallel
+
+      - name: Run repeated benchmarks
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'artifacts/n2-performance'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          $qt = Join-Path $PWD 'build/n2-pdf-performance/Release/atlas_qt_pdf_bench.exe'
+          $pdfium = Join-Path $PWD 'build/n2-pdf-performance/Release/atlas_pdfium_bench.exe'
+          foreach ($required in @($qt, $pdfium)) {
+            if (-not (Test-Path $required)) {
+              throw "Benchmark executable missing: $required"
+            }
+          }
+
+          function Invoke-Benchmark {
+            param(
+              [Parameter(Mandatory = $true)][string]$Executable,
+              [Parameter(Mandatory = $true)][object[]]$Arguments,
+              [Parameter(Mandatory = $true)][string]$OutputPath,
+              [Parameter(Mandatory = $true)][string]$Label
+            )
+            & $Executable @Arguments | Set-Content -Encoding UTF8 $OutputPath
+            $exitCode = $LASTEXITCODE
+            if ($exitCode -ne 0) {
+              Get-Content $OutputPath
+              throw "$Label failed with exit code $exitCode"
+            }
+            $json = Get-Content $OutputPath -Raw | ConvertFrom-Json
+            if (-not $json.passed) {
+              Get-Content $OutputPath
+              throw "$Label emitted passed=false"
+            }
+            Write-Host "$Label PASS"
+            Write-Host "  open p50/p95: $($json.open.p50_ms) / $($json.open.p95_ms) ms"
+            Write-Host "  extract p50/p95: $($json.extract_all_pages.p50_ms) / $($json.extract_all_pages.p95_ms) ms"
+            Write-Host "  search p50/p95: $($json.search.p50_ms) / $($json.search.p95_ms) ms"
+            Write-Host "  render p50/p95: $($json.render.p50_ms) / $($json.render.p95_ms) ms"
+            Write-Host "  peak working set: $($json.memory.peak_working_set_mib) MiB"
+          }
+
+          $common = @('--iterations','31','--warmups','3','--render-page','0','--render-width','612','--render-height','792')
+          $a003 = Join-Path $PWD 'tests/fixtures/pdf/generated/A003_outlines_links.pdf'
+          $a006 = Join-Path $PWD 'tests/fixtures/pdf/generated/A006_unicode_semantics.pdf'
+
+          $a003Args = @('--fixture-id','A003','--query','Atlas N2 Fixture A003 page 1','--expected-hits','1') + $common + @($a003)
+          $a006Args = @('--fixture-id','A006','--query','مرحبا بالعالم','--expected-hits','2') + $common + @($a006)
+
+          Invoke-Benchmark -Executable $qt -Arguments $a003Args -OutputPath (Join-Path $out 'qt-pdf-A003.json') -Label 'Qt PDF A003 benchmark'
+          Invoke-Benchmark -Executable $pdfium -Arguments $a003Args -OutputPath (Join-Path $out 'pdfium-A003.json') -Label 'PDFium A003 benchmark'
+          Invoke-Benchmark -Executable $qt -Arguments $a006Args -OutputPath (Join-Path $out 'qt-pdf-A006.json') -Label 'Qt PDF A006 benchmark'
+          Invoke-Benchmark -Executable $pdfium -Arguments $a006Args -OutputPath (Join-Path $out 'pdfium-A006.json') -Label 'PDFium A006 benchmark'
+
+          @(
+            'Atlas Reader N2 PDF performance evidence'
+            "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
+            "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
+            'Configuration: Release'
+            'Runner: windows-2022 GitHub-hosted'
+            'Qt PDF: 6.10.3'
+            'PDFium: 156.0.8066.0 / chromium/8066'
+            "PDFium archive SHA-256: $env:ATLAS_PDFIUM_ARCHIVE_SHA256"
+            'Iterations: 31 measured + 3 excluded warmups per operation'
+            'Percentiles: nearest-rank'
+            'Render: 612 x 792, page 0'
+            'Open input: already-loaded in-memory PDF bytes'
+            'Corpus: synthetic A003 + deterministic Unicode A006'
+            'Memory comparison: peak working set only in this slice; end-delta fields are retained but not cross-engine evidence because persistent-document close timing differs'
+            'Interpretation: comparative CI engineering evidence, not end-user performance promise'
+          ) | Set-Content -Encoding UTF8 (Join-Path $out 'N2_PERFORMANCE_INFO.txt')
+
+          Copy-Item 'tools/pdf/bench/README.md' (Join-Path $out 'BENCHMARK_METHOD.md')
+
+      - name: Upload N2 performance evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n2-pdf-performance-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/n2-performance
+          if-no-files-found: error
+          retention-days: 14

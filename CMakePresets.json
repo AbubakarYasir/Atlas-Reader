@@ -17,7 +17,7 @@
       "binaryDir": "${sourceDir}/build/windows-msvc2022",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "23",
-        "ATLAS_PRERELEASE": "alpha.1",
+        "ATLAS_PRERELEASE": "alpha.2",
         "ATLAS_WARNINGS_AS_ERRORS": "OFF"
       },
       "environment": {

@@ -46,15 +46,25 @@ Do not silently substitute proprietary SQLite extensions.
 
 ## PDFium
 
-If selected in N2:
+N2.2 currently uses a **probe-only** Windows x64 prebuilt from `bblanchon/pdfium-binaries`:
 
-- use official/mirrored upstream source with known revision;
-- audit PDFium/Chromium third-party notices and bundled codecs/fonts/libraries for the actual build;
+- PDFium `156.0.8066.0` / tag `chromium/8066`;
+- distributor source commit `f2e9a1c45bb17b85b540abf1af30146ef65416ac`;
+- archive SHA-256 `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020`;
+- exact provenance: `docs/baselines/N2_PDFIUM_PROVENANCE.md`.
+
+The pinned distributor repository itself is MIT-licensed. **That MIT license applies to the distributor repository's own code/packaging material; it is not a substitute for PDFium/Chromium third-party notices or a production distribution clearance.** The N2 engineering artifact may carry `pdfium.dll` solely as qualification evidence; it is not a user release.
+
+If PDFium is selected in N2 for production responsibility:
+
+- decide explicitly whether Atlas builds official/mirrored upstream source, ships a pinned third-party binary distribution, or uses another vetted route;
+- pin the exact PDFium/Chromium revision and build configuration;
+- audit PDFium/Chromium third-party notices and bundled codecs/fonts/libraries for that exact build;
 - generate/ship required third-party notices;
-- pin revision rather than “latest”;
+- record update, rollback, security-response and cross-platform provenance;
 - treat build configuration as part of license/security reproducibility.
 
-A “BSD-style” summary is not sufficient release documentation.
+A “BSD-style” summary or the distributor repository's MIT license is not sufficient release documentation.
 
 ## Candidate support libraries
 

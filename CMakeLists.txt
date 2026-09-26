@@ -18,6 +18,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Quick Qml QuickControls2 Pdf)
+find_package(unofficial-sqlite3 CONFIG REQUIRED)
 qt_standard_project_setup(REQUIRES 6.10)
 
 if(ATLAS_ENABLE_PDFIUM_PROBE)
@@ -41,6 +42,14 @@ endfunction()
 add_library(atlas_core INTERFACE)
 target_include_directories(atlas_core INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_features(atlas_core INTERFACE cxx_std_23)
+
+add_library(atlas_library_index STATIC
+    src/app/index/SqliteLibraryIndex.cpp
+    src/app/index/SqliteLibraryIndex.h
+)
+target_include_directories(atlas_library_index PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_library_index PUBLIC atlas_core unofficial::sqlite3::sqlite3)
+atlas_enable_warnings(atlas_library_index)
 
 add_library(atlas_app_support STATIC
     src/app/diagnostics/ShellMetrics.cpp
@@ -154,6 +163,11 @@ add_executable(atlas_core_smoke tests/core_smoke.cpp)
 target_link_libraries(atlas_core_smoke PRIVATE atlas_core)
 atlas_enable_warnings(atlas_core_smoke)
 add_test(NAME atlas_core_smoke COMMAND atlas_core_smoke)
+
+add_executable(atlas_library_index_tests tests/index/library_index_tests.cpp)
+target_link_libraries(atlas_library_index_tests PRIVATE atlas_library_index)
+atlas_enable_warnings(atlas_library_index_tests)
+add_test(NAME atlas_library_index COMMAND atlas_library_index_tests)
 
 set(ATLAS_N2_PDF_FIXTURE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
 

@@ -1,6 +1,6 @@
 # Atlas Reader Native — Agent Rules
 
-<!-- atlas-status: N2|accepted -->
+<!-- atlas-status: N3|in-progress -->
 
 Read this before changing the repository.
 
@@ -192,10 +192,10 @@ Never inspect, print, commit, or request secrets unnecessarily. Password-protect
 
 ## Current stop gate
 
-**N0 Accepted. N1 Accepted. N2 is Accepted; N3 is Not started.**
+**N0, N1 and N2 Accepted. N3 Library/index foundation is In progress.**
 
 N2 may add only the contracts, fixtures, probe/adaptor code, dependency/bootstrap configuration, benchmarks, preservation/security experiments, licensing evidence and documentation required to qualify Qt PDF, PDFium and qpdf and assign responsibilities.
 
 Do **not** build the production Reader, SQLite/FTS5 index, scanner, bookmark editor/local overlay, annotations/ink, migration, installer, or later-checkpoint feature code.
 
-N2 is Accepted: evidence and strict CI passed, and the owner recorded `N2 PASS` on 2026-09-27. N3 remains Not started pending the requested closure report.
+N2 is Accepted: evidence and strict CI passed, and the owner recorded `N2 PASS` on 2026-09-27. N3 started only after its closure report. Read `docs/N3_LIBRARY_INDEX_PLAN.md`; begin with N3.1 and do not claim a full library or beta until all N3 owner/QA/stop gates pass.

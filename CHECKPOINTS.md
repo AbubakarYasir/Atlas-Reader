@@ -1,6 +1,6 @@
 # Atlas Reader Native — Checkpoints to Windows 2.0
 
-<!-- atlas-status: N2|accepted -->
+<!-- atlas-status: N3|in-progress -->
 
 This file controls implementation order. Only one checkpoint is active at a time. A checkpoint may be **Not started**, **In progress**, **Ready for owner test**, **Accepted**, or **Blocked**.
 
@@ -10,19 +10,19 @@ This file controls implementation order. Only one checkpoint is active at a time
 
 | Field | Value |
 |---|---|
-| Checkpoint | **N2 — PDF engine qualification spike** |
-| Planned version | `2.0.0-alpha.2` (engineering alpha; not normal user release) |
-| Status | **Accepted — owner N2 PASS recorded 2026-09-27** |
+| Checkpoint | **N3 — Library/index foundation** |
+| Planned version | `2.0.0-beta.1` (first useful native library milestone; not yet accepted/released) |
+| Status | **In progress — started 2026-09-27 after N2 PASS** |
 | Previous checkpoint | **N1 Accepted by owner on 2026-09-22** |
-| Branch | `native-v2-n2-pdf-engine-qualification` |
-| Base | accepted N1 integration commit `f8bdc2e5bc74ccb94d593e7a7e5307ae6163afe2` |
-| Scope | Qt PDF/PDFium read-render-text-navigation qualification; qpdf structure/security/transformation qualification; normalized contracts; fixtures; benchmarks; preservation/licensing/reproducibility evidence; final ADR |
-| Explicitly excluded | Production Reader UI/viewport, SQLite/FTS5 index, scanner, production bookmark editor/local overlay, annotations/ink, migration, installer, OCR, AI document analysis |
+| Branch | `native-v2-n3-library-index-foundation` |
+| Base | accepted native `main` at `84a9b45b10b24ece595bb7069136fefd2ed2cc5b` |
+| Scope | versioned SQLite/FTS5 storage and repositories; safe multi-root scanning; guarded identity/reconciliation; useful Arabic/Unicode library search and workflows |
+| Explicitly excluded | Production PDF Reader/viewport, full bookmark editor/local overlay, annotations/ink, Flutter migration/backup, installer, OCR, AI document analysis |
 | Primary platform | Windows 11, while preserving cross-platform adapter boundaries |
 | Inherited toolchain | accepted N1 Qt 6.10.3/MSVC 2022/C++23 baseline; candidate-specific probe tooling must be documented separately |
-| Plan | `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` |
-| Evidence sheet | `docs/baselines/N2_PDF_ENGINE_MATRIX.md` |
-| Accepted decision | `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` |
+| Plan | `docs/N3_LIBRARY_INDEX_PLAN.md` |
+| Evidence sheet | `docs/CHECKPOINT_QA_MATRIX.md` and N3 branch handoff |
+| Accepted predecessor | `docs/baselines/N2_ACCEPTANCE.md` and `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` |
 
 N2 was deliberately opened on 2026-09-22 after explicit N1 acceptance. The
 qualification is complete and owner-approved: the frozen route is
@@ -30,7 +30,7 @@ official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
 first-party qpdf 12.4.1 CLI for structure/security/write. ADR-0004 was
 Accepted by owner on 2026-09-27.
 
-**N2 Accepted. N3 Not started. Report closure to the owner before starting N3.**
+N2 is frozen and Accepted. N3 started after its owner-approved closure report. Current N3 subgate: **N3.1 storage/schema**. No N3 code is considered verified or accepted until its named checks pass.
 
 ## Operating contract
 
@@ -58,7 +58,7 @@ Accepted by owner on 2026-09-27.
 | N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Accepted** |
 | N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **Accepted** |
 | N2 | `2.0.0-alpha.2` | PDF engine qualification spike | **Accepted** |
-| N3 | `2.0.0-beta.1` | Library/index foundation | Not started |
+| N3 | `2.0.0-beta.1` | Library/index foundation | In progress |
 | N4 | `2.0.0-beta.2` | Native reader foundation | Not started |
 | N5 | `2.0.0-beta.3` | Core resilience + complete bookmarks | Not started |
 | N6 | `2.0.0-beta.4` | Ink + standard annotations | Not started |

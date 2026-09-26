@@ -1,7 +1,7 @@
 # Building Atlas Reader Native
 
-N0 and N1 are Accepted. N2 is the accepted PDF-engine qualification checkpoint
-(`2.0.0-alpha.2`) and is Accepted by owner on 2026-09-27.
+N0–N2 are Accepted. N3 Library/index foundation is in progress; N3.1 introduces
+the first production dependency through the pinned vcpkg manifest.
 
 Before push, run the documentation governance check:
 
@@ -9,7 +9,7 @@ Before push, run the documentation governance check:
 pwsh -File tools/docs/check-markdown.ps1
 ```
 
-The base N2 branch initially inherits the accepted N1 shell/toolchain and deliberately adds PDF candidate dependencies only in focused probe commits. A probe dependency compiling successfully does **not** mean that dependency is accepted for production.
+The native build inherits the accepted N1 shell/toolchain. N2 added PDF candidate dependencies only in focused qualification probes; those probe dependencies did not automatically become production dependencies. N3 now adds pinned SQLite for the Library index.
 
 ## Canonical Windows baseline inherited from N1
 
@@ -25,7 +25,7 @@ For the public alpha baseline:
 - Git;
 - Qt **6.10.3** MSVC 2022 64-bit for canonical public parity.
 
-N2 starts from this accepted baseline instead of changing toolchains merely because a candidate library uses different upstream tooling. Candidate-specific tools are documented separately when needed.
+N3 retains this accepted toolchain. Candidate-specific tools are documented separately when needed.
 
 Qt Creator is optional. The repository command line remains the source of truth.
 
@@ -46,13 +46,24 @@ git --version
 
 The Visual Studio generator discovers MSVC without requiring a Ninja-specific Developer PowerShell workflow for ordinary Atlas targets.
 
+The configure preset uses the pinned vcpkg manifest. From the repository root:
+
+```powershell
+git clone https://github.com/microsoft/vcpkg.git .\build\vcpkg
+git -C .\build\vcpkg checkout 9e2895bf6afb246396d85232ba70fcfa1fa67ba1
+.\build\vcpkg\bootstrap-vcpkg.bat -disableMetrics
+$env:VCPKG_ROOT = (Resolve-Path .\build\vcpkg).Path
+```
+
+Then run `cmake --preset windows-msvc2022`. Windows CI performs the same pinned setup. SQLite uses the static Windows triplet; the accepted PDF route remains unchanged.
+
 ## Configure once
 
 ```powershell
 cmake --preset windows-msvc2022
 ```
 
-The preset identifies the active engineering preview as `2.0.0-alpha.2`.
+The preset identifies the active engineering preview as `2.0.0-alpha.2`. The vcpkg manifest installs SQLite `3.53.4#1` with FTS5 from its pinned baseline using the `x64-windows-static` triplet. Set `VCPKG_ROOT` to the checked-out vcpkg tree before configuring.
 
 ## Debug
 
@@ -310,6 +321,6 @@ Confirm:
 
 ## Dependency policy
 
-N2 may add Qt PDF, PDFium and qpdf only as focused qualification dependencies behind Atlas-owned adapters/probes.
+N2 added Qt PDF, PDFium and qpdf only as focused qualification dependencies behind Atlas-owned adapters/probes.
 
-SQLite/FTS5, scanner, production Reader, production Bookmarks, annotations/ink, migration and installer dependencies remain closed until their checkpoints.
+SQLite/FTS5 is active in N3. Scanner work belongs to N3.2; the production Reader to N4; complete Bookmarks to N5; annotations/ink to N6; migration/backup to N8; and installer work to the desktop/release gates.

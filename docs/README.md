@@ -1,6 +1,6 @@
 # Atlas Reader Native — Documentation Index
 
-<!-- atlas-status: N2|accepted -->
+<!-- atlas-status: N3|in-progress -->
 
 Use this page to find the authoritative document instead of duplicating requirements across random files.
 
@@ -8,13 +8,13 @@ Use this page to find the authoritative document instead of duplicating requirem
 
 New visitor? Read the [public project introduction](../README.md). Building or contributing? Start with the [developer guide](DEVELOPER_GUIDE.md). This index holds the detailed technical and product references.
 
-**N2 Accepted:** see [acceptance and N3 handoff](baselines/N2_ACCEPTANCE.md). Flutter development has stopped; native C++/Qt is the active project. N3 has not started.
+**N3 in progress:** see the [N3 Library/index plan](N3_LIBRARY_INDEX_PLAN.md) and [N2 acceptance record](baselines/N2_ACCEPTANCE.md). Flutter development has stopped; native C++/Qt is the active project.
 
 1. **`../README.md`** — project entry point and current status.
 2. **`../PLAN.md`** — master product/engineering north star.
 3. **`../CHECKPOINTS.md`** — current checkpoint, release mapping, stop gates.
-4. **`N2_PDF_ENGINE_QUALIFICATION_PLAN.md`** — active N2 execution plan, engine responsibilities, fixtures, measurements, hard blockers and stop gate.
-5. **`baselines/N2_PDF_ENGINE_MATRIX.md`** — binding N2 evidence matrix and remaining gates.
+4. **`N3_LIBRARY_INDEX_PLAN.md`** — active N3 execution plan, subgates, safety rules, QA evidence and stop gate.
+5. **`baselines/N3_LIBRARY_INDEX_EVIDENCE.md`** — active N3 result, test and artifact ledger.
 6. **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — Accepted N2 responsibility split decision.
 7. **`../tests/fixtures/pdf/README.md`** — N2 PDF fixture provenance/privacy/checksum/mutation contract.
 8. **`FEATURE_SCOPE_2_0.md`** — binding Windows 2.0 feature scope.
@@ -22,7 +22,7 @@ New visitor? Read the [public project introduction](../README.md). Building or c
 10. **`CHECKPOINT_QA_MATRIX.md`** — binding automated/manual QA, owner tests, blockers and limitation ownership for N0–N11.
 11. **`GIT_WORKFLOW.md`** — binding branch, commit, PR, merge, tag, status synchronization and remote-verification rules.
 
-N0, N1 and N2 are Accepted. N3 is Not started; report closure before beginning it. A passed checkpoint cannot be reopened without new evidence of a
+N0, N1 and N2 are Accepted. N3 Library/index foundation is In progress. A passed checkpoint cannot be reopened without new evidence of a
 user-facing regression.
 
 ## Product behavior
@@ -58,7 +58,7 @@ The permitted final result is a split architecture behind Atlas-owned normalized
 
 Primary N2 documents:
 
-- **`N2_PDF_ENGINE_QUALIFICATION_PLAN.md`** — phases N2.0 through N2.6 and evidence methodology;
+- **`N2_PDF_ENGINE_QUALIFICATION_PLAN.md`** — accepted historical N2 phases and evidence methodology;
 - **`baselines/N2_PDF_ENGINE_MATRIX.md`** — binding capability-by-capability results, canonical evidence ledger, scope questions and remaining gates;
 - **`baselines/N2_PDFIUM_PROVENANCE.md`** — PDFium pin/acquisition/build constraints;
 - **`baselines/N2_QPDF_BASELINE.md`** — qpdf structural/security/transformation evidence;

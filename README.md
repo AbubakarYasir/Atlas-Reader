@@ -10,7 +10,7 @@ Atlas Reader is working toward a better way to study: bring your books together,
 
 [Explore the vision](PLAN.md) · [See our progress](CHECKPOINTS.md) · [For developers](docs/DEVELOPER_GUIDE.md)
 
-<!-- atlas-status: N2|accepted -->
+<!-- atlas-status: N3|in-progress -->
 
 ## A library is more than a folder of files
 
@@ -38,7 +38,7 @@ The following describes our product direction, not features available today.
 
 We have established the native Windows application shell and tested the PDF technology behind future reading and editing features. The approved stage includes Arabic/Urdu sample rendering, image-only PDFs, navigation, document-preservation tests, and repeated stability checks.
 
-The project owner tested and approved this foundation, called **N2**, on **27 September 2026**. The current engineering version is **`2.0.0-alpha.2`**.
+The project owner tested and approved this foundation, called **N2**, on **27 September 2026**. We have now started **N3**, the first native library and indexing stage. The current engineering version is **`2.0.0-alpha.2`**; the first useful native beta depends on completing N3.
 
 **What's not ready yet:** the native library, full reading interface, bookmark editor, and annotations. There is no finished native consumer release to download today. Test packages are for engineering evaluation, and success on our test samples does not mean every PDF has been proven perfect.
 
@@ -46,7 +46,7 @@ The project owner tested and approved this foundation, called **N2**, on **27 Se
 
 ## The road ahead
 
-**First, your library.** Finding, indexing, and organizing books is the next stage, N3. It has not started.
+**First, your library.** Finding, indexing, and organizing books is the active stage, N3. Work starts with durable storage and search foundations.
 
 **Then, your reading workspace.** PDF viewing, navigation, and search.
 

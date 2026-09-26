@@ -14,11 +14,13 @@
         "value": "x64",
         "strategy": "set"
       },
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
       "binaryDir": "${sourceDir}/build/windows-msvc2022",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "23",
         "ATLAS_PRERELEASE": "alpha.2",
-        "ATLAS_WARNINGS_AS_ERRORS": "OFF"
+        "ATLAS_WARNINGS_AS_ERRORS": "OFF",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
       },
       "environment": {
         "CMAKE_PREFIX_PATH": "$env{CMAKE_PREFIX_PATH}"

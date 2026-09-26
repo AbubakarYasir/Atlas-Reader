@@ -1,12 +1,12 @@
 # Atlas Reader Native — Master Plan to 2.0
 
-<!-- atlas-status: N2|accepted -->
+<!-- atlas-status: N3|in-progress -->
 
-**Status:** N2 PDF-engine qualification — Accepted by owner on 2026-09-27
+**Status:** N0–N2 Accepted; N3 Library/index foundation in progress as of 2026-09-27
 
 **Current engineering preview:** `2.0.0-alpha.2`
 
-**Accepted checkpoints:** N0, N1 and N2; N3 Not started
+**Accepted checkpoints:** N0, N1 and N2; N3 in progress
 
 **Primary implementation target:** Windows 11
 
@@ -75,7 +75,7 @@ qpdf 12.4.1 CLI to structural/security/write responsibilities. Standalone
 PDFium remains comparison evidence and a replaceable future candidate, not an N2
 production dependency. The route was Accepted by owner `N2 PASS` on 2026-09-27.
 
-N3 is Not started. The owner requested a closure report before N3 begins.
+N2 closure was completed and reported to the owner before N3 began on 2026-09-27. N3 work is on `native-v2-n3-library-index-foundation`; its first subgate is versioned storage and repositories. See `docs/N3_LIBRARY_INDEX_PLAN.md`.
 
 Every future checkpoint is governed by `docs/CHECKPOINT_QA_MATRIX.md`: automated
 evidence, manual/owner evidence, blocking failures and transferred limitations
@@ -289,7 +289,7 @@ N2 requires:
 - strict final CI;
 - explicit owner `N2 PASS`.
 
-Until then N3 is Not started.
+N3 is now in progress; its work and acceptance evidence are governed by `CHECKPOINTS.md` and `docs/N3_LIBRARY_INDEX_PLAN.md`.
 
 ## VII. Threading/performance model
 
@@ -449,7 +449,7 @@ Atlas 2.0 succeeds when:
 
 The Flutter application is a **behavior/data reference**, not a source-code template. Port contracts deliberately; do not recreate its widget/service structure in C++/QML.
 
-Native and Flutter builds may run side-by-side through beta. PDFs are the strongest portable bridge. Legacy app-local migration is implemented only after the native schema/identity model is stable enough to avoid repeated destructive converters.
+Native Atlas is the active product. The stopped Flutter source is retained only as an obsolete backup and migration reference; no Flutter builds are part of the current plan. PDFs are the strongest portable bridge. Any legacy app-local migration is implemented only after the native schema/identity model is stable enough to avoid repeated destructive converters.
 
 ## XVI. Documentation map
 

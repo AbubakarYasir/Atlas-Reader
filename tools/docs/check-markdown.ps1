@@ -42,7 +42,8 @@ $liveStatusFiles = @(
     'CHANGELOG.md',
     'AGENTS.md',
     'docs/README.md',
-    'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md',
+    'docs/N3_LIBRARY_INDEX_PLAN.md',
+    'docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md',
     'docs/DEPENDENCIES_AND_TOOLS.md'
 )
 
@@ -68,6 +69,18 @@ foreach ($relativePath in $liveStatusFiles) {
     elseif ($status -ne $expectedStatus) {
         $errors.Add("Divergent atlas-status marker: $relativePath has '$status', expected '$expectedStatus'")
     }
+}
+
+# Closed checkpoint records keep their historical status when the active
+# checkpoint advances.
+$acceptedHistoryFile = 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md'
+$acceptedHistoryText = Get-Content -LiteralPath (Join-Path $repoRoot $acceptedHistoryFile) -Raw
+$acceptedHistoryMatch = [regex]::Match(
+    $acceptedHistoryText,
+    '<!--\s*atlas-status:\s*([^>]+?)\s*-->'
+)
+if (-not $acceptedHistoryMatch.Success -or $acceptedHistoryMatch.Groups[1].Value.Trim() -ne 'N2|accepted') {
+    $errors.Add("Closed checkpoint record must retain historical status N2|accepted: $acceptedHistoryFile")
 }
 
 $checkpointText = Get-Content -LiteralPath (Join-Path $repoRoot 'CHECKPOINTS.md') -Raw

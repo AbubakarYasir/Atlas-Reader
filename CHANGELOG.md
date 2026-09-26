@@ -1,10 +1,18 @@
 # Changelog
 
-<!-- atlas-status: N2|accepted -->
+<!-- atlas-status: N3|in-progress -->
 
 All notable changes to Atlas Reader Native are documented here.
 
 ## [Unreleased]
+
+### N3 start — 2026-09-27
+
+- Began N3 after N2 owner acceptance, merge, final CI, local/remote synchronization and cleanup were verified. Created `native-v2-n3-library-index-foundation` from accepted native `main` commit `84a9b45b10b24ece595bb7069136fefd2ed2cc5b`.
+- Set N3 to In progress and N3.1 storage/schema as its first subgate. Added the binding N3 plan for database/repository/search, scanning, identity/reconciliation, Library UX, QA, owner review and beta stop gate, plus an evidence ledger with no tests/results claimed at start.
+- At the initial N3 start record, product code and dependency pins had not yet been established. The engineering version remains alpha.2 until the N3 acceptance/first-useful-beta gates are met.
+- Chosen and declared SQLite `3.53.4#1`/FTS5 on pinned vcpkg baseline `9e2895bf6afb246396d85232ba70fcfa1fa67ba1`; added a private SQLite-backed repository adapter with versioned transactional schema migrations, root/book/favorite/recents persistence, FTS triggers/rebuild and isolated CTest coverage. Debug/Release CI setup now uses that exact dependency pin; results are pending. Existing root IDs and book locations cannot be reassigned to different paths/documents without an explicit reconciliation decision.
+- Updated live status pages and the document checker for checkpoint transitions; closed N2 records retain their historical `N2|accepted` status.
 
 ### N2 owner acceptance — 2026-09-27
 
@@ -25,7 +33,7 @@ All notable changes to Atlas Reader Native are documented here.
 - Added `docs/baselines/N2_ACCEPTANCE.md` with evidence identity, integration route, future obligations and the stop before N3.
 - Corrected Git policy: native checkpoint PRs target `main`; `legacy/flutter` retains the discontinued Flutter reference.
 - Published that Flutter development has stopped and C++/Qt native development is active.
-- N3 remains Not started. Version remains `2.0.0-alpha.2`.
+- At N2 closeout N3 was Not started. The engineering version remained `2.0.0-alpha.2`.
 
 - Audited every tracked Markdown plan/evidence file for status, route and
   checkpoint-ownership drift; corrected the live N2 state and the final Qt

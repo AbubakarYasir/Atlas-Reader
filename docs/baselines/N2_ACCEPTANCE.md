@@ -1,6 +1,6 @@
 # N2 acceptance and handoff — 2026-09-27
 
-The owner tested N2 and explicitly stated: “i have tested n2 and approve of it so N2 PASS”. N2 and ADR-0004 are Accepted. N0 and N1 remain Accepted. N3 is Not started: the owner requested this closure report before N3 implementation.
+The owner tested N2 and explicitly stated: “i have tested n2 and approve of it so N2 PASS”. N2 and ADR-0004 are Accepted. N0 and N1 remain Accepted. At this record's creation, N3 was Not started and the owner requested this closure report before N3 implementation.
 
 ## Accepted scope and evidence
 
@@ -40,3 +40,5 @@ Closure cleanup removed the unused `DO_NOT_USE.tmp` and obsolete encrypted A013 
 - No release was published and no N3 branch was created. This cleanup changes documentation and Git organization, not product behavior.
 
 N3 starts from the accepted native integration commit only after this report. Its order is storage/schema, bounded scanning, identity/reconciliation, then Library UX/search. The existing N3 QA and owner-test requirements in `CHECKPOINTS.md` apply. No N3 branch, schema, scanner or application code is part of N2 closure.
+
+On 2026-09-27 the owner requested N3 to begin. N3 branch `native-v2-n3-library-index-foundation` was created from native `main` commit `84a9b45b10b24ece595bb7069136fefd2ed2cc5b`; see the active [N3 plan](../N3_LIBRARY_INDEX_PLAN.md) and [evidence ledger](N3_LIBRARY_INDEX_EVIDENCE.md) for subsequent work. This entry preserves the N2 closeout as it stood before N3 began.

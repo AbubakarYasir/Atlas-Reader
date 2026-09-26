@@ -1,18 +1,20 @@
 # Atlas Reader Native — Current Project Notes
 
-<!-- atlas-status: N2|accepted -->
+<!-- atlas-status: N3|in-progress -->
 
-**State:** native successor PDF-engine qualification
+**State:** native Library/index foundation
 
 **Release line:** `2.0.0`
 
-**Current checkpoint:** N2 — PDF engine qualification spike
+**Current checkpoint:** N3 — Library/index foundation
 
-**Current N2 status:** **Accepted — owner N2 PASS recorded 2026-09-27; Qt PDF/qpdf route frozen and qualified.**
+**Predecessor:** **N2 Accepted — owner N2 PASS recorded 2026-09-27; Qt PDF/qpdf route frozen and qualified.**
 
 **Current build:** `2.0.0-alpha.2`
 
-**Current branch:** `native-v2-n2-pdf-engine-qualification`
+**Current N3 status:** **In progress — N3.1 storage/schema**
+
+**Current branch:** `native-v2-n3-library-index-foundation`
 
 **Previous checkpoint:** N1 — **Accepted by owner on 2026-09-22**
 
@@ -173,7 +175,7 @@ For comparable hot-path evidence:
 
 A faster wrong render/search result loses.
 
-## N2 stop gate
+## N2 accepted predecessor
 
 N2 acceptance criteria (satisfied; owner PASS recorded 2026-09-27):
 
@@ -186,7 +188,7 @@ N2 acceptance criteria (satisfied; owner PASS recorded 2026-09-27):
 - strict Debug + Release final CI passes;
 - owner explicitly records `N2 PASS`.
 
-N3 remains Not started pending the requested closure report.
+N2 was closed and reported before N3 started on 2026-09-27. Work is scoped by `docs/N3_LIBRARY_INDEX_PLAN.md`.
 
 ## Inherited canonical Windows toolchain
 
@@ -232,7 +234,7 @@ The research-data rule remains:
 - N0: `2.0.0-alpha.0` — **Accepted** bootstrap
 - N1: `2.0.0-alpha.1` — **Accepted** Windows/toolchain baseline
 - N2: `2.0.0-alpha.2` — **Accepted by owner on 2026-09-27**
-- N3: first useful native `2.0.0-beta.1` — Not started
+- N3: first useful native `2.0.0-beta.1` — In progress; release/version promotion awaits the full N3 stop gate
 - N4–N9: incremental `2.0.0-beta.N` milestones
 - N10: `2.0.0-rc.N`
 - N11: Windows `2.0.0`

@@ -6,7 +6,7 @@
 
 **Current checkpoint:** N2 — PDF engine qualification spike
 
-**Current N2 status:** **In progress — selected Qt PDF/qpdf production route is frozen and requalified; final exact-head CI and owner acceptance remain.**
+**Current N2 status:** **Ready for owner test — selected Qt PDF/qpdf production route is frozen/requalified and strict CI is green; explicit owner `N2 PASS` remains.**
 
 **Current build:** `2.0.0-alpha.2`
 

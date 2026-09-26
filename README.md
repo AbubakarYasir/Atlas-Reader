@@ -234,8 +234,8 @@ All bounded N2 capability blockers pass. The frozen Windows production route is
 official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
 first-party qpdf 12.4.1 CLI for structure/security/write. Standalone PDFium is
 retained as qualification evidence but excluded from the production package.
-N2 still requires final exact-head CI, owner evidence review and explicit
-`N2 PASS`.
+Strict CI is green on the synchronized implementation/documentation head. N2
+now requires owner evidence review and explicit `N2 PASS`.
 
 ## License
 

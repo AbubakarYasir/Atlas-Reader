@@ -1,7 +1,7 @@
 # N2 PDF Production Acquisition / Distribution Baseline
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Selected route frozen and requalified — final exact-head CI/owner N2 PASS pending**
+**Status:** **Selected route frozen/requalified and strict CI green — owner N2 PASS pending**
 **Opened:** 2026-09-23  
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
@@ -266,7 +266,8 @@ passed workflow run `36276264281`. Artifact `10917655425` has digest
 the generated Atlas SPDX JSON inside that artifact has SHA-256
 `4be98fb609038adcabee32fbdda48d66b7d9c6d7039917b68bf4ae9f629e50a9`.
 
-Before final N2 acceptance only the final exact-head CI set, owner evidence
-review and explicit `N2 PASS` remain.
+Before final N2 acceptance only owner evidence review and explicit `N2 PASS`
+remain. Strict CI passed on synchronized head
+`925d90521c1410200ed2b467dc808372bda3ec0c`.
 
 N2 remains **Open** and ADR-0004 remains **Proposed**.

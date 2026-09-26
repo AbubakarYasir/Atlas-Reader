@@ -10,7 +10,7 @@ This file controls implementation order. Only one checkpoint is active at a time
 |---|---|
 | Checkpoint | **N2 — PDF engine qualification spike** |
 | Planned version | `2.0.0-alpha.2` (engineering alpha; not normal user release) |
-| Status | **In progress — selected production route frozen/requalified; final exact-head CI and owner handoff remain** |
+| Status | **Ready for owner test — selected production route frozen/requalified and strict CI green; explicit owner N2 PASS remains** |
 | Previous checkpoint | **N1 Accepted by owner on 2026-09-22** |
 | Branch | `native-v2-n2-pdf-engine-qualification` |
 | Base | accepted N1 integration commit `f8bdc2e5bc74ccb94d593e7a7e5307ae6163afe2` |
@@ -313,7 +313,7 @@ This records focused **A014 owner visual PASS**; it is not overall `N2 PASS`.
 - [x] fill proposed final responsibility table in matrix;
 - [x] revise Proposed ADR-0004 with selected responsibilities and rejected alternatives/limitations;
 - [x] document exact dependency versions, licenses/notices and rollback route;
-- [ ] strict final CI;
+- [x] strict final CI;
 - [ ] owner evidence review;
 - [ ] explicit owner `N2 PASS`.
 

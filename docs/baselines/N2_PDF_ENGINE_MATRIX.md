@@ -1,7 +1,7 @@
 # N2 PDF Engine Qualification Matrix
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Open — selected production route frozen/requalified; final exact-head CI and owner acceptance pending**
+**Status:** **Ready for owner test — selected production route frozen/requalified and strict CI green; owner acceptance pending**
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Opened:** 2026-09-22  
 **Last evidence refresh:** 2026-09-27
@@ -320,10 +320,15 @@ deferred by this classification.
 
 ## Remaining N2 gates
 
-Before ADR-0004 can move from **Proposed** to **Accepted** and before owner `N2 PASS`:
+Strict CI passed on synchronized head
+`925d90521c1410200ed2b467dc808372bda3ec0c`: Windows Debug/Release, selected
+production route, fidelity, content fidelity, coordinates, stress, performance,
+qpdf qualification, outline breadth and encrypted-write checks were green.
 
-1. **Final strict CI:** all selected production-route and existing qualification checks green on one implementation head.
-2. **Owner evidence review:** review the frozen decision/evidence summary.
-3. **Owner acceptance:** explicit `N2 PASS`.
+Before ADR-0004 can move from **Proposed** to **Accepted** and before owner
+`N2 PASS`:
+
+1. **Owner evidence review:** review the frozen decision/evidence summary.
+2. **Owner acceptance:** explicit `N2 PASS`.
 
 N2 is **Open**. N3 is **Not started**. PR #4 remains **draft/open/unmerged** until explicit N2 acceptance.

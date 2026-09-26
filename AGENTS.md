@@ -1,4 +1,8 @@
 <!-- CODEGRAPH_START -->
+## Development status — 2026-09-27
+
+Flutter development has stopped. This worktree is historical/migration reference only. Active C++23/Qt development is on `native-v2-bootstrap`. Do not resume the Flutter plan unless the owner explicitly changes this decision. Documentation notices may be maintained here.
+
 ## CodeGraph
 
 In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:

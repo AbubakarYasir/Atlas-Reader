@@ -1,4 +1,7 @@
 # Atlas Reader — Master Plan
+
+**Historical Flutter plan — development stopped 2026-09-27.** Active development uses C++23/Qt on [native-v2-bootstrap](https://github.com/AbubakarYasir/Atlas-Reader/tree/native-v2-bootstrap). This document is retained for reference and migration; do not resume its Flutter checkpoints.
+
 ## Universal Embedding Protocol · Maximum Accessibility · Production Quality
 
 **Status:** `0.8.0-beta.2+4` corrected reader-workspace candidate verified (56 tests passed,

@@ -1,5 +1,12 @@
 # Changelog
 
+## Development direction — 2026-09-27
+
+- Flutter development has stopped. This branch remains a historical/migration reference.
+- Active development is the C++23/Qt native successor on `native-v2-bootstrap`.
+- Native N2 was explicitly accepted by the owner; N3 is not started.
+- This update changes documentation only; no Flutter build/version or source behavior changed.
+
 All notable changes are documented here. Atlas Reader follows Semantic
 Versioning while it moves through pre-1.0 Windows beta releases.
 

@@ -70,8 +70,11 @@ The first replacement joined the letters but misplaced the diacritics and was
 also owner-rejected. Manual presentation-form reshaping is excluded. The next
 A014 pins Noto Naskh Arabic for Arabic and Noto Nastaliq Urdu for Urdu and uses
 Qt's complete Unicode text-layout path to position base glyphs and combining
-marks together before writing the PDF. B2 stays open until that replacement
-passes CI and the owner accepts its 100%/200% rendering.
+marks together before writing the PDF. Owner review confirmed that improvement
+but found the Arabic/Urdu paragraphs physically left-aligned despite correct
+RTL word order. The generator now requires absolute physical right alignment,
+backed by automated right-edge assertions. B2 stays open until the corrected
+artifact passes CI and the owner accepts its 100%/200% rendering.
 
 ### B3 — P0 outline/bookmark structural mutation breadth
 

@@ -99,6 +99,11 @@ def mask_count(mask: Image.Image, box: tuple[int, int, int, int] | None = None) 
     return sum(1 for value in target.getdata() if value)
 
 
+def mask_right_edge(mask: Image.Image, box: tuple[int, int, int, int]) -> int | None:
+    bounds = mask.crop(box).getbbox()
+    return None if bounds is None else box[0] + bounds[2]
+
+
 def mask_iou(a: Image.Image, b: Image.Image) -> float:
     intersection = ImageChops.logical_and(a, b)
     union = ImageChops.logical_or(a, b)
@@ -154,7 +159,23 @@ def validate_a014(qt: dict[str, Any], pdfium: dict[str, Any], failures: list[str
                 failures.append(f"qt-pdf:A014-{scale}x-band-{index}-ink:{qcount}<{minimum}")
             if pcount < minimum:
                 failures.append(f"pdfium:A014-{scale}x-band-{index}-ink:{pcount}<{minimum}")
-            band_details.append({"band": index, "qt_ink": qcount, "pdfium_ink": pcount})
+            qright = mask_right_edge(qt_mask, box)
+            pright = mask_right_edge(pdfium_mask, box)
+            if index < 3:
+                minimum_right = 530 * scale
+                if qright is None or qright < minimum_right:
+                    failures.append(f"qt-pdf:A014-{scale}x-band-{index}-rtl-right-edge:{qright}<{minimum_right}")
+                if pright is None or pright < minimum_right:
+                    failures.append(f"pdfium:A014-{scale}x-band-{index}-rtl-right-edge:{pright}<{minimum_right}")
+            band_details.append(
+                {
+                    "band": index,
+                    "qt_ink": qcount,
+                    "pdfium_ink": pcount,
+                    "qt_right_edge": qright,
+                    "pdfium_right_edge": pright,
+                }
+            )
 
         details["scales"][str(scale)] = {
             "size": list(expected_size),

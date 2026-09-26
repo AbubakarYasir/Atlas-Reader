@@ -301,6 +301,10 @@ reopened; automated cross-engine similarity is not owner readability evidence.
 The first replacement joined letters but misplaced Arabic diacritics and was
 also rejected. Manual presentation-form reshaping is therefore excluded from
 the fixture; the next candidate uses a full Qt text-layout pass.
+The full-layout candidate corrected joining and diacritics, but owner review
+found the Arabic/Urdu paragraphs physically left-aligned. Word order was RTL;
+paragraph alignment was not. A014 remains open until absolute right alignment
+passes automated edge checks and owner review.
 
 - [x] fill proposed final responsibility table in matrix;
 - [x] revise Proposed ADR-0004 with selected responsibilities and rejected alternatives/limitations;

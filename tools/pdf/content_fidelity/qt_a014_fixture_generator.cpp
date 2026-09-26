@@ -37,7 +37,10 @@ void drawRtlLine(QPainter& painter,
     font.setStyleStrategy(QFont::PreferAntialias);
     painter.setFont(font);
 
-    QTextOption option(Qt::AlignRight | Qt::AlignVCenter);
+    // AlignRight is direction-relative unless AlignAbsolute is present. Without
+    // it Qt mirrored the alignment for RTL text and placed the paragraphs at
+    // the physical left edge even though glyph/word order remained RTL.
+    QTextOption option(Qt::AlignRight | Qt::AlignVCenter | Qt::AlignAbsolute);
     option.setTextDirection(Qt::RightToLeft);
     option.setWrapMode(QTextOption::NoWrap);
     painter.drawText(bounds, text, option);

@@ -233,6 +233,12 @@ That path is removed. The current generator uses Qt's complete Unicode text
 layout with the original logical string so contextual shaping and mark
 positioning are solved in one pass before QPdfWriter embeds the result.
 
+Owner review of that full-layout candidate confirmed joining/diacritics but
+found the RTL paragraphs physically left-aligned. Qt had interpreted alignment
+relative to text direction. The corrected generator uses absolute physical
+right alignment, and the validator requires the rightmost ink of each Arabic
+and Urdu band to reach the expected right-side margin.
+
 Automated checks still verify deterministic generation, non-empty bands,
 dimensions and cross-engine raster similarity. Human readability at 100% and
 200% is now an explicit owner gate that automation cannot waive.

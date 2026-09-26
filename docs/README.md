@@ -6,6 +6,8 @@ Use this page to find the authoritative document instead of duplicating requirem
 
 ## Start here
 
+New visitor? Read the [public project introduction](../README.md). Building or contributing? Start with the [developer guide](DEVELOPER_GUIDE.md). This index holds the detailed technical and product references.
+
 **N2 Accepted:** see [acceptance and N3 handoff](baselines/N2_ACCEPTANCE.md). Flutter development has stopped; native C++/Qt is the active project. N3 has not started.
 
 1. **`../README.md`** — project entry point and current status.

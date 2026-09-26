@@ -14,7 +14,7 @@ The owner tested N2 and explicitly stated: “i have tested n2 and approve of it
 
 ## Git integration
 
-[PR #4](https://github.com/AbubakarYasir/Atlas-Reader/pull/4) integrates the N2 branch into `native-v2-bootstrap`, the native integration and default GitHub branch. Its merge event and final checks record the exact closure commit. The repository opens on the current native project. `main` retains the secondary, obsolete Flutter backup/reference with a public notice directing readers to native development. No Flutter feature development is authorized by this closure.
+[PR #4](https://github.com/AbubakarYasir/Atlas-Reader/pull/4) merged N2 into `native-v2-bootstrap` (now permanently named `main`), the native integration and default GitHub branch. Its merge event and final checks record the exact closure commit. The repository opens on the current native project. `legacy/flutter` retains the secondary, obsolete Flutter backup/reference with a public notice directing readers to native development. No Flutter feature development is authorized by this closure.
 
 The closure change records owner acceptance, synchronizes status/ADR/PR documentation, corrects the native branch policy and publishes the Flutter discontinuation notice. It does not introduce N3 functionality or change the accepted product version.
 
@@ -26,6 +26,17 @@ These obligations must retain their tests and blocking conditions. Cryptographic
 
 ## Next checkpoint, not started
 
-Closure cleanup removed the unused `DO_NOT_USE.tmp` and obsolete encrypted A013 PDF/generator (not referenced by the fixture manifest or workflows). A013 image-only and A015 encrypted-write fixtures remain canonical. The removed files remain in Git history. Legacy Flutter roadmap PR #2 was closed as superseded; its branch/history were retained.
+Closure cleanup removed the unused `DO_NOT_USE.tmp` and obsolete encrypted A013 PDF/generator (not referenced by the fixture manifest or workflows). A013 image-only and A015 encrypted-write fixtures remain canonical. The removed files remain in Git history. Legacy Flutter roadmap PR #2 was closed as superseded; its history is retained by the archive tag below, not an active branch.
+
+## Completed Git cleanup
+
+- PR #4 merged at `8d646275d0cddf0284777ed353f57bbed645d43d`; its final head `02fe6f4093e5803e3176dabae3d82cc93f5a4a8a` passed all 20 checks.
+- GitHub default and local remote HEAD now point to `main`. The public repository description identifies native development and the obsolete Flutter backup.
+- Only two branches remain: `main` (current accepted project) and `legacy/flutter` (obsolete Flutter backup). The native local checkout tracks the default branch.
+- Removed merged branches `native-v2-n1-toolchain-baseline` and `native-v2-n2-pdf-engine-qualification`; their commits remain in native history.
+- Removed `native-v2-n1-startup-diagnostics`, preserving its unmerged experiment at `archive/n1-startup-diagnostics-2026-09-27` (`beb477f`).
+- Removed `docs/core-reader-bookmarks-hardening`, preserving the superseded Flutter plan at `archive/flutter-roadmap-2026-09-27` (`bc14c90`). Both archive tags are pushed, immutable historical references, not product releases.
+- Two purposeful local worktrees remain: `atlas_native_v2_n2` for current native work and `atlas_poc` for the obsolete Flutter backup. No additional worktrees exist. Folder names are historical and do not authorize development of Flutter or another checkpoint.
+- No release was published and no N3 branch was created. This cleanup changes documentation and Git organization, not product behavior.
 
 N3 starts from the accepted native integration commit only after this report. Its order is storage/schema, bounded scanning, identity/reconciliation, then Library UX/search. The existing N3 QA and owner-test requirements in `CHECKPOINTS.md` apply. No N3 branch, schema, scanner or application code is part of N2 closure.

@@ -10,7 +10,7 @@ workflow around it.
 
 ## 1. Branch model
 
-- `native-v2-bootstrap` in this shared repository: accepted checkpoint state only.
+- `main` in this shared repository: accepted checkpoint state only.
 - `native-v2-n#-short-name`: one active checkpoint branch from the exact
   accepted predecessor commit.
 - short-lived feature/fix branches: one coherent change each.

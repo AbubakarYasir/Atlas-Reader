@@ -6,7 +6,13 @@ repository matches the reviewed local work.
 
 ## Branch model
 
-- `native-v2-bootstrap` is the default GitHub branch and contains accepted native checkpoint state. `main` is the secondary, obsolete Flutter backup/reference; Flutter development has stopped. The repository opens on the native project.
+The permanent branch names are `main` and `legacy/flutter`. Do not rename them
+for checkpoints, toolchains or release versions. `main` was previously named
+`native-v2-bootstrap`; the old Flutter `main` was renamed to `legacy/flutter`
+on 2026-09-27, preserving both histories. Checkpoint branches are temporary
+and deleted after acceptance and merge; they do not replace the default branch.
+
+- `main` is the default GitHub branch and contains accepted native checkpoint state. `legacy/flutter` is the secondary, obsolete Flutter backup/reference; Flutter development has stopped. The repository opens on the native project.
 - One checkpoint branch is active at a time, named
   `native-v2-n<number>-short-name`.
 - The checkpoint branch starts from the exact accepted predecessor commit.
@@ -18,7 +24,8 @@ repository matches the reviewed local work.
 - Never use a second clone or worktree to hide uncommitted or contradictory
   work. `git status` must explain the complete state being delivered.
 
-N2 uses `native-v2-n2-pdf-engine-qualification`. N3 must not be created or
+N2 used `native-v2-n2-pdf-engine-qualification`; after its accepted merge, that
+completed branch was deleted. N3 must not be created or
 started until the owner records `N2 PASS` and N2 is integrated according to the
 accepted PR decision.
 
@@ -82,12 +89,18 @@ The two commit IDs must match for a fully synchronized handoff.
 
 ## Merge and tag rules
 
-- Merge direction is task branch → active checkpoint branch → `native-v2-bootstrap` after
+- Merge direction is task branch → active checkpoint branch → `main` after
   acceptance.
 - Preserve meaningful checkpoint history; do not mix unrelated future work into
   the acceptance merge.
-- Tags are immutable and are created only for an Accepted artifact under
+- Release tags are immutable and are created only for an Accepted artifact under
   `RELEASE_STRATEGY.md`.
+- `archive/*` tags may preserve superseded, unmerged history before deleting an
+  obsolete branch. They are immutable backup references, never releases or
+  evidence of acceptance. Record their purpose in the checkpoint handoff.
+- Delete completed checkpoint branches after verifying ancestry in the accepted
+  integration branch. Preserve unmerged history before deleting obsolete branches.
+- Keep only purposeful worktrees, and never delete one containing unsaved work.
 - Never reuse a version/tag for different bytes.
 - Stable promotion requires the accepted RC payload to remain equivalent as
   defined by N11.

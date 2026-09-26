@@ -8,14 +8,20 @@ All notable changes to Atlas Reader Native are documented here.
 
 ### N2 owner acceptance — 2026-09-27
 
-- Repository landing page and default file tree now target native development (`native-v2-bootstrap`); Flutter `main` is a secondary obsolete backup/reference, with development stopped.
+- Rewrote the public README with a reader-focused introduction, explicitly planned benefits, honest current availability, next stages and ways to follow the project. Added `docs/DEVELOPER_GUIDE.md` for technical orientation and linked the existing authoritative build, architecture, QA and evidence documents. No product scope or acceptance requirement changed.
+
+- Adopted permanent branch names at the owner's request: native development is `main`, and the discontinued Flutter backup is `legacy/flutter`. Renamed both existing branches without rewriting commits; synchronized local tracking, public notices and workflow documentation. Future checkpoints do not rename either permanent branch.
+
+- Merged N2 PR #4 after all 20 final-head checks passed. Removed four obsolete remote branches and the completed local N2 branch; preserved two unmerged historical branches through explicitly non-release `archive/*` tags. Only native integration and the obsolete Flutter backup remain. Exact recovery references and worktree purposes are recorded in `docs/baselines/N2_ACCEPTANCE.md`.
+
+- Repository landing page and default file tree now target native development (`main`); Flutter `legacy/flutter` is a secondary obsolete backup/reference, with development stopped.
 
 - Removed unreferenced `DO_NOT_USE.tmp` and obsolete encrypted A013 PDF/generator; canonical A013 is image-only and encrypted-write coverage uses manifest/CI-qualified A015. Deleted files remain recoverable from Git history.
 - Closed the superseded Flutter roadmap PR #2 after publishing the discontinued-development notice.
 
 - Owner explicitly tested and approved N2 with `N2 PASS`; ADR-0004 is Accepted.
 - Added `docs/baselines/N2_ACCEPTANCE.md` with evidence identity, integration route, future obligations and the stop before N3.
-- Corrected Git policy: native checkpoint PRs target `native-v2-bootstrap`; `main` retains the discontinued Flutter reference.
+- Corrected Git policy: native checkpoint PRs target `main`; `legacy/flutter` retains the discontinued Flutter reference.
 - Published that Flutter development has stopped and C++/Qt native development is active.
 - N3 remains Not started. Version remains `2.0.0-alpha.2`.
 

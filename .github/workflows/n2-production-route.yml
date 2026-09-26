@@ -82,25 +82,26 @@ jobs:
           $sources = Join-Path $root 'sources'
           $licenses = Join-Path $root 'LICENSES'
           New-Item -ItemType Directory -Force $sources,$licenses | Out-Null
-          $archives = @(
-            @{ Module = 'qtbase'; Name = 'qtbase-everywhere-src-6.10.3.tar.xz'; Sha = '383dc907816338f0cba72088a524c07458dfc69ce684ca9132fcc4fe91c24b0b' },
-            @{ Module = 'qtsvg'; Name = 'qtsvg-everywhere-src-6.10.3.tar.xz'; Sha = 'b3223fe005f6a4c7f21f34e4ee6ce0094737cff9503ba15bbb171ac18794f76d' }
+          $repositories = @(
+            @{ Module = 'qtbase'; Commit = '7ddbc87d8e14ce51d2957ea72d0a6077593d5ff4' },
+            @{ Module = 'qtsvg'; Commit = '77765f981c067cec8f250e13688e5be75ee94a1b' },
+            @{ Module = 'qtwebengine'; Commit = '9d3164c951523dfe151cc3799b6a8945de666171' }
           )
-          foreach ($archive in $archives) {
-            $url = "https://download.qt.io/official_releases/qt/6.10/6.10.3/submodules/$($archive.Name)"
-            $path = Join-Path $sources $archive.Name
-            $extract = Join-Path $sources $archive.Module
-            Invoke-WebRequest -Uri $url -OutFile $path
-            $actual = (Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant()
-            if ($actual -ne $archive.Sha) { throw "$($archive.Name) SHA-256 mismatch: $actual != $($archive.Sha)" }
-            New-Item -ItemType Directory -Force $extract | Out-Null
-            tar.exe -xf $path -C $extract
-            if ($LASTEXITCODE -ne 0) { throw "$($archive.Name) extraction failed: $LASTEXITCODE" }
-            $top = @(Get-ChildItem $extract -Directory)
-            if ($top.Count -ne 1) { throw "Expected one source root in $($archive.Name); found $($top.Count)" }
-            $licenseDir = Join-Path $top[0].FullName 'LICENSES'
-            if (-not (Test-Path $licenseDir)) { throw "Top-level LICENSES directory missing in $($archive.Name)" }
-            Copy-Item $licenseDir (Join-Path $licenses $archive.Module) -Recurse
+          foreach ($repository in $repositories) {
+            $checkout = Join-Path $sources $repository.Module
+            git init $checkout
+            git -C $checkout remote add origin "https://github.com/qt/$($repository.Module).git"
+            git -C $checkout sparse-checkout init --cone
+            git -C $checkout sparse-checkout set LICENSES
+            git -C $checkout fetch --depth 1 --filter=blob:none origin $repository.Commit
+            if ($LASTEXITCODE -ne 0) { throw "$($repository.Module) partial fetch failed: $LASTEXITCODE" }
+            git -C $checkout checkout --detach FETCH_HEAD
+            if ($LASTEXITCODE -ne 0) { throw "$($repository.Module) sparse checkout failed: $LASTEXITCODE" }
+            $actual = (git -C $checkout rev-parse HEAD).Trim()
+            if ($actual -ne $repository.Commit) { throw "$($repository.Module) commit mismatch: $actual != $($repository.Commit)" }
+            $licenseDir = Join-Path $checkout 'LICENSES'
+            if (-not (Test-Path $licenseDir)) { throw "Top-level LICENSES directory missing in $($repository.Module)" }
+            Copy-Item $licenseDir (Join-Path $licenses $repository.Module) -Recurse
           }
 
           $pdfNotices = Join-Path $licenses 'qtpdf-attributions'

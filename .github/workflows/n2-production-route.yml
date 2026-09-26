@@ -75,6 +75,61 @@ jobs:
           }
           "QPDF_COMPLIANCE=$compliance" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Acquire exact Qt 6.10.3 license and attribution bundle
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'qt-6.10.3-compliance'
+          $sources = Join-Path $root 'sources'
+          $licenses = Join-Path $root 'LICENSES'
+          New-Item -ItemType Directory -Force $sources,$licenses | Out-Null
+          $archives = @(
+            @{ Module = 'qtbase'; Name = 'qtbase-everywhere-src-6.10.3.tar.xz'; Sha = '383dc907816338f0cba72088a524c07458dfc69ce684ca9132fcc4fe91c24b0b' },
+            @{ Module = 'qtsvg'; Name = 'qtsvg-everywhere-src-6.10.3.tar.xz'; Sha = 'b3223fe005f6a4c7f21f34e4ee6ce0094737cff9503ba15bbb171ac18794f76d' }
+          )
+          foreach ($archive in $archives) {
+            $url = "https://download.qt.io/official_releases/qt/6.10/6.10.3/submodules/$($archive.Name)"
+            $path = Join-Path $sources $archive.Name
+            $extract = Join-Path $sources $archive.Module
+            Invoke-WebRequest -Uri $url -OutFile $path
+            $actual = (Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $archive.Sha) { throw "$($archive.Name) SHA-256 mismatch: $actual != $($archive.Sha)" }
+            New-Item -ItemType Directory -Force $extract | Out-Null
+            tar.exe -xf $path -C $extract
+            if ($LASTEXITCODE -ne 0) { throw "$($archive.Name) extraction failed: $LASTEXITCODE" }
+            $top = @(Get-ChildItem $extract -Directory)
+            if ($top.Count -ne 1) { throw "Expected one source root in $($archive.Name); found $($top.Count)" }
+            $licenseDir = Join-Path $top[0].FullName 'LICENSES'
+            if (-not (Test-Path $licenseDir)) { throw "Top-level LICENSES directory missing in $($archive.Name)" }
+            Copy-Item $licenseDir (Join-Path $licenses $archive.Module) -Recurse
+          }
+
+          $pdfNotices = Join-Path $licenses 'qtpdf-attributions'
+          New-Item -ItemType Directory -Force $pdfNotices | Out-Null
+          $indexUrl = 'https://doc.qt.io/qt-6.10/qtpdf-licensing.html'
+          $index = Join-Path $pdfNotices 'qtpdf-licensing.html'
+          Invoke-WebRequest -Uri $indexUrl -OutFile $index
+          $indexSha = (Get-FileHash $index -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($indexSha -ne '4091ec60b97a7112b05ee059f92120a62af8ba8bf6635ecf17e6727149aa358e') {
+            throw "Qt PDF licensing index SHA-256 mismatch: $indexSha"
+          }
+          $html = Get-Content $index -Raw
+          $pages = [regex]::Matches($html, 'href="([^"]*qtpdf-3rdparty-[^"]+\.html)"') |
+            ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
+          if ($pages.Count -ne 10) { throw "Expected ten Qt PDF attribution pages; found $($pages.Count)" }
+          $manifest = @()
+          foreach ($page in $pages) {
+            $target = Join-Path $pdfNotices $page
+            Invoke-WebRequest -Uri "https://doc.qt.io/qt-6.10/$page" -OutFile $target
+            $manifest += [ordered]@{
+              file = $page
+              source = "https://doc.qt.io/qt-6.10/$page"
+              sha256 = (Get-FileHash $target -Algorithm SHA256).Hash.ToLowerInvariant()
+              bytes = (Get-Item $target).Length
+            }
+          }
+          $manifest | ConvertTo-Json -Depth 4 | Set-Content -Encoding UTF8 (Join-Path $pdfNotices 'manifest.json')
+          "QT_COMPLIANCE=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Generate deterministic fixtures and independent validation
         shell: pwsh
         run: |
@@ -165,8 +220,8 @@ jobs:
           if (-not (Test-Path $installedSbom)) { throw "Official installed Qt SBOM directory missing: $installedSbom" }
           Copy-Item (Join-Path $installedSbom '*') $qtSbom -Recurse
 
-          $qtLicenses = Join-Path $env:QT_ROOT_DIR 'LICENSES'
-          if (-not (Test-Path $qtLicenses)) { throw "Official installed Qt license directory missing: $qtLicenses" }
+          $qtLicenses = Join-Path $env:QT_COMPLIANCE 'LICENSES'
+          if (-not (Test-Path $qtLicenses)) { throw "Verified Qt license bundle missing: $qtLicenses" }
           Copy-Item $qtLicenses (Join-Path $licenses 'qt-LICENSES') -Recurse
           @(
             'Atlas Reader N2 selected production dependency route'

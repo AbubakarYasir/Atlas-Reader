@@ -30,6 +30,7 @@ CMakeUserPresets.json
 
 # Test/runtime state
 Testing/
+__pycache__/
 *.log
 *.sqlite
 *.sqlite3

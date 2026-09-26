@@ -8,6 +8,8 @@ All notable changes to Atlas Reader Native are documented here.
 
 ### N2 owner acceptance — 2026-09-27
 
+- Moved seven PDF regression workflow push triggers from the retired N2 branch to permanent `main`, preserving their PR triggers. Performance and qpdf qualification retain PR/manual triggers. This keeps accepted PDF checks active after branch cleanup.
+
 - Rewrote the public README with a reader-focused introduction, explicitly planned benefits, honest current availability, next stages and ways to follow the project. Added `docs/DEVELOPER_GUIDE.md` for technical orientation and linked the existing authoritative build, architecture, QA and evidence documents. No product scope or acceptance requirement changed.
 
 - Adopted permanent branch names at the owner's request: native development is `main`, and the discontinued Flutter backup is `legacy/flutter`. Renamed both existing branches without rewriting commits; synchronized local tracking, public notices and workflow documentation. Future checkpoints do not rename either permanent branch.

@@ -2,7 +2,7 @@ name: N2 qpdf Outline Breadth
 
 on:
   push:
-    branches: ['native-v2-n2-pdf-engine-qualification']
+    branches: ['main']
   pull_request:
     paths:
       - '.github/workflows/n2-qpdf-outline-breadth.yml'

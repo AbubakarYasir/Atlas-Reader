@@ -2,7 +2,7 @@ name: N2 qpdf Encrypted Write
 
 on:
   push:
-    branches: ['native-v2-n2-pdf-engine-qualification']
+    branches: ['main']
   pull_request:
     paths:
       - '.github/workflows/n2-qpdf-encrypted-write.yml'

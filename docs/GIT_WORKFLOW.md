@@ -64,6 +64,11 @@ require link/status validation, a meaningful commit and a pushed branch.
 
 ## Push and pull-request lifecycle
 
+Windows CI runs on branch pushes. The seven automatic PDF regression workflows
+run on pushes to permanent `main` and retain their PR triggers. Performance and
+qpdf qualification retain path-filtered PR/manual execution. A branch rename
+must not leave workflow triggers pointing at a deleted checkpoint branch.
+
 1. Push the named checkpoint branch to `origin`; do not claim “on GitHub” until
    the remote branch resolves to the local commit.
 2. Keep the checkpoint pull request Draft while implementation/evidence is

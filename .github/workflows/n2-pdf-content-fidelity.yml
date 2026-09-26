@@ -2,7 +2,7 @@ name: N2 PDF Content Fidelity
 
 on:
   push:
-    branches: ['native-v2-n2-pdf-engine-qualification']
+    branches: ['main']
   pull_request:
     paths:
       - '.github/workflows/n2-pdf-content-fidelity.yml'

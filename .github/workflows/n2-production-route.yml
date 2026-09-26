@@ -1,0 +1,217 @@
+name: N2 Selected Production Route
+
+on:
+  push:
+    branches: ['native-v2-n2-pdf-engine-qualification']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selected-route:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    env:
+      ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      QPDF_VERSION: '12.4.1'
+      QPDF_ASSET: 'qpdf-12.4.1-msvc64.zip'
+      QPDF_ASSET_ID: '533019080'
+      QPDF_ASSET_SHA256: '3cd016cd433ef7232e42f4c13348a49cc14907a3c7278ef4f99120593126f7a6'
+
+    steps:
+      - name: Checkout exact implementation head
+        uses: actions/checkout@v6
+
+      - name: Install official Qt 6.10.3 dynamic distribution with Qt PDF
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.3'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+          modules: 'qtpdf'
+          cache: true
+
+      - name: Acquire and verify exact first-party qpdf package
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/qpdf/qpdf/releases/download/v12.4.1/qpdf-12.4.1-msvc64.zip'
+          $archive = Join-Path $env:RUNNER_TEMP $env:QPDF_ASSET
+          $root = Join-Path $env:RUNNER_TEMP 'qpdf-12.4.1-msvc64'
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:QPDF_ASSET_SHA256) {
+            throw "qpdf archive SHA-256 mismatch: $actual != $env:QPDF_ASSET_SHA256"
+          }
+          Expand-Archive -LiteralPath $archive -DestinationPath $root -Force
+          $qpdf = @(Get-ChildItem -Path $root -Recurse -Filter qpdf.exe -File)
+          if ($qpdf.Count -ne 1) { throw "Expected one qpdf.exe; found $($qpdf.Count)" }
+          $version = (& $qpdf[0].FullName --version 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $version -notmatch '(?<![0-9])12\.4\.1(?![0-9])') {
+            throw "Unexpected qpdf version: $version"
+          }
+          "QPDF_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "QPDF_EXE=$($qpdf[0].FullName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "QPDF_BIN=$($qpdf[0].DirectoryName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "QPDF_ARCHIVE_SHA256=$actual" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Verified first-party qpdf asset $env:QPDF_ASSET_ID: $actual"
+
+      - name: Acquire pinned qpdf source license and notice
+        shell: pwsh
+        run: |
+          $compliance = Join-Path $env:RUNNER_TEMP 'qpdf-compliance'
+          New-Item -ItemType Directory -Force $compliance | Out-Null
+          $files = @(
+            @{ Name = 'LICENSE.txt'; Url = 'https://raw.githubusercontent.com/qpdf/qpdf/v12.4.1/LICENSE.txt'; Sha = 'cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30' },
+            @{ Name = 'NOTICE.md'; Url = 'https://raw.githubusercontent.com/qpdf/qpdf/v12.4.1/NOTICE.md'; Sha = 'b207f65a9e5491195ded63b2941199b19a4d30148871f2742c88eae7bfc513a6' }
+          )
+          foreach ($file in $files) {
+            $path = Join-Path $compliance $file.Name
+            Invoke-WebRequest -Uri $file.Url -OutFile $path
+            $actual = (Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $file.Sha) { throw "$($file.Name) SHA-256 mismatch: $actual != $($file.Sha)" }
+          }
+          "QPDF_COMPLIANCE=$compliance" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Generate deterministic fixtures and independent validation
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
+          python tests/fixtures/pdf/source/generate_a006_unicode_semantics.py
+          if ($LASTEXITCODE -ne 0) { throw 'A006 generation failed' }
+          python tests/fixtures/pdf/source/generate_a007_a008_security_semantics.py
+          if ($LASTEXITCODE -ne 0) { throw 'A007/A008 generation failed' }
+          python tests/fixtures/pdf/source/generate_a009_restricted_permissions.py
+          if ($LASTEXITCODE -ne 0) { throw 'A009 generation failed' }
+          python tests/fixtures/pdf/source/generate_a010_certification_structure.py
+          if ($LASTEXITCODE -ne 0) { throw 'A010 generation failed' }
+          python tests/fixtures/pdf/validate_n2_fixtures.py --output artifacts/n2-production-route/fixture-validation.json
+          if ($LASTEXITCODE -ne 0) { throw 'Independent fixture validation failed' }
+
+      - name: Configure selected read route without standalone PDFium
+        shell: pwsh
+        run: >-
+          cmake -S . -B build/n2-production-route
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          -DATLAS_ENABLE_PDFIUM_PROBE=OFF
+          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+
+      - name: Build selected read route in Release
+        shell: pwsh
+        run: cmake --build build/n2-production-route --config Release --parallel
+
+      - name: Run strict selected Qt PDF tests
+        shell: pwsh
+        run: >-
+          ctest --test-dir build/n2-production-route
+          --build-config Release
+          --output-on-failure
+
+      - name: Run selected qpdf structure security and write regressions
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'artifacts/n2-production-route/qpdf-tests'
+          New-Item -ItemType Directory -Force $out | Out-Null
+          $probes = @(
+            'qpdf_structural_probe.py',
+            'qpdf_permission_probe.py',
+            'qpdf_signature_safety_probe.py',
+            'qpdf_outline_mutation_probe.py',
+            'qpdf_outline_breadth_probe.py',
+            'qpdf_encrypted_outline_mutation_probe.py'
+          )
+          foreach ($probe in $probes) {
+            python "tools/pdf/$probe" --qpdf "$env:QPDF_EXE" --fixture-root 'tests/fixtures/pdf/generated' --output-dir "$out"
+            if ($LASTEXITCODE -ne 0) { throw "$probe failed with exit code $LASTEXITCODE" }
+          }
+
+      - name: Stage selected runtime and compliance evidence
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $PWD 'artifacts/n2-production-route'
+          $package = Join-Path $evidence 'package'
+          $qpdfPackage = Join-Path $package 'qpdf'
+          $licenses = Join-Path $evidence 'licenses'
+          $qtSbom = Join-Path $evidence 'qt-upstream-sbom'
+          New-Item -ItemType Directory -Force $package,$qpdfPackage,$licenses,$qtSbom | Out-Null
+
+          $qtProbe = (Resolve-Path 'build/n2-production-route/Release/atlas_qt_pdf_probe.exe').Path
+          Copy-Item $qtProbe $package
+          & (Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe') --release --no-translations --compiler-runtime $package
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed with exit code $LASTEXITCODE" }
+
+          $qpdfRuntime = @(
+            'qpdf.exe', 'qpdf30.dll', 'concrt140.dll', 'msvcp140.dll', 'msvcp140_1.dll',
+            'msvcp140_2.dll', 'msvcp140_atomic_wait.dll', 'msvcp140_codecvt_ids.dll',
+            'vcruntime140.dll', 'vcruntime140_1.dll'
+          )
+          foreach ($name in $qpdfRuntime) {
+            $source = Join-Path $env:QPDF_BIN $name
+            if (-not (Test-Path $source)) { throw "qpdf runtime file missing: $source" }
+            Copy-Item $source $qpdfPackage
+          }
+
+          Copy-Item (Join-Path $env:QPDF_COMPLIANCE 'LICENSE.txt') (Join-Path $licenses 'qpdf-LICENSE.txt')
+          Copy-Item (Join-Path $env:QPDF_COMPLIANCE 'NOTICE.md') (Join-Path $licenses 'qpdf-NOTICE.md')
+          $binaryLicense = @(Get-ChildItem $env:QPDF_ROOT -Recurse -File | Where-Object { $_.FullName -match 'manual-html[\\/]license\.html$' })
+          if ($binaryLicense.Count -ne 1) { throw "Expected one qpdf binary license.html; found $($binaryLicense.Count)" }
+          Copy-Item $binaryLicense[0].FullName (Join-Path $licenses 'qpdf-binary-license.html')
+
+          $installedSbom = Join-Path $env:QT_ROOT_DIR 'sbom'
+          if (-not (Test-Path $installedSbom)) { throw "Official installed Qt SBOM directory missing: $installedSbom" }
+          Copy-Item (Join-Path $installedSbom '*') $qtSbom -Recurse
+
+          $qtLicenses = Join-Path $env:QT_ROOT_DIR 'LICENSES'
+          if (-not (Test-Path $qtLicenses)) { throw "Official installed Qt license directory missing: $qtLicenses" }
+          Copy-Item $qtLicenses (Join-Path $licenses 'qt-LICENSES') -Recurse
+          @(
+            'Atlas Reader N2 selected production dependency route'
+            "Implementation SHA: $env:ATLAS_IMPLEMENTATION_SHA"
+            'Read/render/text/navigation: official dynamic Qt PDF 6.10.3'
+            'Structure/security/write: first-party qpdf 12.4.1 MSVC64 CLI'
+            "qpdf official asset ID: $env:QPDF_ASSET_ID"
+            "qpdf archive SHA-256: $env:QPDF_ARCHIVE_SHA256"
+            'Standalone PDFium: qualification-only; absent from production package'
+            'Update gate: change one pin at a time, regenerate inventory, rerun this workflow and all affected N2 suites'
+            'Rollback: restore the prior qualified pin/inventory from Git and rebuild; do not reuse unqualified cached binaries'
+          ) | Set-Content -Encoding UTF8 (Join-Path $evidence 'BUILD_INFO.txt')
+
+          python tools/release/generate_n2_distribution_evidence.py `
+            --package-root "$package" `
+            --output-dir "$evidence" `
+            --implementation-sha "$env:ATLAS_IMPLEMENTATION_SHA" `
+            --qpdf-archive-sha256 "$env:QPDF_ARCHIVE_SHA256"
+          if ($LASTEXITCODE -ne 0) { throw 'Distribution evidence generation failed' }
+
+      - name: Validate selected runtime identities and compliance evidence
+        shell: pwsh
+        run: |
+          python tools/release/validate_n2_distribution_evidence.py --evidence-dir artifacts/n2-production-route
+          if ($LASTEXITCODE -ne 0) { throw 'Distribution evidence validation failed' }
+
+      - name: Smoke-test staged runtime in isolation
+        shell: pwsh
+        run: |
+          $package = (Resolve-Path 'artifacts/n2-production-route/package').Path
+          $fixture = (Resolve-Path 'tests/fixtures/pdf/generated/A006_unicode_semantics.pdf').Path
+          Push-Location $package
+          try {
+            & '.\atlas_qt_pdf_probe.exe' --expect-pages 1 --expect-text-contains 'اردو' $fixture
+            if ($LASTEXITCODE -ne 0) { throw "Staged Qt PDF smoke test failed: $LASTEXITCODE" }
+            & '.\qpdf\qpdf.exe' --version
+            if ($LASTEXITCODE -ne 0) { throw "Staged qpdf smoke test failed: $LASTEXITCODE" }
+          } finally {
+            Pop-Location
+          }
+
+      - name: Upload selected production-route package and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n2-production-route-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/n2-production-route
+          if-no-files-found: error
+          retention-days: 30

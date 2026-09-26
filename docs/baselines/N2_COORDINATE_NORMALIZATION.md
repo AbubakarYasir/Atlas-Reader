@@ -1,7 +1,7 @@
 # N2 PDF Coordinate Normalization Baseline
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Canonical candidate evidence — N2 Ready for owner test**
+**Status:** **Canonical candidate evidence — N2 Accepted**
 **Recorded:** 2026-09-23  
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
@@ -229,5 +229,4 @@ Binding later work under `../CHECKPOINT_QA_MATRIX.md`:
 2. N4.4/N9: broader real-font/multi-line/bidi text rectangles;
 3. N4.4: extraction-selection geometry independently of search hits.
 
-N2 is **Ready for owner test** and ADR-0004 remains **Proposed** until explicit
-owner `N2 PASS`.
+N2 is **Accepted** and ADR-0004 is **Accepted**, following owner `N2 PASS` on 2026-09-27.

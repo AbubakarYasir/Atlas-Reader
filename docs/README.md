@@ -1,25 +1,26 @@
 # Atlas Reader Native — Documentation Index
 
-<!-- atlas-status: N2|ready-for-owner-test -->
+<!-- atlas-status: N2|accepted -->
 
 Use this page to find the authoritative document instead of duplicating requirements across random files.
 
 ## Start here
+
+**N2 Accepted:** see [acceptance and N3 handoff](baselines/N2_ACCEPTANCE.md). Flutter development has stopped; native C++/Qt is the active project. N3 has not started.
 
 1. **`../README.md`** — project entry point and current status.
 2. **`../PLAN.md`** — master product/engineering north star.
 3. **`../CHECKPOINTS.md`** — current checkpoint, release mapping, stop gates.
 4. **`N2_PDF_ENGINE_QUALIFICATION_PLAN.md`** — active N2 execution plan, engine responsibilities, fixtures, measurements, hard blockers and stop gate.
 5. **`baselines/N2_PDF_ENGINE_MATRIX.md`** — binding N2 evidence matrix and remaining gates.
-6. **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — Proposed N2 responsibility split decision; not binding until owner N2 acceptance.
+6. **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — Accepted N2 responsibility split decision.
 7. **`../tests/fixtures/pdf/README.md`** — N2 PDF fixture provenance/privacy/checksum/mutation contract.
 8. **`FEATURE_SCOPE_2_0.md`** — binding Windows 2.0 feature scope.
 9. **`SUCCESS_METRICS.md`** — how we prove the rewrite is becoming a better product rather than merely larger.
 10. **`CHECKPOINT_QA_MATRIX.md`** — binding automated/manual QA, owner tests, blockers and limitation ownership for N0–N11.
 11. **`GIT_WORKFLOW.md`** — binding branch, commit, PR, merge, tag, status synchronization and remote-verification rules.
 
-N0 and N1 are Accepted. N2 is Ready for owner test; explicit owner `N2 PASS`
-remains. A passed checkpoint cannot be reopened without new evidence of a
+N0, N1 and N2 are Accepted. N3 is Not started; report closure before beginning it. A passed checkpoint cannot be reopened without new evidence of a
 user-facing regression.
 
 ## Product behavior
@@ -64,7 +65,7 @@ Primary N2 documents:
 - **`baselines/N2_COORDINATE_NORMALIZATION.md`** — Atlas page-space contract, A003/A011 geometry and A012 `/XYZ` destination evidence;
 - **`baselines/N2_STRESS_CONCURRENCY.md`** — 500-lifetime read-engine stress and 1,000-job serialized PDFium queue evidence;
 - **`baselines/N2_PRODUCTION_DISTRIBUTION.md`** — frozen/requalified official Qt PDF + first-party qpdf CLI acquisition/licensing/SBOM/update/rollback route;
-- **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — records the Proposed Qt PDF/qpdf responsibility split and remains Proposed until explicit owner `N2 PASS`;
+- **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — records the Accepted Qt PDF/qpdf responsibility split following owner `N2 PASS` on 2026-09-27;
 - **`../tests/fixtures/pdf/README.md`** — public/synthetic/private fixture rules.
 
 Current evidence has closed core correctness, navigation, Unicode/search,

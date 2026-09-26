@@ -1,10 +1,12 @@
 # Atlas Reader Native
 
-<!-- atlas-status: N2|ready-for-owner-test -->
+**Development notice — 2026-09-27:** Flutter development has stopped. Active development is the C++23/Qt native successor on [`native-v2-bootstrap`](https://github.com/AbubakarYasir/Atlas-Reader/tree/native-v2-bootstrap). The Flutter source is retained as historical and migration reference only.
+
+<!-- atlas-status: N2|accepted -->
 
 > Native-performance, local-first reading and research software built around **Index → Reader → Bookmarks**.
 
-**Status:** N0 bootstrap **Accepted**. N1 Windows toolchain + empty-shell baseline **Accepted**. N2 PDF-engine qualification is **Ready for owner test**; explicit owner `N2 PASS` remains. No production Index/Reader/Bookmark implementation has started.
+**Status:** N0 bootstrap **Accepted**. N1 Windows toolchain + empty-shell baseline **Accepted**. N2 PDF-engine qualification is **Accepted by owner on 2026-09-27**. No production Index/Reader/Bookmark implementation has started.
 
 **Current native build:** `2.0.0-alpha.2`
 
@@ -54,7 +56,7 @@ We do **not** call an empty shell a beta.
 
 - N0: `2.0.0-alpha.0` — **Accepted** architecture/bootstrap.
 - N1: `2.0.0-alpha.1` — **Accepted** Windows toolchain + zero-feature performance baseline.
-- N2: `2.0.0-alpha.2` — **Ready for owner test**; explicit owner PASS pending.
+- N2: `2.0.0-alpha.2` — **Accepted by owner on 2026-09-27**.
 - N3: `2.0.0-beta.1` — first useful native Library/Index beta.
 - N4: `2.0.0-beta.2` — native Reader.
 - N5: `2.0.0-beta.3` — complete resilient Bookmarks.
@@ -133,10 +135,9 @@ A valid N2 result may deliberately use more than one engine.
 - fixture rules: [`tests/fixtures/pdf/README.md`](tests/fixtures/pdf/README.md)
 - proposed architecture decision: [`docs/decisions/ADR-0004-pdf-engine-responsibilities.md`](docs/decisions/ADR-0004-pdf-engine-responsibilities.md)
 
-ADR-0004 remains **Proposed**. The frozen/requalified route is Qt PDF 6.10.3
+ADR-0004 is **Accepted**. The frozen/requalified route is Qt PDF 6.10.3
 for read/render/text/navigation plus qpdf 12.4.1 CLI for
-structure/security/write; it is not Accepted until the owner explicitly records
-`N2 PASS`.
+structure/security/write; it was Accepted by owner `N2 PASS` on 2026-09-27.
 
 ### N2 non-scope
 
@@ -151,7 +152,7 @@ N2 does not implement:
 - installer;
 - OCR or AI analysis.
 
-N3 stays closed until N2 Accepted.
+N3 is Not started; report N2 closure before beginning N3.
 
 ## Open-source reuse without lock-in
 
@@ -234,18 +235,18 @@ qualification-only standalone PDFium DLL.
 
 Start with [`docs/README.md`](docs/README.md). It points to the authoritative product, architecture, data, toolchain, quality, performance, security, accessibility, dependency, migration, and release documents.
 
-For current work, read `CHECKPOINTS.md` → `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` → `docs/baselines/N2_PDF_ENGINE_MATRIX.md` → Proposed ADR-0004.
+For current work, read `CHECKPOINTS.md` → `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` → `docs/baselines/N2_PDF_ENGINE_MATRIX.md` → Accepted ADR-0004.
 
 ## Current checkpoint
 
-**N2 — PDF engine qualification spike:** **Ready for owner test**.
+**N2 — PDF engine qualification spike:** **Accepted**.
 
 All bounded N2 capability blockers pass. The frozen Windows production route is
 official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
 first-party qpdf 12.4.1 CLI for structure/security/write. Standalone PDFium is
 retained as qualification evidence but excluded from the production package.
 Strict CI is green on the synchronized implementation/documentation head. N2
-now requires owner evidence review and explicit `N2 PASS`.
+was explicitly Accepted by the owner on 2026-09-27. N3 is Not started.
 
 ## License
 

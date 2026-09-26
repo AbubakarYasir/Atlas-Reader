@@ -1,7 +1,7 @@
 # N2 PDF Engine Qualification Matrix
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Ready for owner test — selected production route frozen/requalified and strict CI green; owner acceptance pending**
+**Status:** **Accepted — owner N2 PASS recorded 2026-09-27**
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Opened:** 2026-09-22  
 **Last evidence refresh:** 2026-09-27
@@ -44,7 +44,7 @@ Focused sources:
 - `docs/baselines/N2_COORDINATE_NORMALIZATION.md`
 - `docs/baselines/N2_STRESS_CONCURRENCY.md`
 - `docs/baselines/N2_PRODUCTION_DISTRIBUTION.md`
-- `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` — remains **Proposed**.
+- `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` — is **Accepted**.
 
 Later documentation-only commits do not redefine which binaries/probes were physically tested. Each evidence row above remains bound to its recorded implementation SHA.
 
@@ -285,23 +285,22 @@ Production selection still requires, for each selected responsibility:
 5. previous-qualified-pin rollback path;
 6. final regression qualification against the production route.
 
-## Proposed final responsibility decision — acceptance pending
+## Accepted responsibility decision
 
 | Responsibility | Selected implementation | Status | Remaining acceptance evidence |
 |---|---|---|---|
-| Document open/read metadata | Qt PDF 6.10.3 | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
-| Page geometry/labels | Qt PDF + Atlas normalization | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
-| Page raster rendering | Qt PDF + Atlas background/compositing policy | FROZEN, ACCEPTANCE PENDING | broader graphics corpus is a binding N4 gate |
-| Text extraction | Qt PDF + Atlas Unicode normalization | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
-| Search | Qt PDF + Atlas normalization/index layer | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
-| Links/navigation | Qt PDF + structural rotation metadata + Atlas normalization/deduplication | FROZEN, ACCEPTANCE PENDING | bounded limitations tested; owner N2 PASS |
-| Outline read | Qt PDF | FROZEN, ACCEPTANCE PENDING | selected-route CI; owner N2 PASS |
-| Security/capability inspection | qpdf 12.4.1 CLI adapter | FROZEN, ACCEPTANCE PENDING | bounded security scope; owner N2 PASS |
-| Structural transformation/write | qpdf 12.4.1 CLI adapter | FROZEN, ACCEPTANCE PENDING | bounded preservation scope; owner N2 PASS |
-| Independent output validation | qpdf `--check`; independent oracle in qualification only | FROZEN, ACCEPTANCE PENDING | production app must not depend on pypdf |
+| Document open/read metadata | Qt PDF 6.10.3 | ACCEPTED | selected-route CI; owner N2 PASS |
+| Page geometry/labels | Qt PDF + Atlas normalization | ACCEPTED | selected-route CI; owner N2 PASS |
+| Page raster rendering | Qt PDF + Atlas background/compositing policy | ACCEPTED | broader graphics corpus is a binding N4 gate |
+| Text extraction | Qt PDF + Atlas Unicode normalization | ACCEPTED | selected-route CI; owner N2 PASS |
+| Search | Qt PDF + Atlas normalization/index layer | ACCEPTED | selected-route CI; owner N2 PASS |
+| Links/navigation | Qt PDF + structural rotation metadata + Atlas normalization/deduplication | ACCEPTED | bounded limitations tested; owner N2 PASS |
+| Outline read | Qt PDF | ACCEPTED | selected-route CI; owner N2 PASS |
+| Security/capability inspection | qpdf 12.4.1 CLI adapter | ACCEPTED | bounded security scope; owner N2 PASS |
+| Structural transformation/write | qpdf 12.4.1 CLI adapter | ACCEPTED | bounded preservation scope; owner N2 PASS |
+| Independent output validation | qpdf `--check`; independent oracle in qualification only | ACCEPTED | production app must not depend on pypdf |
 
-This is the frozen responsibility order; ADR-0004 remains Proposed until the
-final exact-head CI set and explicit owner `N2 PASS`.
+This is the frozen responsibility order; ADR-0004 is Accepted following green CI and owner `N2 PASS` on 2026-09-27.
 
 ## Recorded scope decisions
 
@@ -318,17 +317,9 @@ B1 image-only rendering, corrected B2 real-font Arabic/Urdu rendering, B3 full
 outline breadth, and B4 permitted encrypted mutation are complete and are not
 deferred by this classification.
 
-## Remaining N2 gates
+## N2 acceptance
 
-Strict CI passed on synchronized head
-`925d90521c1410200ed2b467dc808372bda3ec0c`: Windows Debug/Release, selected
-production route, fidelity, content fidelity, coordinates, stress, performance,
-qpdf qualification, outline breadth and encrypted-write checks were green.
-
-Before ADR-0004 can move from **Proposed** to **Accepted** and before owner
-`N2 PASS`:
-
-1. **Owner evidence review:** review the frozen decision/evidence summary.
-2. **Owner acceptance:** explicit `N2 PASS`.
-
-N2 is **Open**. N3 is **Not started**. PR #4 remains **draft/open/unmerged** until explicit N2 acceptance.
+Owner explicitly recorded `N2 PASS` on 2026-09-27 after testing N2.
+Reviewed commit: `82897e37177f1b8519b53d2fa05856feefa36744`; all 20 checks passed.
+ADR-0004 is Accepted. N3 remains Not started at the owner's request.
+See [N2 closure record](N2_ACCEPTANCE.md) for evidence and carry-forward duties.

@@ -1,7 +1,7 @@
 # N2 qpdf Structural / Security / Transformation Baseline
 
 **Checkpoint:** N2 — PDF engine qualification spike  
-**Status:** **Canonical candidate evidence — qpdf route frozen; N2 Ready for owner test**
+**Status:** **Canonical candidate evidence — qpdf route frozen; N2 Accepted**
 **Recorded:** 2026-09-23  
 **Branch:** `native-v2-n2-pdf-engine-qualification`
 
@@ -319,13 +319,13 @@ Atlas security state must be semantic rather than qpdf-enum/string based. At min
 
 Any future mutation path must continue to apply explicit preservation invariants. Signed/certified input is a special safety state: a rewrite that leaves signature dictionaries in place must still be treated as invalidating any unverified integrity claim unless an independent cryptographic verifier proves otherwise.
 
-## 10. Remaining qpdf/security work before final N2 decision
+## 10. Historical follow-ups and their final disposition
 
-1. reproducible unsupported-security/encryption classification if practical and relevant to Atlas error semantics;
-2. select/qualify the independent cryptographic-signature verification responsibility if Atlas v2 needs signature validity reporting rather than only mutation safety;
-3. add/remove/reparent outline mutation if Atlas v2 requires qpdf to construct outline trees rather than only update existing nodes;
-4. encrypted rewrite-preservation if Atlas intends to mutate encrypted PDFs rather than block/defer that workflow;
-5. production CLI-vs-library packaging decision, runtime/dependency footprint and notice audit.
+1. Unsupported-security breadth: assigned to N5.1 capability tests.
+2. Cryptographic signature validation: outside Windows 2.0; mutation safety remains N5.
+3. Outline add/remove/reparent: bounded N2 breadth qualification passed; see B3 in `N2_SCOPE_REVIEW.md`. Production editor and safe-save tests remain N5.
+4. Permitted encrypted rewrite preservation: N2 B4 passed on A015; see the final matrix. Restricted writes remain forbidden.
+5. Packaging: first-party qpdf 12.4.1 CLI selected and qualified with runtime hashes/notices in `N2_PRODUCTION_DISTRIBUTION.md`.
 
-N2 is **Ready for owner test**. This baseline supplies evidence for ADR-0004;
+N2 is **Accepted**. This baseline supplies evidence for ADR-0004;
 it does not accept the ADR or authorize merge by itself.

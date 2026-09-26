@@ -429,7 +429,7 @@ jobs:
             'A007-A010 fixture policy: deterministically regenerated from checked-in source before validation/tests'
             'Controls style: compile-time Basic'
             'Inherited Windows font backend: GDI via qt.conf'
-            'PDF engine production route: official dynamic Qt PDF 6.10.3 + first-party qpdf 12.4.1 CLI; frozen/requalified, owner N2 PASS pending'
+            'PDF engine production route: official dynamic Qt PDF 6.10.3 + first-party qpdf 12.4.1 CLI; frozen/requalified, owner N2 PASS recorded 2026-09-27'
             'Purpose: N2 engineering/CI evidence only; not a user release and not N1 requalification'
           ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N2_BUILD_INFO.txt')
 

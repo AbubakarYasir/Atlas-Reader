@@ -2,7 +2,7 @@
 
 **Checkpoint:** N2 — structural/security/transformation qualification  
 **Status:** **Pinned/frozen first-party qpdf 12.4.1 CLI route selected for N2;
-owner acceptance pending**
+owner acceptance recorded 2026-09-27**
 **Recorded:** 2026-09-22
 
 ## Exact qualification pin

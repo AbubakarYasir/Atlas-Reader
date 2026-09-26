@@ -1,10 +1,18 @@
 # Changelog
 
-<!-- atlas-status: N2|ready-for-owner-test -->
+<!-- atlas-status: N2|accepted -->
 
 All notable changes to Atlas Reader Native are documented here.
 
 ## [Unreleased]
+
+### N2 owner acceptance — 2026-09-27
+
+- Owner explicitly tested and approved N2 with `N2 PASS`; ADR-0004 is Accepted.
+- Added `docs/baselines/N2_ACCEPTANCE.md` with evidence identity, integration route, future obligations and the stop before N3.
+- Corrected Git policy: native checkpoint PRs target `native-v2-bootstrap`; `main` retains the discontinued Flutter reference.
+- Published that Flutter development has stopped and C++/Qt native development is active.
+- N3 remains Not started. Version remains `2.0.0-alpha.2`.
 
 - Audited every tracked Markdown plan/evidence file for status, route and
   checkpoint-ownership drift; corrected the live N2 state and the final Qt
@@ -132,7 +140,7 @@ The native successor belongs to the `2.0.0` release line.
 
 - `2.0.0-alpha.0` — N0 bootstrap — **Accepted**
 - `2.0.0-alpha.1` — N1 Windows/toolchain baseline — **Accepted**
-- `2.0.0-alpha.2` — N2 PDF-engine qualification — **Ready for owner test**
+- `2.0.0-alpha.2` — N2 PDF-engine qualification — **Accepted**
 - `2.0.0-beta.1` onward — usable feature checkpoints from N3
 - `2.0.0-rc.N` — release qualification
 - `2.0.0` — accepted stable Windows release

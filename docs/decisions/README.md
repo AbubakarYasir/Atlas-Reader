@@ -47,9 +47,6 @@ Ordinary implementation details do not need an ADR.
 - `ADR-0001-native-stack.md` — **Accepted** — C++23 + Qt Quick native successor architecture.
 - `ADR-0002-vcpkg-manifest.md` — **Accepted** — vcpkg manifest mode for non-Qt native production dependencies.
 - `ADR-0003-n1-qt-toolchain-pin.md` — **Accepted** — public N1 Qt 6.10.3/MSVC 2022 baseline while newer compatible Qt kits may be separately qualified.
-- `ADR-0004-pdf-engine-responsibilities.md` — **Proposed** — N2 evidence-driven assignment of read/render/text/navigation versus structure/security/transformation responsibilities.
+- `ADR-0004-pdf-engine-responsibilities.md` — **Accepted** — N2 evidence-driven assignment of read/render/text/navigation versus structure/security/transformation responsibilities.
 
-ADR-0004 remains **Proposed** while N2 is Ready for owner test. The frozen route
-is Qt PDF 6.10.3 for read/render/text/navigation plus qpdf 12.4.1 CLI for
-structure/security/write; PDFium remains qualification evidence. ADR-0004
-becomes Accepted only after explicit owner `N2 PASS`.
+ADR-0004 was Accepted by owner `N2 PASS` on 2026-09-27. The selected route is Qt PDF 6.10.3 plus qpdf 12.4.1 CLI. N3 is Not started.

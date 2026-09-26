@@ -1,7 +1,7 @@
 # Building Atlas Reader Native
 
 N0 and N1 are Accepted. N2 is the active PDF-engine qualification checkpoint
-(`2.0.0-alpha.2`) and is Ready for owner test; explicit owner `N2 PASS` remains.
+(`2.0.0-alpha.2`) and is Accepted by owner on 2026-09-27.
 
 Before push, run the documentation governance check:
 

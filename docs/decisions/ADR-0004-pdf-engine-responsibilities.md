@@ -1,6 +1,7 @@
 # ADR-0004 — PDF Engine Responsibility Split
 
-**Status:** Proposed  
+**Status:** Accepted
+**Date accepted:** 2026-09-27
 **Date proposed:** 2026-09-22  
 **Checkpoint:** N2 — PDF engine qualification spike (`2.0.0-alpha.2`)
 
@@ -22,13 +23,12 @@ The accepted architecture already requires Atlas-owned PDF contracts and explici
 
 N2 therefore compares Qt PDF, PDFium and qpdf with real fixtures and repeatable evidence before assigning production responsibilities.
 
-## Proposed decision
+## Accepted decision
 
 N2 evidence now supports the following frozen assignment. The production routes
-are requalified, but the ADR remains **Proposed** until final exact-head CI and
-the owner's explicit `N2 PASS`:
+are requalified. The owner explicitly recorded `N2 PASS` on 2026-09-27:
 
-| Responsibility | Proposed implementation |
+| Responsibility | Accepted implementation |
 |---|---|
 | open, metadata, page geometry/labels | Qt PDF 6.10.3 behind Atlas normalization |
 | raster rendering | Qt PDF 6.10.3 behind Atlas background/compositing policy |
@@ -209,9 +209,9 @@ A preference change alone is not enough to reopen an accepted checkpoint decisio
 
 ## Acceptance condition
 
-This ADR remains **Proposed** throughout the bake-off.
+This ADR was Proposed during the bake-off and is now Accepted.
 
-It becomes **Accepted** only when:
+The following acceptance conditions have been met:
 
 - the N2 matrix contains sufficient evidence;
 - exact versions/acquisition paths/licenses are recorded;

@@ -1,6 +1,6 @@
 # Atlas Reader Native — Current Project Notes
 
-<!-- atlas-status: N2|ready-for-owner-test -->
+<!-- atlas-status: N2|accepted -->
 
 **State:** native successor PDF-engine qualification
 
@@ -8,7 +8,7 @@
 
 **Current checkpoint:** N2 — PDF engine qualification spike
 
-**Current N2 status:** **Ready for owner test — selected Qt PDF/qpdf production route is frozen/requalified and strict CI is green; explicit owner `N2 PASS` remains.**
+**Current N2 status:** **Accepted — owner N2 PASS recorded 2026-09-27; Qt PDF/qpdf route frozen and qualified.**
 
 **Current build:** `2.0.0-alpha.2`
 
@@ -64,10 +64,10 @@ Read these in order:
 2. `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` — detailed experiment program;
 3. `docs/baselines/N2_PDF_ENGINE_MATRIX.md` — durable live evidence;
 4. `tests/fixtures/pdf/README.md` — fixture/provenance/privacy/mutation contract;
-5. `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` — frozen responsibility decision, Proposed until owner PASS;
+5. `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` — accepted responsibility decision, owner PASS recorded 2026-09-27;
 6. `docs/DEPENDENCIES_AND_TOOLS.md` and `docs/UPSTREAM_CATALOG.md` — acquisition/tool policy.
 
-ADR-0004 remains **Proposed** until N2 evidence is complete and the owner records `N2 PASS`.
+ADR-0004 is **Accepted**, following owner `N2 PASS` on 2026-09-27.
 
 ## N2 candidates
 
@@ -175,7 +175,7 @@ A faster wrong render/search result loses.
 
 ## N2 stop gate
 
-N2 cannot be Accepted until:
+N2 acceptance criteria (satisfied; owner PASS recorded 2026-09-27):
 
 - Qt PDF and PDFium have comparable evidence for required read/render responsibilities, or one is explicitly rejected/blocked with evidence;
 - qpdf has structural/security/preservation evidence;
@@ -186,7 +186,7 @@ N2 cannot be Accepted until:
 - strict Debug + Release final CI passes;
 - owner explicitly records `N2 PASS`.
 
-N3 remains closed until then.
+N3 remains Not started pending the requested closure report.
 
 ## Inherited canonical Windows toolchain
 
@@ -231,7 +231,7 @@ The research-data rule remains:
 
 - N0: `2.0.0-alpha.0` — **Accepted** bootstrap
 - N1: `2.0.0-alpha.1` — **Accepted** Windows/toolchain baseline
-- N2: `2.0.0-alpha.2` — **Ready for owner test**; explicit owner PASS pending
+- N2: `2.0.0-alpha.2` — **Accepted by owner on 2026-09-27**
 - N3: first useful native `2.0.0-beta.1` — Not started
 - N4–N9: incremental `2.0.0-beta.N` milestones
 - N10: `2.0.0-rc.N`

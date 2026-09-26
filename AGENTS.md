@@ -1,6 +1,6 @@
 # Atlas Reader Native — Agent Rules
 
-<!-- atlas-status: N2|ready-for-owner-test -->
+<!-- atlas-status: N2|accepted -->
 
 Read this before changing the repository.
 
@@ -55,8 +55,8 @@ N2 rules:
 
 - the selected route is frozen as official dynamic Qt PDF 6.10.3 for
   read/render/text/navigation plus first-party qpdf 12.4.1 CLI for
-  structure/security/write, but remains unaccepted until owner `N2 PASS`;
-- ADR-0004 remains **Proposed** until explicit owner `N2 PASS`;
+  structure/security/write, accepted by owner `N2 PASS` on 2026-09-27;
+- ADR-0004 is **Accepted** following owner `N2 PASS` on 2026-09-27;
 - use the same normalized fixture expectations when comparing Qt PDF and PDFium;
 - qpdf is primarily a structure/security/transformation candidate, not a raster engine;
 - PDFium's upstream non-thread-safe API contract must be respected; do not invent concurrent calls to make a benchmark look better;
@@ -192,10 +192,10 @@ Never inspect, print, commit, or request secrets unnecessarily. Password-protect
 
 ## Current stop gate
 
-**N0 Accepted. N1 Accepted. N2 is active and Ready for owner test.**
+**N0 Accepted. N1 Accepted. N2 is Accepted; N3 is Not started.**
 
 N2 may add only the contracts, fixtures, probe/adaptor code, dependency/bootstrap configuration, benchmarks, preservation/security experiments, licensing evidence and documentation required to qualify Qt PDF, PDFium and qpdf and assign responsibilities.
 
 Do **not** build the production Reader, SQLite/FTS5 index, scanner, bookmark editor/local overlay, annotations/ink, migration, installer, or later-checkpoint feature code.
 
-N2 is not Accepted until the evidence matrix and ADR-0004 are complete, strict final CI passes, and the owner explicitly records `N2 PASS`. N3 remains closed until then.
+N2 is Accepted: evidence and strict CI passed, and the owner recorded `N2 PASS` on 2026-09-27. N3 remains Not started pending the requested closure report.

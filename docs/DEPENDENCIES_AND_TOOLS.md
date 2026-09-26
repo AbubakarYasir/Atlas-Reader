@@ -1,6 +1,6 @@
 # Atlas Reader Native — Dependencies, Tools, Plugins, and Reuse Policy
 
-<!-- atlas-status: N2|ready-for-owner-test -->
+<!-- atlas-status: N2|accepted -->
 
 ## Purpose
 
@@ -8,21 +8,21 @@ Atlas should reuse mature open-source work where it clearly improves reliability
 
 ## N2 status — updated 2026-09-27
 
-N2 is **Ready for owner test**. The selected Windows route is frozen and
+N2 is **Accepted**. The selected Windows route is frozen and
 requalified as official dynamic Qt PDF 6.10.3 for the combined read path plus
 the first-party qpdf 12.4.1 CLI for structure/security/write. It remains
-unaccepted until explicit owner `N2 PASS`.
+Accepted following explicit owner `N2 PASS` on 2026-09-27.
 
-The durable qualification plan is `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md`, the evidence sheet is `docs/baselines/N2_PDF_ENGINE_MATRIX.md`, and the architecture decision remains Proposed in `docs/decisions/ADR-0004-pdf-engine-responsibilities.md`.
+The durable qualification plan is `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md`, the evidence sheet is `docs/baselines/N2_PDF_ENGINE_MATRIX.md`, and the architecture decision is Accepted in `docs/decisions/ADR-0004-pdf-engine-responsibilities.md`.
 
 Current integration facts that must not be lost during experiments:
 
 - Qt PDF is qualified through the existing Qt toolchain as a read/render/text/search/navigation candidate. Atlas will not adopt the complete Qt viewer widget architecture as its reader.
-- The first clean Qt PDF core evidence is bound to implementation SHA `213050ee75882ae5fa53f73b07fe2707bbaea5a8`; broader search/navigation/Arabic/security/performance rows remain open.
+- The first clean Qt PDF core evidence is bound to implementation SHA `213050ee75882ae5fa53f73b07fe2707bbaea5a8`; subsequent search/navigation/Arabic/security/performance evidence is complete in the N2 matrix.
 - PDFium's current public API contract states that PDFium APIs are not thread-safe; Atlas must serialize calls and measure the consequence rather than run unsupported parallel API calls.
 - Official PDFium source builds use Chromium-style `depot_tools`/`gclient`, GN, Ninja and Clang/clang-cl tooling. The inspected Microsoft vcpkg registry has no standard `ports/pdfium` package.
 - The active N2.2 Windows probe pin is PDFium **156.0.8066.0 / `chromium/8066`** from `bblanchon/pdfium-binaries`, distribution source commit `f2e9a1c45bb17b85b540abf1af30146ef65416ac`, asset `pdfium-win-x64.tgz`, SHA-256 `739a57d597d864297909cc40a2411eba728490c76a0fa25e3ea299c7f6b07020`.
-- That community PDFium package is **probe-only**. Exact production supply-chain/license/notices/source-build strategy remains undecided and is tracked in `docs/baselines/N2_PDFIUM_PROVENANCE.md`.
+- That community PDFium package is **probe-only** and rejected for N2 shipping; the accepted package uses official Qt PDF. Reconsidering standalone PDFium requires a new qualified production route and ADR.
 - qpdf is the structure/security/transformation candidate. At N2 opening, upstream release, generated documentation and Microsoft vcpkg currently expose different version surfaces; every experiment must record the exact qpdf version it actually uses.
 - The inspected vcpkg `qpdf` port is `12.4.0` with `Apache-2.0 AND MIT` metadata. The upstream release feed visible at N2 opening shows `12.4.1` published 2026-08-27, while current generated docs may identify `12.4.2`.
 
@@ -72,7 +72,7 @@ For N2, a dependency can be **probe-only** without being accepted for production
 
 **Role candidate:** structural PDF inspection/transformation, encryption/security information, preservation-sensitive operations.
 
-**Status:** **selected/frozen for N2 structure/security/write; owner acceptance pending.**
+**Status:** **selected/frozen for N2 structure/security/write; owner acceptance recorded 2026-09-27.**
 
 **Boundary:** PDF infrastructure adapter only. qpdf object types do not escape into Atlas domain/application interfaces.
 
@@ -82,7 +82,7 @@ For N2, a dependency can be **probe-only** without being accepted for production
 
 **Role candidate:** page rendering, text extraction/search, links/navigation, outlines/destinations and document/page inspection.
 
-**Status:** **selected/frozen for the N2 combined read/render/text/navigation route; owner acceptance pending.** Core, Arabic/Urdu, search/navigation, security, performance, fidelity, coordinate, stress and selected-package evidence are recorded in the N2 baselines.
+**Status:** **selected/frozen for the N2 combined read/render/text/navigation route; owner acceptance recorded 2026-09-27.** Core, Arabic/Urdu, search/navigation, security, performance, fidelity, coordinate, stress and selected-package evidence are recorded in the N2 baselines.
 
 **Boundary:** infrastructure adapter/probe. Qt PDF types must not become Atlas domain/application types.
 

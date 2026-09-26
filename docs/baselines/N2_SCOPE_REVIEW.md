@@ -301,7 +301,4 @@ policy; N2 does not implement that production workflow.
 
 The scope review is complete: B1, corrected B2, B3 and B4 all have bounded PASS
 evidence. The later distribution review froze/requalified Qt PDF/qpdf and final
-exact-head strict CI is green. ADR-0004 remains Proposed and PR #4 remains
-draft/open/unmerged until explicit overall owner `N2 PASS`.
-
-Until then ADR-0004 remains **Proposed**, PR #4 remains draft/open/unmerged, and N3 remains **Not started**.
+strict CI is green. Owner `N2 PASS` was recorded on 2026-09-27; ADR-0004 is Accepted. N3 is Not started. See `N2_ACCEPTANCE.md` for the closure record.

@@ -1,6 +1,6 @@
 # Atlas Reader Native — Checkpoints to Windows 2.0
 
-<!-- atlas-status: N2|ready-for-owner-test -->
+<!-- atlas-status: N2|accepted -->
 
 This file controls implementation order. Only one checkpoint is active at a time. A checkpoint may be **Not started**, **In progress**, **Ready for owner test**, **Accepted**, or **Blocked**.
 
@@ -12,7 +12,7 @@ This file controls implementation order. Only one checkpoint is active at a time
 |---|---|
 | Checkpoint | **N2 — PDF engine qualification spike** |
 | Planned version | `2.0.0-alpha.2` (engineering alpha; not normal user release) |
-| Status | **Ready for owner test — selected production route frozen/requalified and strict CI green; explicit owner N2 PASS remains** |
+| Status | **Accepted — owner N2 PASS recorded 2026-09-27** |
 | Previous checkpoint | **N1 Accepted by owner on 2026-09-22** |
 | Branch | `native-v2-n2-pdf-engine-qualification` |
 | Base | accepted N1 integration commit `f8bdc2e5bc74ccb94d593e7a7e5307ae6163afe2` |
@@ -22,15 +22,15 @@ This file controls implementation order. Only one checkpoint is active at a time
 | Inherited toolchain | accepted N1 Qt 6.10.3/MSVC 2022/C++23 baseline; candidate-specific probe tooling must be documented separately |
 | Plan | `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` |
 | Evidence sheet | `docs/baselines/N2_PDF_ENGINE_MATRIX.md` |
-| Proposed decision | `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` |
+| Accepted decision | `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` |
 
 N2 was deliberately opened on 2026-09-22 after explicit N1 acceptance. The
-qualification is now complete enough for owner review: the frozen route is
+qualification is complete and owner-approved: the frozen route is
 official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
-first-party qpdf 12.4.1 CLI for structure/security/write. ADR-0004 remains
-Proposed and the route is not Accepted until explicit owner `N2 PASS`.
+first-party qpdf 12.4.1 CLI for structure/security/write. ADR-0004 was
+Accepted by owner on 2026-09-27.
 
-**N3 remains Not started until N2 has sufficient evidence, final strict CI, an Accepted ADR-0004, and explicit owner `N2 PASS`.**
+**N2 Accepted. N3 Not started. Report closure to the owner before starting N3.**
 
 ## Operating contract
 
@@ -57,7 +57,7 @@ Proposed and the route is not Accepted until explicit owner `N2 PASS`.
 |---|---|---|---|
 | N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Accepted** |
 | N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **Accepted** |
-| N2 | `2.0.0-alpha.2` | PDF engine qualification spike | **Ready for owner test** |
+| N2 | `2.0.0-alpha.2` | PDF engine qualification spike | **Accepted** |
 | N3 | `2.0.0-beta.1` | Library/index foundation | Not started |
 | N4 | `2.0.0-beta.2` | Native reader foundation | Not started |
 | N5 | `2.0.0-beta.3` | Core resilience + complete bookmarks | Not started |
@@ -186,7 +186,7 @@ N2 was deliberately opened only after this acceptance and inherits N1 as its fro
 
 ---
 
-## N2 — PDF engine qualification spike (`2.0.0-alpha.2`) — Ready for owner test
+## N2 — PDF engine qualification spike (`2.0.0-alpha.2`) — Accepted
 
 **Goal:** Select PDF responsibilities using real fixtures/benchmarks, not preference, before Atlas builds product features around an engine assumption.
 
@@ -322,8 +322,8 @@ This records focused **A014 owner visual PASS**; it is not overall `N2 PASS`.
 - [x] revise Proposed ADR-0004 with selected responsibilities and rejected alternatives/limitations;
 - [x] document exact dependency versions, licenses/notices and rollback route;
 - [x] strict final CI;
-- [ ] owner evidence review;
-- [ ] explicit owner `N2 PASS`.
+- [x] owner evidence review completed 2026-09-27;
+- [x] explicit owner `N2 PASS` recorded 2026-09-27.
 
 ### Minimum fixture classes
 
@@ -362,7 +362,7 @@ Hard blockers include silent unrelated-content loss, unreliable required Arabic/
 
 ### Stop gate
 
-N2 cannot be Accepted until:
+N2 acceptance criteria (satisfied; owner PASS recorded 2026-09-27):
 
 1. Qt PDF and PDFium have comparable evidence for required read/render capabilities, or one is explicitly rejected/blocked with documented evidence;
 2. qpdf has structural/security/preservation evidence on copied fixtures;

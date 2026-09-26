@@ -6,7 +6,7 @@ repository matches the reviewed local work.
 
 ## Branch model
 
-- `main` contains only owner-Accepted checkpoint state.
+- `native-v2-bootstrap` contains accepted native checkpoint state. `main` is the frozen Flutter reference and public entry point; Flutter development has stopped.
 - One checkpoint branch is active at a time, named
   `native-v2-n<number>-short-name`.
 - The checkpoint branch starts from the exact accepted predecessor commit.
@@ -82,7 +82,7 @@ The two commit IDs must match for a fully synchronized handoff.
 
 ## Merge and tag rules
 
-- Merge direction is task branch → active checkpoint branch → `main` after
+- Merge direction is task branch → active checkpoint branch → `native-v2-bootstrap` after
   acceptance.
 - Preserve meaningful checkpoint history; do not mix unrelated future work into
   the acceptance merge.

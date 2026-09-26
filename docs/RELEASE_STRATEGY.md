@@ -91,7 +91,7 @@ Every distributable beta/RC/stable build records:
 
 ## Branch/tag policy
 
-- `main` in the eventual native repository contains only accepted checkpoint state.
+- `native-v2-bootstrap` in this shared repository contains only accepted checkpoint state.
 - exactly one named checkpoint branch is active; feature work occurs on short-lived branches from it;
 - branch, PR, merge, remote verification and documentation synchronization follow `GIT_WORKFLOW.md`;
 - Tags are immutable.

@@ -8,7 +8,7 @@ evidence; standalone PDFium rejected for the selected N2 production route**
 
 ## Purpose
 
-This file freezes the exact PDFium package used for the first N2.2 Windows probe so CI evidence can be reproduced later. It does **not** approve this community binary distribution for production shipping. ADR-0004 remains Proposed until N2 is explicitly passed.
+This file freezes the exact PDFium package used for the first N2.2 Windows probe so CI evidence can be reproduced later. It does **not** approve this community binary distribution for production shipping. ADR-0004 is Accepted following owner `N2 PASS` on 2026-09-27.
 
 ## Core evidence binding
 

@@ -1,10 +1,10 @@
 # N2 — PDF Engine Qualification Plan
 
-<!-- atlas-status: N2|ready-for-owner-test -->
+<!-- atlas-status: N2|accepted -->
 
 **Checkpoint:** N2 — PDF engine qualification spike  
 **Planned version:** `2.0.0-alpha.2`  
-**Status:** **Ready for owner test — selected Qt PDF/qpdf route frozen/requalified; explicit owner `N2 PASS` remains**
+**Status:** **Accepted — owner N2 PASS recorded 2026-09-27**
 **Branch:** `native-v2-n2-pdf-engine-qualification`  
 **Base:** accepted N1 integration commit `f8bdc2e5bc74ccb94d593e7a7e5307ae6163afe2`
 
@@ -273,12 +273,12 @@ Possible valid outcomes include:
 
 There was no predetermined winner at N2 opening.
 
-**Recorded N2.6 outcome:** the frozen/requalified Proposed route is official
+**Recorded N2.6 outcome:** the frozen/requalified Accepted route is official
 dynamic Qt PDF 6.10.3 for read/render/text/navigation plus first-party qpdf
 12.4.1 CLI for structure/security/write. Standalone PDFium remains valuable
 comparison/replacement evidence but is rejected for the selected N2 Windows
 package because an official Atlas-controlled source-build/distribution route was
-not frozen. Strict final CI is green; only explicit owner `N2 PASS` remains.
+not frozen. Strict final CI is green; owner `N2 PASS` was recorded on 2026-09-27.
 
 ## 7. Fixture classes
 
@@ -395,7 +395,7 @@ These are hypotheses only. The matrix and ADR decide.
 
 ## 11. Stop gate
 
-N2 cannot be Accepted until:
+N2 acceptance criteria (satisfied; owner PASS recorded 2026-09-27):
 
 1. Qt PDF and PDFium have comparable evidence for the read/render capabilities Atlas needs, or one is explicitly blocked/rejected with documented evidence;
 2. qpdf has preservation/security/structural evidence on the required copied fixtures;
@@ -406,7 +406,7 @@ N2 cannot be Accepted until:
 7. strict CI passes on the final N2 branch head;
 8. owner reviews the evidence and explicitly records `N2 PASS`.
 
-Until then N3 remains Not started.
+N3 remains Not started at the owner's request pending the closure report.
 
 ## 12. Documentation discipline
 

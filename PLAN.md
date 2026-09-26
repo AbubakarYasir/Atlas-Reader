@@ -1,12 +1,12 @@
 # Atlas Reader Native — Master Plan to 2.0
 
-<!-- atlas-status: N2|ready-for-owner-test -->
+<!-- atlas-status: N2|accepted -->
 
-**Status:** N2 PDF-engine qualification — Ready for owner test; explicit owner `N2 PASS` remains
+**Status:** N2 PDF-engine qualification — Accepted by owner on 2026-09-27
 
 **Current engineering preview:** `2.0.0-alpha.2`
 
-**Accepted predecessors:** N0 and N1
+**Accepted checkpoints:** N0, N1 and N2; N3 Not started
 
 **Primary implementation target:** Windows 11
 
@@ -54,7 +54,7 @@ Accepted user-qualified N1 runtime:
 
 N1 is frozen unless concrete user-facing regression evidence appears.
 
-### N2 — Active
+### N2 — Accepted
 
 N2 was deliberately opened only after N1 acceptance and branched from accepted N1 integration commit:
 
@@ -69,13 +69,13 @@ Binding N2 documents:
 - `tests/fixtures/pdf/README.md`;
 - `docs/decisions/ADR-0004-pdf-engine-responsibilities.md`.
 
-ADR-0004 remains **Proposed** with the frozen/requalified route assigning
+ADR-0004 is **Accepted** with the frozen/requalified route assigning
 official dynamic Qt PDF 6.10.3 to read/render/text/navigation and the first-party
 qpdf 12.4.1 CLI to structural/security/write responsibilities. Standalone
 PDFium remains comparison evidence and a replaceable future candidate, not an N2
-production dependency. The route is not Accepted until explicit owner `N2 PASS`.
+production dependency. The route was Accepted by owner `N2 PASS` on 2026-09-27.
 
-N3 remains closed until explicit owner `N2 PASS`.
+N3 is Not started. The owner requested a closure report before N3 begins.
 
 Every future checkpoint is governed by `docs/CHECKPOINT_QA_MATRIX.md`: automated
 evidence, manual/owner evidence, blocking failures and transferred limitations
@@ -419,7 +419,7 @@ Native V2 uses:
 
 - N0: `2.0.0-alpha.0` — Accepted;
 - N1: `2.0.0-alpha.1` — Accepted;
-- N2: `2.0.0-alpha.2` — Ready for owner test; explicit owner PASS pending;
+- N2: `2.0.0-alpha.2` — Accepted by owner on 2026-09-27;
 - N3 onward: `2.0.0-beta.N` usable milestone builds;
 - N10: `2.0.0-rc.N`;
 - N11: stable `2.0.0` Windows.
@@ -460,7 +460,7 @@ Native and Flutter builds may run side-by-side through beta. PDFs are the strong
 - `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` — active N2 execution plan.
 - `docs/baselines/N2_PDF_ENGINE_MATRIX.md` — active N2 evidence sheet.
 - `tests/fixtures/pdf/README.md` — N2 fixture contract.
-- `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` — Proposed N2 architecture decision.
+- `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` — Accepted N2 architecture decision.
 - `docs/FEATURE_SCOPE_2_0.md` — exact Windows 2.0 product scope.
 - `docs/ARCHITECTURE.md` — boundaries/data/threading.
 - `docs/CORE_WORKFLOWS.md` — capability/local-overlay/save/conflict contract.

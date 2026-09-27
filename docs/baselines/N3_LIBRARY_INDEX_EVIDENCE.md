@@ -77,4 +77,8 @@ The owner reported checks 1–11 as working overall and skipped check 12, while 
 - Grid cover/first-page thumbnails are not missing N3 work. N3 intentionally uses a PDF placeholder; cached visual previews are owned by N7 and must meet its cache, invalidation and performance gates before shipping.
 - Local Visual Studio 2026 Debug and Release builds pass all 24 tests in each configuration, including new bad-metadata policy cases and all inherited PDF/Arabic/Urdu checks.
 
-This closes the identified implementation defects but does not manufacture owner acceptance. A new exact-head CI package and owner retest are required; skipped owner check 12 also remains open. N3 therefore remains **Ready for owner test**, and N4 remains closed.
+Exact corrected implementation/package head `7a3a217710c7bcba41ce1ce240d21f6adb9aab1f` passed Windows push run `36292988234` and PR run `36292990517` in Debug and Release. The same head passed selected-route run `36292990473`, coordinate run `36292990489`, fidelity run `36292990532` and stress run `36292990635`.
+
+GitHub artifact `10922991795`, `atlas-reader-n3-windows-x64-7a3a217710c7bcba41ce1ce240d21f6adb9aab1f`, is 79,598,673 bytes with workflow digest `sha256:d29cd01ac91430ab6a205f899260360041c04e9b3ed2d0ea4737bc654db47ab0`; the downloaded outer artifact matches that digest exactly. Its owner ZIP is 40,165,221 bytes with SHA-256 `70ac892127ed838b7d93ff78cfe3c10ab3479567867a13363e0f4c86f0d279e8`, matching the packaged checksum file. The packaged `N3_BUILD_INFO.txt` identifies the same implementation/checkout SHA and Release configuration; the packaged executable independently reports Windows GUI subsystem `2`.
+
+This closes the identified implementation defects but does not manufacture owner acceptance. Owner retest of the corrected package is required; skipped owner check 12 also remains open. N3 therefore remains **Ready for owner test**, and N4 remains closed.

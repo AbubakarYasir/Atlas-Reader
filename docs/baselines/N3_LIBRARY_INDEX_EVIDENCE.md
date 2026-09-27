@@ -24,7 +24,7 @@
 | Subgate | Status | Source commit | Verification/artifact | Known limits |
 |---|---|---|---|---|
 | N3.1 Storage/schema | **Complete** | `e7fe595c5ffb228f48b63c17a960559a8b8b8a22` | Local VS 2026 Debug/Release 20/20 each; Windows PR run `36283212258` and branch run `36283210492` Debug/Release; selected route `36283212263`; no LNK4098 on corrected triplet. | Matching FTS tokens only; Arabic stemming is not claimed |
-| N3.2 Scanner | In progress | `38d3cab` | Initial scanner and multi-root overlap/deduplication passed local/Windows Debug and Release through `295688b`; persisted generation safety at `352c5d0` and scan/index coordination at `38d3cab` pass local VS 2026 Debug and Release 20/20 each; final branch CI pending. | New paths intentionally remain unlinked pending identity inspection/reconciliation; no watcher, metadata extraction, named-storage measurement or owner test yet |
+| N3.2 Scanner | In progress | `38d3cab` | Initial scanner and multi-root overlap/deduplication passed through `295688b`; generation safety at `352c5d0` and scan/index coordination at `38d3cab` pass local VS 2026 Debug and Release 20/20 each. Final head `e871ecab257008fc3f100927f0411e6e0832b84f` passed PR Windows CI `36285908127`, push Windows CI `36285905270`, selected route `36285908263`, coordinates `36285908259`, fidelity `36285908309`, and stress `36285908221`. | New paths intentionally remain unlinked pending identity inspection/reconciliation; no watcher, metadata extraction, named-storage measurement or owner test yet |
 | N3.3 Identity/reconciliation | Not started | — | — | — |
 | N3.4 Library UX/search | Not started | — | — | — |
 

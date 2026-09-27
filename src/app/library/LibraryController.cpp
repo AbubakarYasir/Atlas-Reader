@@ -39,6 +39,10 @@ LibraryController::LibraryController(std::filesystem::path databasePath, QObject
       ingestionService_{scanService_, index_, documentInspector_, [] {
           return toUtf8(QUuid::createUuid().toString(QUuid::WithoutBraces));
       }} {
+    workerContext_ = new QObject;
+    workerContext_->moveToThread(&workerThread_);
+    workerThread_.setObjectName(QStringLiteral("AtlasLibraryWorker"));
+    workerThread_.start();
     connect(&scanWatcher_, &QFutureWatcherBase::finished, this, [this] {
         try {
             const auto summary = scanWatcher_.result();
@@ -50,20 +54,23 @@ LibraryController::LibraryController(std::filesystem::path databasePath, QObject
             statusKey_ = QStringLiteral("error");
             emit operationError(QString::fromUtf8(error.what()));
         }
-        refreshRoots();
-        refreshRecords();
-        refreshProposals();
+        requestRefresh();
         emit scanningChanged();
         emit statusChanged();
     });
-    refreshRoots();
-    refreshRecords();
-    refreshProposals();
+    requestRefresh();
 }
 
 LibraryController::~LibraryController() {
     cancelled_.store(true);
     scanWatcher_.waitForFinished();
+    if (workerContext_ != nullptr && workerThread_.isRunning()) {
+        auto* context = workerContext_;
+        QMetaObject::invokeMethod(context, [context] { delete context; }, Qt::BlockingQueuedConnection);
+        workerContext_ = nullptr;
+    }
+    workerThread_.quit();
+    workerThread_.wait();
 }
 
 int LibraryController::rowCount(const QModelIndex& parent) const {
@@ -101,7 +108,7 @@ void LibraryController::setQuery(const QString& query) {
     if (query_ == normalized) return;
     query_ = normalized;
     emit queryChanged();
-    refreshRecords();
+    requestRefresh();
 }
 
 int LibraryController::viewMode() const { return viewMode_; }
@@ -115,10 +122,10 @@ void LibraryController::setViewMode(int mode) {
         emit selectedRootChanged();
     }
     emit viewModeChanged();
-    refreshRecords();
+    requestRefresh();
 }
 
-bool LibraryController::scanning() const { return scanWatcher_.isRunning(); }
+bool LibraryController::scanning() const { return scanPreparationPending_ || scanWatcher_.isRunning(); }
 QString LibraryController::statusKey() const { return statusKey_; }
 int LibraryController::lastAddedCount() const { return lastAddedCount_; }
 int LibraryController::rootCount() const { return rootCount_; }
@@ -142,49 +149,55 @@ void LibraryController::setSelectedRootId(const QString& rootId) {
         }
     }
     emit selectedRootChanged();
-    refreshRecords();
+    requestRefresh();
 }
 int LibraryController::pendingCount() const { return pendingProposals_.size(); }
 QVariantList LibraryController::pendingProposals() const { return pendingProposals_; }
 
 void LibraryController::addRoot(const QUrl& folder) {
-    if (scanWatcher_.isRunning()) return;
+    if (scanning()) return;
     const auto localPath = QDir::cleanPath(folder.toLocalFile());
     if (localPath.isEmpty() || !QFileInfo{localPath}.isDir()) {
         emit operationError(QStringLiteral("Choose an existing folder."));
         return;
     }
-    try {
-        const auto source = toPath(localPath);
-        const auto roots = index_.roots();
-        const bool exists = std::any_of(roots.begin(), roots.end(), [&](const auto& root) {
-            return pathToQString(root.source).compare(localPath, Qt::CaseInsensitive) == 0;
-        });
-        if (!exists) {
-            index_.registerRoot({
-                toUtf8(QUuid::createUuid().toString(QUuid::WithoutBraces)),
-                source,
-                atlas::index::LibraryRootAvailability::available,
+    scanPreparationPending_ = true;
+    statusKey_ = QStringLiteral("scanning");
+    emit scanningChanged();
+    emit statusChanged();
+    const auto source = toPath(localPath);
+    const auto rootId = toUtf8(QUuid::createUuid().toString(QUuid::WithoutBraces));
+    runOnWorker([this, source, localPath, rootId] {
+        try {
+            const auto persistedRoots = index_.roots();
+            const bool exists = std::any_of(persistedRoots.begin(), persistedRoots.end(), [&](const auto& root) {
+                return pathToQString(root.source).compare(localPath, Qt::CaseInsensitive) == 0;
             });
-            refreshRoots();
+            if (!exists) {
+                index_.registerRoot({rootId, source, atlas::index::LibraryRootAvailability::available});
+            }
+            std::vector<atlas::index::LibraryScanRoot> roots;
+            for (const auto& root : index_.roots()) roots.push_back({root.id, root.source});
+            QMetaObject::invokeMethod(this, [this, roots = std::move(roots)]() mutable {
+                beginScan(std::move(roots));
+            }, Qt::QueuedConnection);
+        } catch (const std::exception& error) {
+            const auto message = QString::fromUtf8(error.what());
+            QMetaObject::invokeMethod(this, [this, message] { setScanPreparationFailed(message); }, Qt::QueuedConnection);
         }
-        startScan();
-    } catch (const std::exception& error) {
-        statusKey_ = QStringLiteral("error");
-        emit statusChanged();
-        emit operationError(QString::fromUtf8(error.what()));
-    }
+    });
 }
 
 void LibraryController::rescan() { startScan(); }
 
 void LibraryController::setFavorite(const QString& documentId, bool favorite) {
-    try {
-        index_.setFavorite(toUtf8(documentId), favorite);
-        refreshRecords();
-    } catch (const std::exception& error) {
-        emit operationError(QString::fromUtf8(error.what()));
-    }
+    const auto id = toUtf8(documentId);
+    runOnWorker([this, id, favorite] {
+        try {
+            index_.setFavorite(id, favorite);
+            QMetaObject::invokeMethod(this, [this] { requestRefresh(); }, Qt::QueuedConnection);
+        } catch (const std::exception& error) { reportWorkerError(QString::fromUtf8(error.what())); }
+    });
 }
 
 void LibraryController::openExternally(const QString& documentId) {
@@ -196,127 +209,168 @@ void LibraryController::openExternally(const QString& documentId) {
         emit operationError(QStringLiteral("Windows could not open this PDF."));
         return;
     }
-    try {
-        index_.recordOpened(found->id, QDateTime::currentMSecsSinceEpoch());
-        if (viewMode_ == Recent) refreshRecords();
-    } catch (const std::exception& error) {
-        emit operationError(QString::fromUtf8(error.what()));
-    }
+    const auto id = found->id;
+    const auto openedAt = QDateTime::currentMSecsSinceEpoch();
+    runOnWorker([this, id, openedAt] {
+        try {
+            index_.recordOpened(id, openedAt);
+            QMetaObject::invokeMethod(this, [this] { requestRefresh(); }, Qt::QueuedConnection);
+        } catch (const std::exception& error) { reportWorkerError(QString::fromUtf8(error.what())); }
+    });
 }
 
 void LibraryController::applyProposal(const QString& proposalId) {
-    try {
-        index_.applyReconciliation(toUtf8(proposalId));
-        refreshRecords();
-        refreshProposals();
-    } catch (const std::exception& error) {
-        emit operationError(QString::fromUtf8(error.what()));
-    }
+    const auto id = toUtf8(proposalId);
+    runOnWorker([this, id] {
+        try {
+            index_.applyReconciliation(id);
+            QMetaObject::invokeMethod(this, [this] { requestRefresh(); }, Qt::QueuedConnection);
+        } catch (const std::exception& error) { reportWorkerError(QString::fromUtf8(error.what())); }
+    });
 }
 
 void LibraryController::dismissProposal(const QString& proposalId) {
-    try {
-        index_.dismissReconciliation(toUtf8(proposalId));
-        refreshProposals();
-    } catch (const std::exception& error) {
-        emit operationError(QString::fromUtf8(error.what()));
-    }
+    const auto id = toUtf8(proposalId);
+    runOnWorker([this, id] {
+        try {
+            index_.dismissReconciliation(id);
+            QMetaObject::invokeMethod(this, [this] { requestRefresh(); }, Qt::QueuedConnection);
+        } catch (const std::exception& error) { reportWorkerError(QString::fromUtf8(error.what())); }
+    });
 }
 
-void LibraryController::refreshRecords() {
-    std::vector<atlas::index::LibraryRecord> next;
-    try {
-        if (!query_.isEmpty()) {
-            next = index_.search(toUtf8(query_));
-            if (!selectedRootId_.isEmpty()) {
-                const auto rootRecords = index_.recordsForRoot(toUtf8(selectedRootId_));
-                std::set<std::string> allowed;
-                for (const auto& record : rootRecords) allowed.insert(record.id);
-                std::erase_if(next, [&](const auto& record) { return !allowed.contains(record.id); });
+void LibraryController::requestRefresh() {
+    const auto revision = ++refreshRevision_;
+    const auto query = query_;
+    const auto selectedRootId = selectedRootId_;
+    const auto viewMode = viewMode_;
+    runOnWorker([this, revision, query, selectedRootId, viewMode] {
+        struct Snapshot final {
+            std::vector<atlas::index::LibraryRecord> records;
+            std::set<std::string> favoriteIds;
+            QVariantList roots;
+            QVariantList proposals;
+            QString selectedRootName;
+        } snapshot;
+
+        try {
+            if (!query.isEmpty()) {
+                snapshot.records = index_.search(toUtf8(query));
+                if (!selectedRootId.isEmpty()) {
+                    const auto rootRecords = index_.recordsForRoot(toUtf8(selectedRootId));
+                    std::set<std::string> allowed;
+                    for (const auto& record : rootRecords) allowed.insert(record.id);
+                    std::erase_if(snapshot.records, [&](const auto& record) { return !allowed.contains(record.id); });
+                }
+            } else if (viewMode == Favorites) snapshot.records = index_.favorites();
+            else if (viewMode == Recent) snapshot.records = index_.recentlyOpened();
+            else if (!selectedRootId.isEmpty()) snapshot.records = index_.recordsForRoot(toUtf8(selectedRootId));
+            else snapshot.records = index_.allRecords();
+
+            for (const auto& favorite : index_.favorites()) snapshot.favoriteIds.insert(favorite.id);
+            for (const auto& root : index_.roots()) {
+                QVariantMap item;
+                item.insert(QStringLiteral("id"), QString::fromUtf8(root.id));
+                item.insert(QStringLiteral("path"), pathToQString(root.source));
+                const auto name = pathToQString(root.source.filename());
+                item.insert(QStringLiteral("name"), name.isEmpty() ? pathToQString(root.source) : name);
+                item.insert(QStringLiteral("availability"),
+                    root.availability == atlas::index::LibraryRootAvailability::available
+                        ? QStringLiteral("available")
+                        : root.availability == atlas::index::LibraryRootAvailability::offline
+                            ? QStringLiteral("offline") : QStringLiteral("partial"));
+                snapshot.roots.push_back(item);
+                if (QString::fromUtf8(root.id) == selectedRootId) {
+                    snapshot.selectedRootName = item.value(QStringLiteral("name")).toString();
+                }
             }
+            for (const auto& proposal : index_.reconciliationProposals()) {
+                if (proposal.state != atlas::index::ReconciliationProposalState::pending) continue;
+                QVariantMap item;
+                item.insert(QStringLiteral("id"), QString::fromUtf8(proposal.id));
+                item.insert(QStringLiteral("beforePath"), pathToQString(proposal.previousSource));
+                item.insert(QStringLiteral("candidatePath"), pathToQString(proposal.candidateSource));
+                item.insert(QStringLiteral("canApply"), proposal.mayRelinkAutomatically);
+                item.insert(QStringLiteral("decision"), proposal.mayRelinkAutomatically
+                    ? QStringLiteral("move") : QStringLiteral("ambiguous"));
+                snapshot.proposals.push_back(item);
+            }
+        } catch (const std::exception& error) {
+            reportWorkerError(QString::fromUtf8(error.what()));
+            return;
         }
-        else if (viewMode_ == Favorites) next = index_.favorites();
-        else if (viewMode_ == Recent) next = index_.recentlyOpened();
-        else if (!selectedRootId_.isEmpty()) next = index_.recordsForRoot(toUtf8(selectedRootId_));
-        else next = index_.allRecords();
-        favoriteIds_.clear();
-        for (const auto& favorite : index_.favorites()) favoriteIds_.insert(favorite.id);
-        rootCount_ = static_cast<int>(index_.roots().size());
-    } catch (const std::exception& error) {
-        emit operationError(QString::fromUtf8(error.what()));
-    }
-    beginResetModel();
-    records_ = std::move(next);
-    endResetModel();
-    emit rootCountChanged();
+
+        QMetaObject::invokeMethod(this, [this, revision, snapshot = std::move(snapshot)]() mutable {
+            if (revision != refreshRevision_) return;
+            beginResetModel();
+            records_ = std::move(snapshot.records);
+            favoriteIds_ = std::move(snapshot.favoriteIds);
+            endResetModel();
+            roots_ = std::move(snapshot.roots);
+            pendingProposals_ = std::move(snapshot.proposals);
+            rootCount_ = roots_.size();
+            if (selectedRootName_ != snapshot.selectedRootName) {
+                selectedRootName_ = std::move(snapshot.selectedRootName);
+                emit selectedRootChanged();
+            }
+            emit rootsChanged();
+            emit rootCountChanged();
+            emit pendingProposalsChanged();
+        }, Qt::QueuedConnection);
+    });
 }
 
-void LibraryController::refreshRoots() {
-    QVariantList next;
-    try {
-        for (const auto& root : index_.roots()) {
-            QVariantMap item;
-            item.insert(QStringLiteral("id"), QString::fromUtf8(root.id));
-            item.insert(QStringLiteral("path"), pathToQString(root.source));
-            const auto name = pathToQString(root.source.filename());
-            item.insert(QStringLiteral("name"), name.isEmpty() ? pathToQString(root.source) : name);
-            item.insert(QStringLiteral("availability"),
-                root.availability == atlas::index::LibraryRootAvailability::available
-                    ? QStringLiteral("available")
-                    : root.availability == atlas::index::LibraryRootAvailability::offline
-                        ? QStringLiteral("offline") : QStringLiteral("partial"));
-            next.push_back(item);
-        }
-    } catch (const std::exception& error) {
-        emit operationError(QString::fromUtf8(error.what()));
-    }
-    roots_ = std::move(next);
-    rootCount_ = roots_.size();
-    emit rootsChanged();
-    emit rootCountChanged();
+void LibraryController::runOnWorker(std::function<void()> task) {
+    if (workerContext_ == nullptr) return;
+    QMetaObject::invokeMethod(workerContext_, std::move(task), Qt::QueuedConnection);
 }
 
-void LibraryController::refreshProposals() {
-    QVariantList next;
-    try {
-        for (const auto& proposal : index_.reconciliationProposals()) {
-            if (proposal.state != atlas::index::ReconciliationProposalState::pending) continue;
-            QVariantMap item;
-            item.insert(QStringLiteral("id"), QString::fromUtf8(proposal.id));
-            item.insert(QStringLiteral("beforePath"), pathToQString(proposal.previousSource));
-            item.insert(QStringLiteral("candidatePath"), pathToQString(proposal.candidateSource));
-            item.insert(QStringLiteral("canApply"), proposal.mayRelinkAutomatically);
-            item.insert(QStringLiteral("decision"), proposal.mayRelinkAutomatically
-                ? QStringLiteral("move") : QStringLiteral("ambiguous"));
-            next.push_back(item);
-        }
-    } catch (const std::exception& error) {
-        emit operationError(QString::fromUtf8(error.what()));
-    }
-    pendingProposals_ = std::move(next);
-    emit pendingProposalsChanged();
+void LibraryController::reportWorkerError(const QString& message) {
+    QMetaObject::invokeMethod(this, [this, message] { emit operationError(message); }, Qt::QueuedConnection);
 }
 
 void LibraryController::startScan() {
-    if (scanWatcher_.isRunning()) return;
-    const auto persistedRoots = index_.roots();
-    if (persistedRoots.empty()) {
-        statusKey_ = QStringLiteral("noRoots");
-        emit statusChanged();
-        return;
-    }
-    std::vector<atlas::index::LibraryScanRoot> roots;
-    roots.reserve(persistedRoots.size());
-    for (const auto& root : persistedRoots) roots.push_back({root.id, root.source});
-    cancelled_.store(false);
+    if (scanning()) return;
+    scanPreparationPending_ = true;
     lastAddedCount_ = 0;
     statusKey_ = QStringLiteral("scanning");
     emit statusChanged();
     emit scanningChanged();
+    runOnWorker([this] {
+        try {
+            std::vector<atlas::index::LibraryScanRoot> roots;
+            for (const auto& root : index_.roots()) roots.push_back({root.id, root.source});
+            QMetaObject::invokeMethod(this, [this, roots = std::move(roots)]() mutable {
+                beginScan(std::move(roots));
+            }, Qt::QueuedConnection);
+        } catch (const std::exception& error) {
+            const auto message = QString::fromUtf8(error.what());
+            QMetaObject::invokeMethod(this, [this, message] { setScanPreparationFailed(message); }, Qt::QueuedConnection);
+        }
+    });
+}
+
+void LibraryController::beginScan(std::vector<atlas::index::LibraryScanRoot> roots) {
+    scanPreparationPending_ = false;
+    if (roots.empty()) {
+        statusKey_ = QStringLiteral("noRoots");
+        emit statusChanged();
+        emit scanningChanged();
+        return;
+    }
+    cancelled_.store(false);
     scanWatcher_.setFuture(QtConcurrent::run([this, roots = std::move(roots)] {
-        return ingestionService_.ingest(
-            roots, cancelled_, QDateTime::currentMSecsSinceEpoch());
+        return ingestionService_.ingest(roots, cancelled_, QDateTime::currentMSecsSinceEpoch());
     }));
+    emit scanningChanged();
+}
+
+void LibraryController::setScanPreparationFailed(const QString& message) {
+    scanPreparationPending_ = false;
+    statusKey_ = QStringLiteral("error");
+    emit statusChanged();
+    emit scanningChanged();
+    emit operationError(message);
 }
 
 QString LibraryController::availabilityName(atlas::document::Availability availability) {

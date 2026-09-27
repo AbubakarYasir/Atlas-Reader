@@ -8,11 +8,14 @@
 
 #include <QAbstractListModel>
 #include <QFutureWatcher>
+#include <QThread>
 #include <QUrl>
 #include <QVariantList>
 
 #include <atomic>
+#include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <set>
 #include <vector>
@@ -89,10 +92,12 @@ signals:
     void operationError(const QString& message);
 
 private:
-    void refreshRecords();
-    void refreshRoots();
-    void refreshProposals();
+    void requestRefresh();
+    void runOnWorker(std::function<void()> task);
+    void reportWorkerError(const QString& message);
     void startScan();
+    void beginScan(std::vector<atlas::index::LibraryScanRoot> roots);
+    void setScanPreparationFailed(const QString& message);
     [[nodiscard]] static QString availabilityName(atlas::document::Availability availability);
     [[nodiscard]] static QString pathToQString(const std::filesystem::path& path);
 
@@ -104,6 +109,8 @@ private:
     atlas::index::QtPdfDocumentInspector documentInspector_;
     atlas::index::LibraryIngestionService ingestionService_;
     QFutureWatcher<atlas::index::LibraryIngestionSummary> scanWatcher_;
+    QThread workerThread_;
+    QObject* workerContext_{};
     std::atomic_bool cancelled_{};
     std::vector<atlas::index::LibraryRecord> records_;
     std::set<std::string> favoriteIds_;
@@ -116,6 +123,8 @@ private:
     QString statusKey_{QStringLiteral("ready")};
     int lastAddedCount_{};
     int rootCount_{};
+    std::uint64_t refreshRevision_{};
+    bool scanPreparationPending_{};
 };
 
 } // namespace atlas::app

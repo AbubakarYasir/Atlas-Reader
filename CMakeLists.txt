@@ -86,7 +86,7 @@ add_library(atlas_library_scan_service STATIC
     src/app/index/LibraryScanService.h
 )
 target_include_directories(atlas_library_scan_service PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(atlas_library_scan_service PUBLIC atlas_library_scanner atlas_library_index)
+target_link_libraries(atlas_library_scan_service PUBLIC atlas_library_scanner atlas_library_index atlas_file_identity)
 atlas_enable_warnings(atlas_library_scan_service)
 
 add_library(atlas_library_document_inspector STATIC

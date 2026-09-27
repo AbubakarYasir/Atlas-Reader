@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/index/IFileIdentityProvider.h"
 #include "app/index/LibraryScanner.h"
 
 #include <atomic>
@@ -20,12 +21,26 @@ struct IntegratedRootScanSummary final {
     std::size_t knownLocationsSeen{};
     std::size_t newFilesFound{};
     std::size_t duplicateNewFilesSkipped{};
+    std::size_t replacedLocationsFound{};
 };
 
 struct IntegratedLibraryScanSummary final {
     std::vector<IntegratedRootScanSummary> roots;
     std::size_t uniqueNewFilesFound{};
     std::size_t duplicateNewFilesSkipped{};
+    std::size_t replacedLocationsFound{};
+};
+
+enum class DiscoveredLibraryFileKind {
+    newPath,
+    replacementAtKnownPath,
+};
+
+struct DiscoveredLibraryFile final {
+    std::filesystem::path source;
+    FileIdentityResult filesystemIdentity;
+    DiscoveredLibraryFileKind kind{DiscoveredLibraryFileKind::newPath};
+    std::string previousDocumentId;
 };
 
 // Coordinates filesystem observations with durable root scan state. Newly
@@ -35,10 +50,13 @@ class LibraryScanService final {
 public:
     using NewFilesHandler = std::function<void(
         const LibraryScanRoot&,
-        const std::vector<std::filesystem::path>&,
+        const std::vector<DiscoveredLibraryFile>&,
         const LibraryScanProgress&)>;
 
-    LibraryScanService(const LibraryScanner& scanner, SqliteLibraryIndex& index);
+    LibraryScanService(
+        const LibraryScanner& scanner,
+        SqliteLibraryIndex& index,
+        const IFileIdentityProvider& fileIdentityProvider);
 
     [[nodiscard]] IntegratedLibraryScanSummary scan(
         const std::vector<LibraryScanRoot>& roots,
@@ -49,6 +67,7 @@ public:
 private:
     const LibraryScanner& scanner_;
     SqliteLibraryIndex& index_;
+    const IFileIdentityProvider& fileIdentityProvider_;
 };
 
 } // namespace atlas::index

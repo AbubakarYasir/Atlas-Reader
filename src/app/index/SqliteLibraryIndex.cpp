@@ -434,8 +434,20 @@ bool SqliteLibraryIndex::markExistingLocationSeen(
     std::string rootId,
     const std::filesystem::path& source,
     std::int64_t scanGeneration) {
+    return observeLocation(std::move(rootId), source, scanGeneration, std::nullopt).state
+        != IndexedLocationObservationState::unlinked;
+}
+
+IndexedLocationObservation SqliteLibraryIndex::observeLocation(
+    std::string rootId,
+    const std::filesystem::path& source,
+    std::int64_t scanGeneration,
+    std::optional<std::string> filesystemIdentity) {
     if (rootId.empty() || source.empty() || scanGeneration <= 0) {
         throw std::invalid_argument("A root, source path and positive scan generation are required.");
+    }
+    if (filesystemIdentity && filesystemIdentity->empty()) {
+        throw std::invalid_argument("A supplied filesystem identity cannot be empty.");
     }
     std::scoped_lock lock{impl_->mutex};
 
@@ -449,14 +461,50 @@ bool SqliteLibraryIndex::markExistingLocationSeen(
         throw std::runtime_error("This scan was superseded by a newer library-root scan.");
     }
 
-    Statement locationStatement{impl_->db,
-        "UPDATE document_locations SET last_seen_scan_generation = ?3 "
+    const auto sourceText = pathToUtf8(source);
+    Statement location{impl_->db,
+        "SELECT document_id, filesystem_identity FROM document_locations "
         "WHERE root_id = ?1 AND source_path = ?2"};
-    locationStatement.bindText(1, rootId);
-    locationStatement.bindText(2, pathToUtf8(source));
-    locationStatement.bindInteger(3, scanGeneration);
-    locationStatement.run();
-    return sqlite3_changes(impl_->db) == 1;
+    location.bindText(1, rootId);
+    location.bindText(2, sourceText);
+    const int locationStep = sqlite3_step(location.get());
+    if (locationStep == SQLITE_DONE) {
+        return {IndexedLocationObservationState::unlinked, {}};
+    }
+    if (locationStep != SQLITE_ROW) fail(impl_->db, "Reading an indexed location observation", locationStep);
+    const auto* documentValue = sqlite3_column_text(location.get(), 0);
+    const auto* identityValue = sqlite3_column_text(location.get(), 1);
+    const std::string documentId = documentValue == nullptr
+        ? std::string{}
+        : std::string{reinterpret_cast<const char*>(documentValue)};
+    const std::string storedIdentity = identityValue == nullptr
+        ? std::string{}
+        : std::string{reinterpret_cast<const char*>(identityValue)};
+
+    if (filesystemIdentity && !storedIdentity.empty() && storedIdentity != *filesystemIdentity) {
+        return {IndexedLocationObservationState::replaced, documentId};
+    }
+
+    const bool initializeIdentity = filesystemIdentity && storedIdentity.empty();
+    Statement update{impl_->db,
+        "UPDATE document_locations SET last_seen_scan_generation = ?3, "
+        "filesystem_identity = CASE WHEN filesystem_identity IS NULL THEN ?4 ELSE filesystem_identity END "
+        "WHERE root_id = ?1 AND source_path = ?2"};
+    update.bindText(1, rootId);
+    update.bindText(2, sourceText);
+    update.bindInteger(3, scanGeneration);
+    if (filesystemIdentity) update.bindText(4, *filesystemIdentity);
+    else update.bindNull(4);
+    update.run();
+    if (sqlite3_changes(impl_->db) != 1) {
+        throw std::runtime_error("The indexed location changed while recording a scan observation.");
+    }
+    return {
+        initializeIdentity
+            ? IndexedLocationObservationState::identityInitialized
+            : IndexedLocationObservationState::unchanged,
+        documentId,
+    };
 }
 
 void SqliteLibraryIndex::finishRootScan(

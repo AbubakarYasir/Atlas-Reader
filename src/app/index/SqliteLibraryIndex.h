@@ -49,6 +49,18 @@ struct ReconciliationProposalRecord final {
     ReconciliationProposalState state{ReconciliationProposalState::pending};
 };
 
+enum class IndexedLocationObservationState {
+    unlinked,
+    unchanged,
+    identityInitialized,
+    replaced,
+};
+
+struct IndexedLocationObservation final {
+    IndexedLocationObservationState state{IndexedLocationObservationState::unlinked};
+    std::string documentId;
+};
+
 // SQLite-backed persistence adapter. SQLite and its statements stay private to
 // this application-layer implementation; callers use Atlas-owned index types.
 class SqliteLibraryIndex final : public ILibraryIndex {
@@ -72,6 +84,11 @@ public:
         std::string rootId,
         const std::filesystem::path& source,
         std::int64_t scanGeneration);
+    [[nodiscard]] IndexedLocationObservation observeLocation(
+        std::string rootId,
+        const std::filesystem::path& source,
+        std::int64_t scanGeneration,
+        std::optional<std::string> filesystemIdentity);
     void finishRootScan(
         std::string rootId,
         std::int64_t scanGeneration,

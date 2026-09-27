@@ -4,13 +4,17 @@
 #include "app/index/SqliteLibraryIndex.h"
 
 #include <stdexcept>
+#include <optional>
 #include <unordered_set>
 #include <utility>
 
 namespace atlas::index {
 
-LibraryScanService::LibraryScanService(const LibraryScanner& scanner, SqliteLibraryIndex& index)
-    : scanner_{scanner}, index_{index} {}
+LibraryScanService::LibraryScanService(
+    const LibraryScanner& scanner,
+    SqliteLibraryIndex& index,
+    const IFileIdentityProvider& fileIdentityProvider)
+    : scanner_{scanner}, index_{index}, fileIdentityProvider_{fileIdentityProvider} {}
 
 IntegratedLibraryScanSummary LibraryScanService::scan(
     const std::vector<LibraryScanRoot>& roots,
@@ -37,15 +41,36 @@ IntegratedLibraryScanSummary LibraryScanService::scan(
         rootResult.root = root;
         rootResult.generation = index_.beginRootScan(root.id);
         rootResult.scan = scanner_.scan(root.source, cancelled, [&](const auto& batch, const auto& progress) {
-            std::vector<std::filesystem::path> newFiles;
+            std::vector<DiscoveredLibraryFile> newFiles;
             newFiles.reserve(batch.size());
             for (const auto& path : batch) {
-                if (index_.markExistingLocationSeen(root.id, path, rootResult.generation)) {
+                auto identity = fileIdentityProvider_.inspect(path);
+                std::optional<std::string> availableIdentity;
+                if (identity.state == FileIdentityState::available && !identity.identity.empty()) {
+                    availableIdentity = identity.identity;
+                }
+                const auto observation = index_.observeLocation(
+                    root.id, path, rootResult.generation, std::move(availableIdentity));
+                if (observation.state == IndexedLocationObservationState::unchanged
+                    || observation.state == IndexedLocationObservationState::identityInitialized) {
                     ++rootResult.knownLocationsSeen;
                 } else if (newPathsPublished.insert(libraryPathKey(path)).second) {
-                    newFiles.push_back(path);
-                    ++rootResult.newFilesFound;
-                    ++result.uniqueNewFilesFound;
+                    const bool replacement = observation.state == IndexedLocationObservationState::replaced;
+                    newFiles.push_back({
+                        path,
+                        std::move(identity),
+                        replacement
+                            ? DiscoveredLibraryFileKind::replacementAtKnownPath
+                            : DiscoveredLibraryFileKind::newPath,
+                        observation.documentId,
+                    });
+                    if (replacement) {
+                        ++rootResult.replacedLocationsFound;
+                        ++result.replacedLocationsFound;
+                    } else {
+                        ++rootResult.newFilesFound;
+                        ++result.uniqueNewFilesFound;
+                    }
                 } else {
                     ++rootResult.duplicateNewFilesSkipped;
                     ++result.duplicateNewFilesSkipped;

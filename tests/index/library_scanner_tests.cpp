@@ -45,6 +45,19 @@ public:
     }
 };
 
+class FixtureFileIdentityProvider final : public IFileIdentityProvider {
+public:
+    std::map<std::filesystem::path, std::string> identities;
+
+    [[nodiscard]] FileIdentityResult inspect(const std::filesystem::path& source) const override {
+        const auto found = identities.find(source);
+        return {
+            FileIdentityState::available,
+            found == identities.end() ? "fixture:" + source.generic_string() : found->second,
+        };
+    }
+};
+
 void checkStreamingPartialAndSymlinkPolicy() {
     auto fixture = std::make_shared<FixtureEnumerator>();
     fixture->directories["root"] = {true, true, {
@@ -232,7 +245,8 @@ void checkScanServicePreservesIdentityBoundariesAndRootState() {
     index.upsertRecord({"known", "root/known.pdf", "Known Book", "", atlas::document::Availability::available}, "parent");
 
     LibraryScanner scanner{fixture, {.batchSize = 2, .maximumDepth = 8, .maximumFiles = 20}};
-    LibraryScanService service{scanner, index};
+    FixtureFileIdentityProvider identities;
+    LibraryScanService service{scanner, index, identities};
     std::atomic_bool cancelled{};
     std::vector<std::filesystem::path> newFiles;
     const auto summary = service.scan({
@@ -241,7 +255,7 @@ void checkScanServicePreservesIdentityBoundariesAndRootState() {
         {"offline", "offline"},
         {"partial", "partial"},
     }, cancelled, 5000, [&](const auto&, const auto& batch, const auto&) {
-        newFiles.insert(newFiles.end(), batch.begin(), batch.end());
+        for (const auto& discovered : batch) newFiles.push_back(discovered.source);
     });
 
     require(summary.roots.size() == 4 && summary.roots[0].knownLocationsSeen == 1,
@@ -288,6 +302,24 @@ void checkScanServicePreservesIdentityBoundariesAndRootState() {
         "A cancelled scan must advance its generation without replacing the last trusted root outcome.");
     require(index.search("Known").size() == 1,
         "Cancellation must never remove an existing indexed book.");
+
+    cancelled.store(false);
+    identities.identities["root/known.pdf"] = "fixture:replacement-object";
+    std::vector<DiscoveredLibraryFile> replacements;
+    const auto replacementSummary = service.scan({{"parent", "root"}}, cancelled, 7000,
+        [&](const auto&, const auto& batch, const auto&) {
+            replacements.insert(replacements.end(), batch.begin(), batch.end());
+        });
+    const auto replacement = std::find_if(replacements.begin(), replacements.end(), [](const auto& item) {
+        return item.source == std::filesystem::path{"root/known.pdf"};
+    });
+    require(replacementSummary.replacedLocationsFound == 1
+            && replacement != replacements.end()
+            && replacement->kind == DiscoveredLibraryFileKind::replacementAtKnownPath
+            && replacement->previousDocumentId == "known",
+        "A different filesystem object at a known path must be published as a replacement candidate.");
+    require(index.search("Known").front().source == std::filesystem::path{"root/known.pdf"},
+        "Detecting a same-path replacement must not silently reassign or delete the preceding book.");
 }
 
 } // namespace

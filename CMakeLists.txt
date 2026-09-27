@@ -209,6 +209,12 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
     atlas_enable_warnings(atlas_pdfium_security_probe)
 
     if(WIN32)
+        # All three probes write the same runtime DLL beside their executables.
+        # Serialize their post-link deployment so parallel MSBuild jobs cannot
+        # race while vcpkg and the explicit copy update pdfium.dll.
+        add_dependencies(atlas_pdfium_search_probe atlas_pdfium_probe)
+        add_dependencies(atlas_pdfium_security_probe atlas_pdfium_search_probe)
+
         add_custom_command(
             TARGET atlas_pdfium_probe
             POST_BUILD

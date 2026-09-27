@@ -61,3 +61,7 @@ The first strict exact-head Debug job (`36289801631`, job `108537578568`) failed
 - The staged package contains the Release executable, required Qt runtime files, plain-language owner checklist and build identity. CI launched the staged executable without the earlier missing-DLL failure.
 
 All planned implementation and automated gates are complete, so N3 is **Ready for owner test**, not Accepted. The physical removable/offline-root check, Narrator/keyboard review, mature-product comparison and explicit owner `N3 PASS` must still be recorded using [the owner checklist](../N3_OWNER_TEST.md). N4 remains closed.
+
+### Documentation-head CI reliability follow-up
+
+Final documentation-head run `36290792972` exposed an inherited nondeterministic Release-build race rather than a test or product failure: parallel PDFium qualification targets attempted to deploy the same `pdfium.dll` into one output directory, and one copy received `permission denied`. The Windows probe targets are now explicitly ordered for their shared post-link deployment while unrelated compilation remains parallel. The corrective head must pass both Debug/Release runs and all inherited workflows before handoff.

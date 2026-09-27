@@ -118,7 +118,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Label { text: root.arabic ? "مراجعة تغييرات الملفات" : "Review file changes"; color: root.ink; font.pixelSize: 22; font.bold: true }
                 Item { Layout.fillWidth: true }
-                Button { text: "×"; Accessible.name: root.arabic ? "إغلاق" : "Close"; onClicked: reviewPopup.close() }
+                AtlasButton { text: "×"; flat: true; Accessible.name: root.arabic ? "إغلاق" : "Close"; onClicked: reviewPopup.close() }
             }
 
             Label {
@@ -164,11 +164,11 @@ ApplicationWindow {
                         Label { Layout.fillWidth: true; text: (root.arabic ? "إلى: " : "To: ") + modelData.candidatePath; color: root.ink; elide: Text.ElideMiddle }
                         RowLayout {
                             Layout.alignment: Qt.AlignRight
-                            Button {
+                            AtlasButton {
                                 text: root.arabic ? "تجاهل" : "Dismiss"
                                 onClicked: libraryController.dismissProposal(modelData.id)
                             }
-                            Button {
+                            AtlasButton {
                                 visible: modelData.canApply
                                 text: root.arabic ? "اعتماد النقل" : "Apply move"
                                 highlighted: true
@@ -209,12 +209,12 @@ ApplicationWindow {
                 Label { text: root.arabic ? "مكتبتك البحثية" : "Research library"; color: root.muted; font.pixelSize: 11 }
             }
             Item { Layout.fillWidth: true }
-            Button {
+            AtlasButton {
                 text: root.arabic ? "English" : "العربية"
                 Accessible.name: root.arabic ? "Switch to English" : "التبديل إلى العربية"
                 onClicked: root.arabic = !root.arabic
             }
-            Button {
+            AtlasButton {
                 text: root.darkMode ? "☀" : "☾"
                 Accessible.name: root.darkMode ? (root.arabic ? "الوضع الفاتح" : "Light theme") : (root.arabic ? "الوضع الداكن" : "Dark theme")
                 onClicked: root.darkMode = !root.darkMode
@@ -238,19 +238,19 @@ ApplicationWindow {
                 spacing: 7
 
                 Label { text: root.arabic ? "المكتبة" : "LIBRARY"; color: root.muted; font.bold: true; font.pixelSize: 11; leftPadding: 10 }
-                Button {
+                AtlasButton {
                     Layout.fillWidth: true
                     text: root.arabic ? "كل الكتب" : "All books"
                     highlighted: libraryController.viewMode === 0 && libraryController.selectedRootId === ""
                     onClicked: { libraryController.selectedRootId = ""; libraryController.viewMode = 0 }
                 }
-                Button {
+                AtlasButton {
                     Layout.fillWidth: true
                     text: root.arabic ? "المفضلة" : "Favorites"
                     highlighted: libraryController.viewMode === 1
                     onClicked: libraryController.viewMode = 1
                 }
-                Button {
+                AtlasButton {
                     Layout.fillWidth: true
                     text: root.arabic ? "المستخدمة مؤخراً" : "Recently opened"
                     highlighted: libraryController.viewMode === 2
@@ -261,7 +261,7 @@ ApplicationWindow {
                 Label { text: root.arabic ? "المجلدات" : "FOLDERS"; color: root.muted; font.bold: true; font.pixelSize: 11; leftPadding: 10 }
                 Repeater {
                     model: libraryController.roots
-                    delegate: Button {
+                    delegate: AtlasButton {
                         required property var modelData
                         Layout.fillWidth: true
                         text: (modelData.availability === "available" ? "●  " : "○  ")
@@ -274,7 +274,7 @@ ApplicationWindow {
                         onClicked: libraryController.selectedRootId = modelData.id
                     }
                 }
-                Button {
+                AtlasButton {
                     Layout.fillWidth: true
                     text: root.arabic ? "+ إضافة مجلد" : "+ Add folder"
                     Accessible.name: root.arabic ? "إضافة مجلد كتب، الاختصار كنترول أو" : "Add book folder, Ctrl+O"
@@ -282,7 +282,7 @@ ApplicationWindow {
                 }
 
                 Item { Layout.fillHeight: true }
-                Button {
+                AtlasButton {
                     Layout.fillWidth: true
                     visible: libraryController.pendingCount > 0
                     text: root.arabic
@@ -334,13 +334,13 @@ ApplicationWindow {
                         color: root.muted
                     }
                 }
-                Button {
+                AtlasButton {
                     text: root.arabic ? "فحص الآن" : "Rescan"
                     enabled: !libraryController.scanning && libraryController.rootCount > 0
                     Accessible.name: root.arabic ? "إعادة فحص جميع المجلدات، إف 5" : "Rescan all folders, F5"
                     onClicked: libraryController.rescan()
                 }
-                Button {
+                AtlasButton {
                     text: root.arabic ? "إضافة مجلد" : "Add folder"
                     highlighted: true
                     onClicked: folderDialog.open()
@@ -359,8 +359,8 @@ ApplicationWindow {
                     Keys.onEscapePressed: { text = ""; libraryController.query = "" }
                     Timer { id: searchDelay; interval: 180; onTriggered: libraryController.query = searchField.text }
                 }
-                Button { text: root.arabic ? "قائمة" : "List"; highlighted: !root.gridMode; Accessible.name: root.arabic ? "عرض القائمة" : "List view"; onClicked: root.gridMode = false }
-                Button { text: root.arabic ? "شبكة" : "Grid"; highlighted: root.gridMode; Accessible.name: root.arabic ? "عرض الشبكة" : "Grid view"; onClicked: root.gridMode = true }
+                AtlasButton { text: root.arabic ? "قائمة" : "List"; highlighted: !root.gridMode; Accessible.name: root.arabic ? "عرض القائمة" : "List view"; onClicked: root.gridMode = false }
+                AtlasButton { text: root.arabic ? "شبكة" : "Grid"; highlighted: root.gridMode; Accessible.name: root.arabic ? "عرض الشبكة" : "Grid view"; onClicked: root.gridMode = true }
             }
 
             Rectangle {
@@ -375,7 +375,7 @@ ApplicationWindow {
                     anchors.rightMargin: 12
                     BusyIndicator { running: libraryController.scanning; visible: running; implicitWidth: 22; implicitHeight: 22 }
                     Label { Layout.fillWidth: true; text: root.statusText(libraryController.statusKey); color: root.ink; elide: Text.ElideRight }
-                    Button {
+                    AtlasButton {
                         visible: libraryController.pendingCount > 0
                         flat: true
                         text: root.arabic ? "مراجعة" : "Review"
@@ -467,7 +467,7 @@ ApplicationWindow {
                                         font.bold: true
                                     }
                                     Item { Layout.fillWidth: true }
-                                    Button {
+                                    AtlasButton {
                                         text: favorite ? "★" : "☆"
                                         flat: true
                                         Accessible.name: favorite
@@ -475,7 +475,7 @@ ApplicationWindow {
                                             : (root.arabic ? "إضافة إلى المفضلة" : "Add to favorites")
                                         onClicked: libraryController.setFavorite(documentId, !favorite)
                                     }
-                                    Button {
+                                    AtlasButton {
                                         text: root.arabic ? "فتح" : "Open"
                                         enabled: availability === "available" || availability === "readOnly"
                                         opacity: enabled ? 1.0 : 0.42

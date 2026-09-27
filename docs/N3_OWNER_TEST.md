@@ -1,6 +1,6 @@
 # N3 Owner Test — plain-language checklist
 
-<!-- atlas-status: N3|in-progress -->
+<!-- atlas-status: N3|ready-for-owner-test -->
 
 Use only the exact N3 Windows ZIP and SHA-256 supplied in the final handoff. Test copied books, not your only copy. N3 is not passed until every required item below has a clear result.
 

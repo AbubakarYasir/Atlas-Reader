@@ -10,7 +10,7 @@ Atlas Reader is working toward a better way to study: bring your books together,
 
 [Explore the vision](PLAN.md) · [See our progress](CHECKPOINTS.md) · [For developers](docs/DEVELOPER_GUIDE.md)
 
-<!-- atlas-status: N3|in-progress -->
+<!-- atlas-status: N3|ready-for-owner-test -->
 
 ## A library is more than a folder of files
 
@@ -38,9 +38,9 @@ The following describes our product direction, not features available today.
 
 We have established the native Windows application shell and tested the PDF technology behind future reading and editing features. The approved stage includes Arabic/Urdu sample rendering, image-only PDFs, navigation, document-preservation tests, and repeated stability checks.
 
-The project owner tested and approved this foundation, called **N2**, on **27 September 2026**. **N3 is now being tested:** its native Library can add folders, index PDFs in the background, search English/Arabic/Urdu metadata, show Favorites and Recents, and protect a book's identity when files move or drives disappear. This work is still a candidate, not an accepted release. The current engineering version remains **`2.0.0-alpha.2`** until N3 passes its complete owner test.
+The project owner tested and approved this foundation, called **N2**, on **27 September 2026**. **N3 is ready for owner testing:** its native Library can add folders, index PDFs in the background, search English/Arabic/Urdu metadata, show Favorites and Recents, and protect a book's identity when files move or drives disappear. Automated checks and the exact Windows test package pass, but this is still a candidate—not an accepted release. The current engineering version remains **`2.0.0-alpha.2`** until N3 passes its complete owner test.
 
-**What's not ready yet:** N3 still needs its final CI package and owner test; the built-in reading interface, bookmark editor, and annotations begin in later stages. There is no finished native consumer release to download today. Test packages are for engineering evaluation, and success on our test samples does not mean every PDF has been proven perfect.
+**What's not ready yet:** N3 still needs hands-on owner testing on a real library, including an offline/removable folder and accessibility checks; the built-in reading interface, bookmark editor, and annotations begin in later stages. There is no finished native consumer release to download today. Test packages are for engineering evaluation, and success on our test samples does not mean every PDF has been proven perfect.
 
 [What passed—and what it means](docs/baselines/N2_ACCEPTANCE.md) · [Detailed test evidence](docs/baselines/N2_PDF_ENGINE_MATRIX.md)
 

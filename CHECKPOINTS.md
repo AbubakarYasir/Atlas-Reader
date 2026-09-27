@@ -1,6 +1,6 @@
 # Atlas Reader Native — Checkpoints to Windows 2.0
 
-<!-- atlas-status: N3|in-progress -->
+<!-- atlas-status: N3|ready-for-owner-test -->
 
 This file controls implementation order. Only one checkpoint is active at a time. A checkpoint may be **Not started**, **In progress**, **Ready for owner test**, **Accepted**, or **Blocked**.
 
@@ -12,7 +12,7 @@ This file controls implementation order. Only one checkpoint is active at a time
 |---|---|
 | Checkpoint | **N3 — Library/index foundation** |
 | Planned version | `2.0.0-beta.1` (first useful native library milestone; not yet accepted/released) |
-| Status | **In progress — started 2026-09-27 after N2 PASS** |
+| Status | **Ready for owner test — automated/package gates passed 2026-09-27; not Accepted** |
 | Previous checkpoint | **N1 Accepted by owner on 2026-09-22** |
 | Branch | `native-v2-n3-library-index-foundation` |
 | Base | accepted native `main` at `84a9b45b10b24ece595bb7069136fefd2ed2cc5b` |
@@ -30,7 +30,7 @@ official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
 first-party qpdf 12.4.1 CLI for structure/security/write. ADR-0004 was
 Accepted by owner on 2026-09-27.
 
-N2 is frozen and Accepted. N3.1–N3.4 are now implemented locally: versioned SQLite/FTS storage, bounded multi-root scanning, guarded identity/reconciliation, and a responsive native Library with search, folders, Favorites, Recents and review actions. Database work is off the UI thread, and the real rendered UI has been checked in English wide/narrow, Arabic dark and 200% states. Final exact-head CI, packaged checksum, removable/offline owner test, mature-product comparison and explicit `N3 PASS` remain; N3 is still unaccepted.
+N2 is frozen and Accepted. N3.1–N3.4 are implemented and the exact-head Debug/Release CI, inherited regressions, owner package and checksum pass. The responsive native Library provides search, folders, Favorites, Recents and review actions; database work is off the UI thread, and the rendered UI has been checked in English wide/narrow, Arabic dark and 200% states. N3 is Ready for owner test but still unaccepted: removable/offline use, Narrator/keyboard review, mature-product comparison and explicit `N3 PASS` remain.
 
 ## Operating contract
 
@@ -58,7 +58,7 @@ N2 is frozen and Accepted. N3.1–N3.4 are now implemented locally: versioned SQ
 | N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Accepted** |
 | N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **Accepted** |
 | N2 | `2.0.0-alpha.2` | PDF engine qualification spike | **Accepted** |
-| N3 | `2.0.0-beta.1` | Library/index foundation | In progress |
+| N3 | `2.0.0-beta.1` | Library/index foundation | **Ready for owner test** |
 | N4 | `2.0.0-beta.2` | Native reader foundation | Not started |
 | N5 | `2.0.0-beta.3` | Core resilience + complete bookmarks | Not started |
 | N6 | `2.0.0-beta.4` | Ink + standard annotations | Not started |

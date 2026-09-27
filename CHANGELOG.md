@@ -1,6 +1,6 @@
 # Changelog
 
-<!-- atlas-status: N3|in-progress -->
+<!-- atlas-status: N3|ready-for-owner-test -->
 
 All notable changes to Atlas Reader Native are documented here.
 
@@ -28,6 +28,8 @@ All notable changes to Atlas Reader Native are documented here.
 - Moved Library queries, mutations and scan preparation onto a serialized background worker at `d14f1ea`; the interface thread no longer performs SQLite work. Added a repeatable N3 Release benchmark at `dd47f4a`; on the named HP Victus/SK hynix NVMe fixture, 1,000 Unicode PDFs scanned in 1 ms, indexed in 541 ms and searched at 707 us p95 across 200 samples. Slower/removable storage remains an explicit owner test.
 - Added exact N3 owner-package staging to Windows CI and a plain-language owner checklist. Automatic folder watching is not falsely claimed: N3 uses Add folder/Rescan; bounded/coalesced watching is assigned to N7 if introduced.
 - The first exact-head strict Debug CI build exposed MSVC `C4702` inside Qt 6.10.3 generated QML cache code when `/WX` was enabled. Kept warnings-as-errors for Atlas sources and narrowly suppressed that upstream/generated warning on `atlas_reader`; a local `/WX` rebuild then passed before the CI retry.
+- Closed the N3 implementation/automation gate at `acfe8df8f18ba59500d7a786c93bdf6df96cb16d`. Windows branch run `36290055257` and PR run `36290052467` pass Debug and Release, while selected-route, coordinate, fidelity and stress workflows pass on the same implementation head. GitHub artifact `10921014058` contains the exact owner package; its 40,056,052-byte ZIP has SHA-256 `6226b038a990497fe1799b3c500ac3e4273db2af0755b238b055c756c227037c`.
+- Moved N3 to **Ready for owner test**, not Accepted. The owner must still complete the physical offline/removable-root, keyboard/Narrator, mature-product comparison and real-library checks and record explicit `N3 PASS`; N4 remains closed.
 - Configured this PC for native work: added the installed Visual Studio CMake bin to the current user's PATH, bootstrapped vcpkg at the exact pinned baseline, and installed Qt 6.10.3 MSVC 2022 x64 with Qt PDF. Added the VS 2026 configure/build/test preset without changing the VS 2022 CI baseline. The initially self-referential `CMAKE_PREFIX_PATH` preset macro was corrected to inherit the parent environment. Local fixture setup now follows the same generators/validator as CI; full local Debug and Release builds each pass 20/20 tests.
 - Local and GitHub link logs exposed MSVC `LNK4098` on SQLite test executables because `x64-windows-static` used a static CRT against Qt's dynamic CRT. Switched to the pinned vcpkg `x64-windows-static-md` triplet across presets, CI, and dependency/build documentation. Corrected local Debug/Release builds and final GitHub PR/push checks each pass all 20 tests; the final GitHub logs contain no linker warning. N3.1 remains verified and N3.2 scanning remains active.
 - Updated live status pages and the document checker for checkpoint transitions; closed N2 records retain their historical `N2|accepted` status.

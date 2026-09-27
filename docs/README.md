@@ -1,6 +1,6 @@
 # Atlas Reader Native — Documentation Index
 
-<!-- atlas-status: N3|in-progress -->
+<!-- atlas-status: N3|ready-for-owner-test -->
 
 Use this page to find the authoritative document instead of duplicating requirements across random files.
 
@@ -8,7 +8,7 @@ Use this page to find the authoritative document instead of duplicating requirem
 
 New visitor? Read the [public project introduction](../README.md). Building or contributing? Start with the [developer guide](DEVELOPER_GUIDE.md). This index holds the detailed technical and product references.
 
-**N3 in progress:** see the [N3 Library/index plan](N3_LIBRARY_INDEX_PLAN.md) and [N2 acceptance record](baselines/N2_ACCEPTANCE.md). Flutter development has stopped; native C++/Qt is the active project.
+**N3 ready for owner test:** see the [plain-language owner checklist](N3_OWNER_TEST.md), [N3 Library/index plan](N3_LIBRARY_INDEX_PLAN.md) and [N2 acceptance record](baselines/N2_ACCEPTANCE.md). Flutter development has stopped; native C++/Qt is the active project.
 
 1. **`../README.md`** — project entry point and current status.
 2. **`../PLAN.md`** — master product/engineering north star.
@@ -23,7 +23,7 @@ New visitor? Read the [public project introduction](../README.md). Building or c
 11. **`CHECKPOINT_QA_MATRIX.md`** — binding automated/manual QA, owner tests, blockers and limitation ownership for N0–N11.
 12. **`GIT_WORKFLOW.md`** — binding branch, commit, PR, merge, tag, status synchronization and remote-verification rules.
 
-N0, N1 and N2 are Accepted. N3 Library/index foundation is In progress. A passed checkpoint cannot be reopened without new evidence of a
+N0, N1 and N2 are Accepted. N3 Library/index foundation is Ready for owner test, not Accepted. A passed checkpoint cannot be reopened without new evidence of a
 user-facing regression.
 
 ## Product behavior

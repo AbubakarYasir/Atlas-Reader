@@ -1,6 +1,6 @@
 # N3 Library/Index Evidence Ledger
 
-<!-- atlas-status: N3|in-progress -->
+<!-- atlas-status: N3|ready-for-owner-test -->
 
 ## Start record — 2026-09-27
 
@@ -24,17 +24,18 @@
 | Subgate | Status | Source commit | Verification/artifact | Known limits |
 |---|---|---|---|---|
 | N3.1 Storage/schema | **Complete** | `e7fe595c5ffb228f48b63c17a960559a8b8b8a22` | Local VS 2026 Debug/Release 20/20 each; Windows PR run `36283212258` and branch run `36283210492` Debug/Release; selected route `36283212263`; no LNK4098 on corrected triplet. | Matching FTS tokens only; Arabic stemming is not claimed |
-| N3.2 Scanner | **Implemented; final exact-head CI pending** | `dd47f4a` | Traversal, overlap/deduplication, generation safety, inspection and coordination tests pass locally. Repeatable Release benchmark added. On the named owner SSD, 1,000 Unicode PDFs scanned in 1 ms and indexed in 541 ms. | Explicit Rescan, not an automatic watcher; slower/removable storage remains an owner test |
-| N3.3 Identity/reconciliation | **Implemented; final exact-head CI pending** | `d14f1ea` | Local VS 2026 Debug/Release 24/24 each prove new stable documents, Unicode rename review/apply, stable ID, distinct copies, offline ambiguity and non-destructive replacement. Review actions are in the Library; all SQLite work is off the UI thread. | Packaged owner rename/copy/offline test remains |
-| N3.4 Library UX/search | **Implemented; owner test pending** | `5e15fb2` | Real Library list/grid, folder filters, title/recent/relevance sorting, Favorites, Recents, safe phrase search, plain-language states and review actions. Rendered English wide, 760 px narrow, Arabic dark and 200% local checks passed after design review. | Narrator/removable-drive owner checks and mature-product comparison remain |
+| N3.2 Scanner | **Ready for owner test** | `dd47f4a` | Traversal, overlap/deduplication, generation safety, inspection and coordination tests pass locally and on final exact-head CI. Repeatable Release benchmark added. On the named owner SSD, 1,000 Unicode PDFs scanned in 1 ms and indexed in 541 ms. | Explicit Rescan, not an automatic watcher; slower/removable storage remains an owner test |
+| N3.3 Identity/reconciliation | **Ready for owner test** | `d14f1ea` | Local VS 2026 Debug/Release 24/24 each plus final exact-head CI prove new stable documents, Unicode rename review/apply, stable ID, distinct copies, offline ambiguity and non-destructive replacement. Review actions are in the Library; all SQLite work is off the UI thread. | Packaged owner rename/copy/offline test remains |
+| N3.4 Library UX/search | **Ready for owner test** | `5e15fb2` | Real Library list/grid, folder filters, title/recent/relevance sorting, Favorites, Recents, safe phrase search, plain-language states and review actions. Rendered English wide, 760 px narrow, Arabic dark and 200% local checks passed after design review. | Narrator/removable-drive owner checks and mature-product comparison remain |
 
 ## Named local performance observation — 2026-09-27
 
-- Source: Release benchmark target added at `dd47f4a`; final exact-head repetition is still required.
+- Source: Release benchmark target added at `dd47f4a`; repeated against final implementation head `acfe8df8f18ba59500d7a786c93bdf6df96cb16d` before the documentation-only handoff commit.
 - Machine: HP Victus by HP Gaming Laptop 16-r1xxx; Intel Core i7-14650HX (16 cores/24 logical processors); 16 GB RAM.
 - Storage: healthy `SKHynix_HFS001TDE9X081N` 1 TB NVMe SSD, NTFS system volume.
 - Fixture: 1,000 copied 11,551-byte valid PDFs across ten nested folders with mixed Latin/Arabic filenames. The fixture and temporary benchmark database were removed after the run.
 - Release result: enumeration `1 ms`; metadata/FTS indexing `541 ms`; 200 warmed search samples, p50 `647 us`, p95 `707 us`, 100-result cap.
+- Final implementation-head repetition: enumeration `1 ms`; metadata/FTS indexing `542 ms`; 200 warmed search samples, p50 `626 us`, p95 `695 us`, 100-result cap. The copied fixture and temporary database were removed after the successful run.
 - Interpretation: this is a reproducible storage/index smoke result, not a claim about every library or slower media. No removable/slower drive was connected; that required observation remains in the owner checklist.
 
 ## Declared N3 boundaries (not hidden loose ends)
@@ -50,4 +51,13 @@
 
 The first strict exact-head Debug job (`36289801631`, job `108537578568`) failed during QML cache compilation because MSVC promoted Qt 6.10.3's own `C4702` unreachable-code warning in Qt headers to an error. Atlas warnings remain errors. The correction suppresses only `C4702` on the QML executable target, where Qt-generated sources and Atlas `main.cpp` are compiled; all Atlas libraries and tests retain the full warning gate. A local Visual Studio 2026 Debug rebuild with `ATLAS_WARNINGS_AS_ERRORS=ON` passed before the correction was pushed for CI rerun.
 
-The final N3 handoff must identify exact commit/workflow/artifact IDs, test results, artifact SHA-256 and explicit limitations. Physical owner test, mature-product comparison and owner `N3 PASS` must be recorded separately from CI using [the owner checklist](../N3_OWNER_TEST.md).
+## Ready-for-owner-test handoff — 2026-09-27
+
+- Implementation head: `acfe8df8f18ba59500d7a786c93bdf6df96cb16d`.
+- Windows CI branch run `36290055257`: Debug job `108538286837` passed; Release job `108538286698` passed and staged the owner package. PR run `36290052467`: Debug job `108538279494` and Release job `108538279624` passed.
+- Inherited regression runs on the same implementation head passed: selected route `36290055294`, coordinates `36290055289`, fidelity `36290055264`, stress `36290055253`.
+- GitHub artifact ID `10921014058`, name `atlas-reader-n3-windows-x64-acfe8df8f18ba59500d7a786c93bdf6df96cb16d`, workflow-artifact digest `sha256:a1cd2c979fb2bc163f6af0b9f8793bf585430794d26bf3a290fbdfaeb18d2e5f`.
+- Owner ZIP: `atlas-reader-n3-windows-x64.zip`, 40,056,052 bytes, SHA-256 `6226b038a990497fe1799b3c500ac3e4273db2af0755b238b055c756c227037c`. The downloaded checksum file and a fresh local `Get-FileHash` result match.
+- The staged package contains the Release executable, required Qt runtime files, plain-language owner checklist and build identity. CI launched the staged executable without the earlier missing-DLL failure.
+
+All planned implementation and automated gates are complete, so N3 is **Ready for owner test**, not Accepted. The physical removable/offline-root check, Narrator/keyboard review, mature-product comparison and explicit owner `N3 PASS` must still be recorded using [the owner checklist](../N3_OWNER_TEST.md). N4 remains closed.

@@ -1,6 +1,6 @@
 # Atlas Reader Native — Current Project Notes
 
-<!-- atlas-status: N3|in-progress -->
+<!-- atlas-status: N3|ready-for-owner-test -->
 
 **State:** native Library/index foundation
 
@@ -12,7 +12,7 @@
 
 **Current build:** `2.0.0-alpha.2`
 
-**Current N3 status:** **In progress — N3.1 storage/schema verified; N3.2 safe scanning active**
+**Current N3 status:** **Ready for owner test — exact CI/package verified; not Accepted**
 
 **Current branch:** `native-v2-n3-library-index-foundation`
 
@@ -234,7 +234,7 @@ The research-data rule remains:
 - N0: `2.0.0-alpha.0` — **Accepted** bootstrap
 - N1: `2.0.0-alpha.1` — **Accepted** Windows/toolchain baseline
 - N2: `2.0.0-alpha.2` — **Accepted by owner on 2026-09-27**
-- N3: first useful native `2.0.0-beta.1` — In progress; release/version promotion awaits the full N3 stop gate
+- N3: first useful native `2.0.0-beta.1` — Ready for owner test; release/version promotion awaits owner `N3 PASS` and the full N3 stop gate
 - N4–N9: incremental `2.0.0-beta.N` milestones
 - N10: `2.0.0-rc.N`
 - N11: Windows `2.0.0`

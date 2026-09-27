@@ -20,10 +20,30 @@
         "CMAKE_CXX_STANDARD": "23",
         "ATLAS_PRERELEASE": "alpha.2",
         "ATLAS_WARNINGS_AS_ERRORS": "OFF",
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
       },
       "environment": {
-        "CMAKE_PREFIX_PATH": "$env{CMAKE_PREFIX_PATH}"
+        "CMAKE_PREFIX_PATH": "$penv{CMAKE_PREFIX_PATH}"
+      }
+    },
+    {
+      "name": "windows-msvc2026",
+      "displayName": "Windows MSVC 2026 x64",
+      "generator": "Visual Studio 18 2026",
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
+      },
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "binaryDir": "${sourceDir}/build/windows-msvc2026",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "23",
+        "ATLAS_PRERELEASE": "alpha.2",
+        "ATLAS_WARNINGS_AS_ERRORS": "OFF",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
+      },
+      "environment": {
+        "CMAKE_PREFIX_PATH": "$penv{CMAKE_PREFIX_PATH}"
       }
     }
   ],
@@ -37,6 +57,16 @@
       "name": "windows-release",
       "configurePreset": "windows-msvc2022",
       "configuration": "Release"
+    },
+    {
+      "name": "windows-2026-debug",
+      "configurePreset": "windows-msvc2026",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-2026-release",
+      "configurePreset": "windows-msvc2026",
+      "configuration": "Release"
     }
   ],
   "testPresets": [
@@ -49,6 +79,18 @@
     {
       "name": "windows-release",
       "configurePreset": "windows-msvc2022",
+      "configuration": "Release",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "windows-2026-debug",
+      "configurePreset": "windows-msvc2026",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "windows-2026-release",
+      "configurePreset": "windows-msvc2026",
       "configuration": "Release",
       "output": { "outputOnFailure": true }
     }

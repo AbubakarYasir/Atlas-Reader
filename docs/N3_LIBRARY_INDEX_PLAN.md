@@ -5,7 +5,7 @@
 **Status:** In progress, begun 2026-09-27 after N2 owner PASS and closure.
 **Branch:** `native-v2-n3-library-index-foundation`
 **Starting base:** accepted native `main`, `84a9b45b10b24ece595bb7069136fefd2ed2cc5b`.
-**Current active subgate:** N3.2 safe scanning. N3.1 storage/schema completed and CI-verified on `3baf78dfafbe77dc02d6c1b33c3b46a9f071caca`.
+**Current active subgate:** N3.2 safe scanning. N3.1 storage/schema implementation is complete; its Windows verification is being refreshed after correcting SQLite's CRT linkage to match Qt.
 **Planned milestone:** `2.0.0-beta.1`; a version string alone does not mean N3 is a useful or accepted beta.
 
 This is the binding N3 implementation sequence and evidence plan. The [checkpoint ledger](../CHECKPOINTS.md) and [QA matrix](CHECKPOINT_QA_MATRIX.md) define its mandatory gates. The [N2 acceptance record](baselines/N2_ACCEPTANCE.md) defines the frozen predecessor.
@@ -20,7 +20,7 @@ This outcome is a plan; the complete library is not implemented at N3 start.
 
 ### N3.1 — Versioned storage and repositories
 
-- SQLite is pinned as `3.53.4#1` at vcpkg baseline `9e2895bf6afb246396d85232ba70fcfa1fa67ba1`, with FTS5 enabled and Windows static triplet. Windows Debug/Release configure, build, runtime tests and selected-route compatibility passed on N3.1 commit `3baf78dfafbe77dc02d6c1b33c3b46a9f071caca`; details are in the [N3 evidence ledger](baselines/N3_LIBRARY_INDEX_EVIDENCE.md).
+- SQLite is pinned as `3.53.4#1` at vcpkg baseline `9e2895bf6afb246396d85232ba70fcfa1fa67ba1`, with FTS5 enabled and `x64-windows-static-md` so its static library uses Qt's dynamic MSVC runtime. A runtime mismatch warning found during local/CI integration was fixed; reverify Windows Debug/Release and selected-route compatibility before reaffirming this subgate. See the [N3 evidence ledger](baselines/N3_LIBRARY_INDEX_EVIDENCE.md).
 - Keep database operations behind typed repositories/services; UI and filesystem code never issue arbitrary SQL.
 - Keep a separately located, versioned app-local profile database. Resolve profile paths through an application/platform service, not a hard-coded profile in portable domain code.
 - A persisted library-root ID cannot be silently rebound to another source path. Root removal, replacement and path relocation require explicit policy and must not detach books or erase associated research.

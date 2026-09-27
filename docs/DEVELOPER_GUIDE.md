@@ -4,7 +4,7 @@
 
 ## Current state
 
-Native engineering version: `2.0.0-alpha.2`. N0, N1 and N2 are Accepted; N3 Library/index foundation is In progress. N3.1 storage/schema is CI-verified; N3.2 safe scanning is active. See the [N3 plan](N3_LIBRARY_INDEX_PLAN.md), [N3 evidence ledger](baselines/N3_LIBRARY_INDEX_EVIDENCE.md), and [N2 acceptance record](baselines/N2_ACCEPTANCE.md). The full Library, Reader, bookmark editor and annotations are not complete.
+Native engineering version: `2.0.0-alpha.2`. N0, N1 and N2 are Accepted; N3 Library/index foundation is In progress. N3.2 safe scanning is active; N3.1 storage/schema verification is being refreshed after a runtime-linkage correction. See the [N3 plan](N3_LIBRARY_INDEX_PLAN.md), [N3 evidence ledger](baselines/N3_LIBRARY_INDEX_EVIDENCE.md), and [N2 acceptance record](baselines/N2_ACCEPTANCE.md). The full Library, Reader, bookmark editor and annotations are not complete.
 
 Permanent branches are `main` (accepted native work) and `legacy/flutter` (stopped, obsolete backup). N3 work uses `native-v2-n3-library-index-foundation` from the exact accepted `main` base. Follow the N3 subgate and owner checks; do not revive Flutter.
 

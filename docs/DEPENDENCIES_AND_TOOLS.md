@@ -64,7 +64,7 @@ For N2, a dependency can be **probe-only** without being accepted for production
 
 **Status:** N3 implementation in progress. It remained closed through accepted N2.
 
-N3.1 pins SQLite `3.53.4#1` from the Microsoft vcpkg registry snapshot `9e2895bf6afb246396d85232ba70fcfa1fa67ba1`, enables FTS5 explicitly and uses the static Windows triplet. The application uses SQLite's C API inside the repository implementation, not as a domain/UI type. The migration, runtime FTS capability, database tests and reproducible Debug/Release CI still gate completion.
+N3.1 pins SQLite `3.53.4#1` from the Microsoft vcpkg registry snapshot `9e2895bf6afb246396d85232ba70fcfa1fa67ba1`, enables FTS5 explicitly and uses `x64-windows-static-md`: SQLite is statically linked, with the dynamic MSVC runtime matching Qt. The application uses SQLite's C API inside the repository implementation, not as a domain/UI type.
 
 **Why:** stable embedded transactional database, mature C API, FTS5, cross-platform availability, public-domain core.
 

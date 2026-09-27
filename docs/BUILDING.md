@@ -46,7 +46,7 @@ git --version
 
 The Visual Studio generator discovers MSVC without requiring a Ninja-specific Developer PowerShell workflow for ordinary Atlas targets.
 
-The configure preset uses the pinned vcpkg manifest. From the repository root:
+The configure preset uses the pinned vcpkg manifest. From the repository root (skip clone/bootstrap if `build\vcpkg` already exists at the pinned baseline):
 
 ```powershell
 git clone https://github.com/microsoft/vcpkg.git .\build\vcpkg
@@ -55,7 +55,33 @@ git -C .\build\vcpkg checkout 9e2895bf6afb246396d85232ba70fcfa1fa67ba1
 $env:VCPKG_ROOT = (Resolve-Path .\build\vcpkg).Path
 ```
 
-Then run `cmake --preset windows-msvc2022`. Windows CI performs the same pinned setup. SQLite uses the static Windows triplet; the accepted PDF route remains unchanged.
+Before running CTest, prepare the generated N2 fixtures just as CI does:
+
+```powershell
+python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
+python tests/fixtures/pdf/source/generate_a006_unicode_semantics.py
+python tests/fixtures/pdf/source/generate_a007_a008_security_semantics.py
+python tests/fixtures/pdf/source/generate_a009_restricted_permissions.py
+python tests/fixtures/pdf/source/generate_a010_certification_structure.py
+python tests/fixtures/pdf/validate_n2_fixtures.py --output build/local-fixture-validation.json
+```
+
+The validator must report `"passed": true`; fixture PDFs are generated into the ignored `tests/fixtures/pdf/generated` directory and should not be committed.
+
+Then run `cmake --preset windows-msvc2022`. Windows CI performs the same pinned setup. SQLite uses the `x64-windows-static-md` triplet: SQLite is statically linked while matching Qt/MSVC's dynamic CRT. The accepted PDF route remains unchanged.
+
+For Visual Studio 2026 installations, the repository also has a `windows-msvc2026` preset with matching Debug/Release build and test presets. Install the accepted Qt 6.10.3 Windows MSVC distribution with Qt PDF, set `CMAKE_PREFIX_PATH` to its `msvc2022_64` directory, and use:
+
+```powershell
+$env:VCPKG_ROOT = (Resolve-Path .\build\vcpkg).Path
+$env:CMAKE_PREFIX_PATH = 'C:\Qt\6.10.3\msvc2022_64'
+$env:PATH = "$env:CMAKE_PREFIX_PATH\bin;$env:PATH"
+cmake --preset windows-msvc2026
+cmake --build --preset windows-2026-debug
+ctest --preset windows-2026-debug
+```
+
+The Visual Studio 2022 preset remains the CI baseline. Visual Studio 2026 support is a local-development option and does not change the shipping toolchain decision.
 
 ## Configure once
 
@@ -63,7 +89,7 @@ Then run `cmake --preset windows-msvc2022`. Windows CI performs the same pinned 
 cmake --preset windows-msvc2022
 ```
 
-The preset identifies the active engineering preview as `2.0.0-alpha.2`. The vcpkg manifest installs SQLite `3.53.4#1` with FTS5 from its pinned baseline using the `x64-windows-static` triplet. Set `VCPKG_ROOT` to the checked-out vcpkg tree before configuring.
+The preset identifies the active engineering preview as `2.0.0-alpha.2`. The vcpkg manifest installs SQLite `3.53.4#1` with FTS5 from its pinned baseline using the `x64-windows-static-md` triplet. Set `VCPKG_ROOT` to the checked-out vcpkg tree before configuring.
 
 ## Debug
 

@@ -170,7 +170,7 @@ jobs:
           -A x64
           -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
-          -DVCPKG_TARGET_TRIPLET=x64-windows-static
+          -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
           -DATLAS_ENABLE_PDFIUM_PROBE=OFF
           -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
 

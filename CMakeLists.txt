@@ -43,6 +43,14 @@ add_library(atlas_core INTERFACE)
 target_include_directories(atlas_core INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_features(atlas_core INTERFACE cxx_std_23)
 
+add_library(atlas_document_identity STATIC
+    src/core/index/DocumentIdentityReconciler.cpp
+    src/core/index/DocumentIdentityReconciler.h
+)
+target_include_directories(atlas_document_identity PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_document_identity PUBLIC atlas_core)
+atlas_enable_warnings(atlas_document_identity)
+
 add_library(atlas_library_index STATIC
     src/app/index/SqliteLibraryIndex.cpp
     src/app/index/SqliteLibraryIndex.h
@@ -193,6 +201,11 @@ add_executable(atlas_core_smoke tests/core_smoke.cpp)
 target_link_libraries(atlas_core_smoke PRIVATE atlas_core)
 atlas_enable_warnings(atlas_core_smoke)
 add_test(NAME atlas_core_smoke COMMAND atlas_core_smoke)
+
+add_executable(atlas_document_identity_tests tests/index/document_identity_reconciler_tests.cpp)
+target_link_libraries(atlas_document_identity_tests PRIVATE atlas_document_identity)
+atlas_enable_warnings(atlas_document_identity_tests)
+add_test(NAME atlas_document_identity COMMAND atlas_document_identity_tests)
 
 add_executable(atlas_library_index_tests tests/index/library_index_tests.cpp)
 target_link_libraries(atlas_library_index_tests PRIVATE atlas_library_index)

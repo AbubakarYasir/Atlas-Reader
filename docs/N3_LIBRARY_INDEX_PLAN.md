@@ -41,6 +41,7 @@ This outcome is a plan; the complete library is not implemented at N3 start.
 - Scanner/index coordination at `38d3cab`, verified through final branch head `e871ecab257008fc3f100927f0411e6e0832b84f`, marks known locations in their current root generation and publishes unknown paths in bounded, cross-root-deduplicated batches for the later identity stage. It does not create document IDs, relink books or infer deletions. Complete, partial, unavailable and cancelled outcomes retain separate safe persistence rules.
 - Coalesce watcher events if/when watchers are introduced; never let event storms create unbounded queued work or a writer queue.
 - Cover long/Unicode paths, inaccessible subfolders, nested roots, disappearing files, cancellation and encrypted/corrupt PDF identification.
+- PDF inspection at `30137a1` classifies readable, password-locked, malformed/unreadable, unsupported-security and missing files, preserves Unicode paths, and collects safe metadata/revision signals where available. It does not bypass passwords or make identity/relink decisions.
 
 ### N3.3 — Identity and reconciliation
 

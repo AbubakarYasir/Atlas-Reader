@@ -12,7 +12,7 @@
 
 **Current build:** `2.0.0-alpha.2`
 
-**Current N3 status:** **In progress — N3.1 storage/schema**
+**Current N3 status:** **In progress — N3.1 storage/schema complete; N3.2 safe scanning active**
 
 **Current branch:** `native-v2-n3-library-index-foundation`
 

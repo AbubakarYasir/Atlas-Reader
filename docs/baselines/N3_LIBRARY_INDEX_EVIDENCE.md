@@ -16,15 +16,15 @@
 
 ### First CI diagnostic — implementation `0912ab3486ac9427d73850069885d71497b6bda8`
 
-- Windows CI Debug and Release configured and built the index adapter; all inherited PDF regression tests passed, but `atlas_library_index` failed because the Arabic query used an inflected token (`قراءة`) while the fixture stored `القراءة`. SQLite's `unicode61` tokenizer does not stem Arabic; the assertion now searches the exact stored token. This defines current token search behavior, not a claim of Arabic morphology support.
-- The inherited N2 selected-production-route check failed at CMake configure because it did not use the newly active N3 SQLite manifest/toolchain. The workflow now bootstraps the same pinned vcpkg baseline and `x64-windows-static` toolchain as Windows CI.
-- These are diagnosed fixes only; rerun results are pending. No N3.1 acceptance is claimed.
+- Initial failed run: Windows CI `36280951746` (PR) and `36280936990` (push) exposed an Arabic FTS assertion using an inflected token (`قراءة`) while the fixture stored `القراءة`; `unicode61` does not stem Arabic. The inherited selected-route run `36280951747` failed at configure because that job did not use the new pinned SQLite toolchain.
+- Fix commit `3baf78dfafbe77dc02d6c1b33c3b46a9f071caca` searches the exact stored Arabic token and adds the declared pinned vcpkg setup to selected-route CI.
+- Verified on final commit `3baf78dfafbe77dc02d6c1b33c3b46a9f071caca`: Windows CI PR run `36281177576` passed Debug and Release; branch-push run `36281175089` passed Debug and Release; selected production route `36281177579` passed; coordinate `36281177581`, fidelity `36281177585` and stress `36281177658` checks passed. Thus N3.1 automated build, CTest, FTS5, Arabic/Urdu/English fixtures, migration rollback/version and inherited regression gates are green. Search currently requires matching indexed tokens; Arabic morphology/stemming is not claimed.
 
 | Subgate | Status | Source commit | Verification/artifact | Known limits |
 |---|---|---|---|---|
-| N3.1 Storage/schema | In progress | `0912ab3486ac9427d73850069885d71497b6bda8` plus follow-up fix awaiting push | First Debug/Release run built; Arabic FTS expectation failed. Selected-route CMake lacked vcpkg. See first CI diagnostic above. | Fixes require new green CI; local C++ toolchain unavailable |
-| N3.2 Scanner | Not started | — | — | — |
+| N3.1 Storage/schema | **Complete** | `3baf78dfafbe77dc02d6c1b33c3b46a9f071caca` | Windows CI Debug/Release and all listed inherited PR gates passed on final head; run IDs above. | No local C++ toolchain; Windows CI is build/test evidence. Token matching only; no Arabic stemming claim. |
+| N3.2 Scanner | In progress | Local implementation pending CI | Added streaming enumerator and path-only scanner; CTest evidence pending | Must verify on Windows; no index reconciliation, watcher, metadata extraction or owner test yet |
 | N3.3 Identity/reconciliation | Not started | — | — | — |
 | N3.4 Library UX/search | Not started | — | — | — |
 
-The handoff must replace pending fields with exact commit/workflow/artifact IDs, test results, artifact SHA-256 and explicit limitations. Physical owner test, mature-product comparison and owner `N3 PASS` must be recorded separately from CI.
+The final N3 handoff must identify exact commit/workflow/artifact IDs, test results, artifact SHA-256 and explicit limitations. Physical owner test, mature-product comparison and owner `N3 PASS` must be recorded separately from CI.

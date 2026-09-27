@@ -12,7 +12,7 @@ SQLite/FTS5, explicit multi-root PDF scanning, guarded identity/reconciliation, 
 
 ## Remaining acceptance
 
-Use the [owner checklist](docs/N3_OWNER_TEST.md) and [evidence ledger](docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md). The latest metadata correction needs retesting; the skipped comparison remains open. Earlier numbered owner PASS reports remain evidence but do not constitute final N3 acceptance.
+Use the [owner checklist](docs/N3_OWNER_TEST.md) and [evidence ledger](docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md). Checks 1–11 were exercised in owner round 1 and their reported defects are corrected; a disposable Calibre 9.9 same-folder comparison closes check 12. The latest filename-first package still needs owner confirmation and the exact words `N3 PASS`.
 
 ## Windows 2.0 sequence
 

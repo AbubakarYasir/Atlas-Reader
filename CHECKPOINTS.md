@@ -30,7 +30,7 @@ official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
 first-party qpdf 12.4.1 CLI for structure/security/write. ADR-0004 was
 Accepted by owner on 2026-09-27.
 
-N2 is frozen and Accepted. N3.1–N3.4 are implemented and the exact-head Debug/Release CI, inherited regressions, owner package and checksum pass. The responsive native Library provides search, folders, Favorites, Recents and review actions; database work is off the UI thread, and the rendered UI has been checked in English wide/narrow, Arabic dark and 200% states. N3 is Ready for owner test but still unaccepted: removable/offline use, Narrator/keyboard review, mature-product comparison and explicit `N3 PASS` remain.
+N2 is frozen and Accepted. N3.1–N3.4 are implemented and the exact-head Debug/Release CI, inherited regressions, owner package and checksum pass. The responsive native Library provides search, folders, Favorites, Recents and review actions; database work is off the UI thread, and the rendered UI has been checked in English wide/narrow, Arabic dark and 200% states. Owner round 1 covered checks 1–11 and its defects are corrected; the same-task Calibre 9.9 comparison now closes check 12. N3 is technically ready but remains unaccepted until the owner confirms the corrected filename-first package and explicitly records `N3 PASS`.
 
 ## Operating contract
 

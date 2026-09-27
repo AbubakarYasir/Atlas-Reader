@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <cctype>
 #include <stdexcept>
+#include <string>
 #include <system_error>
+#include <unordered_set>
 #include <utility>
 
 namespace atlas::index {
@@ -15,6 +17,23 @@ namespace {
         return static_cast<char>(std::tolower(ch));
     });
     return extension == ".pdf";
+}
+
+[[nodiscard]] std::string pathKey(const std::filesystem::path& path) {
+    std::error_code error;
+    auto normalized = std::filesystem::absolute(path, error);
+    if (error) normalized = path;
+    const auto utf8 = normalized.lexically_normal().generic_u8string();
+    std::string key{reinterpret_cast<const char*>(utf8.data()), utf8.size()};
+#ifdef _WIN32
+    // Windows paths are case-insensitive for Atlas's supported local roots.
+    // ASCII folding covers drive letters and the ordinary Latin path aliases
+    // while preserving Arabic, Urdu and other non-cased scripts byte-for-byte.
+    std::transform(key.begin(), key.end(), key.begin(), [](unsigned char ch) {
+        return static_cast<char>(std::tolower(ch));
+    });
+#endif
+    return key;
 }
 
 } // namespace
@@ -122,6 +141,51 @@ LibraryScanSummary LibraryScanner::scan(
     if (!sawReadableDirectory) summary.outcome = LibraryScanOutcome::unavailable;
     else summary.outcome = incomplete ? LibraryScanOutcome::partial : LibraryScanOutcome::complete;
     return summary;
+}
+
+LibraryMultiScanSummary LibraryScanner::scanRoots(
+    const std::vector<LibraryScanRoot>& roots,
+    const std::atomic_bool& cancelled,
+    const RootBatchHandler& onBatch) const {
+    if (roots.empty() || !onBatch) {
+        throw std::invalid_argument("At least one library root and a batch callback are required for scanning.");
+    }
+
+    std::unordered_set<std::string> rootIds;
+    for (const auto& root : roots) {
+        if (root.id.empty() || root.source.empty()) {
+            throw std::invalid_argument("Every library scan root needs an ID and a source path.");
+        }
+        if (!rootIds.insert(root.id).second) {
+            throw std::invalid_argument("Library scan root IDs must be unique.");
+        }
+    }
+
+    LibraryMultiScanSummary result;
+    result.roots.reserve(roots.size());
+    std::unordered_set<std::string> publishedPaths;
+
+    for (const auto& root : roots) {
+        LibraryRootScanSummary rootResult;
+        rootResult.root = root;
+        rootResult.scan = scan(root.source, cancelled, [&](const auto& batch, const auto& progress) {
+            std::vector<std::filesystem::path> uniqueBatch;
+            uniqueBatch.reserve(batch.size());
+            for (const auto& path : batch) {
+                if (publishedPaths.insert(pathKey(path)).second) {
+                    uniqueBatch.push_back(path);
+                    ++result.uniquePdfFilesFound;
+                } else {
+                    ++rootResult.duplicatePdfFilesSkipped;
+                    ++result.duplicatePdfFilesSkipped;
+                }
+            }
+            if (!uniqueBatch.empty()) onBatch(root, uniqueBatch, progress);
+        });
+        result.roots.push_back(std::move(rootResult));
+        if (result.roots.back().scan.outcome == LibraryScanOutcome::cancelled) break;
+    }
+    return result;
 }
 
 } // namespace atlas::index

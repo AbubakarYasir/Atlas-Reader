@@ -147,6 +147,55 @@ void checkNativeFilesystemTraversal() {
     require(found.front() == root / "nested" / "كتاب.PDF", "Unicode PDF paths must be preserved exactly.");
 }
 
+void checkOverlappingRootsPublishEachPdfOnce() {
+    auto fixture = std::make_shared<FixtureEnumerator>();
+    fixture->directories["root"] = {true, true, {
+        {"root/top.pdf", EnumeratedEntryKind::regularFile},
+        {"root/sub", EnumeratedEntryKind::directory},
+    }};
+    fixture->directories["root/sub"] = {true, true, {
+        {"root/sub/shared.pdf", EnumeratedEntryKind::regularFile},
+    }};
+    fixture->directories["offline"] = {false, false, {}};
+
+    LibraryScanner scanner{fixture, {.batchSize = 2, .maximumDepth = 8, .maximumFiles = 20}};
+    std::atomic_bool cancelled{};
+    std::vector<std::filesystem::path> found;
+    std::vector<std::string> publishingRoots;
+    const auto summary = scanner.scanRoots({
+        {"parent", "root"},
+        {"nested", "root/sub"},
+        {"offline", "offline"},
+    }, cancelled, [&](const auto& root, const auto& batch, const auto&) {
+        publishingRoots.push_back(root.id);
+        found.insert(found.end(), batch.begin(), batch.end());
+    });
+
+    require(summary.roots.size() == 3, "Every configured root must retain an independent scan outcome.");
+    require(summary.roots[0].scan.outcome == LibraryScanOutcome::complete
+            && summary.roots[1].scan.outcome == LibraryScanOutcome::complete
+            && summary.roots[2].scan.outcome == LibraryScanOutcome::unavailable,
+        "An unavailable root must not invalidate successful overlapping roots.");
+    require(summary.uniquePdfFilesFound == 2 && summary.duplicatePdfFilesSkipped == 1,
+        "Nested roots must publish each physical PDF path only once.");
+    require(summary.roots[1].duplicatePdfFilesSkipped == 1,
+        "The nested root must report the PDF suppressed by cross-root deduplication.");
+    require(found.size() == 2
+            && std::count(found.begin(), found.end(), std::filesystem::path{"root/sub/shared.pdf"}) == 1,
+        "The overlapping PDF must appear exactly once in published results.");
+    require(publishingRoots.size() == 1 && publishingRoots.front() == "parent",
+        "A root whose entire batch is duplicate must not emit an empty batch.");
+
+    bool duplicateIdRejected = false;
+    try {
+        static_cast<void>(scanner.scanRoots({{"same", "root"}, {"same", "root/sub"}}, cancelled,
+            [](const auto&, const auto&, const auto&) {}));
+    } catch (const std::invalid_argument&) {
+        duplicateIdRejected = true;
+    }
+    require(duplicateIdRejected, "Configured root IDs must be unique before any scan begins.");
+}
+
 } // namespace
 
 int main() {
@@ -155,9 +204,10 @@ int main() {
         checkCancellationAndLimits();
         checkUnavailableAndDepthLimit();
         checkNativeFilesystemTraversal();
+        checkOverlappingRootsPublishEachPdfOnce();
     } catch (const std::exception& error) {
         std::cerr << "Library scanner test failed: " << error.what() << '\n';
         return 1;
     }
-    std::cout << "Library scanner bounded-batch, cancellation, Unicode-path, inaccessible-entry, symlink, limit and unavailable-root checks passed.\n";
+    std::cout << "Library scanner bounded-batch, cancellation, Unicode-path, inaccessible-entry, symlink, limit, overlap-deduplication and unavailable-root checks passed.\n";
 }

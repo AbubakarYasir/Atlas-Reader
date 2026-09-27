@@ -32,6 +32,8 @@ advantages do not override the frozen distribution decision.
 
 ## 1. Dependency rules
 
+Atlas-owned source retains its MIT license. F1–F4 and E1–E5 must qualify maintained open-source implementations, transitive licenses, fonts/codecs, reproducible builds and source-distribution obligations. Free-of-charge does not mean open source. Proprietary runtime exceptions require an explicit owner decision; no dependency silently relicenses Atlas. Process separation does not by itself prove license compliance.
+
 Every proposed dependency must answer:
 
 1. What exact problem does it solve better than a small Atlas implementation?

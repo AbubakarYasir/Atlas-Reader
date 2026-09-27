@@ -4,6 +4,18 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## Planning corrections — 2026-09-27
+
+- Owner confirmed expanded offline 2.0 scope: complete annotation controls, E1 page organization, E2 original PDF text/image editing and equations, E3 forms, E4 secure redaction and E5 later-stage offline signatures. OCR, audio notebooks and online/collaboration remain excluded. Each stage has dependency qualification, actionable work, tests and owner gates; no implementation claim or version bump.
+- N8/N9 planned release slots move to beta.14/beta.15 to accommodate E1–E5; current N3 approval remains pending.
+
+- Clarified the owner's competitor audit is about missing 2.0 capabilities and quality, not copying Foxit's design. Recorded supplied Xournal++ and separate Foxit Reader/Editor references, evidence limits, required annotation visibility and honest unsupported forms/signature behavior, plus explicit dispositions for notebook/audio/LaTeX/plugins, OCR, redaction, AI and suite features.
+- Added concrete automated and owner tests for F1–F4; planned features remain unimplemented and N3 remains unaccepted.
+
+- Owner moved ebook/comic delivery before Windows 2.0: N7 → F1 EPUB → F2 CBZ/CBR → F3 user-owned, DRM-free AZW3, MOBI and PRC files → F4 KFX decision → E1–E5 offline editing → N8 backup/migration → N9 accessibility → RC/stable. Final planned N8/N9 slots are beta.14/beta.15.
+- Added stage-owned competitive workflow requirements and tests for focused reading/history, document accessibility, active-content containment, durable ebook locations, pen controls, annotation lists, sorting/filtering, safe rename, offline read-aloud and mixed-format recovery.
+- Synchronized release strategy, scope, documentation index and public roadmap. Added explicit open-source dependency obligations. N3 remains PDF-only and awaits owner acceptance.
+
 ## [Unreleased]
 
 ### N3 start — 2026-09-27

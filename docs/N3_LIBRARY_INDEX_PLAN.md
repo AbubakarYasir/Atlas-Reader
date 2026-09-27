@@ -61,7 +61,7 @@ This outcome was the start-state plan. The candidate now implements it, subject 
 ### N3.4 — Useful library, filtering and search
 
 - Deliver useful list/grid and folder/library navigation, filtering/sorting, Recents and Favorites, plus book results in Command Center.
-- Implemented at `9753030` and refined through `5e15fb2`: All books, per-folder, Favorites and Recently opened views; list/grid presentation; title ordering for library/folder/favorite views, last-opened ordering for Recents, relevance ordering for search; and `Ctrl+K` as the keyboard entry to book search. A broader multi-command palette is not claimed by N3.
+- Implemented at `9753030` and refined through `5e15fb2`: All books, per-folder, Favorites and Recently opened views; list/grid presentation; filename ordering for library/folder/favorite views, last-opened ordering for Recents, relevance ordering for search; and `Ctrl+K` as the keyboard entry to book search. A broader multi-command palette is not claimed by N3. Current filtering means folder/Favorites/Recents selection and metadata search. Selectable sorting and availability/type filters belong to N7 action C09.
 - Database reads and writes, scan preparation and ingestion run away from the interface thread at `d14f1ea`; stale asynchronous refresh results are ignored.
 - The restrained Library design reuses shared button/input primitives and the documented visual tokens. The rendered review removed duplicate actions and unnecessary ready-state decoration, clarified navigation alignment/focus, and passed local English wide, 760 px narrow, Arabic dark and 200% inspections.
 - Make selection, scan state, failures and unavailable-root retention clear, keyboard-accessible and operable at 100% and 200% scale.

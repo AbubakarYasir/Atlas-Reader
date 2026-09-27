@@ -2,6 +2,8 @@
 
 ## Product feel
 
+Competitor research audits capability gaps and workflow quality, not visual copying. The owner's preference for aspects of Foxit does not authorize adopting its layout, ribbon, branding or assets. Existing Atlas primitives and this contract govern interface changes; each change still requires rendered, keyboard, scaling and RTL review.
+
 Atlas should feel like a serious research instrument, not an office-suite toolbar wall and not a decorative consumer reader.
 
 It must also avoid the recognizable "AI-generated app" look: no generic dashboard of equal cards, decorative gradients, inflated headings, random glow, novelty icons, or filler copy. The visual language should feel intentionally designed by an experienced product team—modern, calm, essential and durable rather than trendy or dated.

@@ -14,7 +14,8 @@ and deleted after acceptance and merge; they do not replace the default branch.
 
 - `main` is the default GitHub branch and contains accepted native checkpoint state. `legacy/flutter` is the secondary, obsolete Flutter backup/reference; Flutter development has stopped. The repository opens on the native project.
 - One checkpoint branch is active at a time, named
-  `native-v2-n<number>-short-name`.
+  `native-v2-n<number>-short-name`, with `native-v2-f<number>-short-name` and
+  `native-v2-e<number>-short-name` for the format and offline-editing tracks.
 - The checkpoint branch starts from the exact accepted predecessor commit.
 - Small task branches may start from the active checkpoint branch and merge
   back into it. They must not contain later-checkpoint work.
@@ -75,7 +76,7 @@ must not leave workflow triggers pointing at a deleted checkpoint branch.
    incomplete or owner testing is pending.
 3. CI must run on the exact proposed head. A successful older commit does not
    qualify a newer documentation or code head.
-4. The owner records `N# PASS` before the checkpoint becomes Accepted.
+4. The owner records `N# PASS`, `F# PASS` or `E# PASS` before the checkpoint becomes Accepted.
 5. Update the ADR/status ledger and merge only after the owner gate and required
    checks pass. Do not begin the next checkpoint merely because a PR is open or
    CI is green.

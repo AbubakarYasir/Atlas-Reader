@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Atlas 2.0 remains a PDF-first release. This roadmap prevents future book formats from becoming an improvised collection of partial readers. Every admitted format must keep the same clear Library behavior while receiving format-specific reading, security, performance, accessibility and preservation tests.
+Atlas 2.0 remains PDF-first in implementation order, but it is now a multi-format release. This roadmap prevents the added formats from becoming an improvised collection of partial readers. Every admitted format must keep the same clear Library behavior while receiving format-specific reading, security, performance, accessibility and preservation tests.
 
 This document plans support; it does not claim that the current N3 build opens anything except PDF.
 
@@ -25,20 +25,33 @@ This document plans support; it does not claim that the current N3 build opens a
 |---|---|---|---|---|
 | **F1 — EPUB** | `.epub` | Full reading for non-DRM reflowable EPUB; fixed-layout EPUB only after separate proof | Open standard and the strongest complement to fixed-layout PDF | No DRM bypass; scripting/network content disabled by default; rendering and sanitization engine must be selected by ADR |
 | **F2 — Comics** | `.cbz`, `.cbr` | Image-sequence reading, covers and navigation | Clear local/offline model and strong reuse of the virtualized reader | Archive traversal, decompression bombs, corrupt entries and filename ordering must pass hostile-input tests; CBR needs a separately licensed/qualified RAR route |
-| **F3 — Legacy Kindle** | `.azw3`, `.mobi`, `.prc` | Non-DRM local reading when the parser can prove compatibility | Preserves legitimate user-owned older libraries | DRM-protected books remain unsupported; misleading file extensions do not override content detection; typography and metadata fidelity require real-device comparisons |
-| **Research only** | `.kfx` | Investigate import/read feasibility; no delivery promise yet | KFX is proprietary, versioned and commonly tied to Amazon delivery/DRM | It cannot become a supported format without a lawful non-DRM corpus, a maintainable parser route, license review and an owner-approved checkpoint |
+| **F3 — Legacy Kindle** | `.azw3`, `.mobi`, `.prc` | Reading for user-owned, DRM-free AZW3, MOBI and PRC files when the parser can prove compatibility | Preserves legitimate user-owned older libraries | DRM-protected books remain unsupported; misleading file extensions do not override content detection; typography and metadata fidelity require established-reader comparisons |
+| **F4 — KFX decision** | `.kfx` | Mandatory pre-2.0 feasibility/ADR decision; reading is admitted only if the evidence passes | KFX is proprietary, versioned and commonly tied to Amazon delivery/DRM | No DRM bypass and no false promise: a lawful non-DRM corpus, maintainable parser route, license review and owner approval are required before implementation |
 
 ## Required checkpoint sequence
 
-Each track opens only after Windows 2.0 unless the owner explicitly changes scope and records the cost to the active release.
+This scope adds three implementation stages and a KFX decision; no release date is promised. If F4 admits KFX, implementation and an additional owner test must pass before N8; feasibility alone never means support. Missing required capabilities block the stage unless the owner explicitly changes scope.
 
-While N4–N11 are built, their shared book models must preserve the boundaries needed by these later tracks. This means using generic document identity, filename/type, metadata, search, progress, backup and UI contracts where the behavior is genuinely shared. It does **not** mean weakening or generalizing PDF rendering, coordinates, security or safe-write rules: those remain strong PDF-specific adapters until another format earns its own adapter.
+F1/F3 include local bookmarks/notes with durable locations, text search, progress and metadata overrides. Ebook source editing and portable annotation writing require separate qualification. F2 includes page-based local bookmarks/notes and progress; no text-search/read-aloud claim is made for image-only content. N8 mixed-format backups, N9 document/UI accessibility and N10 resource/security tests cover all admitted types.
+
+F1–F3 run after N7 and before N8, so migration, final Arabic/accessibility qualification and RC testing cover every admitted format. F4 is a mandatory decision gate in the same window; it may admit lawful non-DRM KFX or record it as unsupported with exact evidence. It may never authorize DRM bypass.
+
+While N4–N7 are built, their shared book models must preserve the boundaries needed by F1–F3 and N8–N11. This means using generic document identity, filename/type, metadata, search, progress, backup and UI contracts where the behavior is genuinely shared. It does **not** mean weakening or generalizing PDF rendering, coordinates, security or safe-write rules: those remain strong PDF-specific adapters until another format earns its own adapter.
 
 1. **Qualification:** representative lawful fixtures, parser/renderer candidates, license/notices, threat model, metadata/cover/text/navigation capability matrix, and repeatable performance evidence.
 2. **Library admission:** content-aware detection, explicit availability/error states, metadata extraction, protected extension behavior, identity/move/rename safety and bounded cover generation.
 3. **Reader delivery:** navigation, progress, search where meaningful, typography/layout, themes where safe, RTL/bidi, accessibility, keyboard/touch and large-book virtualization.
 4. **Interoperability and preservation:** compare against established readers, reopen after app restart/upgrade, confirm source bytes remain unchanged unless an explicit safe write feature exists, and verify export/backup behavior.
-5. **Owner gate:** distribute one exact package with checksums and a simple format-specific test sheet. The track remains Ready for owner test until the owner records `F1 PASS`, `F2 PASS` or `F3 PASS`.
+5. **Owner gate:** distribute one exact package with checksums and a simple format-specific test sheet. The track remains Ready for owner test until the owner records `F1 PASS`, `F2 PASS` or `F3 PASS`; the KFX decision requires explicit `F4 PASS` whether its evidence admits or rejects implementation.
+
+## Open-source dependency rule
+
+- Prefer open specifications and actively maintained open-source parsers/renderers with reproducible builds.
+- Record exact source, version/commit, license, notices, security history, update path and rollback before adoption.
+- Keep each format implementation behind Atlas-owned adapters so one dependency cannot own the Library or research data model.
+- Do not add cloud/account requirements to core local reading.
+- A proprietary SDK is not the default answer. Any exception requires an ADR proving why no credible open route exists, what lock-in it creates, and how Atlas can remove it.
+- Copyleft obligations, archive-codec licensing and bundled-font rights are release blockers, not paperwork for later.
 
 ## Minimum QA corpus per format
 

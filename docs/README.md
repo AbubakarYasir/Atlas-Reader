@@ -28,6 +28,9 @@ user-facing regression.
 
 ## Product behavior
 
+- [Formats before 2.0](FORMAT_EXPANSION_ROADMAP.md) — F1–F4 capabilities and dependencies.
+- [Competitive gap actions](COMPETITIVE_GAP_ACTIONS.md) — dated sources, screenshots, requirements and acceptance tests.
+
 - **`CORE_WORKFLOWS.md`** — Library/Index → Reader → Bookmarks capability, local fallback, security, conflict, import/export, recovery.
 - **`DATA_MODEL_AND_FORMATS.md`** — portable vs local authority, document identity, bookmark states, destinations, Atlas JSON/backup/migration contracts.
 - **`UX_ACCESSIBILITY_AND_DESIGN.md`** — interaction model, keyboard, Arabic/RTL, Narrator, scaling, state communication.
@@ -129,3 +132,8 @@ Never infer that a Planned requirement is already shipped, or that a probe depen
 Architecture, P0 scope, durable data formats, release gates, canonical toolchain, or dependency strategy must not change silently. Update the relevant specialized document, add/update an ADR when the decision is architectural, revise checkpoint evidence, and note material changes in `CHANGELOG.md`.
 
 Every meaningful N2 engine experiment must record exact engine version/revision, fixture IDs, build/acquisition path, checksums where applicable, measurements, limitations/failures and decision impact in GitHub Markdown.
+
+
+## Expanded offline release scope
+
+[Offline editing roadmap](OFFLINE_EDITING_ROADMAP.md) defines mandatory E1–E5 actions, dependency ADRs, automated/owner tests and stop gates before N8 and stable 2.0.

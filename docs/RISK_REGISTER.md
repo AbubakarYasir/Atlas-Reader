@@ -21,6 +21,8 @@ This register is reviewed at every checkpoint. Risks may be added, retired, or r
 | Local-overlay identity attaches to wrong copy | Critical | Could expose or destroy another book's research state | guarded identity model; no filename-only reassociation; ambiguity remains unresolved until user/strong evidence |
 | Qt/open-source licensing mistake | Critical | Could block distribution after major implementation work | module/dependency license inventory at admission time; dynamic linking/relinkability policy; SBOM/notices; N10 legal/distribution review |
 | Rewrite scope explosion | High | Competing by total Acrobat/Foxit feature count can prevent shipping | binding P0/P1/P2/deferred feature scope; Index→Reader→Bookmarks order; checkpoint stop gates |
+| Pre-2.0 multi-format expansion | High | Additional layout engines, archive parsers and location types increase delivery, security and accessibility work | F1–F4 after N7 before N8; license/security ADRs and hostile corpora before admission; durable locations in N5; N8–N10 repeat across every admitted type; no unchanged schedule promise |
+| Competitor marketing mistaken for verified parity | High | Screenshots or feature lists do not establish version, performance, interoperability or accessible behavior | dated competitive action register; separate Reader/Editor editions, supplied illustrations and hands-on evidence; explicit required/deferred decisions; no design cloning or unsupported superiority claims |
 | C++ memory-safety defects | High | Complex native parsing/rendering integration increases crash/security risk | RAII/value types; standard library; sanitizers; static analysis; narrow third-party boundaries; fuzz/adversarial fixtures where valuable |
 | UI thread stalls | High | The rewrite loses its main reason to exist if reading/indexing blocks interaction | explicit thread contract; bounded queues; profiling; performance budgets from N1 onward; no sync parse/render/save/scan/large SQL on UI thread |
 | Long-document memory blow-up | High | Eager page rendering can make large scholarly PDFs unusable | virtualized page model; bounded CPU/GPU cache; benchmark 2,000+ page fixtures; memory budgets |
@@ -75,3 +77,8 @@ Atlas does not need to become the largest PDF suite. The safest competitive posi
 **find the book → read it smoothly → navigate/research it deeply → preserve that research safely.**
 
 Any feature that threatens those four steps carries a higher burden of proof.
+
+
+## Owner-approved offline scope expansion — 2026-09-27
+
+E1–E5 introduce critical content-loss, residual-secret and private-key risks. Their [blocking contracts](OFFLINE_EDITING_ROADMAP.md) require new capability ADRs, qualified open-source dependencies, independent-reader checks and adversarial tests. Qt PDF/qpdf acceptance does not prove these operations. Delivery duration increases; no date is promised. Online revocation/timestamp services remain excluded, so E5 must display uncertainty rather than falsely claim trust.

@@ -85,6 +85,10 @@ must be named before work begins. Git/PR/status synchronization follows
 
 ### Recorded plan changes
 
+Owner confirmation also requires [E1–E5 offline editing](docs/OFFLINE_EDITING_ROADMAP.md): page organization, original text/image editing, equations, form authoring, secure redaction and offline signatures after F4 and before N8. OCR, audio notebooks, online services and collaboration remain excluded. N3 stays active; this is a plan change only.
+
+Owner direction on 2026-09-27 expanded Windows 2.0 to include F1 EPUB, F2 CBZ/CBR and F3 user-owned, DRM-free AZW3, MOBI and PRC files after N7, plus F4 KFX decision before N8. This increases delivery work and the final QA matrix; no unchanged date is implied. The [competitive action register](docs/COMPETITIVE_GAP_ACTIONS.md) is mandatory in its assigned stages.
+
 Plan changes are recorded instead of silently rewriting why a decision was
 made:
 
@@ -123,7 +127,7 @@ Implementation begins in N3, after N2 PDF responsibilities are accepted.
 - byte-backed/read-session behavior where useful;
 - no PDF parse/render/save or large SQL on UI thread.
 
-The production reader begins in N4. N2 only qualifies the engines/adapters it may use.
+The production PDF reader begins in N4. F1–F3 then reuse the proven viewport/library shell through format-specific adapters before N8 and final release qualification. N2 only qualifies the PDF engines/adapters N4 may use.
 
 ### Pillar 3 — Bookmarks and Outlines (P0 / strategic differentiator)
 
@@ -162,13 +166,13 @@ Explicitly deferred from Windows 2.0 unless owner scope changes:
 - cloud accounts/sync;
 - AI document chat/analysis;
 - PDF password cracking/restriction bypass;
-- arbitrary PDF text/object editing;
-- forms/signature-authoring workflow;
+- audio notebooks;
+- online collaboration/shared reviews;
 - office conversion;
 - multimedia/3D;
-- full EPUB rendering/annotation.
+- DRM bypass or dependence on proprietary account/cloud delivery for book opening.
 
-Other-book support is planned rather than implied. After Windows 2.0, the format track admits EPUB first, CBZ/CBR second, then non-DRM AZW3/MOBI/PRC. KFX remains research-only until a lawful, maintainable and interoperable route is proven. The binding admission order, shared behavior, security limits and owner gates live in `docs/FORMAT_EXPANSION_ROADMAP.md`.
+Other-book support is part of Windows 2.0 rather than an implied later possibility. After the PDF-first N4–N7 foundation, F1 admits DRM-free EPUB, F2 admits CBZ/CBR, and F3 admits user-owned, DRM-free AZW3, MOBI and PRC files before migration and final qualification. F4 must decide KFX from lawful evidence before 2.0 but cannot promise support or bypass DRM in advance. The binding admission order, shared behavior, open-source dependency rule, security limits and owner gates live in `docs/FORMAT_EXPANSION_ROADMAP.md`.
 
 A competitor having one of these does not make Atlas 2.0 a failure. Core quality has priority over feature-count vanity.
 

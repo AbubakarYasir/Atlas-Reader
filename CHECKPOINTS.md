@@ -13,7 +13,7 @@ This file controls implementation order. Only one checkpoint is active at a time
 | Checkpoint | **N3 — Library/index foundation** |
 | Planned version | `2.0.0-beta.1` (first useful native library milestone; not yet accepted/released) |
 | Status | **Ready for owner test — automated/package gates passed 2026-09-27; not Accepted** |
-| Previous checkpoint | **N1 Accepted by owner on 2026-09-22** |
+| Previous checkpoint | **N2 Accepted by owner on 2026-09-27** |
 | Branch | `native-v2-n3-library-index-foundation` |
 | Base | accepted native `main` at `84a9b45b10b24ece595bb7069136fefd2ed2cc5b` |
 | Scope | versioned SQLite/FTS5 storage and repositories; safe multi-root scanning; guarded identity/reconciliation; useful Arabic/Unicode library search and workflows |
@@ -34,6 +34,8 @@ N2 is frozen and Accepted. N3.1–N3.4 are implemented and the exact-head Debug/
 
 ## Operating contract
 
+[Competitive gap actions](docs/COMPETITIVE_GAP_ACTIONS.md) are binding supplementary scope and tests for each named stage. Stage ownership is recorded per action C01–C22. [E1–E5 offline editing](docs/OFFLINE_EDITING_ROADMAP.md) adds required steps and tests after F4 and before N8. C01 corrects N3 descriptions. No stage passes with its required actions unresolved.
+
 1. Do not begin the next checkpoint until the current checkpoint is **Accepted**.
 2. Every checkpoint has written exit criteria and an owner test/evidence handoff.
 3. Performance claims require benchmark evidence on named hardware/build configuration.
@@ -50,7 +52,7 @@ N2 is frozen and Accepted. N3.1–N3.4 are implemented and the exact-head Debug/
 14. N2 probe adoption is not production adoption: exact version, provenance, license, checksum/build path and rollback must be recorded before an engine responsibility can be accepted.
 15. `docs/CHECKPOINT_QA_MATRIX.md` is binding: every limitation needs a named implementation checkpoint, regression evidence and blocking condition.
 16. `docs/GIT_WORKFLOW.md` controls branch, PR, status synchronization, merge, tag and remote-verification behavior.
-17. N4–N11 may specialize PDF reading, writing and interoperability, but shared book identity, Library, metadata, search, progress, backup and presentation models must remain format-aware. A checkpoint may not hardcode PDF into those shared layers when an Atlas-owned capability/type boundary is sufficient; this is reviewed without implementing deferred formats early.
+17. N4–N7 may specialize PDF reading, writing and interoperability, but shared book identity, Library, metadata, search, progress, backup and presentation models must remain format-aware for F1–F3 and N8–N11. A checkpoint may not hardcode PDF into those shared layers when an Atlas-owned capability/type boundary is sufficient.
 
 ## Release ledger
 
@@ -64,18 +66,23 @@ N2 is frozen and Accepted. N3.1–N3.4 are implemented and the exact-head Debug/
 | N5 | `2.0.0-beta.3` | Core resilience + complete bookmarks | Not started |
 | N6 | `2.0.0-beta.4` | Ink + standard annotations | Not started |
 | N7 | `2.0.0-beta.5` | Printing, covers + portable metadata | Not started |
-| N8 | `2.0.0-beta.6` | Flutter migration + backup/restore | Not started |
-| N9 | `2.0.0-beta.7` | Arabic/RTL/accessibility qualification | Not started |
+| F1 | `2.0.0-beta.6` | EPUB admission + reader | Not started |
+| F2 | `2.0.0-beta.7` | CBZ/CBR admission + reader | Not started |
+| F3 | `2.0.0-beta.8` | user-owned, DRM-free AZW3/MOBI/PRC reader | Not started |
+| F4 | pre-`2.0.0-beta.9` decision | KFX feasibility/ADR; support only if admitted | Not started |
+| E1 | `2.0.0-beta.9` | Page organization | Not started |
+| E2 | `2.0.0-beta.10` | Original content editing + equations | Not started |
+| E3 | `2.0.0-beta.11` | Offline form authoring | Not started |
+| E4 | `2.0.0-beta.12` | Secure redaction | Not started |
+| E5 | `2.0.0-beta.13` | Offline signatures | Not started |
+| N8 | `2.0.0-beta.14` | Flutter migration + backup/restore | Not started |
+| N9 | `2.0.0-beta.15` | Arabic/RTL/accessibility qualification | Not started |
 | N10 | `2.0.0-rc.1` | Performance/hardware + release qualification | Not started |
 | N11 | `2.0.0` | Windows stable release | Not started |
 | P1 | post-2.0 | Android adaptation | Not started |
 | P2 | post-2.0 | Linux adaptation | Not started |
 | P3 | post-2.0 | macOS adaptation | Not started |
 | P4 | post-2.0 | iOS/iPadOS adaptation | Not started |
-| F1 | post-2.0 | EPUB admission + reader | Not started |
-| F2 | post-2.0 | CBZ/CBR admission + reader | Not started |
-| F3 | post-2.0 | non-DRM AZW3/MOBI/PRC admission + reader | Not started |
-| KFX | post-2.0 research | feasibility/ADR only; no delivery promise | Not started |
 
 Corrective builds may increment beta/RC identifiers/build metadata. Never reuse a version tag for different bytes.
 
@@ -433,6 +440,8 @@ owner result.
 
 **N4.5 Workspace** — navigation panel, context menus, session restoration option, keyboard/a11y/Arabic.
 
+N4 also implements C02–C05/C17–C18/C22: focus and history, facing/cover/reading-direction modes, document accessibility, side-by-side reading, qualified simplified text view and offline/active-content protections. Each action carries its own required tests in the competitive register.
+
 ### Evidence
 
 - large document navigation;
@@ -523,6 +532,8 @@ is visibly local, and ordinary writable output agrees in an independent reader.
 - text highlight/underline/strikeout/sticky note where engine support passes interop tests;
 - restricted/signed/conflict behavior reuses N5 local/safe-save rules.
 
+The complete annotation-control contract in `docs/FEATURE_SCOPE_2_0.md` is required: distinct pen/freehand marker/text highlight, opacity/color/width presets, stroke/partial erasing, lasso/rectangle/multi-selection, move/resize/copy/paste/duplicate, edit/delete/undo/redo, typed notes and basic shapes. Publish a subtype/operation matrix including imported read-only annotations. Include C08/C16/C19 portable note export/import and explicit print/flattened-new-copy behavior.
+
 ### Automated QA
 
 - pointer/stroke/page coordinate normalization and page isolation;
@@ -531,6 +542,8 @@ is visibly local, and ordinary writable output agrees in an independent reader.
 - standard ink and supported markup serialization/preservation;
 - restricted/signed/conflict fallback and safe-save regression suites;
 - supported annotation-subtype rendering corpus in Atlas plus an independent implementation.
+- selection/group transforms, partial erasing, pressure/coordinate preservation, clipboard isolation, undo chains and imported-unsupported subtype preservation;
+- annotation JSON/Markdown exports, validated JSON re-import, print visibility and explicit flatten-to-new-copy with original hashes unchanged.
 
 ### Owner test
 
@@ -553,6 +566,8 @@ Atlas and an independent reader; confirm latency, fidelity and fallback state.
 - Windows print/preview/ranges/layout with source hash unchanged;
 - selected metadata/XMP editing with before/after preview and preservation checks;
 - capability/safe-save integration.
+
+N7 also implements C09–C11/C20–C21: selectable sorting/filtering, protected-extension rename and metadata overrides, offline read-aloud, ordinary non-scripted AcroForm filling and local collections/tags. Qualify form widget/appearance/save support by ADR before implementation. Run the action-register tests and include these workflows in the owner test; the original utilities list is not the whole scope.
 
 This checkpoint also completes the scoped desktop utilities that otherwise had
 no owner in the old plan:
@@ -584,7 +599,7 @@ and no private page/bookmark/password content appears in ordinary logs.
 
 ---
 
-## N8 — Flutter migration + backup/restore (`2.0.0-beta.6`)
+## N8 — Flutter migration + backup/restore (`2.0.0-beta.14`)
 
 **Goal:** Make V2 safe for existing users and app-local research data.
 
@@ -615,7 +630,7 @@ a clean profile. Confirm the legacy profile and source PDFs remain unchanged.
 
 ---
 
-## N9 — Arabic/RTL/accessibility qualification (`2.0.0-beta.7`)
+## N9 — Arabic/RTL/accessibility qualification (`2.0.0-beta.15`)
 
 **Goal:** Close cross-cutting gaps across everything implemented; this is qualification, not the first time accessibility/Arabic is added.
 
@@ -722,6 +737,10 @@ failed final owner test may be promoted as `2.0.0`.
 
 ---
 
+## Offline editing checkpoints before N8
+
+The complete Work / Automated QA / Owner test / Stop gate contracts are in [Offline editing roadmap](docs/OFFLINE_EDITING_ROADMAP.md). Execute E1 page organization, E2 original content and equations, E3 AcroForm authoring, E4 secure redaction, E5 offline signatures in order after F4. Every stage needs explicit `E# PASS`; N8 cannot start until E5 Accepted. This is planning only, not permission to start later work on the N3 branch.
+
 ## Platform checkpoints after Windows 2.0
 
 ### P1 — Android
@@ -744,22 +763,56 @@ Platform adaptation does not reopen Windows 2.0 architecture casually. If a port
 
 ---
 
-## Book-format checkpoints after Windows 2.0
+## Book-format checkpoints before Windows 2.0
 
-Format delivery follows `docs/FORMAT_EXPANSION_ROADMAP.md`; merely recognizing an extension is not support.
+Format delivery follows `docs/FORMAT_EXPANSION_ROADMAP.md`. F1–F4 run after N7 and before N8; merely recognizing an extension is not support.
 
 ### F1 — EPUB
 
 Qualify and deliver lawful non-DRM EPUB Library admission and reading, including reflow, TOC/navigation, search, typography, Arabic/RTL, accessibility, hostile-package containment and source preservation. Fixed-layout EPUB remains separately gated. **Stop gate:** no `F1 PASS`, DRM ambiguity, unsafe active content or failed layout/accessibility corpus blocks acceptance.
 
+#### Automated QA
+
+Content detection, package limits, blocked scripts/network resources, TOC/links/footnotes, font changes, durable locations after reflow, search/copy reading order, cover invalidation, source hashes and mixed-format Library regressions.
+
+#### Owner test
+
+Read licensed English/Arabic/Urdu fixtures, change font/size/window width, follow a footnote and return, search, bookmark, close/reopen and verify the same location. Complete keyboard/Narrator and 200% checks on the exact checksummed package. Record fixed-layout support separately.
+
 ### F2 — Comic archives
 
 Qualify and deliver CBZ, then CBR only after a licensed RAR route exists, with natural page ordering, covers, virtualization and strict archive/decompression limits. **Stop gate:** traversal, decompression-bomb exposure, corrupt-entry crashes or unbounded memory blocks acceptance and `F2 PASS`.
 
+#### Automated QA
+
+Natural ordering, Unicode entries, nested/duplicate names, archive traversal and expansion limits, corrupt images, cancellation/cache bounds, source hashes and page-based bookmark/progress restoration. CBR must have its own tested and licensed decoder; CBZ success does not qualify it.
+
+#### Owner test
+
+Read representative CBZ and CBR books, verify page order, RTL/LTR progression, cover/spreads, zoom and reopen position. Confirm damaged archives fail clearly and image-only pages do not pretend to provide text search or speech. Record `F2 PASS` against both format results.
+
 ### F3 — Legacy Kindle formats
 
-Qualify non-DRM AZW3/MOBI/PRC using lawful fixtures and content-aware detection, then deliver only the fidelity level the evidence proves. DRM bypass is never included. **Stop gate:** misleading compatibility, typography/metadata loss, unclear DRM state or absent `F3 PASS` blocks acceptance.
+Qualify user-owned, DRM-free AZW3, MOBI and PRC files using lawful fixtures and content-aware detection, then deliver only the fidelity level the evidence proves. DRM bypass is never included. **Stop gate:** misleading compatibility, typography/metadata loss, unclear DRM state or absent `F3 PASS` blocks acceptance.
 
-### KFX research gate
+#### Automated QA
 
-KFX has no promised delivery checkpoint. An ADR may propose one only after lawful non-DRM fixtures, maintainable parsing, license/security review and interoperability evidence exist. Research must not add KFX to the supported-file picker.
+Separate AZW3/MOBI/PRC corpora, content-versus-extension detection, malformed/DRM states, parser resource limits, TOC/links/images/fonts, RTL/search/copy, durable locations, local notes, source hashes and shared Library regressions.
+
+#### Owner test
+
+Compare lawful fixtures in a qualified independent reader; check each format's text, images, typography, navigation, reflow and restart state. Verify unsupported variants are identified honestly. One working MOBI file cannot qualify AZW3 or PRC.
+
+### F4 — KFX decision gate
+
+KFX receives a mandatory pre-2.0 feasibility ADR using lawful non-DRM fixtures, maintainable parsing, license/security review and interoperability evidence. Passing feasibility may admit implementation; failing feasibility records an explicit unsupported state and rationale. Research must not add KFX to the supported-file picker, and DRM bypass is never permitted. The owner records `F4 PASS` on the decision evidence before N8 begins.
+
+#### Automated QA
+
+Verify that unsupported KFX is not advertised/admitted. If implementation is admitted, add format-specific detection, containment, fidelity, location, accessibility and preservation tests before support is enabled.
+
+#### Owner test
+
+Review the dated ADR, lawful evidence, dependency obligations and explicit supported/unsupported conclusion. If support is selected, a separate exact-package reading test must pass before N8; acceptance of the research decision alone is not acceptance of a reader.
+
+**Stop gate:** absent decision evidence or owner `F4 PASS` blocks N8; admitted implementation without passing qualification also blocks N8.

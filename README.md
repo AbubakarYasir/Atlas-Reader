@@ -2,7 +2,7 @@
 
 ### Less searching. More understanding.
 
-**A PDF reader and research library in the making—for people who do more than turn pages.**
+**An open-source book reader and research library in the making—for people who do more than turn pages.**
 
 Your next idea might be buried in a thousand-page book. Or scattered across a hundred PDFs. Finding it again shouldn't mean starting over.
 
@@ -52,6 +52,8 @@ The project owner tested and approved this foundation, called **N2**, on **27 Se
 
 **Next, your research tools.** Resilient bookmarks, followed by ink and annotations.
 
+**More of your books, before 2.0.** EPUB, CBZ/CBR and user-owned, DRM-free AZW3, MOBI and PRC files are planned after the PDF foundation. KFX requires a feasibility decision. Today's N3 candidate indexes PDFs only. [See the format plan](docs/FORMAT_EXPANSION_ROADMAP.md).
+
 **Before everyday use, the hard checks.** Further Windows integration, accessibility, performance, and release testing. Every stage has automated checks and hands-on acceptance requirements.
 
 Windows is our first destination. Android, Linux, macOS, and iOS/iPadOS are longer-term plans—not available native editions. We have not announced a release date.
@@ -69,3 +71,8 @@ Want to look under the hood? Start with the [developer guide](docs/DEVELOPER_GUI
 ---
 
 **About the older app:** Flutter development has stopped. That implementation is obsolete and retained only as a backup and migration reference on [`legacy/flutter`](https://github.com/AbubakarYasir/Atlas-Reader/tree/legacy/flutter). The current C++/Qt native project lives on `main`. These two branch names are permanent.
+
+
+### Planned offline tools
+
+Before stable 2.0, the roadmap includes full annotation controls, PDF text/image editing, page organization, form tools, secure redaction, equations and offline signatures. These are planned, not available in the current N3 preview. OCR, audio notebooks and online/collaboration services are excluded. See the [delivery stages and safety gates](docs/OFFLINE_EDITING_ROADMAP.md).

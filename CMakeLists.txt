@@ -17,7 +17,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Quick Qml QuickControls2 Pdf)
+find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent Gui Quick Qml QuickControls2 Pdf)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 qt_standard_project_setup(REQUIRES 6.10)
 
@@ -118,6 +118,17 @@ target_include_directories(atlas_app_support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(atlas_app_support PUBLIC Qt6::Core Qt6::Gui Qt6::Quick)
 atlas_enable_warnings(atlas_app_support)
 
+add_library(atlas_library_ui STATIC
+    src/app/library/LibraryController.cpp
+    src/app/library/LibraryController.h
+)
+target_include_directories(atlas_library_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_library_ui PUBLIC
+    atlas_library_ingestion atlas_file_identity atlas_library_scanner
+    Qt6::Core Qt6::Concurrent Qt6::Gui
+)
+atlas_enable_warnings(atlas_library_ui)
+
 qt_add_executable(atlas_reader src/app/main.cpp)
 
 qt_add_qml_module(atlas_reader
@@ -128,7 +139,8 @@ qt_add_qml_module(atlas_reader
 
 target_compile_definitions(atlas_reader PRIVATE ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}")
 target_link_libraries(atlas_reader
-    PRIVATE atlas_core atlas_app_support Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2
+    PRIVATE atlas_core atlas_app_support atlas_library_ui
+    Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2
 )
 atlas_enable_warnings(atlas_reader)
 

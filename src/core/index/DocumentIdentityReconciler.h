@@ -37,6 +37,6 @@ struct DocumentIdentityResolution final {
 // Pure policy: evidence can propose a relationship, but only an unbroken
 // filesystem identity may authorize automatic path relinking.
 [[nodiscard]] DocumentIdentityResolution reconcileDocumentIdentity(
-    const DocumentIdentitySignals& signals);
+    const DocumentIdentitySignals& evidence);
 
 } // namespace atlas::index

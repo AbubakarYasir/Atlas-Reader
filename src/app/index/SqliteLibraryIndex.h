@@ -107,6 +107,7 @@ public:
     // reconciliation conflict, not an implicit identity change.
     void upsertRecord(LibraryRecord record, std::string rootId = {});
     [[nodiscard]] std::vector<LibraryRecord> allRecords() const;
+    [[nodiscard]] std::vector<LibraryRecord> recordsForRoot(std::string rootId) const;
     [[nodiscard]] std::vector<IndexedLocationRecord> locationsByFilesystemIdentity(
         std::string filesystemIdentity) const;
     void setLocationFilesystemIdentity(

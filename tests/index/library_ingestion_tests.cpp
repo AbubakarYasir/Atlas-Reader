@@ -88,6 +88,8 @@ void checkNewMoveCopyAndReplacementFlow() {
     auto records = index.allRecords();
     require(records.size() == 1 && records.front().id == "id-1" && records.front().source == original,
         "The first ingestion must persist the inspected document and its original path.");
+    require(index.recordsForRoot("root").size() == 1,
+        "Folder navigation must return the documents linked to the selected root.");
 
     std::filesystem::rename(original, renamed);
     summary = ingestion.ingest({{"root", library}}, cancelled, 2000);
@@ -137,4 +139,3 @@ int main() {
     }
     std::cout << "Library ingestion new, move, copy, replacement and explicit-apply checks passed.\n";
 }
-

@@ -93,6 +93,10 @@ void checkSchemaAndFts() {
         index.upsertRecord({"book-en", temporary.path() / "مكتبتي" / "research.pdf", "Updated Atlas Research", "Atlas Author", atlas::document::Availability::available}, "root-ar");
         require(index.search("research").front().title == "Updated Atlas Research", "Updating metadata must update the FTS index.");
         require(index.search("Updated").size() == 1, "New metadata must be searchable.");
+        require(index.search("Updated Atlas").size() == 1,
+            "A multi-word library query must match the corresponding metadata phrase.");
+        require(index.search("Research\"").size() == 1,
+            "User punctuation must be escaped rather than interpreted as invalid FTS syntax.");
         require(index.search("").empty(), "An empty query must not scan the entire index.");
         index.rebuildSearchIndex();
         require(index.search("Updated").size() == 1, "The derived search table must support a complete rebuild.");

@@ -37,6 +37,17 @@ constexpr int maxSearchResults = 100;
     return std::filesystem::path{utf8};
 }
 
+[[nodiscard]] std::string safeFtsPhrase(std::string_view query) {
+    std::string result{"\""};
+    result.reserve(query.size() + 2);
+    for (const char value : query) {
+        if (value == '"') result += "\"\"";
+        else result.push_back(value);
+    }
+    result.push_back('"');
+    return result;
+}
+
 [[nodiscard]] const char* availabilityName(document::Availability value) {
     switch (value) {
     case document::Availability::available: return "available";
@@ -608,6 +619,35 @@ std::vector<LibraryRecord> SqliteLibraryIndex::allRecords() const {
     return result;
 }
 
+std::vector<LibraryRecord> SqliteLibraryIndex::recordsForRoot(std::string rootId) const {
+    if (rootId.empty()) return allRecords();
+    std::scoped_lock lock{impl_->mutex};
+    Statement statement{impl_->db,
+        "SELECT DISTINCT d.document_id, d.title, d.author, d.availability, l.source_path "
+        "FROM documents d JOIN document_locations l ON l.document_id = d.document_id "
+        "WHERE l.root_id = ?1 ORDER BY d.title COLLATE NOCASE, d.document_id"};
+    statement.bindText(1, rootId);
+    std::vector<LibraryRecord> result;
+    for (;;) {
+        const int step = sqlite3_step(statement.get());
+        if (step == SQLITE_DONE) break;
+        if (step != SQLITE_ROW) fail(impl_->db, "Reading records for a library root", step);
+        const auto* id = sqlite3_column_text(statement.get(), 0);
+        const auto* title = sqlite3_column_text(statement.get(), 1);
+        const auto* author = sqlite3_column_text(statement.get(), 2);
+        const auto* availability = sqlite3_column_text(statement.get(), 3);
+        const auto* path = sqlite3_column_text(statement.get(), 4);
+        result.push_back({
+            id == nullptr ? std::string{} : std::string{reinterpret_cast<const char*>(id)},
+            pathFromUtf8(path),
+            title == nullptr ? std::string{} : std::string{reinterpret_cast<const char*>(title)},
+            author == nullptr ? std::string{} : std::string{reinterpret_cast<const char*>(author)},
+            parseAvailability(availability),
+        });
+    }
+    return result;
+}
+
 std::vector<IndexedLocationRecord> SqliteLibraryIndex::locationsByFilesystemIdentity(
     std::string filesystemIdentity) const {
     if (filesystemIdentity.empty()) return {};
@@ -918,7 +958,7 @@ std::vector<LibraryRecord> SqliteLibraryIndex::search(std::string query) const {
         "(SELECT l.source_path FROM document_locations l WHERE l.document_id = d.document_id ORDER BY l.location_id LIMIT 1) "
         "FROM documents_fts f JOIN documents d ON d.rowid = f.rowid "
         "WHERE documents_fts MATCH ?1 ORDER BY rank LIMIT 100"};
-    statement.bindText(1, query);
+    statement.bindText(1, safeFtsPhrase(query));
 
     std::vector<LibraryRecord> result;
     for (;;) {

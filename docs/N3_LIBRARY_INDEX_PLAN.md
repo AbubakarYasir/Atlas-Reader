@@ -1,11 +1,11 @@
 # N3 — Library and Index Foundation
 
-<!-- atlas-status: N3|ready-for-owner-test -->
+<!-- atlas-status: N3|accepted -->
 
 **Status:** Ready for owner test as of 2026-09-27; not Accepted.
 **Branch:** `native-v2-n3-library-index-foundation`
 **Starting base:** accepted native `main`, `84a9b45b10b24ece595bb7069136fefd2ed2cc5b`.
-**Current active gate:** owner testing. N3.1 storage/schema, N3.2 scanning, N3.3 identity/reconciliation and the N3.4 Library workspace are implemented; exact-head CI and the packaged checksum are verified. N3 is not accepted until the owner checklist passes and the owner records `N3 PASS`.
+**Final status:** Accepted. N3.1 storage/schema, N3.2 scanning, N3.3 identity/reconciliation, N3.4 Library workspace, exact-head CI, package/checksum verification and owner testing passed. The owner recorded `N3 PASS` on 2026-09-27; see [the acceptance record](baselines/N3_ACCEPTANCE.md).
 **Planned milestone:** `2.0.0-beta.1`; a version string alone does not mean N3 is a useful or accepted beta.
 
 This is the binding N3 implementation sequence and evidence plan. The [checkpoint ledger](../CHECKPOINTS.md) and [QA matrix](CHECKPOINT_QA_MATRIX.md) define its mandatory gates. The [N2 acceptance record](baselines/N2_ACCEPTANCE.md) defines the frozen predecessor.
@@ -100,4 +100,4 @@ The owner test uses the plain-language [N3 owner checklist](N3_OWNER_TEST.md) wi
 
 Compare the same library/search task against relevant mature library/search software. Record product/version/date, common task, measured or observed result, and the improvement Atlas still needs. Make no unsupported “fastest” or “best” claim.
 
-**N3 is Ready for owner test because every implementation/automated subgate is complete and the exact package/checklist are verified. N3 may be Accepted and beta.1 called useful only after the owner completes the checklist, including slower/removable storage, accessibility and competitor comparison, and records explicit `N3 PASS`.** No later checkpoint begins before that acceptance.
+**N3 is Accepted because every implementation/automated subgate, exact package/checksum check, owner checklist and competitor comparison passed, followed by explicit owner `N3 PASS` on 2026-09-27.** N4 may begin only from the verified accepted `main` merge.

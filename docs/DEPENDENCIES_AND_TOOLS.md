@@ -1,6 +1,6 @@
 # Atlas Reader Native — Dependencies, Tools, Plugins, and Reuse Policy
 
-<!-- atlas-status: N3|ready-for-owner-test -->
+<!-- atlas-status: N3|accepted -->
 
 ## Purpose
 
@@ -64,7 +64,7 @@ For N2, a dependency can be **probe-only** without being accepted for production
 
 **Role:** local index, search, app-local state, migrations, transactional persistence.
 
-**Status:** N3 implementation in progress. It remained closed through accepted N2.
+**Status:** selected, implemented, verified and owner-Accepted in N3 on 2026-09-27.
 
 N3.1 pins SQLite `3.53.4#1` from the Microsoft vcpkg registry snapshot `9e2895bf6afb246396d85232ba70fcfa1fa67ba1`, enables FTS5 explicitly and uses `x64-windows-static-md`: SQLite is statically linked, with the dynamic MSVC runtime matching Qt. The application uses SQLite's C API inside the repository implementation, not as a domain/UI type.
 

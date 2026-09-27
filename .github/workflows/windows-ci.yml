@@ -225,7 +225,7 @@ jobs:
           -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
           -DPDFium_DIR="$env:PDFium_DIR"
           -DATLAS_ENABLE_PDFIUM_PROBE=ON
-          "-DATLAS_PRERELEASE:STRING=alpha.2"
+          "-DATLAS_PRERELEASE:STRING=beta.1"
           -DATLAS_WARNINGS_AS_ERRORS=ON
 
       - name: Build
@@ -420,9 +420,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_pdfium_security_probe with exit code $LASTEXITCODE" }
 
           @(
-            'Atlas Reader Native N2 Windows engineering artifact'
-            'Version: 2.0.0-alpha.2'
-            'Checkpoint: N2 PDF engine qualification spike'
+            'Atlas Reader Native inherited N2 PDF qualification probes'
+            'Version: 2.0.0-beta.1'
+            'Checkpoint evidence origin: N2 PDF engine qualification spike'
             "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
             "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
             'GitHub run: ${{ github.run_id }}'
@@ -460,7 +460,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Stage N3 Library owner-test package
+      - name: Stage accepted N3 Library beta package
         if: matrix.configuration == 'Release'
         shell: pwsh
         run: |
@@ -473,6 +473,7 @@ jobs:
           Copy-Item 'qt.conf' (Join-Path $stage 'qt.conf')
           Copy-Item 'docs/N3_LIBRARY_INDEX_PLAN.md' $docs
           Copy-Item 'docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md' $docs
+          Copy-Item 'docs/baselines/N3_ACCEPTANCE.md' $docs
           Copy-Item 'docs/CHECKPOINT_QA_MATRIX.md' $docs
 
           $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
@@ -480,8 +481,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for the N3 package with exit code $LASTEXITCODE" }
 
           @(
-            'Atlas Reader Native N3 Windows owner-test package'
-            'Version: 2.0.0-alpha.2 (N3 remains unaccepted until explicit owner PASS)'
+            'Atlas Reader Native N3 Windows accepted beta package'
+            'Version: 2.0.0-beta.1 (N3 Accepted by owner on 2026-09-27)'
             "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
             "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
             'Configuration: Release'
@@ -505,7 +506,7 @@ jobs:
           $archiveHash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
           "$archiveHash  atlas-reader-n3-windows-x64.zip" | Set-Content -Encoding UTF8 "$archive.sha256"
 
-      - name: Upload N3 Library owner-test package
+      - name: Upload accepted N3 Library beta package
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
         with:

@@ -1,12 +1,12 @@
 # Atlas Reader Native — Master Plan to 2.0
 
-<!-- atlas-status: N3|ready-for-owner-test -->
+<!-- atlas-status: N3|accepted -->
 
-**Status:** N0–N2 Accepted; N3 Library/index foundation Ready for owner test as of 2026-09-27
+**Status:** N0–N3 Accepted as of 2026-09-27; N4 has not started
 
-**Current engineering preview:** `2.0.0-alpha.2`
+**Current engineering preview:** `2.0.0-beta.1`
 
-**Accepted checkpoints:** N0, N1 and N2; N3 Ready for owner test, not Accepted
+**Accepted checkpoints:** N0, N1, N2 and N3
 
 **Primary implementation target:** Windows 11
 
@@ -76,7 +76,7 @@ qpdf 12.4.1 CLI to structural/security/write responsibilities. Standalone
 PDFium remains comparison evidence and a replaceable future candidate, not an N2
 production dependency. The route was Accepted by owner `N2 PASS` on 2026-09-27.
 
-N2 closure was completed and reported to the owner before N3 began on 2026-09-27. N3 work is on `native-v2-n3-library-index-foundation`; its implementation, automated checks and exact package are complete, and owner testing is the active gate. See `docs/N3_LIBRARY_INDEX_PLAN.md`.
+N2 closure was completed and reported to the owner before N3 began on 2026-09-27. N3 implementation, automated checks, exact package and owner testing are complete; the owner recorded `N3 PASS` on 2026-09-27. See `docs/baselines/N3_ACCEPTANCE.md`.
 
 Every future checkpoint is governed by `docs/CHECKPOINT_QA_MATRIX.md`: automated
 evidence, manual/owner evidence, blocking failures and transferred limitations
@@ -296,7 +296,7 @@ N2 requires:
 - strict final CI;
 - explicit owner `N2 PASS`.
 
-N3 is Ready for owner test but not Accepted; its work and acceptance evidence are governed by `CHECKPOINTS.md` and `docs/N3_LIBRARY_INDEX_PLAN.md`.
+N3 is Accepted; its frozen decision and detailed evidence are governed by `docs/baselines/N3_ACCEPTANCE.md` and `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md`. N4 is the next checkpoint.
 
 ## VII. Threading/performance model
 

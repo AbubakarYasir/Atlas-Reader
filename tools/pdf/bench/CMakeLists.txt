@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(ATLAS_VERSION_STRING "2.0.0-alpha.2" CACHE STRING "Atlas version string recorded by benchmark probes")
+set(ATLAS_VERSION_STRING "2.0.0-beta.1" CACHE STRING "Atlas version string recorded by benchmark probes")
 set(ATLAS_PDFIUM_PIN "chromium/8066" CACHE STRING "PDFium qualification pin")
 set(ATLAS_PDFIUM_VERSION "156.0.8066.0" CACHE STRING "PDFium qualification version")
 

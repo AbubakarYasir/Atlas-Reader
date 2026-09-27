@@ -1,7 +1,7 @@
 # Building Atlas Reader Native
 
-N0–N2 are Accepted. N3 Library/index foundation is in progress; N3.1 introduces
-the first production dependency through the pinned vcpkg manifest.
+N0–N3 are Accepted. N3 introduced the first production dependency through the
+pinned vcpkg manifest; N4 has not started in this accepted snapshot.
 
 Before push, run the documentation governance check:
 
@@ -15,7 +15,7 @@ The native build inherits the accepted N1 shell/toolchain. N2 added PDF candidat
 
 See `TOOLCHAIN.md` and the accepted N1 records for the binding Windows baseline.
 
-For the public alpha baseline:
+For the accepted beta development baseline:
 
 - Windows 11 development machine recommended;
 - Visual Studio 2022 with **Desktop development with C++**;
@@ -89,7 +89,7 @@ The Visual Studio 2022 preset remains the CI baseline. Visual Studio 2026 suppor
 cmake --preset windows-msvc2022
 ```
 
-The preset identifies the active engineering preview as `2.0.0-alpha.2`. The vcpkg manifest installs SQLite `3.53.4#1` with FTS5 from its pinned baseline using the `x64-windows-static-md` triplet. Set `VCPKG_ROOT` to the checked-out vcpkg tree before configuring.
+The preset identifies the active engineering preview as `2.0.0-beta.1`. The vcpkg manifest installs SQLite `3.53.4#1` with FTS5 from its pinned baseline using the `x64-windows-static-md` triplet. Set `VCPKG_ROOT` to the checked-out vcpkg tree before configuring.
 
 ## Debug
 
@@ -247,7 +247,7 @@ Each lane:
 1. checks out the exact commit;
 2. installs public Qt 6.10.3 MSVC 2022 x64;
 3. reports toolchain/checkpoint context;
-4. configures with Visual Studio 17 2022 x64 and `ATLAS_PRERELEASE=alpha.2`;
+4. configures with Visual Studio 17 2022 x64 and `ATLAS_PRERELEASE=beta.1`;
 5. enables `ATLAS_WARNINGS_AS_ERRORS=ON`;
 6. builds;
 7. runs CTest.

@@ -1,6 +1,6 @@
 # Atlas Reader Native — Checkpoints to Windows 2.0
 
-<!-- atlas-status: N3|ready-for-owner-test -->
+<!-- atlas-status: N3|accepted -->
 
 This file controls implementation order. Only one checkpoint is active at a time. A checkpoint may be **Not started**, **In progress**, **Ready for owner test**, **Accepted**, or **Blocked**.
 
@@ -11,8 +11,8 @@ This file controls implementation order. Only one checkpoint is active at a time
 | Field | Value |
 |---|---|
 | Checkpoint | **N3 — Library/index foundation** |
-| Planned version | `2.0.0-beta.1` (first useful native library milestone; not yet accepted/released) |
-| Status | **Ready for owner test — automated/package gates passed 2026-09-27; not Accepted** |
+| Version | `2.0.0-beta.1` (accepted development beta; not yet Released) |
+| Status | **Accepted by owner with explicit `N3 PASS` on 2026-09-27** |
 | Previous checkpoint | **N2 Accepted by owner on 2026-09-27** |
 | Branch | `native-v2-n3-library-index-foundation` |
 | Base | accepted native `main` at `84a9b45b10b24ece595bb7069136fefd2ed2cc5b` |
@@ -21,7 +21,7 @@ This file controls implementation order. Only one checkpoint is active at a time
 | Primary platform | Windows 11, while preserving cross-platform adapter boundaries |
 | Inherited toolchain | accepted N1 Qt 6.10.3/MSVC 2022/C++23 baseline; candidate-specific probe tooling must be documented separately |
 | Plan | `docs/N3_LIBRARY_INDEX_PLAN.md` |
-| Evidence sheet | `docs/CHECKPOINT_QA_MATRIX.md` and N3 branch handoff |
+| Evidence sheet | `docs/baselines/N3_ACCEPTANCE.md`, `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md` and `docs/CHECKPOINT_QA_MATRIX.md` |
 | Accepted predecessor | `docs/baselines/N2_ACCEPTANCE.md` and `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` |
 
 N2 was deliberately opened on 2026-09-22 after explicit N1 acceptance. The
@@ -30,7 +30,7 @@ official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
 first-party qpdf 12.4.1 CLI for structure/security/write. ADR-0004 was
 Accepted by owner on 2026-09-27.
 
-N2 is frozen and Accepted. N3.1–N3.4 are implemented and the exact-head Debug/Release CI, inherited regressions, owner package and checksum pass. The responsive native Library provides search, folders, Favorites, Recents and review actions; database work is off the UI thread, and the rendered UI has been checked in English wide/narrow, Arabic dark and 200% states. Owner round 1 covered checks 1–11 and its defects are corrected; the same-task Calibre 9.9 comparison now closes check 12. N3 is technically ready but remains unaccepted until the owner confirms the corrected filename-first package and explicitly records `N3 PASS`.
+N2 and N3 are frozen and Accepted. N3.1–N3.4, exact-head Debug/Release CI, inherited regressions, package/checksum verification, owner checks 1–11, corrective retesting and the Calibre 9.9 comparison all passed. The owner recorded explicit `N3 PASS` on 2026-09-27. N4 may open only from the verified accepted `main` merge.
 
 ## Operating contract
 
@@ -61,7 +61,7 @@ N2 is frozen and Accepted. N3.1–N3.4 are implemented and the exact-head Debug/
 | N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Accepted** |
 | N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **Accepted** |
 | N2 | `2.0.0-alpha.2` | PDF engine qualification spike | **Accepted** |
-| N3 | `2.0.0-beta.1` | Library/index foundation | **Ready for owner test** |
+| N3 | `2.0.0-beta.1` | Library/index foundation | **Accepted** |
 | N4 | `2.0.0-beta.2` | Native reader foundation | Not started |
 | N5 | `2.0.0-beta.3` | Core resilience + complete bookmarks | Not started |
 | N6 | `2.0.0-beta.4` | Ink + standard annotations | Not started |

@@ -1,16 +1,23 @@
 # Changelog
 
-<!-- atlas-status: N3|ready-for-owner-test -->
+<!-- atlas-status: N3|accepted -->
 
 All notable changes to Atlas Reader Native are documented here.
+
+## N3 owner acceptance — 2026-09-27
+
+- Owner recorded exact `N3 PASS` after exercising checks 1–11, reviewing the filename-first corrections and receiving the completed Calibre 9.9 comparison for check 12.
+- Promoted the native engineering version from `2.0.0-alpha.2` to `2.0.0-beta.1`, the planned first useful Library beta milestone.
+- Added the frozen [N3 acceptance record](docs/baselines/N3_ACCEPTANCE.md), synchronized live status documentation, and kept N3 **Accepted** distinct from **Released**. A tag/download is not claimed until an accepted artifact is deliberately published.
+- N4 may start only from the verified accepted `main` merge on `native-v2-n4-reader-foundation`; the completed N3 branch is deleted after ancestry and remote synchronization checks.
 
 ## Planning corrections — 2026-09-27
 
 - Owner confirmed expanded offline 2.0 scope: complete annotation controls, E1 page organization, E2 original PDF text/image editing and equations, E3 forms, E4 secure redaction and E5 later-stage offline signatures. OCR, audio notebooks and online/collaboration remain excluded. Each stage has dependency qualification, actionable work, tests and owner gates; no implementation claim or version bump.
-- N8/N9 planned release slots move to beta.14/beta.15 to accommodate E1–E5; current N3 approval remains pending.
+- N8/N9 planned release slots move to beta.14/beta.15 to accommodate E1–E5; N3 was subsequently accepted on 2026-09-27.
 
 - Clarified the owner's competitor audit is about missing 2.0 capabilities and quality, not copying Foxit's design. Recorded supplied Xournal++ and separate Foxit Reader/Editor references, evidence limits, required annotation visibility and honest unsupported forms/signature behavior, plus explicit dispositions for notebook/audio/LaTeX/plugins, OCR, redaction, AI and suite features.
-- Added concrete automated and owner tests for F1–F4; planned features remain unimplemented and N3 remains unaccepted.
+- Added concrete automated and owner tests for F1–F4; planned features remain unimplemented. N3 acceptance does not claim those later formats.
 
 - Owner moved ebook/comic delivery before Windows 2.0: N7 → F1 EPUB → F2 CBZ/CBR → F3 user-owned, DRM-free AZW3, MOBI and PRC files → F4 KFX decision → E1–E5 offline editing → N8 backup/migration → N9 accessibility → RC/stable. Final planned N8/N9 slots are beta.14/beta.15.
 - Added stage-owned competitive workflow requirements and tests for focused reading/history, document accessibility, active-content containment, durable ebook locations, pen controls, annotation lists, sorting/filtering, safe rename, offline read-aloud and mixed-format recovery.

@@ -7,7 +7,7 @@ project(
     LANGUAGES CXX
 )
 
-set(ATLAS_PRERELEASE "alpha.2" CACHE STRING "Atlas prerelease identifier")
+set(ATLAS_PRERELEASE "beta.1" CACHE STRING "Atlas prerelease identifier")
 set(ATLAS_VERSION_STRING "${PROJECT_VERSION}-${ATLAS_PRERELEASE}")
 option(ATLAS_WARNINGS_AS_ERRORS "Treat Atlas compiler warnings as errors" OFF)
 option(ATLAS_ENABLE_PDFIUM_PROBE "Build the N2 PDFium qualification probe" OFF)

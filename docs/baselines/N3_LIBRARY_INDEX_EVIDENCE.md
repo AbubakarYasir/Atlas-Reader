@@ -1,6 +1,6 @@
 # N3 Library/Index Evidence Ledger
 
-<!-- atlas-status: N3|ready-for-owner-test -->
+<!-- atlas-status: N3|accepted -->
 
 ## Start record — 2026-09-27
 
@@ -10,7 +10,7 @@
 - First active gate: N3.1 storage/schema.
 - At N3 start, SQLite candidate pin initially used `x64-windows-static`; a later runtime audit detected that this triplet's static CRT conflicts with the Qt dynamic CRT. The active triplet is corrected to `x64-windows-static-md`. This start-state note is superseded by the completed verification record below.
 - Implementation at start: no SQLite package manifest, migration engine, Library repository, scanner or production Library UI in the accepted starting commit. The remaining `ILibraryIndex` type is only an interface.
-- Owner N3 test and `N3 PASS`: pending; no feature or beta acceptance is implied by starting this branch.
+- Owner N3 test and `N3 PASS`: completed on 2026-09-27; see [N3 acceptance](N3_ACCEPTANCE.md).
 
 ## Subgate results
 
@@ -60,7 +60,7 @@ The first strict exact-head Debug job (`36289801631`, job `108537578568`) failed
 - Owner ZIP: `atlas-reader-n3-windows-x64.zip`, 40,156,396 bytes, SHA-256 `95ecd6491c501a850f4ed0a6620d809e0bd80c8178cf05c0232682b50ea44f0c`. The downloaded checksum file and a fresh local `Get-FileHash` result match.
 - The staged package contains the Release executable, required Qt runtime files, plain-language owner checklist and build identity. CI launched the staged executable without the earlier missing-DLL failure. The downloaded packaged executable's actual 32 px Windows icon was extracted and visually confirmed against the supplied Atlas mark.
 
-All planned implementation and automated gates are complete, so N3 is **Ready for owner test**, not Accepted. The physical removable/offline-root check, Narrator/keyboard review, mature-product comparison and explicit owner `N3 PASS` must still be recorded using [the owner checklist](../N3_OWNER_TEST.md). N4 remains closed.
+This historical handoff was superseded by completed owner testing and explicit `N3 PASS` on 2026-09-27. See [N3 acceptance](N3_ACCEPTANCE.md). N4 remained closed until the accepted merge was verified on `main`.
 
 ### Documentation-head CI reliability follow-up
 
@@ -97,11 +97,19 @@ The owner passed the corrected console and card-action checks, but supplied real
 - Rendered review used temporary copies of the owner-reported Arabic PDFs with their real internal metadata. English wide, 760 px narrow and Arabic/RTL dark layouts preserve the hierarchy, keep actions within the card and show the extension separately. Source PDFs were not modified.
 - Local environment correction: the invalid saved Build Tools CMake entry was replaced with the installed Visual Studio Community CMake 4.2.3 path; `VCPKG_ROOT` now names this checkout's pinned bootstrap and `CMAKE_PREFIX_PATH` names Qt 6.10.3. With the Qt runtime active, both Visual Studio 2026 Debug and Release suites pass 24/24 without DLL dialogs.
 
-This correction requires a new packaged owner retest. N3 is still **Ready for owner test**, not Accepted, and N4 remains closed.
+At this historical point the correction required a new packaged owner retest, so N3 remained **Ready for owner test** and N4 remained closed. That retest was later completed and N3 was Accepted as recorded below.
 
 ## Final readiness audit and mature-library comparison — 2026-09-27
 
 - Exact audited head `1db167faf9a3a16b097bed898cb3c431af4f18fd` matches the remote branch. Push Windows CI `36313630034` and PR Windows CI `36313632355` passed Debug and Release. Coordinates `36313632278`, fidelity `36313632285`, stress `36313632362` and selected-route `36313632312` also passed.
 - GitHub N3 artifact `10930545427` has digest `sha256:b3abb8b46a44d92905dd5fcca2cbd218591a7c7503d77279400dee9eb81b8f96`. The downloaded artifact matched that digest. Its owner ZIP declared and produced SHA-256 `db2cdac5314e73bebf89273ec029cbcb0eb8fa0893d59da02d2957aee7f2f712`; packaged build information names implementation head `1db167faf9a3a16b097bed898cb3c431af4f18fd`, Release configuration, Qt 6.10.3 and SQLite 3.53.4#1. The executable reports Windows GUI subsystem 2, and a local clean-profile timed smoke completed without a remaining process or missing-runtime dialog.
 - Mature-library comparison used Calibre 9.9 and three disposable redistributable N2 PDFs copied into the same English/Arabic/Urdu-named test folder. `calibredb add --recurse` imported three records in 2.63 seconds into an isolated temporary Calibre library. Calibre copied the files into its managed library and preferred embedded titles for two records; searching those two visible source filename titles returned no match, while the Arabic filename retained as title did match. Atlas N3 instead indexes explicit roots in place and deliberately presents/searches the current filename stem as primary while preserving embedded title as secondary. This comparison supports the owner-requested filename-first correction rather than an unsupported claim that Atlas is generally better. Calibre provides substantially richer mature metadata/format management; Atlas's selectable sorts/filters, covers and added formats remain assigned to N7/F1–F3.
-- Owner round 1 already exercised checks 1–11, including removable/offline recovery, keyboard/200% and Arabic/RTL, and the reported defects received corrective regression/render/package evidence. The comparison above closes check 12. The only remaining acceptance act is owner confirmation of the corrected filename-first package followed by the exact words `N3 PASS`; N4 cannot open before that statement.
+- Owner round 1 exercised checks 1–11, including removable/offline recovery, keyboard/200% and Arabic/RTL, and the reported defects received corrective regression/render/package evidence. The comparison above closed check 12. The owner then confirmed the corrected filename-first result with exact `N3 PASS` on 2026-09-27.
+
+## Owner acceptance — 2026-09-27
+
+- Owner decision: `N3 PASS`.
+- Accepted version: `2.0.0-beta.1`.
+- Exact pre-acceptance audited branch head: `ed12d162c26aa86d35918a295b94c624599a870b`.
+- Exact-head Windows push/PR Debug and Release plus coordinate, fidelity, stress and selected-route workflows passed as listed in [the acceptance record](N3_ACCEPTANCE.md).
+- N3 is **Accepted**, not yet **Released**. Tagging/publishing remains a separate release action.

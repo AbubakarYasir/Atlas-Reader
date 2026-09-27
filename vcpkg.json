@@ -1,6 +1,6 @@
 {
   "name": "atlas-reader-native",
-  "version-string": "2.0.0-alpha.2",
+  "version-string": "2.0.0-beta.1",
   "builtin-baseline": "9e2895bf6afb246396d85232ba70fcfa1fa67ba1",
   "dependencies": [
     {

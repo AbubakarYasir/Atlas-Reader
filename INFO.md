@@ -1,18 +1,18 @@
 # Atlas Reader Native — Current Project Notes
 
-<!-- atlas-status: N3|ready-for-owner-test -->
+<!-- atlas-status: N3|accepted -->
 
-N0–N2 are Accepted. N3 Library/index foundation is Ready for owner test, not Accepted. Current version: `2.0.0-alpha.2`; beta.1 promotion requires the complete owner checklist and explicit `N3 PASS`.
+N0–N3 are Accepted. The owner recorded explicit `N3 PASS` on 2026-09-27. Current version: `2.0.0-beta.1`.
 
 Active branch: `native-v2-n3-library-index-foundation`. Native C++/Qt is active; Flutter is stopped and retained on `legacy/flutter` for backup and migration reference.
 
-## Implemented candidate
+## Accepted Library foundation
 
 SQLite/FTS5, explicit multi-root PDF scanning, guarded identity/reconciliation, background database work, list/grid Library, folders, Favorites, Recents and metadata search exist. Primary names use filename stems; document title/author/type are secondary. Default ordering follows filenames. N3 opens available PDFs in the system application; the Atlas reader begins in N4.
 
-## Remaining acceptance
+## Acceptance record
 
-Use the [owner checklist](docs/N3_OWNER_TEST.md) and [evidence ledger](docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md). Checks 1–11 were exercised in owner round 1 and their reported defects are corrected; a disposable Calibre 9.9 same-folder comparison closes check 12. The latest filename-first package still needs owner confirmation and the exact words `N3 PASS`.
+Checks 1–11 were exercised by the owner and their reported defects were corrected; a disposable Calibre 9.9 same-folder comparison closed check 12. See the [N3 acceptance record](docs/baselines/N3_ACCEPTANCE.md), [owner checklist](docs/N3_OWNER_TEST.md) and [evidence ledger](docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md).
 
 ## Windows 2.0 sequence
 

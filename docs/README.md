@@ -1,6 +1,6 @@
 # Atlas Reader Native — Documentation Index
 
-<!-- atlas-status: N3|ready-for-owner-test -->
+<!-- atlas-status: N3|accepted -->
 
 Use this page to find the authoritative document instead of duplicating requirements across random files.
 
@@ -8,14 +8,15 @@ Use this page to find the authoritative document instead of duplicating requirem
 
 New visitor? Read the [public project introduction](../README.md). Building or contributing? Start with the [developer guide](DEVELOPER_GUIDE.md). This index holds the detailed technical and product references.
 
-**N3 ready for owner test:** see the [plain-language owner checklist](N3_OWNER_TEST.md), [N3 Library/index plan](N3_LIBRARY_INDEX_PLAN.md) and [N2 acceptance record](baselines/N2_ACCEPTANCE.md). Flutter development has stopped; native C++/Qt is the active project.
+**N3 Accepted:** see the [N3 acceptance record](baselines/N3_ACCEPTANCE.md), [evidence ledger](baselines/N3_LIBRARY_INDEX_EVIDENCE.md) and [Library/index plan](N3_LIBRARY_INDEX_PLAN.md). Flutter development has stopped; native C++/Qt is the active project.
 
 1. **`../README.md`** — project entry point and current status.
 2. **`../PLAN.md`** — master product/engineering north star.
 3. **`../CHECKPOINTS.md`** — current checkpoint, release mapping, stop gates.
-4. **`N3_LIBRARY_INDEX_PLAN.md`** — active N3 execution plan, subgates, safety rules, QA evidence and stop gate.
-5. **`baselines/N3_LIBRARY_INDEX_EVIDENCE.md`** — active N3 result, test and artifact ledger.
-6. **`N3_OWNER_TEST.md`** — plain-language hands-on checklist and PASS/FAIL report for the exact N3 package.
+4. **`baselines/N3_ACCEPTANCE.md`** — frozen N3 owner decision, exact acceptance evidence and boundaries.
+5. **`N3_LIBRARY_INDEX_PLAN.md`** — completed N3 execution plan, subgates, safety rules, QA evidence and stop gate.
+6. **`baselines/N3_LIBRARY_INDEX_EVIDENCE.md`** — completed N3 result, test and artifact ledger.
+7. **`N3_OWNER_TEST.md`** — plain-language hands-on checklist used for the accepted N3 package.
 7. **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — Accepted N2 responsibility split decision.
 8. **`../tests/fixtures/pdf/README.md`** — N2 PDF fixture provenance/privacy/checksum/mutation contract.
 9. **`FEATURE_SCOPE_2_0.md`** — binding Windows 2.0 feature scope.
@@ -23,7 +24,7 @@ New visitor? Read the [public project introduction](../README.md). Building or c
 11. **`CHECKPOINT_QA_MATRIX.md`** — binding automated/manual QA, owner tests, blockers and limitation ownership for N0–N11.
 12. **`GIT_WORKFLOW.md`** — binding branch, commit, PR, merge, tag, status synchronization and remote-verification rules.
 
-N0, N1 and N2 are Accepted. N3 Library/index foundation is Ready for owner test, not Accepted. A passed checkpoint cannot be reopened without new evidence of a
+N0, N1, N2 and N3 are Accepted. A passed checkpoint cannot be reopened without new evidence of a
 user-facing regression.
 
 ## Product behavior

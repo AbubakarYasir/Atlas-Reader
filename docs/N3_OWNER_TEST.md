@@ -1,6 +1,8 @@
 # N3 Owner Test — plain-language checklist
 
-<!-- atlas-status: N3|ready-for-owner-test -->
+<!-- atlas-status: N3|accepted -->
+
+> Completed: the owner recorded `N3 PASS` on 2026-09-27. This checklist is retained as acceptance evidence.
 
 Use only the exact N3 Windows ZIP and SHA-256 supplied in the final handoff. Test copied books, not your only copy. N3 is not passed until every required item below has a clear result.
 

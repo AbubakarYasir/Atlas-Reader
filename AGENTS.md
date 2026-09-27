@@ -1,6 +1,6 @@
 # Atlas Reader Native — Agent Rules
 
-<!-- atlas-status: N3|ready-for-owner-test -->
+<!-- atlas-status: N3|accepted -->
 
 Read this before changing the repository.
 
@@ -192,10 +192,10 @@ Never inspect, print, commit, or request secrets unnecessarily. Password-protect
 
 ## Current stop gate
 
-**N0, N1 and N2 Accepted. N3 Library/index foundation is Ready for owner test, not Accepted.**
+**N0, N1, N2 and N3 are Accepted. N4 has not started on this branch.**
 
 N2 is frozen: do not reopen its engine qualification or change the accepted Qt PDF/qpdf responsibility split without new regression evidence and an explicit decision update.
 
-N3 implementation, exact-head CI and package are complete. Do **not** add N4 Reader/viewport work, bookmark editor/local overlay, annotations/ink, migration, installer, or any later-checkpoint feature while owner testing is open. Only corrections required by the N3 owner checklist belong on this branch.
+N3 implementation, exact-head CI, package and owner acceptance are complete. Do **not** add N4 Reader/viewport work on this completed branch. N4 must start from the verified accepted `main` merge on its own `native-v2-n4-reader-foundation` branch.
 
-Use `docs/N3_OWNER_TEST.md` for the remaining owner gate. Do not claim N3 Accepted or beta.1 useful until every owner/QA/stop gate passes and the owner records `N3 PASS`.
+Use `docs/baselines/N3_ACCEPTANCE.md` for the frozen owner decision and `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md` for detailed evidence. Do not reopen N3 without concrete regression evidence.

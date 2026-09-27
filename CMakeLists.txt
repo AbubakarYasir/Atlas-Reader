@@ -144,6 +144,10 @@ target_link_libraries(atlas_reader
 )
 atlas_enable_warnings(atlas_reader)
 
+add_executable(atlas_n3_library_benchmark tools/bench/n3_library_benchmark.cpp)
+target_link_libraries(atlas_n3_library_benchmark PRIVATE atlas_library_scanner atlas_library_index)
+atlas_enable_warnings(atlas_n3_library_benchmark)
+
 if(WIN32)
     add_custom_command(
         TARGET atlas_reader

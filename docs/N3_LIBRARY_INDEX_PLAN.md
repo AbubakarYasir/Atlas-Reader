@@ -37,6 +37,7 @@ This outcome is a plan; the complete library is not implemented at N3 start.
 - Multi-root coordination now retains a separate outcome for every configured root and suppresses duplicate paths emitted by overlapping/nested roots. The implementation at `609c8b9` is verified locally and in final branch CI head `66f13464d8f7fed903360d048beea8d5bfd60902`; later named-storage benchmarks remain required. Treat permission-denied children independently from successful enumeration elsewhere.
 - Make reparse/junction/symlink behavior conservative and cycle-safe. Do not follow paths outside configured meaning or loop indefinitely.
 - Treat roots and file entries as changing during a scan. Distinguish successful, partial, cancelled and unavailable root outcomes; only a successfully completed root scan can propose deletion reconciliation.
+- Persisted root scan generations are active at `352c5d0`: an older scan cannot overwrite a newer one, newly observed paths remain unlinked until identity reconciliation, and partial/offline/interrupted scans preserve the preceding successful completion evidence and indexed books.
 - Coalesce watcher events if/when watchers are introduced; never let event storms create unbounded queued work or a writer queue.
 - Cover long/Unicode paths, inaccessible subfolders, nested roots, disappearing files, cancellation and encrypted/corrupt PDF identification.
 

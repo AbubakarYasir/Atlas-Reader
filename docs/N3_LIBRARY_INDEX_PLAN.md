@@ -47,6 +47,7 @@ This outcome is a plan; the complete library is not implemented at N3 start.
 
 - Keep stable Atlas document identity separate from any current path, filename, title, or PDF engine object.
 - ADR-0005 freezes the conservative policy: only a previous path proven missing by a complete scan plus preserved filesystem identity may authorize automatic move relinking. A surviving original is a distinct copy; content/PDF metadata matches alone are ambiguous; offline and incomplete scans never prove a relationship.
+- Schema v4 at `f278bec` persists the last successfully completed scan generation, opaque filesystem identity evidence and reviewable reconciliation proposals. Proposal creation never changes a location; application revalidates the completed scans, unchanged evidence and unclaimed target in one transaction. Pending/applied/dismissed audit state and stable document identity survive restart.
 - A matching filename or content fingerprint alone does not prove two copies are the same logical research item. Copies remain distinct absent user-approved relinking.
 - Preserve an offline root and its indexed entries. Missing from a disconnected or partially enumerated root does not mean deleted.
 - Retain research state for a sufficiently confident move/rename; leave ambiguous candidates separate and visible for resolution.

@@ -23,7 +23,8 @@ file revisions separately.
 Automatic relinking is deliberately narrow: Atlas may treat a newly observed
 path as a move only when the previous path was proven missing by a successfully
 completed scan and the filesystem object identity is preserved. The decision
-must be represented as a reviewable reconciliation diff before persistence.
+must be represented as a reviewable, durable reconciliation diff before any
+location change is persisted.
 
 The remaining cases follow these rules:
 
@@ -96,4 +97,3 @@ safety and reviewable persistence.
 - `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md`
 - `docs/ARCHITECTURE.md`
 - `docs/QUALITY_AND_TESTING.md`
-

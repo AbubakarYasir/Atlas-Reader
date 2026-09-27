@@ -54,6 +54,8 @@ atlas_enable_warnings(atlas_library_index)
 add_library(atlas_library_scanner STATIC
     src/app/index/LibraryScanner.cpp
     src/app/index/LibraryScanner.h
+    src/app/index/LibraryPathKey.cpp
+    src/app/index/LibraryPathKey.h
     src/app/index/NativeLibraryEnumerator.cpp
     src/app/index/NativeLibraryEnumerator.h
     src/app/index/ILibraryEnumerator.h
@@ -61,6 +63,14 @@ add_library(atlas_library_scanner STATIC
 target_include_directories(atlas_library_scanner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(atlas_library_scanner PUBLIC atlas_core)
 atlas_enable_warnings(atlas_library_scanner)
+
+add_library(atlas_library_scan_service STATIC
+    src/app/index/LibraryScanService.cpp
+    src/app/index/LibraryScanService.h
+)
+target_include_directories(atlas_library_scan_service PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_library_scan_service PUBLIC atlas_library_scanner atlas_library_index)
+atlas_enable_warnings(atlas_library_scan_service)
 
 add_library(atlas_app_support STATIC
     src/app/diagnostics/ShellMetrics.cpp
@@ -181,7 +191,7 @@ atlas_enable_warnings(atlas_library_index_tests)
 add_test(NAME atlas_library_index COMMAND atlas_library_index_tests)
 
 add_executable(atlas_library_scanner_tests tests/index/library_scanner_tests.cpp)
-target_link_libraries(atlas_library_scanner_tests PRIVATE atlas_library_scanner)
+target_link_libraries(atlas_library_scanner_tests PRIVATE atlas_library_scanner atlas_library_scan_service)
 atlas_enable_warnings(atlas_library_scanner_tests)
 add_test(NAME atlas_library_scanner COMMAND atlas_library_scanner_tests)
 

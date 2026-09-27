@@ -1,5 +1,7 @@
 #include "app/index/LibraryScanner.h"
+#include "app/index/LibraryScanService.h"
 #include "app/index/NativeLibraryEnumerator.h"
+#include "app/index/SqliteLibraryIndex.h"
 
 #include <algorithm>
 #include <atomic>
@@ -196,6 +198,98 @@ void checkOverlappingRootsPublishEachPdfOnce() {
     require(duplicateIdRejected, "Configured root IDs must be unique before any scan begins.");
 }
 
+void checkScanServicePreservesIdentityBoundariesAndRootState() {
+    auto fixture = std::make_shared<FixtureEnumerator>();
+    fixture->directories["root"] = {true, true, {
+        {"root/known.pdf", EnumeratedEntryKind::regularFile},
+        {"root/new.pdf", EnumeratedEntryKind::regularFile},
+        {"root/sub", EnumeratedEntryKind::directory},
+    }};
+    fixture->directories["root/sub"] = {true, true, {
+        {"root/sub/shared.pdf", EnumeratedEntryKind::regularFile},
+    }};
+    fixture->directories["offline"] = {false, false, {}};
+    fixture->directories["partial"] = {true, false, {
+        {"partial/كتاب.pdf", EnumeratedEntryKind::regularFile},
+    }};
+
+    const auto nonce = std::chrono::steady_clock::now().time_since_epoch().count();
+    const auto temporary = std::filesystem::temp_directory_path()
+        / ("atlas-scan-service-test-" + std::to_string(nonce));
+    std::error_code error;
+    std::filesystem::create_directory(temporary, error);
+    require(!error, "The scan-service database directory must be created.");
+    struct Cleanup final {
+        std::filesystem::path path;
+        ~Cleanup() { std::error_code ignored; std::filesystem::remove_all(path, ignored); }
+    } cleanup{temporary};
+
+    SqliteLibraryIndex index{temporary / "profile.sqlite3"};
+    index.registerRoot({"parent", "root", LibraryRootAvailability::available});
+    index.registerRoot({"nested", "root/sub", LibraryRootAvailability::available});
+    index.registerRoot({"offline", "offline", LibraryRootAvailability::available});
+    index.registerRoot({"partial", "partial", LibraryRootAvailability::available});
+    index.upsertRecord({"known", "root/known.pdf", "Known Book", "", atlas::document::Availability::available}, "parent");
+
+    LibraryScanner scanner{fixture, {.batchSize = 2, .maximumDepth = 8, .maximumFiles = 20}};
+    LibraryScanService service{scanner, index};
+    std::atomic_bool cancelled{};
+    std::vector<std::filesystem::path> newFiles;
+    const auto summary = service.scan({
+        {"parent", "root"},
+        {"nested", "root/sub"},
+        {"offline", "offline"},
+        {"partial", "partial"},
+    }, cancelled, 5000, [&](const auto&, const auto& batch, const auto&) {
+        newFiles.insert(newFiles.end(), batch.begin(), batch.end());
+    });
+
+    require(summary.roots.size() == 4 && summary.roots[0].knownLocationsSeen == 1,
+        "The integrated scan must recognize an existing location without creating a new identity.");
+    require(summary.uniqueNewFilesFound == 3 && summary.duplicateNewFilesSkipped == 1,
+        "New paths must stream once across overlapping roots while remaining unlinked.");
+    require(newFiles.size() == 3
+            && std::count(newFiles.begin(), newFiles.end(), std::filesystem::path{"root/sub/shared.pdf"}) == 1,
+        "The new-file callback must receive bounded deduplicated discoveries.");
+    require(index.search("Known").size() == 1 && index.search("new").empty(),
+        "Scanning must preserve known books and must not invent document IDs for new paths.");
+
+    const auto roots = index.roots();
+    const auto findRoot = [&](std::string_view id) -> const LibraryRootRecord& {
+        const auto found = std::find_if(roots.begin(), roots.end(), [&](const auto& root) { return root.id == id; });
+        require(found != roots.end(), "The expected scan-service root must remain persisted.");
+        return *found;
+    };
+    require(findRoot("parent").availability == LibraryRootAvailability::available
+            && findRoot("parent").lastCompletedScanUtcMs == 5000,
+        "A complete root must record its trusted completion time.");
+    require(findRoot("nested").availability == LibraryRootAvailability::available
+            && findRoot("nested").lastCompletedScanUtcMs == 5000,
+        "A complete overlapping root must retain an independent successful outcome.");
+    require(findRoot("offline").availability == LibraryRootAvailability::offline
+            && !findRoot("offline").lastCompletedScanUtcMs,
+        "An unavailable root must become offline without receiving a completion time.");
+    require(findRoot("partial").availability == LibraryRootAvailability::partiallyAvailable
+            && !findRoot("partial").lastCompletedScanUtcMs,
+        "An incomplete root must become partial without receiving a completion time.");
+
+    cancelled.store(false);
+    const auto cancelledSummary = service.scan({{"parent", "root"}}, cancelled, 6000,
+        [&](const auto&, const auto&, const auto&) { cancelled.store(true); });
+    require(cancelledSummary.roots.front().scan.outcome == LibraryScanOutcome::cancelled,
+        "Cancellation during discovery publication must remain distinct from a completed scan.");
+    const auto afterCancellation = index.roots();
+    const auto parent = std::find_if(afterCancellation.begin(), afterCancellation.end(),
+        [](const auto& root) { return root.id == "parent"; });
+    require(parent != afterCancellation.end()
+            && parent->scanGeneration == 2
+            && parent->availability == LibraryRootAvailability::available
+            && parent->lastCompletedScanUtcMs == 5000,
+        "A cancelled scan must advance its generation without replacing the last trusted root outcome.");
+    require(index.search("Known").size() == 1,
+        "Cancellation must never remove an existing indexed book.");
+}
+
 } // namespace
 
 int main() {
@@ -205,6 +299,7 @@ int main() {
         checkUnavailableAndDepthLimit();
         checkNativeFilesystemTraversal();
         checkOverlappingRootsPublishEachPdfOnce();
+        checkScanServicePreservesIdentityBoundariesAndRootState();
     } catch (const std::exception& error) {
         std::cerr << "Library scanner test failed: " << error.what() << '\n';
         return 1;

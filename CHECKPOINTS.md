@@ -30,7 +30,7 @@ official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
 first-party qpdf 12.4.1 CLI for structure/security/write. ADR-0004 was
 Accepted by owner on 2026-09-27.
 
-N2 is frozen and Accepted. N3 started after its owner-approved closure report. N3.1 storage/schema is verified on `e7fe595c5ffb228f48b63c17a960559a8b8b8a22` with local and Windows Debug/Release tests plus the corrected SQLite/Qt runtime linkage. N3.2 safe scanning is active: traversal, overlap/deduplication, persisted generations and scanner/index coordination are verified locally and in Windows CI; PDF state inspection is locally verified. N3.3 is active with ADR-0005, durable schema-v4 reconciliation at `f278bec`, and native rename/copy file-identity proof at `fb84173`; discovery integration, final CI and owner work remain. N3 as a whole is unaccepted.
+N2 is frozen and Accepted. N3 started after its owner-approved closure report. N3.1 storage/schema is verified on `e7fe595c5ffb228f48b63c17a960559a8b8b8a22` with local and Windows Debug/Release tests plus the corrected SQLite/Qt runtime linkage. N3.2 safe scanning is active: traversal, overlap/deduplication, persisted generations and scanner/index coordination are verified locally and in Windows CI; PDF state inspection is locally verified. N3.3 is active with ADR-0005, durable schema-v4 reconciliation, native rename/copy file identity, and non-destructive same-path replacement detection through `0ee0237`; final orchestration, CI and owner work remain. N3 as a whole is unaccepted.
 
 ## Operating contract
 

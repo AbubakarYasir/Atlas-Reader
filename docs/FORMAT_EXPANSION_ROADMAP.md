@@ -32,6 +32,8 @@ This document plans support; it does not claim that the current N3 build opens a
 
 Each track opens only after Windows 2.0 unless the owner explicitly changes scope and records the cost to the active release.
 
+While N4–N11 are built, their shared book models must preserve the boundaries needed by these later tracks. This means using generic document identity, filename/type, metadata, search, progress, backup and UI contracts where the behavior is genuinely shared. It does **not** mean weakening or generalizing PDF rendering, coordinates, security or safe-write rules: those remain strong PDF-specific adapters until another format earns its own adapter.
+
 1. **Qualification:** representative lawful fixtures, parser/renderer candidates, license/notices, threat model, metadata/cover/text/navigation capability matrix, and repeatable performance evidence.
 2. **Library admission:** content-aware detection, explicit availability/error states, metadata extraction, protected extension behavior, identity/move/rename safety and bounded cover generation.
 3. **Reader delivery:** navigation, progress, search where meaningful, typography/layout, themes where safe, RTL/bidi, accessibility, keyboard/touch and large-book virtualization.

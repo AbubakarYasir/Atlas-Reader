@@ -6,7 +6,7 @@ checkpoint, evidence requirement, and owner decision.
 
 ## Acceptance rule for every checkpoint
 
-A checkpoint advances only when all five conditions are true:
+A checkpoint advances only when all seven conditions are true:
 
 1. its written scope is implemented and its exclusions were respected;
 2. required automated gates pass on the exact proposed branch head;
@@ -15,6 +15,7 @@ A checkpoint advances only when all five conditions are true:
    checkpoint with a blocking test; and
 5. every changed interface has been inspected as a rendered product in its relevant populated, empty, failure, narrow, scaled and RTL states—not approved from code or a single happy-path screenshot; and
 6. the owner explicitly records `N# PASS`.
+7. changes to shared book identity, Library, metadata, search, progress, backup or UI models have been checked for accidental PDF-only assumptions; format-specific PDF behavior stays behind explicit capabilities/adapters, without implementing deferred formats prematurely.
 
 Green CI proves only the automated portion. It never substitutes for the owner
 gate. A skipped required test is a failure unless the checkpoint contract marks

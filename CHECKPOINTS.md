@@ -50,6 +50,7 @@ N2 is frozen and Accepted. N3.1–N3.4 are implemented and the exact-head Debug/
 14. N2 probe adoption is not production adoption: exact version, provenance, license, checksum/build path and rollback must be recorded before an engine responsibility can be accepted.
 15. `docs/CHECKPOINT_QA_MATRIX.md` is binding: every limitation needs a named implementation checkpoint, regression evidence and blocking condition.
 16. `docs/GIT_WORKFLOW.md` controls branch, PR, status synchronization, merge, tag and remote-verification behavior.
+17. N4–N11 may specialize PDF reading, writing and interoperability, but shared book identity, Library, metadata, search, progress, backup and presentation models must remain format-aware. A checkpoint may not hardcode PDF into those shared layers when an Atlas-owned capability/type boundary is sufficient; this is reviewed without implementing deferred formats early.
 
 ## Release ledger
 
@@ -71,6 +72,10 @@ N2 is frozen and Accepted. N3.1–N3.4 are implemented and the exact-head Debug/
 | P2 | post-2.0 | Linux adaptation | Not started |
 | P3 | post-2.0 | macOS adaptation | Not started |
 | P4 | post-2.0 | iOS/iPadOS adaptation | Not started |
+| F1 | post-2.0 | EPUB admission + reader | Not started |
+| F2 | post-2.0 | CBZ/CBR admission + reader | Not started |
+| F3 | post-2.0 | non-DRM AZW3/MOBI/PRC admission + reader | Not started |
+| KFX | post-2.0 research | feasibility/ADR only; no delivery promise | Not started |
 
 Corrective builds may increment beta/RC identifiers/build metadata. Never reuse a version tag for different bytes.
 

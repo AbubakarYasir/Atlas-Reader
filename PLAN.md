@@ -31,6 +31,7 @@ The native successor exists to make that promise compatible with graphics-heavy 
 | **Never lost silently** | No false save success, blind overwrite, ambiguous relinking, or destructive unavailable-root reconciliation |
 | **Core is portable** | Shared domain/application rules contain no Windows-only assumptions |
 | **Engine replaceability** | PDF vendor libraries remain behind Atlas-owned interfaces |
+| **Format-ready core** | Shared book identity, Library, metadata, search, progress, backup and UI models do not assume every future book is a PDF; PDF-only rendering and mutation stay inside explicit PDF adapters |
 | **Arabic/RTL first-class** | Unicode, bidi, Arabic UI, mixed-script metadata/outlines are release requirements |
 | **Accessibility first** | Keyboard, Narrator/UIA, visible focus, text scale, high contrast are architectural gates |
 | **Evidence before claims** | Planned, Implemented, Verified, Accepted, Released are distinct |

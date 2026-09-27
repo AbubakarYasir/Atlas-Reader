@@ -74,7 +74,7 @@ void checkSchemaAndFts() {
 
     {
         atlas::index::SqliteLibraryIndex index{databasePath};
-        require(index.schemaVersion() == 3, "A new profile must reach the current schema version.");
+        require(index.schemaVersion() == 4, "A new profile must reach the current schema version.");
         index.registerRoot({"root-ar", temporary.path() / "مكتبتي", atlas::index::LibraryRootAvailability::available});
         index.upsertRecord({"book-ar", temporary.path() / "مكتبتي" / "مدخل.pdf", "مدخل إلى القراءة", "مؤلف عربي", atlas::document::Availability::available}, "root-ar");
         index.upsertRecord({"book-ur", temporary.path() / "مكتبتي" / "کتاب.pdf", "کتاب", "مصنف", atlas::document::Availability::available}, "root-ar");
@@ -109,7 +109,7 @@ void checkSchemaAndFts() {
 
     {
         atlas::index::SqliteLibraryIndex reopened{databasePath};
-        require(reopened.schemaVersion() == 3, "Reopening a profile must preserve its schema version.");
+        require(reopened.schemaVersion() == 4, "Reopening a profile must preserve its schema version.");
         const auto roots = reopened.roots();
         require(roots.size() == 1 && roots.front().availability == atlas::index::LibraryRootAvailability::offline,
             "An offline root must remain in the database after reopening.");
@@ -236,6 +236,87 @@ void checkMigrationRollback() {
     sqlite3_close_v2(db);
 }
 
+void checkDurableReconciliation() {
+    TemporaryDirectory temporary;
+    const auto databasePath = temporary.path() / "reconciliation.sqlite3";
+    const auto rootPath = temporary.path() / "library";
+    const auto oldPath = rootPath / "old-name.pdf";
+    const auto movedPath = rootPath / "renamed.pdf";
+
+    {
+        atlas::index::SqliteLibraryIndex index{databasePath};
+        index.registerRoot({"root", rootPath, atlas::index::LibraryRootAvailability::available});
+        index.upsertRecord({"book", oldPath, "Durable Identity", "Atlas", atlas::document::Availability::available}, "root");
+        index.setLocationFilesystemIdentity("book", "root", oldPath, "volume-1:file-42");
+
+        const auto first = index.beginRootScan("root");
+        require(index.markExistingLocationSeen("root", oldPath, first), "The original location must be observed in the first scan.");
+        index.finishRootScan("root", first, atlas::index::LibraryRootAvailability::available, 1000);
+
+        const auto second = index.beginRootScan("root");
+        index.finishRootScan("root", second, atlas::index::LibraryRootAvailability::available, 2000);
+        const auto proposal = index.proposeReconciliation(
+            "move-1", "book", "root", oldPath, "root", movedPath, second, "volume-1:file-42");
+        require(proposal.decision == atlas::index::IdentityDecision::confidentMove
+                && proposal.mayRelinkAutomatically
+                && proposal.state == atlas::index::ReconciliationProposalState::pending,
+            "A completed scan plus preserved filesystem identity must create a reviewable safe-move proposal.");
+        require(index.search("Durable").front().source == oldPath,
+            "Creating a reconciliation proposal must not mutate the document location.");
+    }
+
+    {
+        atlas::index::SqliteLibraryIndex reopened{databasePath};
+        const auto pending = reopened.reconciliationProposals();
+        require(pending.size() == 1 && pending.front().id == "move-1"
+                && pending.front().state == atlas::index::ReconciliationProposalState::pending,
+            "A reviewable reconciliation proposal must survive restart before application.");
+        reopened.applyReconciliation("move-1");
+        const auto result = reopened.search("Durable");
+        require(result.size() == 1 && result.front().id == "book" && result.front().source == movedPath,
+            "Applying a proven move must retain the stable document ID at the new path.");
+        require(reopened.reconciliationProposals().front().state == atlas::index::ReconciliationProposalState::applied,
+            "An applied reconciliation must remain auditable after the location changes.");
+    }
+
+    const auto ambiguityDatabase = temporary.path() / "ambiguity.sqlite3";
+    {
+        atlas::index::SqliteLibraryIndex index{ambiguityDatabase};
+        const auto oldRoot = temporary.path() / "offline-library";
+        const auto candidateRoot = temporary.path() / "online-library";
+        const auto source = oldRoot / "book.pdf";
+        index.registerRoot({"old-root", oldRoot, atlas::index::LibraryRootAvailability::available});
+        index.registerRoot({"candidate-root", candidateRoot, atlas::index::LibraryRootAvailability::available});
+        index.upsertRecord({"book", source, "Offline Identity", "", atlas::document::Availability::available}, "old-root");
+        index.setLocationFilesystemIdentity("book", "old-root", source, "volume-2:file-9");
+
+        const auto oldGeneration = index.beginRootScan("old-root");
+        require(index.markExistingLocationSeen("old-root", source, oldGeneration), "The offline fixture must begin with a known location.");
+        index.finishRootScan("old-root", oldGeneration, atlas::index::LibraryRootAvailability::available, 1000);
+        index.setRootAvailability("old-root", atlas::index::LibraryRootAvailability::offline);
+
+        const auto candidateGeneration = index.beginRootScan("candidate-root");
+        index.finishRootScan("candidate-root", candidateGeneration, atlas::index::LibraryRootAvailability::available, 2000);
+        const auto proposal = index.proposeReconciliation(
+            "ambiguous-1", "book", "old-root", source, "candidate-root",
+            candidateRoot / "book.pdf", candidateGeneration, "volume-2:file-9");
+        require(proposal.decision == atlas::index::IdentityDecision::ambiguous
+                && !proposal.mayRelinkAutomatically,
+            "An offline previous root must produce an ambiguous proposal even when filesystem evidence matches.");
+        bool applyRejected = false;
+        try {
+            index.applyReconciliation("ambiguous-1");
+        } catch (const std::runtime_error&) {
+            applyRejected = true;
+        }
+        require(applyRejected && index.search("Offline").front().source == source,
+            "An ambiguous proposal must be rejected without changing the indexed location.");
+        index.dismissReconciliation("ambiguous-1");
+        require(index.reconciliationProposals().front().state == atlas::index::ReconciliationProposalState::dismissed,
+            "A dismissed ambiguous proposal must remain auditable.");
+    }
+}
+
 void checkLaterMigrationRollbackAndRetry() {
     TemporaryDirectory temporary;
     const auto databasePath = temporary.path() / "retry.sqlite3";
@@ -277,7 +358,7 @@ PRAGMA user_version = 1;
     sqlite3_close_v2(db);
 
     atlas::index::SqliteLibraryIndex retried{databasePath};
-    require(retried.schemaVersion() == 3, "A later retry must complete the remaining migration.");
+    require(retried.schemaVersion() == 4, "A later retry must complete the remaining migrations.");
 }
 
 void checkNewerSchemaIsPreserved() {
@@ -309,6 +390,7 @@ int main() {
         checkSchemaAndFts();
         checkScanGenerationSafety();
         checkMigrationRollback();
+        checkDurableReconciliation();
         checkLaterMigrationRollbackAndRetry();
         checkNewerSchemaIsPreserved();
     } catch (const std::exception& error) {

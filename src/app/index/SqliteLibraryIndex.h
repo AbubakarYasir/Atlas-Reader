@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/index/ILibraryIndex.h"
+#include "core/index/DocumentIdentityReconciler.h"
 
 #include <filesystem>
 #include <cstddef>
@@ -26,6 +27,26 @@ struct LibraryRootRecord final {
     LibraryRootAvailability availability{LibraryRootAvailability::available};
     std::int64_t scanGeneration{};
     std::optional<std::int64_t> lastCompletedScanUtcMs;
+    std::int64_t lastCompletedScanGeneration{};
+};
+
+enum class ReconciliationProposalState {
+    pending,
+    applied,
+    dismissed,
+};
+
+struct ReconciliationProposalRecord final {
+    std::string id;
+    std::string documentId;
+    std::string previousRootId;
+    std::filesystem::path previousSource;
+    std::string candidateRootId;
+    std::filesystem::path candidateSource;
+    std::int64_t candidateScanGeneration{};
+    IdentityDecision decision{IdentityDecision::ambiguous};
+    bool mayRelinkAutomatically{};
+    ReconciliationProposalState state{ReconciliationProposalState::pending};
 };
 
 // SQLite-backed persistence adapter. SQLite and its statements stay private to
@@ -60,6 +81,23 @@ public:
     // Adding a location already associated with a different document is a
     // reconciliation conflict, not an implicit identity change.
     void upsertRecord(LibraryRecord record, std::string rootId = {});
+    void setLocationFilesystemIdentity(
+        std::string documentId,
+        std::string rootId,
+        const std::filesystem::path& source,
+        std::string filesystemIdentity);
+    [[nodiscard]] ReconciliationProposalRecord proposeReconciliation(
+        std::string proposalId,
+        std::string documentId,
+        std::string previousRootId,
+        const std::filesystem::path& previousSource,
+        std::string candidateRootId,
+        const std::filesystem::path& candidateSource,
+        std::int64_t candidateScanGeneration,
+        std::string candidateFilesystemIdentity);
+    [[nodiscard]] std::vector<ReconciliationProposalRecord> reconciliationProposals() const;
+    void applyReconciliation(std::string proposalId);
+    void dismissReconciliation(std::string proposalId);
     void setFavorite(std::string documentId, bool favorite);
     void recordOpened(std::string documentId, std::int64_t openedAtUtcMs);
     void rebuildSearchIndex();

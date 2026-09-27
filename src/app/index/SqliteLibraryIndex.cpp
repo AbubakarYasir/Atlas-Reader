@@ -16,7 +16,7 @@ namespace atlas::index {
 namespace {
 
 constexpr int applicationId = 0x41544C53; // "ATLS"
-constexpr int currentSchemaVersion = 3;
+constexpr int currentSchemaVersion = 4;
 constexpr int maxSearchResults = 100;
 
 [[nodiscard]] std::string pathToUtf8(const std::filesystem::path& path) {
@@ -81,6 +81,37 @@ constexpr int maxSearchResults = 100;
     if (text == "partial") return LibraryRootAvailability::partiallyAvailable;
     if (text == "permission_denied") return LibraryRootAvailability::permissionDenied;
     throw std::runtime_error("The library database contains an unknown root state.");
+}
+
+[[nodiscard]] const char* identityDecisionName(IdentityDecision value) {
+    switch (value) {
+    case IdentityDecision::sameLocationUnchanged: return "same_location_unchanged";
+    case IdentityDecision::sameLocationChanged: return "same_location_changed";
+    case IdentityDecision::confidentMove: return "confident_move";
+    case IdentityDecision::distinctCopy: return "distinct_copy";
+    case IdentityDecision::newDocument: return "new_document";
+    case IdentityDecision::ambiguous: return "ambiguous";
+    }
+    throw std::invalid_argument("Unknown identity decision.");
+}
+
+[[nodiscard]] IdentityDecision parseIdentityDecision(const unsigned char* value) {
+    const std::string_view text{reinterpret_cast<const char*>(value)};
+    if (text == "same_location_unchanged") return IdentityDecision::sameLocationUnchanged;
+    if (text == "same_location_changed") return IdentityDecision::sameLocationChanged;
+    if (text == "confident_move") return IdentityDecision::confidentMove;
+    if (text == "distinct_copy") return IdentityDecision::distinctCopy;
+    if (text == "new_document") return IdentityDecision::newDocument;
+    if (text == "ambiguous") return IdentityDecision::ambiguous;
+    throw std::runtime_error("The library database contains an unknown identity decision.");
+}
+
+[[nodiscard]] ReconciliationProposalState parseProposalState(const unsigned char* value) {
+    const std::string_view text{reinterpret_cast<const char*>(value)};
+    if (text == "pending") return ReconciliationProposalState::pending;
+    if (text == "applied") return ReconciliationProposalState::applied;
+    if (text == "dismissed") return ReconciliationProposalState::dismissed;
+    throw std::runtime_error("The library database contains an unknown reconciliation state.");
 }
 
 void fail(sqlite3* db, std::string_view operation, int result) {
@@ -267,7 +298,30 @@ CREATE TRIGGER documents_fts_update AFTER UPDATE OF title, author, file_name ON 
 END;
 )sql";
 
-        const std::array<const char*, 3> migrations{migration1, migration2, migration3};
+        constexpr const char* migration4 = R"sql(
+ALTER TABLE library_roots ADD COLUMN last_completed_scan_generation INTEGER NOT NULL DEFAULT 0
+    CHECK (last_completed_scan_generation >= 0);
+ALTER TABLE document_locations ADD COLUMN filesystem_identity TEXT NULL;
+CREATE TABLE reconciliation_proposals (
+    proposal_id TEXT PRIMARY KEY NOT NULL,
+    document_id TEXT NOT NULL REFERENCES documents(document_id) ON DELETE RESTRICT,
+    previous_root_id TEXT NOT NULL REFERENCES library_roots(root_id) ON DELETE RESTRICT,
+    previous_source_path TEXT NOT NULL,
+    candidate_root_id TEXT NOT NULL REFERENCES library_roots(root_id) ON DELETE RESTRICT,
+    candidate_source_path TEXT NOT NULL,
+    candidate_scan_generation INTEGER NOT NULL CHECK (candidate_scan_generation > 0),
+    candidate_filesystem_identity TEXT NOT NULL,
+    decision TEXT NOT NULL CHECK (decision IN (
+        'same_location_unchanged', 'same_location_changed', 'confident_move',
+        'distinct_copy', 'new_document', 'ambiguous')),
+    may_relink_automatically INTEGER NOT NULL CHECK (may_relink_automatically IN (0, 1)),
+    state TEXT NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'applied', 'dismissed')),
+    created_utc_ms INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000)
+);
+CREATE INDEX reconciliation_proposals_state ON reconciliation_proposals(state, created_utc_ms);
+)sql";
+
+        const std::array<const char*, 4> migrations{migration1, migration2, migration3, migration4};
         while (version < currentSchemaVersion) {
             applyMigration(db, version + 1, migrations.at(static_cast<std::size_t>(version)));
             ++version;
@@ -334,7 +388,7 @@ void SqliteLibraryIndex::setRootAvailability(std::string rootId, LibraryRootAvai
 std::vector<LibraryRootRecord> SqliteLibraryIndex::roots() const {
     std::scoped_lock lock{impl_->mutex};
     Statement statement{impl_->db,
-        "SELECT root_id, source_path, availability, scan_generation, last_completed_scan_utc_ms "
+        "SELECT root_id, source_path, availability, scan_generation, last_completed_scan_utc_ms, last_completed_scan_generation "
         "FROM library_roots ORDER BY root_id"};
     std::vector<LibraryRootRecord> result;
     for (;;) {
@@ -352,6 +406,7 @@ std::vector<LibraryRootRecord> SqliteLibraryIndex::roots() const {
             sqlite3_column_type(statement.get(), 4) == SQLITE_NULL
                 ? std::nullopt
                 : std::optional<std::int64_t>{sqlite3_column_int64(statement.get(), 4)},
+            sqlite3_column_int64(statement.get(), 5),
         });
     }
     return result;
@@ -423,7 +478,8 @@ void SqliteLibraryIndex::finishRootScan(
     std::scoped_lock lock{impl_->mutex};
     Statement statement{impl_->db,
         "UPDATE library_roots SET availability = ?3, "
-        "last_completed_scan_utc_ms = CASE WHEN ?4 IS NULL THEN last_completed_scan_utc_ms ELSE ?4 END "
+        "last_completed_scan_utc_ms = CASE WHEN ?4 IS NULL THEN last_completed_scan_utc_ms ELSE ?4 END, "
+        "last_completed_scan_generation = CASE WHEN ?4 IS NULL THEN last_completed_scan_generation ELSE ?2 END "
         "WHERE root_id = ?1 AND scan_generation = ?2"};
     statement.bindText(1, rootId);
     statement.bindInteger(2, scanGeneration);
@@ -473,6 +529,255 @@ void SqliteLibraryIndex::upsertRecord(LibraryRecord record, std::string rootId) 
     } catch (...) {
         sqlite3_exec(impl_->db, "ROLLBACK", nullptr, nullptr, nullptr);
         throw;
+    }
+}
+
+void SqliteLibraryIndex::setLocationFilesystemIdentity(
+    std::string documentId,
+    std::string rootId,
+    const std::filesystem::path& source,
+    std::string filesystemIdentity) {
+    if (documentId.empty() || rootId.empty() || source.empty() || filesystemIdentity.empty()) {
+        throw std::invalid_argument("A document, root, source path and filesystem identity are required.");
+    }
+    std::scoped_lock lock{impl_->mutex};
+    Statement statement{impl_->db,
+        "UPDATE document_locations SET filesystem_identity = ?4 "
+        "WHERE document_id = ?1 AND root_id = ?2 AND source_path = ?3"};
+    statement.bindText(1, documentId);
+    statement.bindText(2, rootId);
+    statement.bindText(3, pathToUtf8(source));
+    statement.bindText(4, filesystemIdentity);
+    statement.run();
+    if (sqlite3_changes(impl_->db) != 1) {
+        throw std::invalid_argument("The requested document location does not exist.");
+    }
+}
+
+ReconciliationProposalRecord SqliteLibraryIndex::proposeReconciliation(
+    std::string proposalId,
+    std::string documentId,
+    std::string previousRootId,
+    const std::filesystem::path& previousSource,
+    std::string candidateRootId,
+    const std::filesystem::path& candidateSource,
+    std::int64_t candidateScanGeneration,
+    std::string candidateFilesystemIdentity) {
+    if (proposalId.empty() || documentId.empty() || previousRootId.empty() || previousSource.empty()
+        || candidateRootId.empty() || candidateSource.empty() || candidateScanGeneration <= 0) {
+        throw std::invalid_argument("A complete reconciliation proposal is required.");
+    }
+
+    std::scoped_lock lock{impl_->mutex};
+    Statement previous{impl_->db,
+        "SELECT l.filesystem_identity, l.last_seen_scan_generation, r.availability, "
+        "r.last_completed_scan_generation "
+        "FROM document_locations l JOIN library_roots r ON r.root_id = l.root_id "
+        "WHERE l.document_id = ?1 AND l.root_id = ?2 AND l.source_path = ?3"};
+    previous.bindText(1, documentId);
+    previous.bindText(2, previousRootId);
+    previous.bindText(3, pathToUtf8(previousSource));
+    const int previousStep = sqlite3_step(previous.get());
+    if (previousStep == SQLITE_DONE) throw std::invalid_argument("The previous document location does not exist.");
+    if (previousStep != SQLITE_ROW) fail(impl_->db, "Reading the previous document location", previousStep);
+    const auto* previousFilesystemValue = sqlite3_column_text(previous.get(), 0);
+    const std::string previousFilesystemIdentity = previousFilesystemValue == nullptr
+        ? std::string{}
+        : std::string{reinterpret_cast<const char*>(previousFilesystemValue)};
+    const auto lastSeenGeneration = sqlite3_column_int64(previous.get(), 1);
+    const auto previousRootAvailability = parseRootAvailability(sqlite3_column_text(previous.get(), 2));
+    const auto previousCompletedGeneration = sqlite3_column_int64(previous.get(), 3);
+
+    Statement candidateRoot{impl_->db,
+        "SELECT availability, scan_generation, last_completed_scan_generation "
+        "FROM library_roots WHERE root_id = ?1"};
+    candidateRoot.bindText(1, candidateRootId);
+    const int candidateRootStep = sqlite3_step(candidateRoot.get());
+    if (candidateRootStep == SQLITE_DONE) throw std::invalid_argument("The candidate library root does not exist.");
+    if (candidateRootStep != SQLITE_ROW) fail(impl_->db, "Reading the candidate library root", candidateRootStep);
+    const auto candidateAvailability = parseRootAvailability(sqlite3_column_text(candidateRoot.get(), 0));
+    const auto candidateCurrentGeneration = sqlite3_column_int64(candidateRoot.get(), 1);
+    const auto candidateCompletedGeneration = sqlite3_column_int64(candidateRoot.get(), 2);
+    if (candidateCurrentGeneration != candidateScanGeneration
+        || candidateCompletedGeneration < candidateScanGeneration
+        || candidateAvailability != LibraryRootAvailability::available) {
+        throw std::runtime_error("The candidate must come from the current successfully completed root scan.");
+    }
+
+    PreviousLocationState previousState = PreviousLocationState::available;
+    if (previousRootAvailability == LibraryRootAvailability::offline) {
+        previousState = PreviousLocationState::rootOffline;
+    } else if (previousRootAvailability != LibraryRootAvailability::available) {
+        previousState = PreviousLocationState::scanIncomplete;
+    } else if (previousCompletedGeneration > lastSeenGeneration) {
+        previousState = PreviousLocationState::missingAfterCompleteScan;
+    }
+
+    std::optional<bool> sameFilesystemIdentity;
+    if (!previousFilesystemIdentity.empty() && !candidateFilesystemIdentity.empty()) {
+        sameFilesystemIdentity = previousFilesystemIdentity == candidateFilesystemIdentity;
+    }
+    const auto resolution = reconcileDocumentIdentity({
+        .samePath = previousRootId == candidateRootId && previousSource == candidateSource,
+        .previousLocation = previousState,
+        .sameFilesystemIdentity = sameFilesystemIdentity,
+    });
+
+    Statement insert{impl_->db,
+        "INSERT INTO reconciliation_proposals("
+        "proposal_id, document_id, previous_root_id, previous_source_path, "
+        "candidate_root_id, candidate_source_path, candidate_scan_generation, "
+        "candidate_filesystem_identity, decision, may_relink_automatically) "
+        "VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)"};
+    insert.bindText(1, proposalId);
+    insert.bindText(2, documentId);
+    insert.bindText(3, previousRootId);
+    insert.bindText(4, pathToUtf8(previousSource));
+    insert.bindText(5, candidateRootId);
+    insert.bindText(6, pathToUtf8(candidateSource));
+    insert.bindInteger(7, candidateScanGeneration);
+    insert.bindText(8, candidateFilesystemIdentity);
+    insert.bindText(9, identityDecisionName(resolution.decision));
+    insert.bindInteger(10, resolution.mayRelinkAutomatically ? 1 : 0);
+    insert.run();
+
+    return {
+        std::move(proposalId), std::move(documentId), std::move(previousRootId), previousSource,
+        std::move(candidateRootId), candidateSource, candidateScanGeneration, resolution.decision,
+        resolution.mayRelinkAutomatically, ReconciliationProposalState::pending,
+    };
+}
+
+std::vector<ReconciliationProposalRecord> SqliteLibraryIndex::reconciliationProposals() const {
+    std::scoped_lock lock{impl_->mutex};
+    Statement statement{impl_->db,
+        "SELECT proposal_id, document_id, previous_root_id, previous_source_path, "
+        "candidate_root_id, candidate_source_path, candidate_scan_generation, decision, "
+        "may_relink_automatically, state FROM reconciliation_proposals "
+        "ORDER BY created_utc_ms, proposal_id"};
+    std::vector<ReconciliationProposalRecord> result;
+    for (;;) {
+        const int step = sqlite3_step(statement.get());
+        if (step == SQLITE_DONE) break;
+        if (step != SQLITE_ROW) fail(impl_->db, "Reading reconciliation proposals", step);
+        const auto text = [&](int column) {
+            const auto* value = sqlite3_column_text(statement.get(), column);
+            return value == nullptr ? std::string{} : std::string{reinterpret_cast<const char*>(value)};
+        };
+        result.push_back({
+            text(0), text(1), text(2), pathFromUtf8(sqlite3_column_text(statement.get(), 3)),
+            text(4), pathFromUtf8(sqlite3_column_text(statement.get(), 5)),
+            sqlite3_column_int64(statement.get(), 6),
+            parseIdentityDecision(sqlite3_column_text(statement.get(), 7)),
+            sqlite3_column_int(statement.get(), 8) != 0,
+            parseProposalState(sqlite3_column_text(statement.get(), 9)),
+        });
+    }
+    return result;
+}
+
+void SqliteLibraryIndex::applyReconciliation(std::string proposalId) {
+    if (proposalId.empty()) throw std::invalid_argument("A reconciliation proposal ID is required.");
+    std::scoped_lock lock{impl_->mutex};
+    execute(impl_->db, "BEGIN IMMEDIATE");
+    try {
+        Statement proposal{impl_->db,
+            "SELECT p.document_id, p.previous_root_id, p.previous_source_path, "
+            "p.candidate_root_id, p.candidate_source_path, p.candidate_scan_generation, "
+            "p.candidate_filesystem_identity, p.decision, p.may_relink_automatically, p.state, "
+            "l.filesystem_identity, l.last_seen_scan_generation, previous_root.availability, "
+            "previous_root.last_completed_scan_generation, candidate_root.availability, "
+            "candidate_root.scan_generation, candidate_root.last_completed_scan_generation "
+            "FROM reconciliation_proposals p "
+            "JOIN document_locations l ON l.document_id = p.document_id "
+            " AND l.root_id = p.previous_root_id AND l.source_path = p.previous_source_path "
+            "JOIN library_roots previous_root ON previous_root.root_id = p.previous_root_id "
+            "JOIN library_roots candidate_root ON candidate_root.root_id = p.candidate_root_id "
+            "WHERE p.proposal_id = ?1"};
+        proposal.bindText(1, proposalId);
+        const int step = sqlite3_step(proposal.get());
+        if (step == SQLITE_DONE) throw std::invalid_argument("The reconciliation proposal or previous location no longer exists.");
+        if (step != SQLITE_ROW) fail(impl_->db, "Reading the reconciliation proposal", step);
+        const auto text = [&](int column) {
+            const auto* value = sqlite3_column_text(proposal.get(), column);
+            return value == nullptr ? std::string{} : std::string{reinterpret_cast<const char*>(value)};
+        };
+        const auto documentId = text(0);
+        const auto previousRootId = text(1);
+        const auto previousSource = text(2);
+        const auto candidateRootId = text(3);
+        const auto candidateSourceText = text(4);
+        const auto candidateSource = pathFromUtf8(
+            reinterpret_cast<const unsigned char*>(candidateSourceText.c_str()));
+        const auto candidateGeneration = sqlite3_column_int64(proposal.get(), 5);
+        const auto candidateFilesystemIdentity = text(6);
+        const auto decision = parseIdentityDecision(sqlite3_column_text(proposal.get(), 7));
+        const bool mayRelink = sqlite3_column_int(proposal.get(), 8) != 0;
+        const auto state = parseProposalState(sqlite3_column_text(proposal.get(), 9));
+        const auto previousFilesystemIdentity = text(10);
+        const auto previousLastSeen = sqlite3_column_int64(proposal.get(), 11);
+        const auto previousAvailability = parseRootAvailability(sqlite3_column_text(proposal.get(), 12));
+        const auto previousCompletedGeneration = sqlite3_column_int64(proposal.get(), 13);
+        const auto candidateAvailability = parseRootAvailability(sqlite3_column_text(proposal.get(), 14));
+        const auto candidateCurrentGeneration = sqlite3_column_int64(proposal.get(), 15);
+        const auto candidateCompletedGeneration = sqlite3_column_int64(proposal.get(), 16);
+
+        if (state != ReconciliationProposalState::pending
+            || decision != IdentityDecision::confidentMove || !mayRelink
+            || previousAvailability != LibraryRootAvailability::available
+            || previousCompletedGeneration <= previousLastSeen
+            || candidateAvailability != LibraryRootAvailability::available
+            || candidateCurrentGeneration != candidateGeneration
+            || candidateCompletedGeneration < candidateGeneration
+            || previousFilesystemIdentity.empty()
+            || previousFilesystemIdentity != candidateFilesystemIdentity) {
+            throw std::runtime_error("The reconciliation proposal is not a currently proven safe move.");
+        }
+
+        Statement move{impl_->db,
+            "UPDATE document_locations SET root_id = ?2, source_path = ?3, "
+            "last_seen_scan_generation = ?4, filesystem_identity = ?5 "
+            "WHERE document_id = ?1 AND root_id = ?6 AND source_path = ?7"};
+        move.bindText(1, documentId);
+        move.bindText(2, candidateRootId);
+        move.bindText(3, candidateSourceText);
+        move.bindInteger(4, candidateGeneration);
+        move.bindText(5, candidateFilesystemIdentity);
+        move.bindText(6, previousRootId);
+        move.bindText(7, previousSource);
+        move.run();
+        if (sqlite3_changes(impl_->db) != 1) {
+            throw std::runtime_error("The move target conflicts with another indexed location.");
+        }
+
+        Statement document{impl_->db, "UPDATE documents SET file_name = ?2 WHERE document_id = ?1"};
+        document.bindText(1, documentId);
+        document.bindText(2, pathToUtf8(candidateSource.filename()));
+        document.run();
+
+        Statement applied{impl_->db,
+            "UPDATE reconciliation_proposals SET state = 'applied' "
+            "WHERE proposal_id = ?1 AND state = 'pending'"};
+        applied.bindText(1, proposalId);
+        applied.run();
+        if (sqlite3_changes(impl_->db) != 1) throw std::runtime_error("The reconciliation proposal changed concurrently.");
+        execute(impl_->db, "COMMIT");
+    } catch (...) {
+        sqlite3_exec(impl_->db, "ROLLBACK", nullptr, nullptr, nullptr);
+        throw;
+    }
+}
+
+void SqliteLibraryIndex::dismissReconciliation(std::string proposalId) {
+    if (proposalId.empty()) throw std::invalid_argument("A reconciliation proposal ID is required.");
+    std::scoped_lock lock{impl_->mutex};
+    Statement statement{impl_->db,
+        "UPDATE reconciliation_proposals SET state = 'dismissed' "
+        "WHERE proposal_id = ?1 AND state = 'pending'"};
+    statement.bindText(1, proposalId);
+    statement.run();
+    if (sqlite3_changes(impl_->db) != 1) {
+        throw std::runtime_error("Only a pending reconciliation proposal can be dismissed.");
     }
 }
 

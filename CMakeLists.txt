@@ -56,7 +56,7 @@ add_library(atlas_library_index STATIC
     src/app/index/SqliteLibraryIndex.h
 )
 target_include_directories(atlas_library_index PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(atlas_library_index PUBLIC atlas_core unofficial::sqlite3::sqlite3)
+target_link_libraries(atlas_library_index PUBLIC atlas_core atlas_document_identity unofficial::sqlite3::sqlite3)
 atlas_enable_warnings(atlas_library_index)
 
 add_library(atlas_library_scanner STATIC

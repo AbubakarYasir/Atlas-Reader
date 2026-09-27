@@ -1,5 +1,7 @@
 #include "app/library/LibraryController.h"
 
+#include "app/index/LibraryMetadataPolicy.h"
+
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
@@ -83,8 +85,9 @@ QVariant LibraryController::data(const QModelIndex& modelIndex, int role) const 
     const auto& record = records_.at(static_cast<std::size_t>(modelIndex.row()));
     switch (role) {
     case DocumentIdRole: return QString::fromUtf8(record.id);
-    case TitleRole: return QString::fromUtf8(record.title);
-    case AuthorRole: return QString::fromUtf8(record.author);
+    case TitleRole: return atlas::index::libraryDisplayTitle(
+        QString::fromUtf8(record.title), pathToQString(record.source.stem()));
+    case AuthorRole: return atlas::index::libraryDisplayAuthor(QString::fromUtf8(record.author));
     case SourceRole: return pathToQString(record.source);
     case FileNameRole: return pathToQString(record.source.filename());
     case AvailabilityRole: return availabilityName(record.availability);

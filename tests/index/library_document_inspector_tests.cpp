@@ -1,4 +1,5 @@
 #include "app/index/QtPdfDocumentInspector.h"
+#include "app/index/LibraryMetadataPolicy.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -18,6 +19,23 @@ int main(int argc, char* argv[]) {
         return 64;
     }
     try {
+        require(atlas::index::libraryDisplayTitle(QStringLiteral("1.docx"), QStringLiteral("الكتاب"))
+                == QStringLiteral("الكتاب"),
+            "A source-editor filename must not replace the current PDF filename in the Library.");
+        require(atlas::index::libraryDisplayTitle(
+                    QStringLiteral("<4D6963726F736F667420576F7264>"), QStringLiteral("الحجاب الدرع الواقي"))
+                == QStringLiteral("الحجاب الدرع الواقي"),
+            "An undecoded PDF hex title must fall back to the current Unicode PDF filename.");
+        require(atlas::index::libraryDisplayTitle(
+                    QStringLiteral("G:\\books\\legacy-title.inp"), QStringLiteral("فتاوى"))
+                == QStringLiteral("فتاوى"),
+            "An embedded source path must not be shown as the reader-facing book title.");
+        require(atlas::index::libraryDisplayTitle(QStringLiteral("عنوان عربي صحيح"), QStringLiteral("fallback"))
+                == QStringLiteral("عنوان عربي صحيح"),
+            "A credible Unicode title must remain unchanged.");
+        require(atlas::index::libraryDisplayAuthor(QStringLiteral("<4D6963726F736F6674>")).isEmpty(),
+            "Undecoded author metadata must not be exposed in the Library.");
+
         atlas::index::QtPdfDocumentInspector inspector;
         const auto readable = inspector.inspect(argv[1]);
         require(readable.availability == atlas::document::Availability::available

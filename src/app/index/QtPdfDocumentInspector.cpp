@@ -1,5 +1,7 @@
 #include "app/index/QtPdfDocumentInspector.h"
 
+#include "app/index/LibraryMetadataPolicy.h"
+
 #include <QDateTime>
 #include <QFileInfo>
 #include <QPdfDocument>
@@ -56,8 +58,11 @@ LibraryDocumentInspection QtPdfDocumentInspector::inspect(const std::filesystem:
     result.availability = availabilityFor(error);
     if (error == QPdfDocument::Error::None) {
         result.pageCount = document.pageCount();
-        result.title = toUtf8(document.metaData(QPdfDocument::MetaDataField::Title).toString().trimmed());
-        result.author = toUtf8(document.metaData(QPdfDocument::MetaDataField::Author).toString().trimmed());
+        result.title = toUtf8(libraryDisplayTitle(
+            document.metaData(QPdfDocument::MetaDataField::Title).toString(),
+            fileInfo.completeBaseName()));
+        result.author = toUtf8(libraryDisplayAuthor(
+            document.metaData(QPdfDocument::MetaDataField::Author).toString()));
     }
     if (result.title.empty()) result.title = toUtf8(fileInfo.completeBaseName());
     return result;

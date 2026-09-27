@@ -91,6 +91,8 @@ atlas_enable_warnings(atlas_library_scan_service)
 
 add_library(atlas_library_document_inspector STATIC
     src/app/index/ILibraryDocumentInspector.h
+    src/app/index/LibraryMetadataPolicy.cpp
+    src/app/index/LibraryMetadataPolicy.h
     src/app/index/QtPdfDocumentInspector.cpp
     src/app/index/QtPdfDocumentInspector.h
 )
@@ -138,6 +140,9 @@ qt_add_executable(atlas_reader
     src/app/main.cpp
     ${ATLAS_READER_PLATFORM_SOURCES}
 )
+if(WIN32)
+    set_target_properties(atlas_reader PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
 
 qt_add_qml_module(atlas_reader
     URI AtlasReader

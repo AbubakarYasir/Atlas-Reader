@@ -124,8 +124,8 @@ ApplicationWindow {
             Label {
                 Layout.fillWidth: true
                 text: root.arabic
-                    ? "لا يغيّر أطلس هوية الكتاب عند الشك. وافق فقط على النقل الذي تعرفه."
-                    : "Atlas never guesses a book’s identity. Apply only a move you recognize."
+                    ? "تظهر هنا فقط عمليات النقل أو الاستبدال التي قد تغيّر هوية الكتاب. الملفات الجديدة وغير المتغيّرة لا تحتاج إلى مراجعة. وافق على كل نقل تعرفه فقط."
+                    : "Only moves or replacements that could change a book’s identity appear here. New and unchanged files need no review. Apply each move only when you recognize it."
                 color: root.muted
                 wrapMode: Text.WordWrap
             }
@@ -394,7 +394,7 @@ ApplicationWindow {
                 clip: true
                 model: libraryController
                 cellWidth: root.gridMode ? Math.max(240, width / Math.max(1, Math.floor(width / 280))) : width
-                cellHeight: root.gridMode ? 206 : 132
+                cellHeight: root.gridMode ? 216 : 150
                 keyNavigationEnabled: true
                 activeFocusOnTab: true
 
@@ -463,6 +463,8 @@ ApplicationWindow {
                                 Item { Layout.fillHeight: true }
                                 RowLayout {
                                     Layout.fillWidth: true
+                                    Layout.preferredHeight: 40
+                                    Layout.bottomMargin: 2
                                     Label {
                                         text: root.availabilityText(availability)
                                         color: availability === "available" ? root.accent : (root.darkMode ? "#efc27e" : "#87550b")
@@ -473,6 +475,12 @@ ApplicationWindow {
                                     AtlasButton {
                                         text: favorite ? "★" : "☆"
                                         flat: true
+                                        Layout.preferredWidth: 40
+                                        Layout.minimumWidth: 40
+                                        Layout.maximumWidth: 40
+                                        Layout.alignment: Qt.AlignVCenter
+                                        leftPadding: 8
+                                        rightPadding: 8
                                         Accessible.name: favorite
                                             ? (root.arabic ? "إزالة من المفضلة" : "Remove from favorites")
                                             : (root.arabic ? "إضافة إلى المفضلة" : "Add to favorites")
@@ -480,6 +488,10 @@ ApplicationWindow {
                                     }
                                     AtlasButton {
                                         text: root.arabic ? "فتح" : "Open"
+                                        Layout.preferredWidth: 82
+                                        Layout.minimumWidth: 82
+                                        Layout.maximumWidth: 82
+                                        Layout.alignment: Qt.AlignVCenter
                                         enabled: availability === "available" || availability === "readOnly"
                                         opacity: enabled ? 1.0 : 0.42
                                         Accessible.description: root.arabic ? "يفتح في قارئ ويندوز حالياً؛ قارئ أطلس يأتي في N4" : "Opens in the Windows PDF app for now; the Atlas reader arrives in N4"

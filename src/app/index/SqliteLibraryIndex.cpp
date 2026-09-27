@@ -580,6 +580,59 @@ void SqliteLibraryIndex::upsertRecord(LibraryRecord record, std::string rootId) 
     }
 }
 
+std::vector<LibraryRecord> SqliteLibraryIndex::allRecords() const {
+    std::scoped_lock lock{impl_->mutex};
+    Statement statement{impl_->db,
+        "SELECT d.document_id, d.title, d.author, d.availability, "
+        "(SELECT l.source_path FROM document_locations l WHERE l.document_id = d.document_id "
+        " ORDER BY l.location_id LIMIT 1) "
+        "FROM documents d ORDER BY d.title COLLATE NOCASE, d.document_id"};
+    std::vector<LibraryRecord> result;
+    for (;;) {
+        const int step = sqlite3_step(statement.get());
+        if (step == SQLITE_DONE) break;
+        if (step != SQLITE_ROW) fail(impl_->db, "Reading all library records", step);
+        const auto* id = sqlite3_column_text(statement.get(), 0);
+        const auto* title = sqlite3_column_text(statement.get(), 1);
+        const auto* author = sqlite3_column_text(statement.get(), 2);
+        const auto* availability = sqlite3_column_text(statement.get(), 3);
+        const auto* path = sqlite3_column_text(statement.get(), 4);
+        result.push_back({
+            id == nullptr ? std::string{} : std::string{reinterpret_cast<const char*>(id)},
+            pathFromUtf8(path),
+            title == nullptr ? std::string{} : std::string{reinterpret_cast<const char*>(title)},
+            author == nullptr ? std::string{} : std::string{reinterpret_cast<const char*>(author)},
+            parseAvailability(availability),
+        });
+    }
+    return result;
+}
+
+std::vector<IndexedLocationRecord> SqliteLibraryIndex::locationsByFilesystemIdentity(
+    std::string filesystemIdentity) const {
+    if (filesystemIdentity.empty()) return {};
+    std::scoped_lock lock{impl_->mutex};
+    Statement statement{impl_->db,
+        "SELECT document_id, root_id, source_path, filesystem_identity, last_seen_scan_generation "
+        "FROM document_locations WHERE filesystem_identity = ?1 ORDER BY location_id"};
+    statement.bindText(1, filesystemIdentity);
+    std::vector<IndexedLocationRecord> result;
+    for (;;) {
+        const int step = sqlite3_step(statement.get());
+        if (step == SQLITE_DONE) break;
+        if (step != SQLITE_ROW) fail(impl_->db, "Reading locations by filesystem identity", step);
+        const auto text = [&](int column) {
+            const auto* value = sqlite3_column_text(statement.get(), column);
+            return value == nullptr ? std::string{} : std::string{reinterpret_cast<const char*>(value)};
+        };
+        result.push_back({
+            text(0), text(1), pathFromUtf8(sqlite3_column_text(statement.get(), 2)), text(3),
+            sqlite3_column_int64(statement.get(), 4),
+        });
+    }
+    return result;
+}
+
 void SqliteLibraryIndex::setLocationFilesystemIdentity(
     std::string documentId,
     std::string rootId,

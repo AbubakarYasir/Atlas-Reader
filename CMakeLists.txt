@@ -98,6 +98,16 @@ target_include_directories(atlas_library_document_inspector PUBLIC ${CMAKE_CURRE
 target_link_libraries(atlas_library_document_inspector PUBLIC atlas_core Qt6::Core Qt6::Pdf)
 atlas_enable_warnings(atlas_library_document_inspector)
 
+add_library(atlas_library_ingestion STATIC
+    src/app/index/LibraryIngestionService.cpp
+    src/app/index/LibraryIngestionService.h
+)
+target_include_directories(atlas_library_ingestion PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_library_ingestion PUBLIC
+    atlas_library_scan_service atlas_library_document_inspector atlas_library_index
+)
+atlas_enable_warnings(atlas_library_ingestion)
+
 add_library(atlas_app_support STATIC
     src/app/diagnostics/ShellMetrics.cpp
     src/app/diagnostics/ShellMetrics.h
@@ -230,6 +240,13 @@ add_executable(atlas_library_scanner_tests tests/index/library_scanner_tests.cpp
 target_link_libraries(atlas_library_scanner_tests PRIVATE atlas_library_scanner atlas_library_scan_service)
 atlas_enable_warnings(atlas_library_scanner_tests)
 add_test(NAME atlas_library_scanner COMMAND atlas_library_scanner_tests)
+
+add_executable(atlas_library_ingestion_tests tests/index/library_ingestion_tests.cpp)
+target_link_libraries(atlas_library_ingestion_tests PRIVATE
+    atlas_library_ingestion atlas_file_identity atlas_library_scanner
+)
+atlas_enable_warnings(atlas_library_ingestion_tests)
+add_test(NAME atlas_library_ingestion COMMAND atlas_library_ingestion_tests)
 
 add_executable(atlas_library_document_inspector_tests tests/index/library_document_inspector_tests.cpp)
 target_link_libraries(atlas_library_document_inspector_tests PRIVATE atlas_library_document_inspector)

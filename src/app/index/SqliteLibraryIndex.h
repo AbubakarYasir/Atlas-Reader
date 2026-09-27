@@ -61,6 +61,14 @@ struct IndexedLocationObservation final {
     std::string documentId;
 };
 
+struct IndexedLocationRecord final {
+    std::string documentId;
+    std::string rootId;
+    std::filesystem::path source;
+    std::string filesystemIdentity;
+    std::int64_t lastSeenScanGeneration{};
+};
+
 // SQLite-backed persistence adapter. SQLite and its statements stay private to
 // this application-layer implementation; callers use Atlas-owned index types.
 class SqliteLibraryIndex final : public ILibraryIndex {
@@ -98,6 +106,9 @@ public:
     // Adding a location already associated with a different document is a
     // reconciliation conflict, not an implicit identity change.
     void upsertRecord(LibraryRecord record, std::string rootId = {});
+    [[nodiscard]] std::vector<LibraryRecord> allRecords() const;
+    [[nodiscard]] std::vector<IndexedLocationRecord> locationsByFilesystemIdentity(
+        std::string filesystemIdentity) const;
     void setLocationFilesystemIdentity(
         std::string documentId,
         std::string rootId,

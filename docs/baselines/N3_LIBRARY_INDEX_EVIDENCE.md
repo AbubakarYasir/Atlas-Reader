@@ -24,7 +24,7 @@
 | Subgate | Status | Source commit | Verification/artifact | Known limits |
 |---|---|---|---|---|
 | N3.1 Storage/schema | **Complete** | `e7fe595c5ffb228f48b63c17a960559a8b8b8a22` | Local VS 2026 Debug/Release 20/20 each; Windows PR run `36283212258` and branch run `36283210492` Debug/Release; selected route `36283212263`; no LNK4098 on corrected triplet. | Matching FTS tokens only; Arabic stemming is not claimed |
-| N3.2 Scanner | In progress | `e7fe595c5ffb228f48b63c17a960559a8b8b8a22` | Local VS 2026 Debug/Release 20/20 each; Windows PR/push Debug/Release runs above include `atlas_library_scanner`; first scanner implementation separately passed at `e2829b7`. | No index reconciliation, watcher, metadata extraction, cross-root deduplication or owner test yet |
+| N3.2 Scanner | In progress | `609c8b9` | Initial scanner passed local/Windows Debug and Release at `e7fe595`; multi-root overlap/deduplication passes local VS 2026 Debug and Release 20/20 each at `609c8b9`; final branch CI pending. | No index reconciliation, watcher, metadata extraction or owner test yet |
 | N3.3 Identity/reconciliation | Not started | — | — | — |
 | N3.4 Library UX/search | Not started | — | — | — |
 

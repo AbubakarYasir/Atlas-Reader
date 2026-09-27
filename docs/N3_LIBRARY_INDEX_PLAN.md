@@ -34,7 +34,7 @@ This outcome is a plan; the complete library is not implemented at N3 start.
 - Add explicit multiple library roots; direct-open behavior is covered only as specified by the [core workflow contract](CORE_WORKFLOWS.md).
 - Enumerate on bounded background work, publish progress in batches, and support cancellation/restart without interpreting unseen files as removals.
 - Initial scanner implementation streams path-only PDF results in batches of at most 64 by default, with configurable depth, directory and file caps. It skips symbolic links/reparse points and marks inaccessible/incomplete walks partial. These defaults are safety limits, not performance claims; they require Windows CI and later named-storage benchmarks.
-- Handle overlapping/nested roots without duplicate logical entries. Treat permission-denied children independently from successful enumeration elsewhere.
+- Multi-root coordination now retains a separate outcome for every configured root and suppresses duplicate paths emitted by overlapping/nested roots. The implementation is locally verified at `609c8b9`; final branch CI and later named-storage benchmarks remain required. Treat permission-denied children independently from successful enumeration elsewhere.
 - Make reparse/junction/symlink behavior conservative and cycle-safe. Do not follow paths outside configured meaning or loop indefinitely.
 - Treat roots and file entries as changing during a scan. Distinguish successful, partial, cancelled and unavailable root outcomes; only a successfully completed root scan can propose deletion reconciliation.
 - Coalesce watcher events if/when watchers are introduced; never let event storms create unbounded queued work or a writer queue.

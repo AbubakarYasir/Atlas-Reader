@@ -22,8 +22,8 @@ Make two or more test folders containing:
 1. **Start clean.** Unzip the package, run `atlas_reader.exe`, and confirm the Library opens without a missing-DLL message.
 2. **Add folders.** Add both test folders. The window must stay usable while scanning; books should appear without the app freezing.
 3. **Find books.** Search an exact word from an English title, an Arabic title and an Urdu title/filename. Check All books and each folder view. N3 matches stored words/phrases; it does not promise Arabic stemming.
-4. **Use normal views.** Mark a book as Favorite, open an available book, then confirm it appears under Favorites and Recently opened. List and Grid must both remain readable.
-5. **Rename or move one book on the same drive.** Press `F5`, open Review changes, confirm the shown old/new paths are correct, then apply the move. The item should keep its Favorite/Recent identity.
+4. **Use normal views.** Mark a book as Favorite, open an available book, then confirm it appears under Favorites and Recently opened. List and Grid must both remain readable. N3 uses a clear PDF placeholder; cached first-page/cover previews belong to N7 and are not claimed here.
+5. **Rename or move one book on the same drive.** Press `F5`, open Review changes, confirm the shown old/new paths are correct, then apply the move. The item should keep its Favorite/Recent identity. Only identity-sensitive moves, renames or replacements appear here; ordinary new and unchanged files do not need review. N3 requires each shown candidate to be checked individually so Atlas cannot attach saved research to the wrong book.
 6. **Copy a book while keeping the original.** Press `F5`. Atlas must keep the copy separate; it must not silently move or merge the original.
 7. **Replace a file at the same path.** Press `F5`. Atlas must show uncertainty/review rather than silently give the new file the old book's identity.
 8. **Disconnect a folder/drive.** Close Atlas, disconnect or temporarily rename the removable test root, reopen Atlas and press `F5`. The folder must say offline and its known books must remain in the Library. Reconnect it, press `F5`, and confirm recovery.

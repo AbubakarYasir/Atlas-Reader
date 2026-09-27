@@ -65,3 +65,16 @@ All planned implementation and automated gates are complete, so N3 is **Ready fo
 ### Documentation-head CI reliability follow-up
 
 Documentation-head run `36290792972` exposed an inherited nondeterministic Release-build race rather than a test or product failure: parallel PDFium qualification targets attempted to deploy the same `pdfium.dll` into one output directory, and one copy received `permission denied`. Commit `398fe81` explicitly orders the Windows probe targets for their shared post-link deployment while unrelated compilation remains parallel. Final head `2c84f39ba1935702c14bb3fe841de86422bcd6ba` passes both Debug/Release runs and every inherited workflow listed above, so this reliability follow-up is closed.
+
+## Owner-test round 1 and corrective verification — 2026-09-27
+
+The owner reported checks 1–11 as working overall and skipped check 12, while identifying three release-quality defects: a terminal remained behind the app, some PDF cards displayed stale embedded values such as `1.docx`, raw hexadecimal metadata or an old `.inp` path instead of the current filename, and the Open action visually touched the card boundary. The owner also asked why file-change review appears and noted that Grid has no first-page preview.
+
+- Atlas now builds `atlas_reader.exe` as a Windows GUI-subsystem application. The corrected Release binary reports PE subsystem `2` (Windows GUI), so a console is not created for ordinary launches.
+- A centralized metadata policy rejects implausible embedded titles/authors and uses the current Unicode PDF filename for display. It handles source-document names, raw PDF hex strings, embedded local paths, control/replacement characters and oversized values. Existing indexed rows benefit immediately at display time; newly inspected PDFs store the corrected title.
+- The List/Grid action row now has an explicit height, bottom inset and bounded action widths. Actual rendered English wide, 760 px narrow and Arabic/RTL dark screenshots show the Open action fully inside the card with consistent surrounding space.
+- The review dialog and owner checklist now state the exact safety rule: new and unchanged files need no review; only identity-sensitive moves, renames or replacements appear, and each proposed identity transfer requires an individual owner decision.
+- Grid cover/first-page thumbnails are not missing N3 work. N3 intentionally uses a PDF placeholder; cached visual previews are owned by N7 and must meet its cache, invalidation and performance gates before shipping.
+- Local Visual Studio 2026 Debug and Release builds pass all 24 tests in each configuration, including new bad-metadata policy cases and all inherited PDF/Arabic/Urdu checks.
+
+This closes the identified implementation defects but does not manufacture owner acceptance. A new exact-head CI package and owner retest are required; skipped owner check 12 also remains open. N3 therefore remains **Ready for owner test**, and N4 remains closed.

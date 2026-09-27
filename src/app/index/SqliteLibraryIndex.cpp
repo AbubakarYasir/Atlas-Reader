@@ -333,7 +333,9 @@ void SqliteLibraryIndex::setRootAvailability(std::string rootId, LibraryRootAvai
 
 std::vector<LibraryRootRecord> SqliteLibraryIndex::roots() const {
     std::scoped_lock lock{impl_->mutex};
-    Statement statement{impl_->db, "SELECT root_id, source_path, availability FROM library_roots ORDER BY root_id"};
+    Statement statement{impl_->db,
+        "SELECT root_id, source_path, availability, scan_generation, last_completed_scan_utc_ms "
+        "FROM library_roots ORDER BY root_id"};
     std::vector<LibraryRootRecord> result;
     for (;;) {
         const int step = sqlite3_step(statement.get());
@@ -346,9 +348,92 @@ std::vector<LibraryRootRecord> SqliteLibraryIndex::roots() const {
             id == nullptr ? std::string{} : std::string{reinterpret_cast<const char*>(id)},
             pathFromUtf8(path),
             parseRootAvailability(availability),
+            sqlite3_column_int64(statement.get(), 3),
+            sqlite3_column_type(statement.get(), 4) == SQLITE_NULL
+                ? std::nullopt
+                : std::optional<std::int64_t>{sqlite3_column_int64(statement.get(), 4)},
         });
     }
     return result;
+}
+
+std::int64_t SqliteLibraryIndex::beginRootScan(std::string rootId) {
+    if (rootId.empty()) throw std::invalid_argument("A library root ID is required to begin a scan.");
+    std::scoped_lock lock{impl_->mutex};
+    Statement statement{impl_->db,
+        "UPDATE library_roots SET scan_generation = scan_generation + 1 "
+        "WHERE root_id = ?1 AND scan_generation < 9223372036854775807 RETURNING scan_generation"};
+    statement.bindText(1, rootId);
+    const int step = sqlite3_step(statement.get());
+    if (step == SQLITE_DONE) {
+        throw std::invalid_argument("The requested library root does not exist or exhausted its scan generation.");
+    }
+    if (step != SQLITE_ROW) fail(impl_->db, "Beginning a library-root scan", step);
+    const auto generation = sqlite3_column_int64(statement.get(), 0);
+    const int completionStep = sqlite3_step(statement.get());
+    if (completionStep != SQLITE_DONE) fail(impl_->db, "Completing the library-root scan start", completionStep);
+    return generation;
+}
+
+bool SqliteLibraryIndex::markExistingLocationSeen(
+    std::string rootId,
+    const std::filesystem::path& source,
+    std::int64_t scanGeneration) {
+    if (rootId.empty() || source.empty() || scanGeneration <= 0) {
+        throw std::invalid_argument("A root, source path and positive scan generation are required.");
+    }
+    std::scoped_lock lock{impl_->mutex};
+
+    Statement generationStatement{impl_->db,
+        "SELECT scan_generation FROM library_roots WHERE root_id = ?1"};
+    generationStatement.bindText(1, rootId);
+    const int generationStep = sqlite3_step(generationStatement.get());
+    if (generationStep == SQLITE_DONE) throw std::invalid_argument("The requested library root does not exist.");
+    if (generationStep != SQLITE_ROW) fail(impl_->db, "Reading the library-root scan generation", generationStep);
+    if (sqlite3_column_int64(generationStatement.get(), 0) != scanGeneration) {
+        throw std::runtime_error("This scan was superseded by a newer library-root scan.");
+    }
+
+    Statement locationStatement{impl_->db,
+        "UPDATE document_locations SET last_seen_scan_generation = ?3 "
+        "WHERE root_id = ?1 AND source_path = ?2"};
+    locationStatement.bindText(1, rootId);
+    locationStatement.bindText(2, pathToUtf8(source));
+    locationStatement.bindInteger(3, scanGeneration);
+    locationStatement.run();
+    return sqlite3_changes(impl_->db) == 1;
+}
+
+void SqliteLibraryIndex::finishRootScan(
+    std::string rootId,
+    std::int64_t scanGeneration,
+    LibraryRootAvailability availability,
+    std::optional<std::int64_t> completedAtUtcMs) {
+    if (rootId.empty() || scanGeneration <= 0) {
+        throw std::invalid_argument("A root and positive scan generation are required.");
+    }
+    if (availability == LibraryRootAvailability::available) {
+        if (!completedAtUtcMs || *completedAtUtcMs < 0) {
+            throw std::invalid_argument("A completed root scan needs a nonnegative UTC timestamp.");
+        }
+    } else if (completedAtUtcMs) {
+        throw std::invalid_argument("Only a completed root scan may update its completion timestamp.");
+    }
+
+    std::scoped_lock lock{impl_->mutex};
+    Statement statement{impl_->db,
+        "UPDATE library_roots SET availability = ?3, "
+        "last_completed_scan_utc_ms = CASE WHEN ?4 IS NULL THEN last_completed_scan_utc_ms ELSE ?4 END "
+        "WHERE root_id = ?1 AND scan_generation = ?2"};
+    statement.bindText(1, rootId);
+    statement.bindInteger(2, scanGeneration);
+    statement.bindText(3, rootAvailabilityName(availability));
+    if (completedAtUtcMs) statement.bindInteger(4, *completedAtUtcMs);
+    else statement.bindNull(4);
+    statement.run();
+    if (sqlite3_changes(impl_->db) != 1) {
+        throw std::runtime_error("This scan was superseded or its library root no longer exists.");
+    }
 }
 
 void SqliteLibraryIndex::upsertRecord(LibraryRecord record, std::string rootId) {

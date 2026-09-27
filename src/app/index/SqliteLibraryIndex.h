@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,8 @@ struct LibraryRootRecord final {
     std::string id;
     std::filesystem::path source;
     LibraryRootAvailability availability{LibraryRootAvailability::available};
+    std::int64_t scanGeneration{};
+    std::optional<std::int64_t> lastCompletedScanUtcMs;
 };
 
 // SQLite-backed persistence adapter. SQLite and its statements stay private to
@@ -39,6 +42,20 @@ public:
     void registerRoot(LibraryRootRecord root);
     void setRootAvailability(std::string rootId, LibraryRootAvailability availability);
     [[nodiscard]] std::vector<LibraryRootRecord> roots() const;
+
+    // Scan generations prevent an older/cancelled scan from overwriting the
+    // outcome of a newer scan. Only a complete scan may provide a completion
+    // timestamp; partial/offline outcomes preserve the preceding timestamp.
+    [[nodiscard]] std::int64_t beginRootScan(std::string rootId);
+    [[nodiscard]] bool markExistingLocationSeen(
+        std::string rootId,
+        const std::filesystem::path& source,
+        std::int64_t scanGeneration);
+    void finishRootScan(
+        std::string rootId,
+        std::int64_t scanGeneration,
+        LibraryRootAvailability availability,
+        std::optional<std::int64_t> completedAtUtcMs = std::nullopt);
 
     // Adding a location already associated with a different document is a
     // reconciliation conflict, not an implicit identity change.

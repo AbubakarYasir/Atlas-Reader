@@ -128,6 +128,79 @@ void checkSchemaAndFts() {
     }
 }
 
+void checkScanGenerationSafety() {
+    TemporaryDirectory temporary;
+    const auto databasePath = temporary.path() / "scan-state.sqlite3";
+    const auto rootPath = temporary.path() / "library";
+    const auto bookPath = rootPath / "book.pdf";
+
+    {
+        atlas::index::SqliteLibraryIndex index{databasePath};
+        index.registerRoot({"root", rootPath, atlas::index::LibraryRootAvailability::available});
+        index.upsertRecord({"book", bookPath, "Preserved Book", "", atlas::document::Availability::available}, "root");
+
+        const auto firstGeneration = index.beginRootScan("root");
+        require(firstGeneration == 1, "A root's first scan generation must start at one.");
+        require(index.markExistingLocationSeen("root", bookPath, firstGeneration),
+            "A scan must mark an existing indexed location as seen.");
+        require(!index.markExistingLocationSeen("root", rootPath / "new.pdf", firstGeneration),
+            "A newly discovered path must remain unlinked until identity reconciliation.");
+        index.finishRootScan("root", firstGeneration, atlas::index::LibraryRootAvailability::available, 1234);
+
+        auto root = index.roots().front();
+        require(root.scanGeneration == 1 && root.lastCompletedScanUtcMs == 1234,
+            "A complete scan must persist its generation and completion time.");
+
+        const auto secondGeneration = index.beginRootScan("root");
+        require(secondGeneration == 2, "Every new root scan must advance its generation.");
+        bool staleSeenRejected = false;
+        try {
+            static_cast<void>(index.markExistingLocationSeen("root", bookPath, firstGeneration));
+        } catch (const std::runtime_error&) {
+            staleSeenRejected = true;
+        }
+        require(staleSeenRejected, "A superseded scan must not mark locations as current.");
+
+        bool staleFinishRejected = false;
+        try {
+            index.finishRootScan("root", firstGeneration, atlas::index::LibraryRootAvailability::available, 2000);
+        } catch (const std::runtime_error&) {
+            staleFinishRejected = true;
+        }
+        require(staleFinishRejected, "A superseded scan must not overwrite the newer root outcome.");
+
+        index.finishRootScan("root", secondGeneration, atlas::index::LibraryRootAvailability::partiallyAvailable);
+        root = index.roots().front();
+        require(root.availability == atlas::index::LibraryRootAvailability::partiallyAvailable
+                && root.lastCompletedScanUtcMs == 1234,
+            "A partial scan must preserve the preceding successful completion time.");
+        require(index.search("Preserved").size() == 1,
+            "A partial scan must not delete an indexed book.");
+
+        const auto cancelledGeneration = index.beginRootScan("root");
+        require(cancelledGeneration == 3, "A cancelled scan still needs a distinct generation.");
+        // Deliberately do not finish: cancellation must leave the preceding
+        // availability and completion evidence untouched.
+    }
+
+    {
+        atlas::index::SqliteLibraryIndex reopened{databasePath};
+        auto root = reopened.roots().front();
+        require(root.scanGeneration == 3
+                && root.availability == atlas::index::LibraryRootAvailability::partiallyAvailable
+                && root.lastCompletedScanUtcMs == 1234,
+            "An interrupted scan must preserve the last known root state after restart.");
+        require(reopened.search("Preserved").size() == 1,
+            "An interrupted scan must preserve indexed books after restart.");
+        reopened.finishRootScan("root", 3, atlas::index::LibraryRootAvailability::offline);
+        root = reopened.roots().front();
+        require(root.availability == atlas::index::LibraryRootAvailability::offline
+                && root.lastCompletedScanUtcMs == 1234
+                && reopened.search("Preserved").size() == 1,
+            "An offline result must preserve both books and prior successful-scan evidence.");
+    }
+}
+
 void checkMigrationRollback() {
     TemporaryDirectory temporary;
     const auto databasePath = temporary.path() / "rollback.sqlite3";
@@ -234,6 +307,7 @@ void checkNewerSchemaIsPreserved() {
 int main() {
     try {
         checkSchemaAndFts();
+        checkScanGenerationSafety();
         checkMigrationRollback();
         checkLaterMigrationRollbackAndRetry();
         checkNewerSchemaIsPreserved();

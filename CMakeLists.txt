@@ -51,6 +51,15 @@ target_include_directories(atlas_document_identity PUBLIC ${CMAKE_CURRENT_SOURCE
 target_link_libraries(atlas_document_identity PUBLIC atlas_core)
 atlas_enable_warnings(atlas_document_identity)
 
+add_library(atlas_file_identity STATIC
+    src/app/index/IFileIdentityProvider.h
+    src/app/index/NativeFileIdentityProvider.cpp
+    src/app/index/NativeFileIdentityProvider.h
+)
+target_include_directories(atlas_file_identity PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_file_identity PUBLIC atlas_core)
+atlas_enable_warnings(atlas_file_identity)
+
 add_library(atlas_library_index STATIC
     src/app/index/SqliteLibraryIndex.cpp
     src/app/index/SqliteLibraryIndex.h
@@ -206,6 +215,11 @@ add_executable(atlas_document_identity_tests tests/index/document_identity_recon
 target_link_libraries(atlas_document_identity_tests PRIVATE atlas_document_identity)
 atlas_enable_warnings(atlas_document_identity_tests)
 add_test(NAME atlas_document_identity COMMAND atlas_document_identity_tests)
+
+add_executable(atlas_native_file_identity_tests tests/index/native_file_identity_tests.cpp)
+target_link_libraries(atlas_native_file_identity_tests PRIVATE atlas_file_identity)
+atlas_enable_warnings(atlas_native_file_identity_tests)
+add_test(NAME atlas_native_file_identity COMMAND atlas_native_file_identity_tests)
 
 add_executable(atlas_library_index_tests tests/index/library_index_tests.cpp)
 target_link_libraries(atlas_library_index_tests PRIVATE atlas_library_index)

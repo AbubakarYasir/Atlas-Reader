@@ -53,15 +53,15 @@ The first strict exact-head Debug job (`36289801631`, job `108537578568`) failed
 
 ## Ready-for-owner-test handoff — 2026-09-27
 
-- Implementation head: `acfe8df8f18ba59500d7a786c93bdf6df96cb16d`.
-- Windows CI branch run `36290055257`: Debug job `108538286837` passed; Release job `108538286698` passed and staged the owner package. PR run `36290052467`: Debug job `108538279494` and Release job `108538279624` passed.
-- Inherited regression runs on the same implementation head passed: selected route `36290055294`, coordinates `36290055289`, fidelity `36290055264`, stress `36290055253`.
-- GitHub artifact ID `10921014058`, name `atlas-reader-n3-windows-x64-acfe8df8f18ba59500d7a786c93bdf6df96cb16d`, workflow-artifact digest `sha256:a1cd2c979fb2bc163f6af0b9f8793bf585430794d26bf3a290fbdfaeb18d2e5f`.
-- Owner ZIP: `atlas-reader-n3-windows-x64.zip`, 40,056,052 bytes, SHA-256 `6226b038a990497fe1799b3c500ac3e4273db2af0755b238b055c756c227037c`. The downloaded checksum file and a fresh local `Get-FileHash` result match.
-- The staged package contains the Release executable, required Qt runtime files, plain-language owner checklist and build identity. CI launched the staged executable without the earlier missing-DLL failure.
+- Final implementation/package head: `2c84f39ba1935702c14bb3fe841de86422bcd6ba`; it includes the owner-selected standardized Windows icon and the serialized PDFium probe deployment correction.
+- Windows CI branch run `36291263574`: Debug job `108541678730` and Release job `108541678616` passed. PR run `36291260247`: Debug job `108541669463` and Release job `108541669601` passed. Both Release builds completed in parallel without the prior shared-DLL race.
+- Inherited regression runs on the same implementation head passed: selected route `36291263467`, coordinates `36291263451`, fidelity `36291263446`, stress `36291263508`.
+- GitHub artifact ID `10921709418`, name `atlas-reader-n3-windows-x64-2c84f39ba1935702c14bb3fe841de86422bcd6ba`, workflow-artifact digest `sha256:7710120eb7cc682b3c4fb92bcd934d6b31ba8d518f57bb801ee907fe30ecbbb6`.
+- Owner ZIP: `atlas-reader-n3-windows-x64.zip`, 40,156,396 bytes, SHA-256 `95ecd6491c501a850f4ed0a6620d809e0bd80c8178cf05c0232682b50ea44f0c`. The downloaded checksum file and a fresh local `Get-FileHash` result match.
+- The staged package contains the Release executable, required Qt runtime files, plain-language owner checklist and build identity. CI launched the staged executable without the earlier missing-DLL failure. The downloaded packaged executable's actual 32 px Windows icon was extracted and visually confirmed against the supplied Atlas mark.
 
 All planned implementation and automated gates are complete, so N3 is **Ready for owner test**, not Accepted. The physical removable/offline-root check, Narrator/keyboard review, mature-product comparison and explicit owner `N3 PASS` must still be recorded using [the owner checklist](../N3_OWNER_TEST.md). N4 remains closed.
 
 ### Documentation-head CI reliability follow-up
 
-Final documentation-head run `36290792972` exposed an inherited nondeterministic Release-build race rather than a test or product failure: parallel PDFium qualification targets attempted to deploy the same `pdfium.dll` into one output directory, and one copy received `permission denied`. The Windows probe targets are now explicitly ordered for their shared post-link deployment while unrelated compilation remains parallel. The corrective head must pass both Debug/Release runs and all inherited workflows before handoff.
+Documentation-head run `36290792972` exposed an inherited nondeterministic Release-build race rather than a test or product failure: parallel PDFium qualification targets attempted to deploy the same `pdfium.dll` into one output directory, and one copy received `permission denied`. Commit `398fe81` explicitly orders the Windows probe targets for their shared post-link deployment while unrelated compilation remains parallel. Final head `2c84f39ba1935702c14bb3fe841de86422bcd6ba` passes both Debug/Release runs and every inherited workflow listed above, so this reliability follow-up is closed.

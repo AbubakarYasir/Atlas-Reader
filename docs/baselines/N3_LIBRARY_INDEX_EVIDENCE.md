@@ -14,9 +14,15 @@
 
 ## Subgate results
 
+### First CI diagnostic — implementation `0912ab3486ac9427d73850069885d71497b6bda8`
+
+- Windows CI Debug and Release configured and built the index adapter; all inherited PDF regression tests passed, but `atlas_library_index` failed because the Arabic query used an inflected token (`قراءة`) while the fixture stored `القراءة`. SQLite's `unicode61` tokenizer does not stem Arabic; the assertion now searches the exact stored token. This defines current token search behavior, not a claim of Arabic morphology support.
+- The inherited N2 selected-production-route check failed at CMake configure because it did not use the newly active N3 SQLite manifest/toolchain. The workflow now bootstraps the same pinned vcpkg baseline and `x64-windows-static` toolchain as Windows CI.
+- These are diagnosed fixes only; rerun results are pending. No N3.1 acceptance is claimed.
+
 | Subgate | Status | Source commit | Verification/artifact | Known limits |
 |---|---|---|---|---|
-| N3.1 Storage/schema | In progress | Local source pending first CI run | Pending | Runtime/CI verification pending |
+| N3.1 Storage/schema | In progress | `0912ab3486ac9427d73850069885d71497b6bda8` plus follow-up fix awaiting push | First Debug/Release run built; Arabic FTS expectation failed. Selected-route CMake lacked vcpkg. See first CI diagnostic above. | Fixes require new green CI; local C++ toolchain unavailable |
 | N3.2 Scanner | Not started | — | — | — |
 | N3.3 Identity/reconciliation | Not started | — | — | — |
 | N3.4 Library UX/search | Not started | — | — | — |

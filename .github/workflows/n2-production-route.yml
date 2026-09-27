@@ -24,6 +24,22 @@ jobs:
       - name: Checkout exact implementation head
         uses: actions/checkout@v6
 
+      - name: Bootstrap pinned vcpkg for active N3 storage dependency
+        shell: pwsh
+        run: |
+          $vcpkgRoot = Join-Path $env:RUNNER_TEMP 'atlas-vcpkg-9e2895bf'
+          if (-not (Test-Path -LiteralPath (Join-Path $vcpkgRoot '.git'))) {
+            git clone --filter=blob:none https://github.com/microsoft/vcpkg.git $vcpkgRoot
+            if ($LASTEXITCODE -ne 0) { throw 'Could not fetch the pinned vcpkg source.' }
+          }
+          git -C $vcpkgRoot fetch --no-tags origin 9e2895bf6afb246396d85232ba70fcfa1fa67ba1
+          if ($LASTEXITCODE -ne 0) { throw 'Could not fetch the declared vcpkg baseline.' }
+          git -C $vcpkgRoot checkout --detach 9e2895bf6afb246396d85232ba70fcfa1fa67ba1
+          if ($LASTEXITCODE -ne 0) { throw 'The vcpkg checkout does not match its declared baseline.' }
+          & (Join-Path $vcpkgRoot 'bootstrap-vcpkg.bat') -disableMetrics
+          if ($LASTEXITCODE -ne 0) { throw 'Could not bootstrap the pinned vcpkg executable.' }
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "VCPKG_ROOT=$vcpkgRoot"
+
       - name: Install official Qt 6.10.3 dynamic distribution with Qt PDF
         uses: jurplel/install-qt-action@v4
         with:
@@ -153,6 +169,8 @@ jobs:
           -G "Visual Studio 17 2022"
           -A x64
           -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+          -DVCPKG_TARGET_TRIPLET=x64-windows-static
           -DATLAS_ENABLE_PDFIUM_PROBE=OFF
           -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
 

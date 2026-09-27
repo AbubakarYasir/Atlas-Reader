@@ -83,7 +83,8 @@ void checkSchemaAndFts() {
         index.recordOpened("book-ar", 1000);
         index.recordOpened("book-en", 2000);
 
-        require(index.search("قراءة").size() == 1, "FTS5 must find Arabic metadata.");
+        // unicode61 tokenizes Arabic but does not stem inflected forms.
+        require(index.search("القراءة").size() == 1, "FTS5 must find Arabic metadata.");
         require(index.search("کتاب").size() == 1, "FTS5 must find Urdu metadata.");
         require(index.search("research").size() == 1, "FTS5 must find English metadata.");
         require(index.favorites().size() == 1 && index.favorites().front().id == "book-ar", "Favorites must round-trip through the repository.");
@@ -112,7 +113,7 @@ void checkSchemaAndFts() {
         const auto roots = reopened.roots();
         require(roots.size() == 1 && roots.front().availability == atlas::index::LibraryRootAvailability::offline,
             "An offline root must remain in the database after reopening.");
-        require(reopened.search("قراءة").size() == 1, "Arabic FTS results must survive reopening.");
+        require(reopened.search("القراءة").size() == 1, "Arabic FTS results must survive reopening.");
         require(reopened.favorites().size() == 1, "Favorite state must survive reopening.");
         require(reopened.recentlyOpened().front().id == "book-en", "Recent-opened state must survive reopening.");
 

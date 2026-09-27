@@ -5,7 +5,7 @@
 **Status:** In progress, begun 2026-09-27 after N2 owner PASS and closure.
 **Branch:** `native-v2-n3-library-index-foundation`
 **Starting base:** accepted native `main`, `84a9b45b10b24ece595bb7069136fefd2ed2cc5b`.
-**Current active subgate:** N3.2 safe scanning. N3.1 storage/schema and the corrected `x64-windows-static-md` CRT linkage are verified on local Windows and final CI head `e7fe595c5ffb228f48b63c17a960559a8b8b8a22`.
+**Current active subgates:** N3.2 final scanner evidence and N3.3 identity/reconciliation. N3.1 storage/schema and the corrected `x64-windows-static-md` CRT linkage are verified on local Windows and final CI head `e7fe595c5ffb228f48b63c17a960559a8b8b8a22`.
 **Planned milestone:** `2.0.0-beta.1`; a version string alone does not mean N3 is a useful or accepted beta.
 
 This is the binding N3 implementation sequence and evidence plan. The [checkpoint ledger](../CHECKPOINTS.md) and [QA matrix](CHECKPOINT_QA_MATRIX.md) define its mandatory gates. The [N2 acceptance record](baselines/N2_ACCEPTANCE.md) defines the frozen predecessor.
@@ -46,6 +46,7 @@ This outcome is a plan; the complete library is not implemented at N3 start.
 ### N3.3 — Identity and reconciliation
 
 - Keep stable Atlas document identity separate from any current path, filename, title, or PDF engine object.
+- ADR-0005 freezes the conservative policy: only a previous path proven missing by a complete scan plus preserved filesystem identity may authorize automatic move relinking. A surviving original is a distinct copy; content/PDF metadata matches alone are ambiguous; offline and incomplete scans never prove a relationship.
 - A matching filename or content fingerprint alone does not prove two copies are the same logical research item. Copies remain distinct absent user-approved relinking.
 - Preserve an offline root and its indexed entries. Missing from a disconnected or partially enumerated root does not mean deleted.
 - Retain research state for a sufficiently confident move/rename; leave ambiguous candidates separate and visible for resolution.

@@ -15,12 +15,13 @@ New visitor? Read the [public project introduction](../README.md). Building or c
 3. **`../CHECKPOINTS.md`** — current checkpoint, release mapping, stop gates.
 4. **`N3_LIBRARY_INDEX_PLAN.md`** — active N3 execution plan, subgates, safety rules, QA evidence and stop gate.
 5. **`baselines/N3_LIBRARY_INDEX_EVIDENCE.md`** — active N3 result, test and artifact ledger.
-6. **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — Accepted N2 responsibility split decision.
-7. **`../tests/fixtures/pdf/README.md`** — N2 PDF fixture provenance/privacy/checksum/mutation contract.
-8. **`FEATURE_SCOPE_2_0.md`** — binding Windows 2.0 feature scope.
-9. **`SUCCESS_METRICS.md`** — how we prove the rewrite is becoming a better product rather than merely larger.
-10. **`CHECKPOINT_QA_MATRIX.md`** — binding automated/manual QA, owner tests, blockers and limitation ownership for N0–N11.
-11. **`GIT_WORKFLOW.md`** — binding branch, commit, PR, merge, tag, status synchronization and remote-verification rules.
+6. **`N3_OWNER_TEST.md`** — plain-language hands-on checklist and PASS/FAIL report for the exact N3 package.
+7. **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — Accepted N2 responsibility split decision.
+8. **`../tests/fixtures/pdf/README.md`** — N2 PDF fixture provenance/privacy/checksum/mutation contract.
+9. **`FEATURE_SCOPE_2_0.md`** — binding Windows 2.0 feature scope.
+10. **`SUCCESS_METRICS.md`** — how we prove the rewrite is becoming a better product rather than merely larger.
+11. **`CHECKPOINT_QA_MATRIX.md`** — binding automated/manual QA, owner tests, blockers and limitation ownership for N0–N11.
+12. **`GIT_WORKFLOW.md`** — binding branch, commit, PR, merge, tag, status synchronization and remote-verification rules.
 
 N0, N1 and N2 are Accepted. N3 Library/index foundation is In progress. A passed checkpoint cannot be reopened without new evidence of a
 user-facing regression.

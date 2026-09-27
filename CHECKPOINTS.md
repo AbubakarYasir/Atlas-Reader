@@ -30,7 +30,7 @@ official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
 first-party qpdf 12.4.1 CLI for structure/security/write. ADR-0004 was
 Accepted by owner on 2026-09-27.
 
-N2 is frozen and Accepted. N3 started after its owner-approved closure report. N3.1 storage/schema is verified on `e7fe595c5ffb228f48b63c17a960559a8b8b8a22` with local and Windows Debug/Release tests plus the corrected SQLite/Qt runtime linkage. N3.2 safe scanning is active: traversal, overlap/deduplication, persisted generations and scanner/index coordination are verified locally and in Windows CI; PDF state inspection is locally verified. N3.3 has complete backend orchestration through `8516cd0`: guarded identity, durable reviewable proposals, real native rename/copy proof and non-destructive replacement handling. UI review/actions, final CI and owner work remain; N3 as a whole is unaccepted.
+N2 is frozen and Accepted. N3.1–N3.4 are now implemented locally: versioned SQLite/FTS storage, bounded multi-root scanning, guarded identity/reconciliation, and a responsive native Library with search, folders, Favorites, Recents and review actions. Database work is off the UI thread, and the real rendered UI has been checked in English wide/narrow, Arabic dark and 200% states. Final exact-head CI, packaged checksum, removable/offline owner test, mature-product comparison and explicit `N3 PASS` remain; N3 is still unaccepted.
 
 ## Operating contract
 

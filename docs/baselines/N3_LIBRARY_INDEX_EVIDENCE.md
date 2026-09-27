@@ -24,8 +24,26 @@
 | Subgate | Status | Source commit | Verification/artifact | Known limits |
 |---|---|---|---|---|
 | N3.1 Storage/schema | **Complete** | `e7fe595c5ffb228f48b63c17a960559a8b8b8a22` | Local VS 2026 Debug/Release 20/20 each; Windows PR run `36283212258` and branch run `36283210492` Debug/Release; selected route `36283212263`; no LNK4098 on corrected triplet. | Matching FTS tokens only; Arabic stemming is not claimed |
-| N3.2 Scanner | In progress | `30137a1` | Traversal, overlap/deduplication, generation safety and scan/index coordination passed local/Windows through `4da8f5c`. PDF inspection of readable, Unicode, malformed, locked and missing fixtures passes local VS 2026 Debug and Release 21/21 each at `30137a1`; final branch CI pending. | New paths intentionally remain unlinked pending identity/reconciliation; no watcher, named-storage measurement or owner test yet |
-| N3.3 Identity/reconciliation | In progress | `8516cd0` | Full scan-to-ingestion orchestration over real Windows files. Local VS 2026 Debug/Release 24/24 each prove new stable document creation, Unicode rename as a pending confident move, no pre-apply mutation, stable ID after explicit apply, byte-identical copy as a distinct book, offline ambiguity, and ambiguous same-path replacement without overwrite. | UI proposal review/actions, final CI and owner test remain |
-| N3.4 Library UX/search | Not started | — | — | — |
+| N3.2 Scanner | **Implemented; final exact-head CI pending** | `dd47f4a` | Traversal, overlap/deduplication, generation safety, inspection and coordination tests pass locally. Repeatable Release benchmark added. On the named owner SSD, 1,000 Unicode PDFs scanned in 1 ms and indexed in 541 ms. | Explicit Rescan, not an automatic watcher; slower/removable storage remains an owner test |
+| N3.3 Identity/reconciliation | **Implemented; final exact-head CI pending** | `d14f1ea` | Local VS 2026 Debug/Release 24/24 each prove new stable documents, Unicode rename review/apply, stable ID, distinct copies, offline ambiguity and non-destructive replacement. Review actions are in the Library; all SQLite work is off the UI thread. | Packaged owner rename/copy/offline test remains |
+| N3.4 Library UX/search | **Implemented; owner test pending** | `5e15fb2` | Real Library list/grid, folder filters, title/recent/relevance sorting, Favorites, Recents, safe phrase search, plain-language states and review actions. Rendered English wide, 760 px narrow, Arabic dark and 200% local checks passed after design review. | Narrator/removable-drive owner checks and mature-product comparison remain |
 
-The final N3 handoff must identify exact commit/workflow/artifact IDs, test results, artifact SHA-256 and explicit limitations. Physical owner test, mature-product comparison and owner `N3 PASS` must be recorded separately from CI.
+## Named local performance observation — 2026-09-27
+
+- Source: Release benchmark target added at `dd47f4a`; final exact-head repetition is still required.
+- Machine: HP Victus by HP Gaming Laptop 16-r1xxx; Intel Core i7-14650HX (16 cores/24 logical processors); 16 GB RAM.
+- Storage: healthy `SKHynix_HFS001TDE9X081N` 1 TB NVMe SSD, NTFS system volume.
+- Fixture: 1,000 copied 11,551-byte valid PDFs across ten nested folders with mixed Latin/Arabic filenames. The fixture and temporary benchmark database were removed after the run.
+- Release result: enumeration `1 ms`; metadata/FTS indexing `541 ms`; 200 warmed search samples, p50 `647 us`, p95 `707 us`, 100-result cap.
+- Interpretation: this is a reproducible storage/index smoke result, not a claim about every library or slower media. No removable/slower drive was connected; that required observation remains in the owner checklist.
+
+## Declared N3 boundaries (not hidden loose ends)
+
+| Boundary | Current behavior | Named owner and blocker |
+|---|---|---|
+| Continuous folder watching | N3 changes appear after explicit Add folder/Rescan (`F5`) | N7 Windows integration; event coalescing, bounded work and offline safety must pass before automatic watching ships |
+| Arabic morphological search | N3 matches indexed words/phrases; it does not infer every inflected form | N4 reader search/N9 language qualification; missed promised query behavior blocks the owning checkpoint |
+| Built-in PDF reading | N3 opens an available result in the current Windows PDF app | N4; Atlas Reader usability and correctness gates block N4 acceptance |
+| OCR for image-only PDFs | N3 indexes available metadata only | Outside current N3 scope; any future OCR requires a separate documented checkpoint and privacy/performance contract |
+
+The final N3 handoff must identify exact commit/workflow/artifact IDs, test results, artifact SHA-256 and explicit limitations. Physical owner test, mature-product comparison and owner `N3 PASS` must be recorded separately from CI using [the owner checklist](../N3_OWNER_TEST.md).

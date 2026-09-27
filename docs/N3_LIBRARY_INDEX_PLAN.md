@@ -5,7 +5,7 @@
 **Status:** In progress, begun 2026-09-27 after N2 owner PASS and closure.
 **Branch:** `native-v2-n3-library-index-foundation`
 **Starting base:** accepted native `main`, `84a9b45b10b24ece595bb7069136fefd2ed2cc5b`.
-**Current active subgates:** N3.2 final scanner evidence and N3.3 identity/reconciliation. N3.1 storage/schema and the corrected `x64-windows-static-md` CRT linkage are verified on local Windows and final CI head `e7fe595c5ffb228f48b63c17a960559a8b8b8a22`.
+**Current active gate:** final exact-head CI/package evidence and owner handoff. N3.1 storage/schema, N3.2 scanning, N3.3 identity/reconciliation and the N3.4 Library workspace are implemented and locally verified; N3 is not accepted until the packaged owner checklist passes and the owner records `N3 PASS`.
 **Planned milestone:** `2.0.0-beta.1`; a version string alone does not mean N3 is a useful or accepted beta.
 
 This is the binding N3 implementation sequence and evidence plan. The [checkpoint ledger](../CHECKPOINTS.md) and [QA matrix](CHECKPOINT_QA_MATRIX.md) define its mandatory gates. The [N2 acceptance record](baselines/N2_ACCEPTANCE.md) defines the frozen predecessor.
@@ -14,7 +14,7 @@ This is the binding N3 implementation sequence and evidence plan. The [checkpoin
 
 A person can add several book folders, let Atlas build a searchable PDF library without freezing the interface, find the right book using English, Arabic or Urdu metadata, and keep a book's identity and research state when a drive is temporarily offline. Scanning an unavailable or partly readable location must never make its books disappear from the index.
 
-This outcome is a plan; the complete library is not implemented at N3 start.
+This outcome was the start-state plan. The candidate now implements it, subject to the final evidence and owner gate below.
 
 ## Scope and sequence
 
@@ -40,6 +40,7 @@ This outcome is a plan; the complete library is not implemented at N3 start.
 - Persisted root scan generations are active at `352c5d0`: an older scan cannot overwrite a newer one, newly observed paths remain unlinked until identity reconciliation, and partial/offline/interrupted scans preserve the preceding successful completion evidence and indexed books.
 - Scanner/index coordination at `38d3cab`, verified through final branch head `e871ecab257008fc3f100927f0411e6e0832b84f`, marks known locations in their current root generation and publishes unknown paths in bounded, cross-root-deduplicated batches for the later identity stage. It does not create document IDs, relink books or infer deletions. Complete, partial, unavailable and cancelled outcomes retain separate safe persistence rules.
 - Coalesce watcher events if/when watchers are introduced; never let event storms create unbounded queued work or a writer queue.
+- N3 deliberately uses explicit **Add folder** and **Rescan** (`F5`) instead of claiming a continuous watcher. Automatic monitoring is assigned to N7 Windows integration; if introduced there, coalescing, bounded work and offline safety become blocking tests. N3 owner testing must therefore use Rescan after changing files.
 - Cover long/Unicode paths, inaccessible subfolders, nested roots, disappearing files, cancellation and encrypted/corrupt PDF identification.
 - PDF inspection at `30137a1` classifies readable, password-locked, malformed/unreadable, unsupported-security and missing files, preserves Unicode paths, and collects safe metadata/revision signals where available. It does not bypass passwords or make identity/relink decisions.
 
@@ -60,6 +61,9 @@ This outcome is a plan; the complete library is not implemented at N3 start.
 ### N3.4 — Useful library, filtering and search
 
 - Deliver useful list/grid and folder/library navigation, filtering/sorting, Recents and Favorites, plus book results in Command Center.
+- Implemented at `9753030` and refined through `5e15fb2`: All books, per-folder, Favorites and Recently opened views; list/grid presentation; title ordering for library/folder/favorite views, last-opened ordering for Recents, relevance ordering for search; and `Ctrl+K` as the keyboard entry to book search. A broader multi-command palette is not claimed by N3.
+- Database reads and writes, scan preparation and ingestion run away from the interface thread at `d14f1ea`; stale asynchronous refresh results are ignored.
+- The restrained Library design reuses shared button/input primitives and the documented visual tokens. The rendered review removed duplicate actions and unnecessary ready-state decoration, clarified navigation alignment/focus, and passed local English wide, 760 px narrow, Arabic dark and 200% inspections.
 - Make selection, scan state, failures and unavailable-root retention clear, keyboard-accessible and operable at 100% and 200% scale.
 - Include Arabic and Urdu metadata, right-to-left paths/text, mixed-script title/author, diacritics, normalization, and query/index round trips in the written search contract and fixtures.
 - Do not promise OCR: image-only PDFs remain discoverable/indexable by available metadata only.
@@ -92,7 +96,7 @@ Every claim must identify the tested source commit, workflow/artifact, fixtures 
 
 ## Owner test and stop gate
 
-The owner test uses a representative multi-folder Arabic/English PDF library with nested roots, encrypted and corrupt PDFs, rename/move/copy cases, and a removable or offline root. The report must show that results remain findable and saved research stays attached to the correct item when a root is unavailable, a file moves, or a copy exists.
+The owner test uses the plain-language [N3 owner checklist](N3_OWNER_TEST.md) with a representative multi-folder Arabic/English PDF library, nested roots, encrypted and corrupt PDFs, rename/move/copy cases, and a removable or offline root. The report must show that results remain findable and saved research stays attached to the correct item when a root is unavailable, a file moves, or a copy exists.
 
 Compare the same library/search task against relevant mature library/search software. Record product/version/date, common task, measured or observed result, and the improvement Atlas still needs. Make no unsupported “fastest” or “best” claim.
 

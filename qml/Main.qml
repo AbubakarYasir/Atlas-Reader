@@ -241,18 +241,21 @@ ApplicationWindow {
                 AtlasButton {
                     Layout.fillWidth: true
                     text: root.arabic ? "كل الكتب" : "All books"
+                    textAlignment: root.arabic ? Text.AlignRight : Text.AlignLeft
                     highlighted: libraryController.viewMode === 0 && libraryController.selectedRootId === ""
                     onClicked: { libraryController.selectedRootId = ""; libraryController.viewMode = 0 }
                 }
                 AtlasButton {
                     Layout.fillWidth: true
                     text: root.arabic ? "المفضلة" : "Favorites"
+                    textAlignment: root.arabic ? Text.AlignRight : Text.AlignLeft
                     highlighted: libraryController.viewMode === 1
                     onClicked: libraryController.viewMode = 1
                 }
                 AtlasButton {
                     Layout.fillWidth: true
                     text: root.arabic ? "المستخدمة مؤخراً" : "Recently opened"
+                    textAlignment: root.arabic ? Text.AlignRight : Text.AlignLeft
                     highlighted: libraryController.viewMode === 2
                     onClicked: libraryController.viewMode = 2
                 }
@@ -264,6 +267,7 @@ ApplicationWindow {
                     delegate: AtlasButton {
                         required property var modelData
                         Layout.fillWidth: true
+                        textAlignment: root.arabic ? Text.AlignRight : Text.AlignLeft
                         text: (modelData.availability === "available" ? "●  " : "○  ")
                             + modelData.name
                             + (modelData.availability === "available"
@@ -274,13 +278,6 @@ ApplicationWindow {
                         onClicked: libraryController.selectedRootId = modelData.id
                     }
                 }
-                AtlasButton {
-                    Layout.fillWidth: true
-                    text: root.arabic ? "+ إضافة مجلد" : "+ Add folder"
-                    Accessible.name: root.arabic ? "إضافة مجلد كتب، الاختصار كنترول أو" : "Add book folder, Ctrl+O"
-                    onClicked: folderDialog.open()
-                }
-
                 Item { Layout.fillHeight: true }
                 AtlasButton {
                     Layout.fillWidth: true
@@ -306,12 +303,13 @@ ApplicationWindow {
             Layout.margins: 22
             spacing: 14
 
-            RowLayout {
+            GridLayout {
                 Layout.fillWidth: true
-                spacing: 10
+                columns: root.width < 1000 ? 1 : 2
+                rowSpacing: 10
+                columnSpacing: 10
                 ColumnLayout {
                     Layout.fillWidth: true
-                    Layout.minimumWidth: 360
                     spacing: 2
                     Label {
                         Layout.fillWidth: true
@@ -334,22 +332,26 @@ ApplicationWindow {
                         color: root.muted
                     }
                 }
-                AtlasButton {
-                    text: root.arabic ? "فحص الآن" : "Rescan"
-                    enabled: !libraryController.scanning && libraryController.rootCount > 0
-                    Accessible.name: root.arabic ? "إعادة فحص جميع المجلدات، إف 5" : "Rescan all folders, F5"
-                    onClicked: libraryController.rescan()
-                }
-                AtlasButton {
-                    text: root.arabic ? "إضافة مجلد" : "Add folder"
-                    highlighted: true
-                    onClicked: folderDialog.open()
+                RowLayout {
+                    Layout.alignment: root.arabic ? Qt.AlignLeft : Qt.AlignRight
+                    AtlasButton {
+                        text: root.arabic ? "فحص الآن" : "Rescan"
+                        enabled: !libraryController.scanning && libraryController.rootCount > 0
+                        Accessible.name: root.arabic ? "إعادة فحص جميع المجلدات، إف 5" : "Rescan all folders, F5"
+                        onClicked: libraryController.rescan()
+                    }
+                    AtlasButton {
+                        text: root.arabic ? "إضافة مجلد" : "Add folder"
+                        highlighted: true
+                        Accessible.name: root.arabic ? "إضافة مجلد كتب، الاختصار كنترول أو" : "Add book folder, Ctrl+O"
+                        onClicked: folderDialog.open()
+                    }
                 }
             }
 
             RowLayout {
                 Layout.fillWidth: true
-                TextField {
+                AtlasTextField {
                     id: searchField
                     Layout.fillWidth: true
                     placeholderText: root.arabic ? "ابحث بالعنوان أو المؤلف أو اسم الملف…" : "Search title, author, or filename…"
@@ -365,6 +367,7 @@ ApplicationWindow {
 
             Rectangle {
                 Layout.fillWidth: true
+                visible: libraryController.statusKey !== "ready"
                 implicitHeight: 38
                 radius: 7
                 color: libraryController.statusKey === "error" ? (root.darkMode ? "#4a2525" : "#fff0ee") : root.accentSoft
@@ -411,8 +414,8 @@ ApplicationWindow {
                         anchors.margins: 6
                         radius: 9
                         color: root.raised
-                        border.color: parent.GridView.isCurrentItem ? root.accent : root.line
-                        border.width: parent.GridView.isCurrentItem ? 2 : 1
+                        border.color: bookView.activeFocus && parent.GridView.isCurrentItem ? root.accent : root.line
+                        border.width: bookView.activeFocus && parent.GridView.isCurrentItem ? 2 : 1
 
                         RowLayout {
                             anchors.fill: parent

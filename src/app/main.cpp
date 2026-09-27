@@ -102,6 +102,14 @@ int main(int argc, char* argv[]) {
         QStringLiteral("add-library-root"),
         QStringLiteral("Add and scan one library root for QA."),
         QStringLiteral("path"));
+    const QCommandLineOption windowWidthOption(
+        QStringLiteral("window-width"),
+        QStringLiteral("Set the initial window width for visual QA."),
+        QStringLiteral("pixels"));
+    const QCommandLineOption windowHeightOption(
+        QStringLiteral("window-height"),
+        QStringLiteral("Set the initial window height for visual QA."),
+        QStringLiteral("pixels"));
 
     parser.addOption(languageOption);
     parser.addOption(themeOption);
@@ -112,6 +120,8 @@ int main(int argc, char* argv[]) {
     parser.addOption(screenshotFileOption);
     parser.addOption(screenshotDelayOption);
     parser.addOption(addLibraryRootOption);
+    parser.addOption(windowWidthOption);
+    parser.addOption(windowHeightOption);
     parser.process(app);
     const auto argumentsReady = MetricsClock::now();
 
@@ -178,6 +188,13 @@ int main(int argc, char* argv[]) {
     }
 
     if (auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst())) {
+        bool widthValid = false;
+        bool heightValid = false;
+        const int requestedWidth = parser.value(windowWidthOption).toInt(&widthValid);
+        const int requestedHeight = parser.value(windowHeightOption).toInt(&heightValid);
+        if (widthValid && heightValid && requestedWidth > 0 && requestedHeight > 0) {
+            window->resize(requestedWidth, requestedHeight);
+        }
         metrics.attach(window);
         const QString screenshotPath = parser.value(screenshotFileOption);
         if (!screenshotPath.isEmpty()) {

@@ -134,7 +134,7 @@ qt_add_executable(atlas_reader src/app/main.cpp)
 qt_add_qml_module(atlas_reader
     URI AtlasReader
     VERSION 1.0
-    QML_FILES qml/AtlasButton.qml qml/Main.qml
+    QML_FILES qml/AtlasButton.qml qml/AtlasTextField.qml qml/Main.qml
 )
 
 target_compile_definitions(atlas_reader PRIVATE ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}")

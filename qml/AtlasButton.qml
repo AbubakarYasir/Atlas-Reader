@@ -4,6 +4,8 @@ import QtQuick.Controls.Basic
 Button {
     id: control
 
+    property int textAlignment: Text.AlignHCenter
+
     implicitWidth: Math.max(82, contentItem.implicitWidth + leftPadding + rightPadding)
     implicitHeight: 40
     leftPadding: 14
@@ -22,7 +24,7 @@ Button {
             : control.highlighted
                 ? control.palette.highlightedText
                 : control.palette.buttonText
-        horizontalAlignment: Text.AlignHCenter
+        horizontalAlignment: control.textAlignment
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
     }

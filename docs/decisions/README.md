@@ -48,5 +48,6 @@ Ordinary implementation details do not need an ADR.
 - `ADR-0002-vcpkg-manifest.md` — **Accepted** — vcpkg manifest mode for non-Qt native production dependencies.
 - `ADR-0003-n1-qt-toolchain-pin.md` — **Accepted** — public N1 Qt 6.10.3/MSVC 2022 baseline while newer compatible Qt kits may be separately qualified.
 - `ADR-0004-pdf-engine-responsibilities.md` — **Accepted** — N2 evidence-driven assignment of read/render/text/navigation versus structure/security/transformation responsibilities.
+- `ADR-0005-document-identity-and-reconciliation.md` — **Accepted** — Atlas-owned document IDs with conservative, reviewable move/copy/offline reconciliation.
 
-ADR-0004 was Accepted by owner `N2 PASS` on 2026-09-27. The selected route is Qt PDF 6.10.3 plus qpdf 12.4.1 CLI. N3 is Not started.
+ADR-0004 was Accepted by owner `N2 PASS` on 2026-09-27. The selected route is Qt PDF 6.10.3 plus qpdf 12.4.1 CLI. N3 is in progress; ADR-0005 now governs its identity and reconciliation implementation.

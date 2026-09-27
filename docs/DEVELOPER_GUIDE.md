@@ -4,9 +4,9 @@
 
 ## Current state
 
-Native engineering version: `2.0.0-alpha.2`. N0, N1 and N2 are Accepted; N3 is Not started. See [N2 acceptance and Git cleanup](baselines/N2_ACCEPTANCE.md) for the exact integration/evidence record. No production Library, Reader, bookmark editor or annotation implementation is complete.
+Native engineering version: `2.0.0-beta.1`. N0–N3 are Accepted; N4 has not started in this accepted snapshot. See the [N3 acceptance record](baselines/N3_ACCEPTANCE.md), [N3 plan](N3_LIBRARY_INDEX_PLAN.md), [evidence ledger](baselines/N3_LIBRARY_INDEX_EVIDENCE.md), and [owner test](N3_OWNER_TEST.md). The built-in Reader, bookmark editor and annotations are not complete.
 
-Permanent branches are `main` (accepted native work) and `legacy/flutter` (stopped, obsolete backup). Follow the checkpoint owner gates; do not revive Flutter or start N3 as part of N2 closure.
+Permanent branches are `main` (accepted native work) and `legacy/flutter` (stopped, obsolete backup). The completed N3 branch is merged and deleted only after exact-main verification. N4 work must use `native-v2-n4-reader-foundation` from that accepted merge; do not revive Flutter.
 
 ## Before changing anything
 
@@ -18,7 +18,7 @@ Read [agent/contributor rules](../AGENTS.md), the [checkpoint ledger](../CHECKPO
 - Accepted Windows toolchain: Visual Studio 2022 x64 / MSVC v143 and Qt 6.10.3.
 - Accepted PDF route: official dynamic Qt PDF 6.10.3 for reading/rendering/text/navigation; first-party qpdf 12.4.1 CLI for structural/security/write operations.
 - Standalone PDFium remains qualification/comparison evidence, not part of the selected production package.
-- SQLite/FTS5 indexing begins in N3; it is not implemented by the N2 foundation.
+- Production SQLite/FTS5 indexing, scanning and the Library foundation were Accepted in N3.
 - CMake and pinned dependency acquisition keep builds reproducible. Engine/platform types remain behind Atlas-owned interfaces.
 
 [Architecture](ARCHITECTURE.md) · [Toolchain](TOOLCHAIN.md) · [Dependencies](DEPENDENCIES_AND_TOOLS.md) · [Accepted PDF decision](decisions/ADR-0004-pdf-engine-responsibilities.md) · [Licensing](LICENSING.md)

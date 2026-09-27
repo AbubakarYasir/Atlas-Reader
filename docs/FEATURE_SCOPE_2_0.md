@@ -2,6 +2,8 @@
 
 ## Product thesis
 
+[Competitive gap actions](COMPETITIVE_GAP_ACTIONS.md) define additional required outcomes, stage owners and acceptance tests. These are planned requirements, not current N3 features.
+
 Atlas Reader 2.0 wins by being exceptionally good at **Library/Index → Reader → Bookmarks**, then adding writing/printing/metadata without weakening those workflows.
 
 It does not need every Acrobat/Foxit feature to be competitive. It must be faster, clearer, safer, more research-oriented, more local-first, and better with Arabic/RTL and deep outlines in the workflows it does choose to own.
@@ -13,12 +15,18 @@ Priority labels:
 - **P2** — useful follow-up; may defer if it threatens quality/time.
 - **Deferred** — explicitly out of Windows 2.0.
 
+### Offline launch scope decision — 2026-09-27
+
+The owner delegated selection of missing pre-2.0 capabilities, with online features and collaboration explicitly excluded. Foxit Reader is the closer everyday capability reference, not a visual template or a requirement for complete feature parity. Required additions and their acceptance tests are C17–C22 in the competitive action register. P1 launch commitments are required before stable, not silently optional; any removal needs an explicit owner scope decision.
+
+Windows 2.0 has no accounts, sync, shared reviews, cloud connectors, online AI, document uploads, remote fonts/resources, telemetry or in-app update checks. User-initiated ordinary web links may open the system browser after destination confirmation; this is not an Atlas online service. Offline local exports are included and do not imply collaboration infrastructure.
+
 ## 1. Library and index — P0
 
 ### Sources
 
 - add/remove multiple explicit library roots;
-- open individual PDFs outside roots without silently enrolling their parent folder;
+- open individual admitted books outside roots without silently enrolling their parent folder;
 - recursive discovery;
 - safe overlapping/nested roots;
 - removable/external drives;
@@ -29,7 +37,11 @@ Priority labels:
 ### Formats
 
 - PDF: full 2.0 support;
-- EPUB: discovery/metadata only if retained from legacy behavior; full EPUB reading remains deferred unless explicitly promoted.
+- EPUB: non-DRM reflowable EPUB Library admission and full reading through F1; fixed-layout EPUB remains separately capability-gated;
+- CBZ and CBR: image-sequence Library admission and full reading through F2, with CBR blocked until a licensed, secure RAR route passes;
+- user-owned, DRM-free AZW3, MOBI and PRC files: Library admission and reading through F3 at the fidelity the qualification corpus proves;
+- KFX: mandatory F4 feasibility/ADR decision before 2.0; support is not advertised unless lawful non-DRM fixtures and a maintainable parser pass;
+- DRM-protected books remain explicit unsupported states; Atlas does not bypass DRM.
 
 ### Index state
 
@@ -57,9 +69,15 @@ Each book can represent:
 ### Metadata/search
 
 - title, author, filename, path, dates, page count when available;
+- use the current filename stem as the dependable primary Library name; keep the extension as a separate protected format field and show embedded/user-set title and author as secondary metadata;
+- metadata editing and filesystem renaming are separate explicit operations; a normal rename edits only the stem and must preserve the admitted extension (`.pdf`, `.epub`, or another supported type);
+- sort normal Library, folder and Favorites views by that visible filename rather than by hidden embedded title metadata;
+- keep the presentation contract format-neutral for `.pdf`, `.epub`, `.azw3`, `.kfx`, `.mobi`, `.prc`, `.cbr` and `.cbz`, while admitting each format to discovery/opening only after its own implementation and compatibility gates pass;
+- treat `docs/FORMAT_EXPANSION_ROADMAP.md` as binding pre-2.0 work while preserving the rule that a format is not advertised until its own checkpoint is Accepted;
 - favorites;
 - recent/opened state;
 - reading progress;
+- local collections and book tags with search/filter and backup, without moving source files (N7);
 - bookmark text/breadcrumb/tags/descriptions in FTS;
 - Arabic/Unicode search normalization policy documented and tested;
 - fast filtering/sorting;
@@ -91,6 +109,8 @@ Each book can represent:
 - smooth wheel/trackpad/touch navigation;
 - multiple documents/tabs with bounded resource retention;
 - configurable tab restoration off by default unless owner later changes it.
+- side-by-side views of the same or two documents, independent navigation and explicit active pane, within the shared memory budget (N4);
+- simplified text reading view with adjustable size/wrapping for qualified text-bearing PDFs; clearly separate it from exact-layout view, retain source-page navigation, and show honest unavailable/reading-order limitations for scans or unsupported structure (N4; no OCR claim).
 
 ### Virtualization/performance
 
@@ -207,6 +227,14 @@ Windows 2.0 includes:
 - pan/zoom while in writing mode without accidental strokes;
 - live stroke rendered independently of PDF serialization.
 
+### Complete annotation control — required before 2.0
+
+Pen and freehand marker/highlighter are separate tools; text highlighting follows selected text when a reliable text layer exists. Users control color, opacity and thickness, with persistent presets and visible selected-tool state. Include stroke erasing and partial erasing of Atlas-created ink, lasso/rectangle and multi-selection, move/resize, copy/paste/duplicate, delete, and undo/redo. Typed notes remain editable. Keyboard commands and accessible alternatives must accompany pointer tools.
+
+Every admitted annotation supports its applicable operations; controls explain when an imported subtype is read-only rather than flattening or discarding it. Group transforms, partial erasing and undo preserve page coordinates, pressure data where supported and untouched marks. For PDF annotations, save locally or embed only through qualified N5 safe-save rules; export/print choices clearly state whether marks are included. Flattened export is an explicit new-copy operation with a warning that editability is lost, never the default save.
+
+N6 acceptance requires a published annotation-type/operation matrix, physical pen/marker/palm tests, mixed Arabic/Urdu text, rotated-page geometry, crash recovery and independent-reader reopen. A toolbar icon alone is not delivery. The owner confirmed the additional offline editing scope; E1–E5 in [Offline editing roadmap](OFFLINE_EDITING_ROADMAP.md) are required before stable 2.0.
+
 ### Standard markup
 
 Target standard PDF representations where interoperability is reliable:
@@ -217,7 +245,9 @@ Target standard PDF representations where interoperability is reliable:
 - sticky note/comment;
 - freehand ink.
 
-Advanced shapes/callouts/free-text are P2 unless they are inexpensive after the annotation model is proven.
+N6 also requires typed free-text notes, line/arrow/rectangle/ellipse annotations, move/resize/delete/undo, and a searchable annotation list. Arabic/Urdu text appearance and independent-reader reopening are required. Original PDF text/image editing and equations are required in E2. Full diagramming, snapping and advanced callouts remain outside the explicitly selected scope.
+
+Research notes can be exported locally as versioned lossless Atlas annotation JSON and readable Markdown, including source identity and page/location references. JSON re-import requires preview, duplicate handling and explicit unresolved-source states. Markdown is a readable report, not a lossless import format. This is offline portability, not shared reviews (N6; non-PDF location types extend it in F1–F3).
 
 ### Capability model
 
@@ -259,7 +289,18 @@ Booklet and advanced prepress features are P2 unless implementation is straightf
 - explicit Save into PDF;
 - cancellation does not mutate source.
 
-Arbitrary PDF object/text editing is Deferred.
+Original PDF text/image editing is required in E2, with qualified operation limits and explicit unsupported-object handling.
+
+### Ordinary PDF form filling — N7 / P1 launch commitment
+
+- existing non-scripted AcroForm text fields, checkboxes, radio buttons and choice lists;
+- keyboard navigation, accessible field labels and Arabic/Urdu values/appearance;
+- dirty-state indication, cancel/recovery, preview and explicit safe save to a copy by default;
+- preserve fields as editable and verify values and appearances in an independent reader;
+- enforce permissions, signature protection and external-change checks from N5;
+- N7 excludes XFA, JavaScript calculations/validation, submit actions, signature fields and form creation; E3 adds AcroForm authoring and E5 adds offline signatures. Explain unsupported dependencies before accepting input; never pretend a required calculation ran.
+
+N7 must qualify the read/widget/appearance/write route through an ADR and licensed fixtures before implementation. The accepted N2 engines are not assumed to provide a ready-made form UI or appearance writer. If the required route fails, N7 is blocked pending a tested solution or explicit owner scope revision, not silently downgraded.
 
 ## 8. Backup, recovery, and migration — P0 before stable 2.0
 
@@ -275,7 +316,7 @@ Versioned Atlas backup includes app-local data needed to recover:
 - settings that materially affect research workflow;
 - guarded document identity information.
 
-Source PDFs are excluded by default.
+Source books are excluded by default.
 
 ### Restore
 
@@ -310,10 +351,10 @@ Source PDFs are excluded by default.
 
 ## 10. Windows integration — P1/P0 where needed
 
-- Open PDF picker;
-- launch with PDF path;
+- Open book picker limited to Accepted formats;
+- launch with an Accepted book path;
 - Open With;
-- optional file association at installer/user choice;
+- optional per-format file associations at installer/user choice;
 - context menus;
 - drag/drop P1;
 - clipboard;
@@ -337,24 +378,29 @@ Per-document controls belong in the reader when immediate visual feedback matter
 ## 12. Diagnostics/privacy — P0 safety
 
 - local structured logs with rotation/size bound;
-- privacy-safe by default: no PDF page text, passwords, bookmark descriptions, or file contents in ordinary logs;
+- privacy-safe by default: no book text, passwords, bookmark descriptions, or file contents in ordinary logs;
 - optional user-generated diagnostic bundle with preview/redaction policy;
 - no telemetry/network dependency in Windows 2.0;
-- update checking is Deferred unless made explicit and privacy-safe.
+- online update checking and automatic crash uploads are excluded from 2.0; release downloads and developer security checks remain outside the runtime.
 
-## 13. Deferred from Windows 2.0
+## 13. Expanded offline capabilities and exclusions
+
+[Offline editing roadmap](OFFLINE_EDITING_ROADMAP.md) is binding: E1 page organization, E2 original text/image editing and equations, E3 form authoring, E4 secure redaction, E5 offline visible/certificate signatures and evidence-limited verification. These follow F4 and precede N8. They reuse N5 safety and require open-source qualification ADRs and owner PASS. No feature is claimed implemented.
+
+### Excluded from Windows 2.0
 
 - OCR;
 - cloud accounts/sync;
 - collaborative annotation;
 - AI document analysis/chat;
-- arbitrary PDF text/object editing;
-- form authoring;
-- signature creation/certificate management workflows;
+- XFA, document scripts/calculations and network form submission; ordinary AcroForm filling is N7, authoring E3;
+- online certificate enrollment, revocation fetching, trusted timestamp requests and hosted e-sign services; offline signatures/qualified verification are E5;
+- OCR-backed search and automated document-version comparison;
+- full notebook authoring, audio-linked notes, arbitrary toolbar customization and executable plugins; equations are E2;
 - office conversion;
 - multimedia/3D;
-- full EPUB rendering/annotation;
-- browser engine/web app runtime;
+- EPUB/ebook content editing and portable annotation writing beyond each accepted format checkpoint;
+- browser-based application shell; a sandboxed document-layout runtime for F1 requires its own ADR and security/license qualification;
 - password cracking/restriction removal.
 
 ## 14. Success measures

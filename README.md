@@ -2,7 +2,7 @@
 
 ### Less searching. More understanding.
 
-**A PDF reader and research library in the making—for people who do more than turn pages.**
+**An open-source book reader and research library in the making—for people who do more than turn pages.**
 
 Your next idea might be buried in a thousand-page book. Or scattered across a hundred PDFs. Finding it again shouldn't mean starting over.
 
@@ -10,7 +10,7 @@ Atlas Reader is working toward a better way to study: bring your books together,
 
 [Explore the vision](PLAN.md) · [See our progress](CHECKPOINTS.md) · [For developers](docs/DEVELOPER_GUIDE.md)
 
-<!-- atlas-status: N2|accepted -->
+<!-- atlas-status: N3|accepted -->
 
 ## A library is more than a folder of files
 
@@ -34,23 +34,25 @@ The following describes our product direction, not features available today.
 
 ## Small steps. A serious foundation.
 
-**Today: an approved engineering foundation—not yet a daily-use reader.**
+**Today: an accepted native Library beta foundation—not yet a daily-use reader.**
 
 We have established the native Windows application shell and tested the PDF technology behind future reading and editing features. The approved stage includes Arabic/Urdu sample rendering, image-only PDFs, navigation, document-preservation tests, and repeated stability checks.
 
-The project owner tested and approved this foundation, called **N2**, on **27 September 2026**. The current engineering version is **`2.0.0-alpha.2`**.
+The project owner tested and approved **N3** on **27 September 2026**. Its native Library can add folders, index PDFs in the background, search English/Arabic/Urdu metadata, show Favorites and Recents, and protect a book's identity when files move or drives disappear. The accepted engineering version is **`2.0.0-beta.1`**. This is a verified development beta foundation, not a finished consumer release.
 
-**What's not ready yet:** the native library, full reading interface, bookmark editor, and annotations. There is no finished native consumer release to download today. Test packages are for engineering evaluation, and success on our test samples does not mean every PDF has been proven perfect.
+**What's not ready yet:** the built-in reading interface, bookmark editor, and annotations begin in later stages. There is no finished native consumer release to download today. Test packages are for engineering evaluation, and success on our test samples does not mean every PDF has been proven perfect.
 
-[What passed—and what it means](docs/baselines/N2_ACCEPTANCE.md) · [Detailed test evidence](docs/baselines/N2_PDF_ENGINE_MATRIX.md)
+[What N3 passed—and what it means](docs/baselines/N3_ACCEPTANCE.md) · [Detailed N3 evidence](docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md)
 
 ## The road ahead
 
-**First, your library.** Finding, indexing, and organizing books is the next stage, N3. It has not started.
+**First, your library.** N3 is Accepted: finding, indexing, and organizing local PDFs now has a verified native foundation.
 
-**Then, your reading workspace.** PDF viewing, navigation, and search.
+**Then, your reading workspace.** N4 is next: native PDF viewing, navigation, and search.
 
 **Next, your research tools.** Resilient bookmarks, followed by ink and annotations.
+
+**More of your books, before 2.0.** EPUB, CBZ/CBR and user-owned, DRM-free AZW3, MOBI and PRC files are planned after the PDF foundation. KFX requires a feasibility decision. Today's N3 candidate indexes PDFs only. [See the format plan](docs/FORMAT_EXPANSION_ROADMAP.md).
 
 **Before everyday use, the hard checks.** Further Windows integration, accessibility, performance, and release testing. Every stage has automated checks and hands-on acceptance requirements.
 
@@ -69,3 +71,8 @@ Want to look under the hood? Start with the [developer guide](docs/DEVELOPER_GUI
 ---
 
 **About the older app:** Flutter development has stopped. That implementation is obsolete and retained only as a backup and migration reference on [`legacy/flutter`](https://github.com/AbubakarYasir/Atlas-Reader/tree/legacy/flutter). The current C++/Qt native project lives on `main`. These two branch names are permanent.
+
+
+### Planned offline tools
+
+Before stable 2.0, the roadmap includes full annotation controls, PDF text/image editing, page organization, form tools, secure redaction, equations and offline signatures. These are planned, not available in the current N3 preview. OCR, audio notebooks and online/collaboration services are excluded. See the [delivery stages and safety gates](docs/OFFLINE_EDITING_ROADMAP.md).

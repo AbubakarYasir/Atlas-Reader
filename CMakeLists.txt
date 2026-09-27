@@ -7,7 +7,7 @@ project(
     LANGUAGES CXX
 )
 
-set(ATLAS_PRERELEASE "alpha.2" CACHE STRING "Atlas prerelease identifier")
+set(ATLAS_PRERELEASE "beta.1" CACHE STRING "Atlas prerelease identifier")
 set(ATLAS_VERSION_STRING "${PROJECT_VERSION}-${ATLAS_PRERELEASE}")
 option(ATLAS_WARNINGS_AS_ERRORS "Treat Atlas compiler warnings as errors" OFF)
 option(ATLAS_ENABLE_PDFIUM_PROBE "Build the N2 PDFium qualification probe" OFF)
@@ -17,7 +17,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Quick Qml QuickControls2 Pdf)
+find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent Gui Quick Qml QuickControls2 Pdf)
+find_package(unofficial-sqlite3 CONFIG REQUIRED)
 qt_standard_project_setup(REQUIRES 6.10)
 
 if(ATLAS_ENABLE_PDFIUM_PROBE)
@@ -42,6 +43,73 @@ add_library(atlas_core INTERFACE)
 target_include_directories(atlas_core INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_features(atlas_core INTERFACE cxx_std_23)
 
+add_library(atlas_document_identity STATIC
+    src/core/index/DocumentIdentityReconciler.cpp
+    src/core/index/DocumentIdentityReconciler.h
+)
+target_include_directories(atlas_document_identity PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_document_identity PUBLIC atlas_core)
+atlas_enable_warnings(atlas_document_identity)
+
+add_library(atlas_file_identity STATIC
+    src/app/index/IFileIdentityProvider.h
+    src/app/index/NativeFileIdentityProvider.cpp
+    src/app/index/NativeFileIdentityProvider.h
+)
+target_include_directories(atlas_file_identity PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_file_identity PUBLIC atlas_core)
+atlas_enable_warnings(atlas_file_identity)
+
+add_library(atlas_library_index STATIC
+    src/app/index/SqliteLibraryIndex.cpp
+    src/app/index/SqliteLibraryIndex.h
+)
+target_include_directories(atlas_library_index PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_library_index PUBLIC atlas_core atlas_document_identity unofficial::sqlite3::sqlite3)
+atlas_enable_warnings(atlas_library_index)
+
+add_library(atlas_library_scanner STATIC
+    src/app/index/LibraryScanner.cpp
+    src/app/index/LibraryScanner.h
+    src/app/index/LibraryPathKey.cpp
+    src/app/index/LibraryPathKey.h
+    src/app/index/NativeLibraryEnumerator.cpp
+    src/app/index/NativeLibraryEnumerator.h
+    src/app/index/ILibraryEnumerator.h
+)
+target_include_directories(atlas_library_scanner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_library_scanner PUBLIC atlas_core)
+atlas_enable_warnings(atlas_library_scanner)
+
+add_library(atlas_library_scan_service STATIC
+    src/app/index/LibraryScanService.cpp
+    src/app/index/LibraryScanService.h
+)
+target_include_directories(atlas_library_scan_service PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_library_scan_service PUBLIC atlas_library_scanner atlas_library_index atlas_file_identity)
+atlas_enable_warnings(atlas_library_scan_service)
+
+add_library(atlas_library_document_inspector STATIC
+    src/app/index/ILibraryDocumentInspector.h
+    src/app/index/LibraryMetadataPolicy.cpp
+    src/app/index/LibraryMetadataPolicy.h
+    src/app/index/QtPdfDocumentInspector.cpp
+    src/app/index/QtPdfDocumentInspector.h
+)
+target_include_directories(atlas_library_document_inspector PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_library_document_inspector PUBLIC atlas_core Qt6::Core Qt6::Pdf)
+atlas_enable_warnings(atlas_library_document_inspector)
+
+add_library(atlas_library_ingestion STATIC
+    src/app/index/LibraryIngestionService.cpp
+    src/app/index/LibraryIngestionService.h
+)
+target_include_directories(atlas_library_ingestion PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_library_ingestion PUBLIC
+    atlas_library_scan_service atlas_library_document_inspector atlas_library_index
+)
+atlas_enable_warnings(atlas_library_ingestion)
+
 add_library(atlas_app_support STATIC
     src/app/diagnostics/ShellMetrics.cpp
     src/app/diagnostics/ShellMetrics.h
@@ -52,19 +120,52 @@ target_include_directories(atlas_app_support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(atlas_app_support PUBLIC Qt6::Core Qt6::Gui Qt6::Quick)
 atlas_enable_warnings(atlas_app_support)
 
-qt_add_executable(atlas_reader src/app/main.cpp)
+add_library(atlas_library_ui STATIC
+    src/app/library/LibraryController.cpp
+    src/app/library/LibraryController.h
+)
+target_include_directories(atlas_library_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_library_ui PUBLIC
+    atlas_library_ingestion atlas_file_identity atlas_library_scanner
+    Qt6::Core Qt6::Concurrent Qt6::Gui
+)
+atlas_enable_warnings(atlas_library_ui)
+
+set(ATLAS_READER_PLATFORM_SOURCES)
+if(WIN32)
+    list(APPEND ATLAS_READER_PLATFORM_SOURCES assets/windows/atlas_reader.rc)
+endif()
+
+qt_add_executable(atlas_reader
+    src/app/main.cpp
+    ${ATLAS_READER_PLATFORM_SOURCES}
+)
+if(WIN32)
+    set_target_properties(atlas_reader PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
 
 qt_add_qml_module(atlas_reader
     URI AtlasReader
     VERSION 1.0
-    QML_FILES qml/Main.qml
+    QML_FILES qml/AtlasButton.qml qml/AtlasTextField.qml qml/Main.qml
 )
 
 target_compile_definitions(atlas_reader PRIVATE ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}")
 target_link_libraries(atlas_reader
-    PRIVATE atlas_core atlas_app_support Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2
+    PRIVATE atlas_core atlas_app_support atlas_library_ui
+    Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2
 )
 atlas_enable_warnings(atlas_reader)
+if(MSVC)
+    # Qt 6.10.3's generated QML cache code reaches constexpr branches that
+    # MSVC reports as C4702 inside Qt headers. Keep /WX for Atlas code while
+    # suppressing this upstream/generated warning on the QML executable only.
+    target_compile_options(atlas_reader PRIVATE /wd4702)
+endif()
+
+add_executable(atlas_n3_library_benchmark tools/bench/n3_library_benchmark.cpp)
+target_link_libraries(atlas_n3_library_benchmark PRIVATE atlas_library_scanner atlas_library_index)
+atlas_enable_warnings(atlas_n3_library_benchmark)
 
 if(WIN32)
     add_custom_command(
@@ -121,6 +222,12 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
     atlas_enable_warnings(atlas_pdfium_security_probe)
 
     if(WIN32)
+        # All three probes write the same runtime DLL beside their executables.
+        # Serialize their post-link deployment so parallel MSBuild jobs cannot
+        # race while vcpkg and the explicit copy update pdfium.dll.
+        add_dependencies(atlas_pdfium_search_probe atlas_pdfium_probe)
+        add_dependencies(atlas_pdfium_security_probe atlas_pdfium_search_probe)
+
         add_custom_command(
             TARGET atlas_pdfium_probe
             POST_BUILD
@@ -155,7 +262,47 @@ target_link_libraries(atlas_core_smoke PRIVATE atlas_core)
 atlas_enable_warnings(atlas_core_smoke)
 add_test(NAME atlas_core_smoke COMMAND atlas_core_smoke)
 
+add_executable(atlas_document_identity_tests tests/index/document_identity_reconciler_tests.cpp)
+target_link_libraries(atlas_document_identity_tests PRIVATE atlas_document_identity)
+atlas_enable_warnings(atlas_document_identity_tests)
+add_test(NAME atlas_document_identity COMMAND atlas_document_identity_tests)
+
+add_executable(atlas_native_file_identity_tests tests/index/native_file_identity_tests.cpp)
+target_link_libraries(atlas_native_file_identity_tests PRIVATE atlas_file_identity)
+atlas_enable_warnings(atlas_native_file_identity_tests)
+add_test(NAME atlas_native_file_identity COMMAND atlas_native_file_identity_tests)
+
+add_executable(atlas_library_index_tests tests/index/library_index_tests.cpp)
+target_link_libraries(atlas_library_index_tests PRIVATE atlas_library_index)
+atlas_enable_warnings(atlas_library_index_tests)
+add_test(NAME atlas_library_index COMMAND atlas_library_index_tests)
+
+add_executable(atlas_library_scanner_tests tests/index/library_scanner_tests.cpp)
+target_link_libraries(atlas_library_scanner_tests PRIVATE atlas_library_scanner atlas_library_scan_service)
+atlas_enable_warnings(atlas_library_scanner_tests)
+add_test(NAME atlas_library_scanner COMMAND atlas_library_scanner_tests)
+
+add_executable(atlas_library_ingestion_tests tests/index/library_ingestion_tests.cpp)
+target_link_libraries(atlas_library_ingestion_tests PRIVATE
+    atlas_library_ingestion atlas_file_identity atlas_library_scanner
+)
+atlas_enable_warnings(atlas_library_ingestion_tests)
+add_test(NAME atlas_library_ingestion COMMAND atlas_library_ingestion_tests)
+
+add_executable(atlas_library_document_inspector_tests tests/index/library_document_inspector_tests.cpp)
+target_link_libraries(atlas_library_document_inspector_tests PRIVATE atlas_library_document_inspector)
+atlas_enable_warnings(atlas_library_document_inspector_tests)
+
 set(ATLAS_N2_PDF_FIXTURE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
+
+add_test(
+    NAME atlas_library_document_inspector
+    COMMAND atlas_library_document_inspector_tests
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A001_simple_text.pdf"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A007_malformed_truncated.pdf"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A008_password_rc4_40.pdf"
+)
 
 add_test(
     NAME n2_qt_pdf_a001_simple_text

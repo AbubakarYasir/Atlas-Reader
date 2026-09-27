@@ -29,8 +29,17 @@ A beta must be usable for a real Atlas workflow. Betas begin when Library/Index 
 | N5 | `2.0.0-beta.3` | Complete resilient bookmarks/outlines |
 | N6 | `2.0.0-beta.4` | Ink and standard annotations |
 | N7 | `2.0.0-beta.5` | Printing, covers, metadata |
-| N8 | `2.0.0-beta.6` | Flutter migration + first-class backup/restore |
-| N9 | `2.0.0-beta.7` | Arabic/RTL/accessibility qualification |
+| F1 | `2.0.0-beta.6` | DRM-free EPUB reading |
+| F2 | `2.0.0-beta.7` | CBZ/CBR reading |
+| F3 | `2.0.0-beta.8` | User-owned, DRM-free AZW3, MOBI and PRC files |
+| F4 | pre-beta.9 decision | KFX feasibility and implementation only if admitted |
+| E1 | `2.0.0-beta.9` | Page organization |
+| E2 | `2.0.0-beta.10` | Original content editing and equations |
+| E3 | `2.0.0-beta.11` | Offline form authoring |
+| E4 | `2.0.0-beta.12` | Secure redaction |
+| E5 | `2.0.0-beta.13` | Offline signatures |
+| N8 | `2.0.0-beta.14` | Mixed-format backup/restore and Flutter migration |
+| N9 | `2.0.0-beta.15` | Arabic/RTL/accessibility across admitted formats |
 
 A checkpoint may require more than one beta build. Corrective builds use build metadata or an incremented beta number; a failed build is never silently reused.
 
@@ -111,5 +120,5 @@ Documentation must use these words precisely:
 The README may advertise only what is Released or clearly label beta/experimental behavior.
 
 No checkpoint becomes Accepted from CI alone. The exact-head automated gates,
-required owner/hardware tests and explicit `N# PASS` in
+required owner/hardware tests and explicit `N# PASS`, `F# PASS` or `E# PASS` in
 `CHECKPOINT_QA_MATRIX.md` are release evidence, not optional ceremony.

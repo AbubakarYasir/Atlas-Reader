@@ -1,6 +1,6 @@
 # Atlas Reader Native — Dependencies, Tools, Plugins, and Reuse Policy
 
-<!-- atlas-status: N2|accepted -->
+<!-- atlas-status: N3|accepted -->
 
 ## Purpose
 
@@ -32,6 +32,8 @@ advantages do not override the frozen distribution decision.
 
 ## 1. Dependency rules
 
+Atlas-owned source retains its MIT license. F1–F4 and E1–E5 must qualify maintained open-source implementations, transitive licenses, fonts/codecs, reproducible builds and source-distribution obligations. Free-of-charge does not mean open source. Proprietary runtime exceptions require an explicit owner decision; no dependency silently relicenses Atlas. Process separation does not by itself prove license compliance.
+
 Every proposed dependency must answer:
 
 1. What exact problem does it solve better than a small Atlas implementation?
@@ -62,7 +64,9 @@ For N2, a dependency can be **probe-only** without being accepted for production
 
 **Role:** local index, search, app-local state, migrations, transactional persistence.
 
-**Status:** intended production dependency, but **closed during N2**. Implementation belongs to N3.
+**Status:** selected, implemented, verified and owner-Accepted in N3 on 2026-09-27.
+
+N3.1 pins SQLite `3.53.4#1` from the Microsoft vcpkg registry snapshot `9e2895bf6afb246396d85232ba70fcfa1fa67ba1`, enables FTS5 explicitly and uses `x64-windows-static-md`: SQLite is statically linked, with the dynamic MSVC runtime matching Qt. The application uses SQLite's C API inside the repository implementation, not as a domain/UI type.
 
 **Why:** stable embedded transactional database, mature C API, FTS5, cross-platform availability, public-domain core.
 
@@ -126,7 +130,7 @@ Use C++23 standard facilities first (`std::expected`, chrono, filesystem, ranges
 
 ### Chosen direction: vcpkg manifest mode for non-Qt C/C++ dependencies
 
-From N2 onward, Atlas uses a checked-in `vcpkg.json` plus a pinned vcpkg baseline for **accepted or deliberately pinned probe** third-party native libraries where reliable ports exist.
+Atlas uses a checked-in `vcpkg.json` plus a pinned vcpkg baseline for accepted or deliberately pinned third-party native libraries where reliable ports exist. N3 introduces the first production dependency.
 
 Why:
 
@@ -138,10 +142,10 @@ Why:
 
 Qt itself remains installed/pinned separately because Qt distribution/toolchain handling is specialized and should not be coupled to the vcpkg dependency graph without a measured reason.
 
-N2 rules:
+Dependency rules:
 
 - do not create an empty/decorative manifest merely to say vcpkg is present;
-- introduce the manifest with the first real pinned non-Qt probe dependency (expected first candidate: qpdf) or with explicit baseline-only infrastructure if CI needs that before the probe;
+- introduce the manifest with the first real pinned non-Qt dependency;
 - record `builtin-baseline` exactly;
 - avoid floating registry head in accepted evidence;
 - overrides must state why Atlas differs from the curated registry version;

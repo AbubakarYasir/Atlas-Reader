@@ -1,6 +1,6 @@
 # Atlas Reader Native — Agent Rules
 
-<!-- atlas-status: N2|accepted -->
+<!-- atlas-status: N3|accepted -->
 
 Read this before changing the repository.
 
@@ -192,10 +192,10 @@ Never inspect, print, commit, or request secrets unnecessarily. Password-protect
 
 ## Current stop gate
 
-**N0 Accepted. N1 Accepted. N2 is Accepted; N3 is Not started.**
+**N0, N1, N2 and N3 are Accepted. N4 has not started on this branch.**
 
-N2 may add only the contracts, fixtures, probe/adaptor code, dependency/bootstrap configuration, benchmarks, preservation/security experiments, licensing evidence and documentation required to qualify Qt PDF, PDFium and qpdf and assign responsibilities.
+N2 is frozen: do not reopen its engine qualification or change the accepted Qt PDF/qpdf responsibility split without new regression evidence and an explicit decision update.
 
-Do **not** build the production Reader, SQLite/FTS5 index, scanner, bookmark editor/local overlay, annotations/ink, migration, installer, or later-checkpoint feature code.
+N3 implementation, exact-head CI, package and owner acceptance are complete. Do **not** add N4 Reader/viewport work on this completed branch. N4 must start from the verified accepted `main` merge on its own `native-v2-n4-reader-foundation` branch.
 
-N2 is Accepted: evidence and strict CI passed, and the owner recorded `N2 PASS` on 2026-09-27. N3 remains Not started pending the requested closure report.
+Use `docs/baselines/N3_ACCEPTANCE.md` for the frozen owner decision and `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md` for detailed evidence. Do not reopen N3 without concrete regression evidence.

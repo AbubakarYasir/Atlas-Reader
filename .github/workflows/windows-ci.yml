@@ -25,6 +25,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Bootstrap pinned vcpkg for N3 storage
+        shell: pwsh
+        run: |
+          $vcpkgRoot = Join-Path $env:RUNNER_TEMP 'atlas-vcpkg-9e2895bf'
+          if (-not (Test-Path -LiteralPath (Join-Path $vcpkgRoot '.git'))) {
+            git clone --filter=blob:none https://github.com/microsoft/vcpkg.git $vcpkgRoot
+            if ($LASTEXITCODE -ne 0) { throw 'Could not fetch the pinned vcpkg source.' }
+          }
+          git -C $vcpkgRoot fetch --no-tags origin 9e2895bf6afb246396d85232ba70fcfa1fa67ba1
+          if ($LASTEXITCODE -ne 0) { throw 'Could not fetch the declared vcpkg baseline.' }
+          git -C $vcpkgRoot checkout --detach 9e2895bf6afb246396d85232ba70fcfa1fa67ba1
+          if ($LASTEXITCODE -ne 0) { throw 'The vcpkg checkout does not match its declared baseline.' }
+          & (Join-Path $vcpkgRoot 'bootstrap-vcpkg.bat') -disableMetrics
+          if ($LASTEXITCODE -ne 0) { throw 'Could not bootstrap the pinned vcpkg executable.' }
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "VCPKG_ROOT=$vcpkgRoot"
+
       - name: Validate Markdown governance
         if: matrix.configuration == 'Release'
         shell: pwsh
@@ -205,9 +221,11 @@ jobs:
           -G "Visual Studio 17 2022"
           -A x64
           -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+          -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
           -DPDFium_DIR="$env:PDFium_DIR"
           -DATLAS_ENABLE_PDFIUM_PROBE=ON
-          "-DATLAS_PRERELEASE:STRING=alpha.2"
+          "-DATLAS_PRERELEASE:STRING=beta.1"
           -DATLAS_WARNINGS_AS_ERRORS=ON
 
       - name: Build
@@ -402,9 +420,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for atlas_pdfium_security_probe with exit code $LASTEXITCODE" }
 
           @(
-            'Atlas Reader Native N2 Windows engineering artifact'
-            'Version: 2.0.0-alpha.2'
-            'Checkpoint: N2 PDF engine qualification spike'
+            'Atlas Reader Native inherited N2 PDF qualification probes'
+            'Version: 2.0.0-beta.1'
+            'Checkpoint evidence origin: N2 PDF engine qualification spike'
             "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
             "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
             'GitHub run: ${{ github.run_id }}'
@@ -439,5 +457,63 @@ jobs:
         with:
           name: atlas-reader-n2-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
           path: artifact/n2-windows-x64
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Stage accepted N3 Library beta package
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          $stage = Join-Path $PWD 'artifact/n3-windows-x64'
+          $docs = Join-Path $stage 'docs'
+          New-Item -ItemType Directory -Force -Path $stage, $docs | Out-Null
+
+          $source = Join-Path $PWD 'build/ci-Release/Release/atlas_reader.exe'
+          Copy-Item $source (Join-Path $stage 'atlas_reader.exe')
+          Copy-Item 'qt.conf' (Join-Path $stage 'qt.conf')
+          Copy-Item 'docs/N3_LIBRARY_INDEX_PLAN.md' $docs
+          Copy-Item 'docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md' $docs
+          Copy-Item 'docs/baselines/N3_ACCEPTANCE.md' $docs
+          Copy-Item 'docs/CHECKPOINT_QA_MATRIX.md' $docs
+
+          $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
+          & $deploy --release --no-translations --compiler-runtime --qmldir (Join-Path $PWD 'qml') (Join-Path $stage 'atlas_reader.exe')
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for the N3 package with exit code $LASTEXITCODE" }
+
+          @(
+            'Atlas Reader Native N3 Windows accepted beta package'
+            'Version: 2.0.0-beta.1 (N3 Accepted by owner on 2026-09-27)'
+            "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
+            "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
+            'Configuration: Release'
+            'Qt baseline: 6.10.3 MSVC 2022 64-bit'
+            'SQLite: 3.53.4#1 via pinned x64-windows-static-md triplet'
+            'Scope: native Library/index/search; the built-in Reader begins at N4'
+          ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N3_BUILD_INFO.txt')
+
+          $profile = Join-Path $env:RUNNER_TEMP 'atlas-n3-package-smoke'
+          New-Item -ItemType Directory -Force -Path $profile | Out-Null
+          & (Join-Path $stage 'atlas_reader.exe') --profile-directory $profile --language en --theme light --quit-after-ms 800
+          if ($LASTEXITCODE -ne 0) { throw "Packaged Atlas Reader smoke failed with exit code $LASTEXITCODE" }
+
+          Get-ChildItem $stage -File -Recurse | Sort-Object FullName | ForEach-Object {
+            $relative = [IO.Path]::GetRelativePath($stage, $_.FullName).Replace('\', '/')
+            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $relative"
+          } | Set-Content -Encoding UTF8 (Join-Path $stage 'SHA256SUMS.txt')
+
+          $archive = Join-Path $PWD 'artifact/atlas-reader-n3-windows-x64.zip'
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $archive -CompressionLevel Optimal
+          $archiveHash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$archiveHash  atlas-reader-n3-windows-x64.zip" | Set-Content -Encoding UTF8 "$archive.sha256"
+
+      - name: Upload accepted N3 Library beta package
+        if: matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n3-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            artifact/n3-windows-x64
+            artifact/atlas-reader-n3-windows-x64.zip
+            artifact/atlas-reader-n3-windows-x64.zip.sha256
           if-no-files-found: error
           retention-days: 14

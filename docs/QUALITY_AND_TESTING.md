@@ -2,6 +2,8 @@
 
 ## Principle
 
+Apply the [format gates](FORMAT_EXPANSION_ROADMAP.md) and [competitive action tests](COMPETITIVE_GAP_ACTIONS.md) alongside PDF requirements. F1–F4 occur before N8; final backup, accessibility, performance and packaging qualification covers every admitted format.
+
 Atlas is document/research software. Correctness means more than “does not crash.” A release can be fast and still be unacceptable if it corrupts a PDF, attaches bookmarks to the wrong copy, loses Arabic text, breaks accessibility, or silently discards local research.
 
 Every checkpoint therefore produces evidence across correctness, preservation, performance, accessibility, and recovery.
@@ -294,3 +296,8 @@ Phrases such as “later hardening,” “known limitation,” or “future work
 valid by themselves. They must name the owning checkpoint, regression evidence
 and condition that blocks that checkpoint, as defined in
 `CHECKPOINT_QA_MATRIX.md`.
+
+
+## Offline editing acceptance
+
+[E1–E5](OFFLINE_EDITING_ROADMAP.md) require independent output verification, source preservation, failure injection, Arabic/accessibility and offline execution evidence. Redaction must pass extraction/object/image recovery checks, not just visual inspection. Signature tests distinguish integrity, trust and unknown revocation. Required stages cannot be waived by generic limitation notes.

@@ -3,7 +3,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$ignoredSegments = @('\build\', '\out\', '\vendor\', '\third_party\')
+$ignoredSegments = @('\artifacts\', '\build\', '\out\', '\vendor\', '\third_party\')
 $markdownFiles = Get-ChildItem -LiteralPath $repoRoot -Recurse -File -Filter '*.md' |
     Where-Object {
         $path = $_.FullName
@@ -42,7 +42,8 @@ $liveStatusFiles = @(
     'CHANGELOG.md',
     'AGENTS.md',
     'docs/README.md',
-    'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md',
+    'docs/N3_LIBRARY_INDEX_PLAN.md',
+    'docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md',
     'docs/DEPENDENCIES_AND_TOOLS.md'
 )
 
@@ -70,6 +71,18 @@ foreach ($relativePath in $liveStatusFiles) {
     }
 }
 
+# Closed checkpoint records keep their historical status when the active
+# checkpoint advances.
+$acceptedHistoryFile = 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md'
+$acceptedHistoryText = Get-Content -LiteralPath (Join-Path $repoRoot $acceptedHistoryFile) -Raw
+$acceptedHistoryMatch = [regex]::Match(
+    $acceptedHistoryText,
+    '<!--\s*atlas-status:\s*([^>]+?)\s*-->'
+)
+if (-not $acceptedHistoryMatch.Success -or $acceptedHistoryMatch.Groups[1].Value.Trim() -ne 'N2|accepted') {
+    $errors.Add("Closed checkpoint record must retain historical status N2|accepted: $acceptedHistoryFile")
+}
+
 $checkpointText = Get-Content -LiteralPath (Join-Path $repoRoot 'CHECKPOINTS.md') -Raw
 foreach ($number in 3..11) {
     $sectionMatch = [regex]::Match(
@@ -90,7 +103,28 @@ foreach ($number in 3..11) {
     }
 }
 
+$editingText = Get-Content -LiteralPath (Join-Path $repoRoot 'docs/OFFLINE_EDITING_ROADMAP.md') -Raw
+foreach ($number in 1..5) {
+    $section = [regex]::Match($editingText, "(?ms)^## E$number\b.*?(?=^## |\z)")
+    if (-not $section.Success) {
+        $errors.Add("Missing offline editing checkpoint E$number")
+        continue
+    }
+    foreach ($heading in @('Work', 'Automated QA', 'Owner test')) {
+        if ($section.Value -notmatch "(?m)^### $([regex]::Escape($heading))\s*$") {
+            $errors.Add("E$number is missing '$heading'")
+        }
+    }
+    if ($section.Value -notmatch '(?m)^\*\*Stop gate:\*\*' -or
+        $section.Value -notmatch "E$number PASS") {
+        $errors.Add("E$number is missing its stop gate or explicit owner PASS")
+    }
+}
+
 $requiredReferences = @(
+    @{ File = 'CHECKPOINTS.md'; Text = 'OFFLINE_EDITING_ROADMAP.md' },
+    @{ File = 'docs/FEATURE_SCOPE_2_0.md'; Text = 'OFFLINE_EDITING_ROADMAP.md' },
+    @{ File = 'docs/CHECKPOINT_QA_MATRIX.md'; Text = 'OFFLINE_EDITING_ROADMAP.md' },
     @{ File = 'docs/README.md'; Text = 'CHECKPOINT_QA_MATRIX.md' },
     @{ File = 'docs/README.md'; Text = 'GIT_WORKFLOW.md' },
     @{ File = 'docs/DEVELOPMENT_WORKFLOW.md'; Text = 'GIT_WORKFLOW.md' },

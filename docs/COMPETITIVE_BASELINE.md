@@ -2,6 +2,8 @@
 
 ## Purpose
 
+The dated [competitive action register](COMPETITIVE_GAP_ACTIONS.md) records sources, observed evidence, gaps, stage owners and tests. The owner's 2026-09-27 clarification is binding: this is an audit of missing capabilities and quality requirements before the main 2.0 launch, not a design-copying exercise. Liking Foxit's appearance does not select its ribbon, layout, branding or assets for Atlas. Preserve Atlas's own design contract.
+
 Atlas competes for user attention with mature PDF/document products, but the goal is not feature-count parity. Competitor behavior is used to identify user expectations, interoperability requirements, and quality bars. Atlas should deliberately exceed them in its chosen core workflows rather than imitate every feature.
 
 Primary references:
@@ -28,7 +30,7 @@ Reference for:
 - document metadata/security inspection;
 - behavior on unusual enterprise PDFs.
 
-Atlas response: match the safety/interoperability expectations relevant to our workflows, but do not chase office-suite/conversion/form/signing breadth for Windows 2.0.
+Atlas response: match the safety/interoperability expectations relevant to our workflows, with owner-approved offline editing/form/redaction/signature stages E1–E5. Office conversion and online services remain excluded.
 
 ### Foxit
 
@@ -137,15 +139,13 @@ Windows 2.0 does not compete on:
 
 - OCR;
 - document conversion;
-- arbitrary content editing;
-- forms authoring;
 - e-sign workflow platforms;
 - enterprise cloud review;
 - AI assistants;
 - multimedia;
 - full office-suite functionality.
 
-Adding those before the core is excellent would make Atlas weaker, not stronger.
+The confirmed offline expansion is defined in [E1–E5](OFFLINE_EDITING_ROADMAP.md), after the core and format stages but before final backup/accessibility/release qualification. This supersedes the earlier exclusion of content editing, form authoring and offline signatures.
 
 ## 5. How competitor research is performed
 

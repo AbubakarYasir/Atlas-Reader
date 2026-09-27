@@ -152,7 +152,9 @@ No automatic dependency update is merged without tests. Critical security fixes 
 
 ## 8. Network/privacy
 
-Windows 2.0 core features work offline.
+Windows 2.0 features work offline. Accounts, cloud connectors/sync, shared reviews/collaboration, online AI, remote document/font resources and in-app update checks are excluded. Document scripts and form submission are disabled. Ordinary web links may be handed to the system browser only after an explicit destination-confirmed action.
+
+E4 redaction requires removal of underlying data and prior revisions in a new output, with extraction/object/image recovery tests; covering content is never secure deletion. E5 signatures require private-key isolation and explicit offline trust/revocation uncertainty, without certificate enrollment, revocation fetching or timestamp-service requests. See [E1–E5](OFFLINE_EDITING_ROADMAP.md) for blocking tests.
 
 No silent:
 

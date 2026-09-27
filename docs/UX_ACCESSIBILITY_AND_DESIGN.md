@@ -2,7 +2,13 @@
 
 ## Product feel
 
+Competitor research audits capability gaps and workflow quality, not visual copying. The owner's preference for aspects of Foxit does not authorize adopting its layout, ribbon, branding or assets. Existing Atlas primitives and this contract govern interface changes; each change still requires rendered, keyboard, scaling and RTL review.
+
 Atlas should feel like a serious research instrument, not an office-suite toolbar wall and not a decorative consumer reader.
+
+It must also avoid the recognizable "AI-generated app" look: no generic dashboard of equal cards, decorative gradients, inflated headings, random glow, novelty icons, or filler copy. The visual language should feel intentionally designed by an experienced product team—modern, calm, essential and durable rather than trendy or dated.
+
+The owner-selected application mark is stored in `assets/branding`. Use its standardized derivatives for application/package identity; do not treat its illustrative style as permission to add gradients, glow or decorative imagery to the working interface.
 
 Default UI principles:
 
@@ -14,6 +20,9 @@ Default UI principles:
 - keyboard parity with pointer actions;
 - status/recovery language explains what happened and what is safe to do next;
 - Arabic/RTL is a native layout mode, not translated LTR.
+- controls use contemporary spacing, radii and interaction states rather than large square grey defaults;
+- every label uses ordinary reader language, not engineering jargon;
+- visual polish never hides missing behavior, a broken state or an inaccessible action.
 
 ## 1. Desktop shell
 
@@ -238,6 +247,8 @@ Token groups should cover:
 - animation durations.
 
 System light/dark/high-contrast behavior takes precedence over a rigid branded palette.
+
+The system is judged as a whole, not by whether individual components are attractive. Navigation, search, status, content and actions need a clear hierarchy; repeated containers are used only when they explain grouping. Hover, pressed, disabled and keyboard-focus states are deliberate. A sparse screen must still look finished, while a dense research screen must remain tidy and scannable.
 
 ## 13. Motion
 

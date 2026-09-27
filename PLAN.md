@@ -1,12 +1,12 @@
 # Atlas Reader Native — Master Plan to 2.0
 
-<!-- atlas-status: N2|accepted -->
+<!-- atlas-status: N3|accepted -->
 
-**Status:** N2 PDF-engine qualification — Accepted by owner on 2026-09-27
+**Status:** N0–N3 Accepted as of 2026-09-27; N4 has not started
 
-**Current engineering preview:** `2.0.0-alpha.2`
+**Current engineering preview:** `2.0.0-beta.1`
 
-**Accepted checkpoints:** N0, N1 and N2; N3 Not started
+**Accepted checkpoints:** N0, N1, N2 and N3
 
 **Primary implementation target:** Windows 11
 
@@ -31,6 +31,7 @@ The native successor exists to make that promise compatible with graphics-heavy 
 | **Never lost silently** | No false save success, blind overwrite, ambiguous relinking, or destructive unavailable-root reconciliation |
 | **Core is portable** | Shared domain/application rules contain no Windows-only assumptions |
 | **Engine replaceability** | PDF vendor libraries remain behind Atlas-owned interfaces |
+| **Format-ready core** | Shared book identity, Library, metadata, search, progress, backup and UI models do not assume every future book is a PDF; PDF-only rendering and mutation stay inside explicit PDF adapters |
 | **Arabic/RTL first-class** | Unicode, bidi, Arabic UI, mixed-script metadata/outlines are release requirements |
 | **Accessibility first** | Keyboard, Narrator/UIA, visible focus, text scale, high contrast are architectural gates |
 | **Evidence before claims** | Planned, Implemented, Verified, Accepted, Released are distinct |
@@ -75,7 +76,7 @@ qpdf 12.4.1 CLI to structural/security/write responsibilities. Standalone
 PDFium remains comparison evidence and a replaceable future candidate, not an N2
 production dependency. The route was Accepted by owner `N2 PASS` on 2026-09-27.
 
-N3 is Not started. The owner requested a closure report before N3 begins.
+N2 closure was completed and reported to the owner before N3 began on 2026-09-27. N3 implementation, automated checks, exact package and owner testing are complete; the owner recorded `N3 PASS` on 2026-09-27. See `docs/baselines/N3_ACCEPTANCE.md`.
 
 Every future checkpoint is governed by `docs/CHECKPOINT_QA_MATRIX.md`: automated
 evidence, manual/owner evidence, blocking failures and transferred limitations
@@ -83,6 +84,10 @@ must be named before work begins. Git/PR/status synchronization follows
 `docs/GIT_WORKFLOW.md`.
 
 ### Recorded plan changes
+
+Owner confirmation also requires [E1–E5 offline editing](docs/OFFLINE_EDITING_ROADMAP.md): page organization, original text/image editing, equations, form authoring, secure redaction and offline signatures after F4 and before N8. OCR, audio notebooks, online services and collaboration remain excluded. N3 stays active; this is a plan change only.
+
+Owner direction on 2026-09-27 expanded Windows 2.0 to include F1 EPUB, F2 CBZ/CBR and F3 user-owned, DRM-free AZW3, MOBI and PRC files after N7, plus F4 KFX decision before N8. This increases delivery work and the final QA matrix; no unchanged date is implied. The [competitive action register](docs/COMPETITIVE_GAP_ACTIONS.md) is mandatory in its assigned stages.
 
 Plan changes are recorded instead of silently rewriting why a decision was
 made:
@@ -122,7 +127,7 @@ Implementation begins in N3, after N2 PDF responsibilities are accepted.
 - byte-backed/read-session behavior where useful;
 - no PDF parse/render/save or large SQL on UI thread.
 
-The production reader begins in N4. N2 only qualifies the engines/adapters it may use.
+The production PDF reader begins in N4. F1–F3 then reuse the proven viewport/library shell through format-specific adapters before N8 and final release qualification. N2 only qualifies the PDF engines/adapters N4 may use.
 
 ### Pillar 3 — Bookmarks and Outlines (P0 / strategic differentiator)
 
@@ -161,11 +166,13 @@ Explicitly deferred from Windows 2.0 unless owner scope changes:
 - cloud accounts/sync;
 - AI document chat/analysis;
 - PDF password cracking/restriction bypass;
-- arbitrary PDF text/object editing;
-- forms/signature-authoring workflow;
+- audio notebooks;
+- online collaboration/shared reviews;
 - office conversion;
 - multimedia/3D;
-- full EPUB rendering/annotation.
+- DRM bypass or dependence on proprietary account/cloud delivery for book opening.
+
+Other-book support is part of Windows 2.0 rather than an implied later possibility. After the PDF-first N4–N7 foundation, F1 admits DRM-free EPUB, F2 admits CBZ/CBR, and F3 admits user-owned, DRM-free AZW3, MOBI and PRC files before migration and final qualification. F4 must decide KFX from lawful evidence before 2.0 but cannot promise support or bypass DRM in advance. The binding admission order, shared behavior, open-source dependency rule, security limits and owner gates live in `docs/FORMAT_EXPANSION_ROADMAP.md`.
 
 A competitor having one of these does not make Atlas 2.0 a failure. Core quality has priority over feature-count vanity.
 
@@ -289,7 +296,7 @@ N2 requires:
 - strict final CI;
 - explicit owner `N2 PASS`.
 
-Until then N3 is Not started.
+N3 is Accepted; its frozen decision and detailed evidence are governed by `docs/baselines/N3_ACCEPTANCE.md` and `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md`. N4 is the next checkpoint.
 
 ## VII. Threading/performance model
 
@@ -449,7 +456,7 @@ Atlas 2.0 succeeds when:
 
 The Flutter application is a **behavior/data reference**, not a source-code template. Port contracts deliberately; do not recreate its widget/service structure in C++/QML.
 
-Native and Flutter builds may run side-by-side through beta. PDFs are the strongest portable bridge. Legacy app-local migration is implemented only after the native schema/identity model is stable enough to avoid repeated destructive converters.
+Native Atlas is the active product. The stopped Flutter source is retained only as an obsolete backup and migration reference; no Flutter builds are part of the current plan. PDFs are the strongest portable bridge. Any legacy app-local migration is implemented only after the native schema/identity model is stable enough to avoid repeated destructive converters.
 
 ## XVI. Documentation map
 

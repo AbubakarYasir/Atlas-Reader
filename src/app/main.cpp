@@ -1,17 +1,23 @@
 #include "app/diagnostics/ShellMetrics.h"
+#include "app/library/LibraryController.h"
 #include "app/logging/Logging.h"
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QGuiApplication>
+#include <QDir>
+#include <QImage>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickWindow>
 #include <QStyleHints>
+#include <QStandardPaths>
 #include <QTimer>
 
 #include <chrono>
 #include <cstdlib>
+#include <filesystem>
+#include <algorithm>
 
 namespace {
 
@@ -26,6 +32,14 @@ QString normalizedTheme(const QString& value) {
         return normalized;
     }
     return QStringLiteral("system");
+}
+
+std::filesystem::path filesystemPath(const QString& value) {
+#ifdef _WIN32
+    return std::filesystem::path{value.toStdWString()};
+#else
+    return std::filesystem::path{value.toStdString()};
+#endif
 }
 
 } // namespace
@@ -45,7 +59,7 @@ int main(int argc, char* argv[]) {
 
     QCommandLineParser parser;
     parser.setApplicationDescription(
-        QStringLiteral("Atlas Reader Native N1 empty-shell baseline"));
+        QStringLiteral("Atlas Reader Native library and index beta"));
     parser.addHelpOption();
     parser.addVersionOption();
 
@@ -71,12 +85,43 @@ int main(int argc, char* argv[]) {
     const QCommandLineOption benchmarkShellOption(
         QStringLiteral("benchmark-shell"),
         QStringLiteral("Run the deterministic empty-shell resize exercise after first frame."));
+    const QCommandLineOption profileDirectoryOption(
+        QStringLiteral("profile-directory"),
+        QStringLiteral("Use an explicit Atlas profile directory."),
+        QStringLiteral("path"));
+    const QCommandLineOption screenshotFileOption(
+        QStringLiteral("screenshot-file"),
+        QStringLiteral("Save a first-frame PNG for visual QA."),
+        QStringLiteral("path"));
+    const QCommandLineOption screenshotDelayOption(
+        QStringLiteral("screenshot-delay-ms"),
+        QStringLiteral("Delay first-frame screenshot capture for asynchronous UI QA."),
+        QStringLiteral("milliseconds"),
+        QStringLiteral("100"));
+    const QCommandLineOption addLibraryRootOption(
+        QStringLiteral("add-library-root"),
+        QStringLiteral("Add and scan one library root for QA."),
+        QStringLiteral("path"));
+    const QCommandLineOption windowWidthOption(
+        QStringLiteral("window-width"),
+        QStringLiteral("Set the initial window width for visual QA."),
+        QStringLiteral("pixels"));
+    const QCommandLineOption windowHeightOption(
+        QStringLiteral("window-height"),
+        QStringLiteral("Set the initial window height for visual QA."),
+        QStringLiteral("pixels"));
 
     parser.addOption(languageOption);
     parser.addOption(themeOption);
     parser.addOption(quitAfterOption);
     parser.addOption(metricsFileOption);
     parser.addOption(benchmarkShellOption);
+    parser.addOption(profileDirectoryOption);
+    parser.addOption(screenshotFileOption);
+    parser.addOption(screenshotDelayOption);
+    parser.addOption(addLibraryRootOption);
+    parser.addOption(windowWidthOption);
+    parser.addOption(windowHeightOption);
     parser.process(app);
     const auto argumentsReady = MetricsClock::now();
 
@@ -111,10 +156,20 @@ int main(int argc, char* argv[]) {
     QQmlApplicationEngine engine;
     metrics.recordStage(QStringLiteral("startup.qml_engine_ready_ms"));
 
+    const QString profileDirectory = parser.isSet(profileDirectoryOption)
+        ? QDir::cleanPath(parser.value(profileDirectoryOption))
+        : QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    atlas::app::LibraryController libraryController(
+        filesystemPath(QDir{profileDirectory}.filePath(QStringLiteral("library.sqlite3"))));
+    for (const auto& rootPath : parser.values(addLibraryRootOption)) {
+        libraryController.addRoot(QUrl::fromLocalFile(QDir::cleanPath(rootPath)));
+    }
+
     engine.rootContext()->setContextProperty(
         QStringLiteral("atlasVersion"), QGuiApplication::applicationVersion());
     engine.rootContext()->setContextProperty(QStringLiteral("atlasInitialArabic"), isArabic);
     engine.rootContext()->setContextProperty(QStringLiteral("atlasInitialDark"), initialDark);
+    engine.rootContext()->setContextProperty(QStringLiteral("libraryController"), &libraryController);
 
     QObject::connect(
         &engine,
@@ -133,7 +188,26 @@ int main(int argc, char* argv[]) {
     }
 
     if (auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst())) {
+        bool widthValid = false;
+        bool heightValid = false;
+        const int requestedWidth = parser.value(windowWidthOption).toInt(&widthValid);
+        const int requestedHeight = parser.value(windowHeightOption).toInt(&heightValid);
+        if (widthValid && heightValid && requestedWidth > 0 && requestedHeight > 0) {
+            window->resize(requestedWidth, requestedHeight);
+        }
         metrics.attach(window);
+        const QString screenshotPath = parser.value(screenshotFileOption);
+        if (!screenshotPath.isEmpty()) {
+            bool screenshotDelayValid = false;
+            const int requestedDelay = parser.value(screenshotDelayOption).toInt(&screenshotDelayValid);
+            const int screenshotDelay = screenshotDelayValid ? std::max(0, requestedDelay) : 100;
+            QObject::connect(window, &QQuickWindow::frameSwapped, window, [window, screenshotPath, screenshotDelay] {
+                QTimer::singleShot(screenshotDelay, window, [window, screenshotPath] {
+                    const bool saved = window->grabWindow().save(screenshotPath, "PNG");
+                    if (!saved) qCWarning(atlas::logging::startup) << "Could not save UI screenshot";
+                });
+            }, Qt::SingleShotConnection);
+        }
     } else {
         qCCritical(atlas::logging::startup) << "QML root object is not a QQuickWindow";
         return EXIT_FAILURE;

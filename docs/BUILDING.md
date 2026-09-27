@@ -1,7 +1,7 @@
 # Building Atlas Reader Native
 
-N0 and N1 are Accepted. N2 is the accepted PDF-engine qualification checkpoint
-(`2.0.0-alpha.2`) and is Accepted by owner on 2026-09-27.
+N0–N3 are Accepted. N3 introduced the first production dependency through the
+pinned vcpkg manifest; N4 has not started in this accepted snapshot.
 
 Before push, run the documentation governance check:
 
@@ -9,13 +9,13 @@ Before push, run the documentation governance check:
 pwsh -File tools/docs/check-markdown.ps1
 ```
 
-The base N2 branch initially inherits the accepted N1 shell/toolchain and deliberately adds PDF candidate dependencies only in focused probe commits. A probe dependency compiling successfully does **not** mean that dependency is accepted for production.
+The native build inherits the accepted N1 shell/toolchain. N2 added PDF candidate dependencies only in focused qualification probes; those probe dependencies did not automatically become production dependencies. N3 now adds pinned SQLite for the Library index.
 
 ## Canonical Windows baseline inherited from N1
 
 See `TOOLCHAIN.md` and the accepted N1 records for the binding Windows baseline.
 
-For the public alpha baseline:
+For the accepted beta development baseline:
 
 - Windows 11 development machine recommended;
 - Visual Studio 2022 with **Desktop development with C++**;
@@ -25,7 +25,7 @@ For the public alpha baseline:
 - Git;
 - Qt **6.10.3** MSVC 2022 64-bit for canonical public parity.
 
-N2 starts from this accepted baseline instead of changing toolchains merely because a candidate library uses different upstream tooling. Candidate-specific tools are documented separately when needed.
+N3 retains this accepted toolchain. Candidate-specific tools are documented separately when needed.
 
 Qt Creator is optional. The repository command line remains the source of truth.
 
@@ -46,13 +46,50 @@ git --version
 
 The Visual Studio generator discovers MSVC without requiring a Ninja-specific Developer PowerShell workflow for ordinary Atlas targets.
 
+The configure preset uses the pinned vcpkg manifest. From the repository root (skip clone/bootstrap if `build\vcpkg` already exists at the pinned baseline):
+
+```powershell
+git clone https://github.com/microsoft/vcpkg.git .\build\vcpkg
+git -C .\build\vcpkg checkout 9e2895bf6afb246396d85232ba70fcfa1fa67ba1
+.\build\vcpkg\bootstrap-vcpkg.bat -disableMetrics
+$env:VCPKG_ROOT = (Resolve-Path .\build\vcpkg).Path
+```
+
+Before running CTest, prepare the generated N2 fixtures just as CI does:
+
+```powershell
+python -m pip install --disable-pip-version-check -r tests/fixtures/pdf/requirements-validation.txt
+python tests/fixtures/pdf/source/generate_a006_unicode_semantics.py
+python tests/fixtures/pdf/source/generate_a007_a008_security_semantics.py
+python tests/fixtures/pdf/source/generate_a009_restricted_permissions.py
+python tests/fixtures/pdf/source/generate_a010_certification_structure.py
+python tests/fixtures/pdf/validate_n2_fixtures.py --output build/local-fixture-validation.json
+```
+
+The validator must report `"passed": true`; fixture PDFs are generated into the ignored `tests/fixtures/pdf/generated` directory and should not be committed.
+
+Then run `cmake --preset windows-msvc2022`. Windows CI performs the same pinned setup. SQLite uses the `x64-windows-static-md` triplet: SQLite is statically linked while matching Qt/MSVC's dynamic CRT. The accepted PDF route remains unchanged.
+
+For Visual Studio 2026 installations, the repository also has a `windows-msvc2026` preset with matching Debug/Release build and test presets. Install the accepted Qt 6.10.3 Windows MSVC distribution with Qt PDF, set `CMAKE_PREFIX_PATH` to its `msvc2022_64` directory, and use:
+
+```powershell
+$env:VCPKG_ROOT = (Resolve-Path .\build\vcpkg).Path
+$env:CMAKE_PREFIX_PATH = 'C:\Qt\6.10.3\msvc2022_64'
+$env:PATH = "$env:CMAKE_PREFIX_PATH\bin;$env:PATH"
+cmake --preset windows-msvc2026
+cmake --build --preset windows-2026-debug
+ctest --preset windows-2026-debug
+```
+
+The Visual Studio 2022 preset remains the CI baseline. Visual Studio 2026 support is a local-development option and does not change the shipping toolchain decision.
+
 ## Configure once
 
 ```powershell
 cmake --preset windows-msvc2022
 ```
 
-The preset identifies the active engineering preview as `2.0.0-alpha.2`.
+The preset identifies the active engineering preview as `2.0.0-beta.1`. The vcpkg manifest installs SQLite `3.53.4#1` with FTS5 from its pinned baseline using the `x64-windows-static-md` triplet. Set `VCPKG_ROOT` to the checked-out vcpkg tree before configuring.
 
 ## Debug
 
@@ -210,7 +247,7 @@ Each lane:
 1. checks out the exact commit;
 2. installs public Qt 6.10.3 MSVC 2022 x64;
 3. reports toolchain/checkpoint context;
-4. configures with Visual Studio 17 2022 x64 and `ATLAS_PRERELEASE=alpha.2`;
+4. configures with Visual Studio 17 2022 x64 and `ATLAS_PRERELEASE=beta.1`;
 5. enables `ATLAS_WARNINGS_AS_ERRORS=ON`;
 6. builds;
 7. runs CTest.
@@ -310,6 +347,6 @@ Confirm:
 
 ## Dependency policy
 
-N2 may add Qt PDF, PDFium and qpdf only as focused qualification dependencies behind Atlas-owned adapters/probes.
+N2 added Qt PDF, PDFium and qpdf only as focused qualification dependencies behind Atlas-owned adapters/probes.
 
-SQLite/FTS5, scanner, production Reader, production Bookmarks, annotations/ink, migration and installer dependencies remain closed until their checkpoints.
+SQLite/FTS5 is active in N3. Scanner work belongs to N3.2; the production Reader to N4; complete Bookmarks to N5; annotations/ink to N6; migration/backup to N8; and installer work to the desktop/release gates.

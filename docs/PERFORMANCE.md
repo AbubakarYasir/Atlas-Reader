@@ -224,3 +224,18 @@ A regression is investigated when:
 - startup/reader hot path drifts materially from prior accepted checkpoint.
 
 A performance regression may be accepted only with a documented tradeoff and owner decision. Accepted tradeoffs belong in checkpoint evidence/changelog so they are not rediscovered later.
+
+## N3 repeatable Library probe
+
+`atlas_n3_library_benchmark` measures three separate operations against a copied/synthetic PDF folder: safe enumeration, metadata/FTS insertion, and warmed metadata search. It writes JSON to standard output and never edits a source PDF.
+
+Example after a Release build:
+
+```powershell
+.\build\windows-msvc2026\Release\atlas_n3_library_benchmark.exe `
+  C:\Path\To\Copied-Test-Library `
+  "$env:TEMP\atlas-n3-benchmark.sqlite3" `
+  atlas
+```
+
+Record the exact source commit, machine, CPU/RAM, storage model/type/filesystem, file count/shape, build configuration and JSON result. Run only on copied or synthetic data. A fast NVMe result cannot stand in for the separate removable/slower-storage owner observation.

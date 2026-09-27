@@ -36,6 +36,9 @@ __pycache__/
 *.sqlite3
 *.db
 /artifacts/
+tests/fixtures/pdf/generated/A006_unicode_semantics.pdf
+tests/fixtures/pdf/generated/A007_malformed_truncated.pdf
+tests/fixtures/pdf/generated/A008_password_rc4_40.pdf
 
 # Local dependencies/tooling
 vcpkg_installed/

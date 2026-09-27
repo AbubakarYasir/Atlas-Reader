@@ -597,7 +597,7 @@ std::vector<LibraryRecord> SqliteLibraryIndex::allRecords() const {
         "SELECT d.document_id, d.title, d.author, d.availability, "
         "(SELECT l.source_path FROM document_locations l WHERE l.document_id = d.document_id "
         " ORDER BY l.location_id LIMIT 1) "
-        "FROM documents d ORDER BY d.title COLLATE NOCASE, d.document_id"};
+        "FROM documents d ORDER BY d.file_name COLLATE NOCASE, d.document_id"};
     std::vector<LibraryRecord> result;
     for (;;) {
         const int step = sqlite3_step(statement.get());
@@ -625,7 +625,7 @@ std::vector<LibraryRecord> SqliteLibraryIndex::recordsForRoot(std::string rootId
     Statement statement{impl_->db,
         "SELECT DISTINCT d.document_id, d.title, d.author, d.availability, l.source_path "
         "FROM documents d JOIN document_locations l ON l.document_id = d.document_id "
-        "WHERE l.root_id = ?1 ORDER BY d.title COLLATE NOCASE, d.document_id"};
+        "WHERE l.root_id = ?1 ORDER BY d.file_name COLLATE NOCASE, d.document_id"};
     statement.bindText(1, rootId);
     std::vector<LibraryRecord> result;
     for (;;) {
@@ -987,7 +987,7 @@ std::vector<LibraryRecord> SqliteLibraryIndex::favorites() const {
     Statement statement{impl_->db,
         "SELECT d.document_id, d.title, d.author, d.availability, "
         "(SELECT l.source_path FROM document_locations l WHERE l.document_id = d.document_id ORDER BY l.location_id LIMIT 1) "
-        "FROM documents d WHERE d.is_favorite = 1 ORDER BY d.title COLLATE NOCASE, d.document_id"};
+        "FROM documents d WHERE d.is_favorite = 1 ORDER BY d.file_name COLLATE NOCASE, d.document_id"};
     std::vector<LibraryRecord> result;
     for (;;) {
         const int step = sqlite3_step(statement.get());

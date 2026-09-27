@@ -394,7 +394,7 @@ ApplicationWindow {
                 clip: true
                 model: libraryController
                 cellWidth: root.gridMode ? Math.max(240, width / Math.max(1, Math.floor(width / 280))) : width
-                cellHeight: root.gridMode ? 216 : 150
+                cellHeight: root.gridMode ? 236 : 174
                 keyNavigationEnabled: true
                 activeFocusOnTab: true
 
@@ -404,8 +404,13 @@ ApplicationWindow {
                     required property string bookAuthor
                     required property string sourcePath
                     required property string fileName
+                    required property string fileStem
+                    required property string fileExtension
                     required property string availability
                     required property bool favorite
+                    readonly property bool hasDistinctDocumentTitle: bookTitle.length > 0
+                        && bookTitle.toLowerCase() !== fileStem.toLowerCase()
+                        && bookTitle.toLowerCase() !== fileName.toLowerCase()
                     width: GridView.view.cellWidth
                     height: GridView.view.cellHeight
 
@@ -429,7 +434,7 @@ ApplicationWindow {
                                 color: availability === "available" ? root.accentSoft : (root.darkMode ? "#3b3330" : "#f3e8dc")
                                 Label {
                                     anchors.centerIn: parent
-                                    text: "PDF"
+                                    text: fileExtension || "FILE"
                                     color: availability === "available" ? root.accent : root.muted
                                     font.bold: true
                                 }
@@ -441,7 +446,7 @@ ApplicationWindow {
                                 spacing: 4
                                 Label {
                                     Layout.fillWidth: true
-                                    text: bookTitle || fileName
+                                    text: fileStem || fileName
                                     color: root.ink
                                     font.pixelSize: 16
                                     font.bold: true
@@ -449,7 +454,20 @@ ApplicationWindow {
                                 }
                                 Label {
                                     Layout.fillWidth: true
-                                    text: bookAuthor || (root.arabic ? "مؤلف غير مسجل" : "Unknown author")
+                                    visible: hasDistinctDocumentTitle
+                                    text: root.arabic ? "عنوان المستند: " + bookTitle : "Document title: " + bookTitle
+                                    color: root.muted
+                                    elide: Text.ElideRight
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: root.arabic
+                                        ? (bookAuthor.length > 0
+                                            ? "المؤلف: " + bookAuthor + "  •  النوع: " + fileExtension
+                                            : "النوع: " + fileExtension)
+                                        : (bookAuthor.length > 0
+                                            ? "Author: " + bookAuthor + "  •  Type: " + fileExtension
+                                            : "Type: " + fileExtension)
                                     color: root.muted
                                     elide: Text.ElideRight
                                 }

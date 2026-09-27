@@ -11,6 +11,13 @@ namespace atlas::index {
     const QString& embeddedTitle,
     const QString& fileBaseName);
 
+// The current local filename stem is the trustworthy primary identity shown in
+// the Library. Its extension is a separate protected field, while embedded
+// titles remain searchable metadata rather than silent UI renames.
+[[nodiscard]] QString libraryPrimaryDisplayName(
+    const QString& fileStem,
+    const QString& embeddedTitle);
+
 [[nodiscard]] QString libraryDisplayAuthor(const QString& embeddedAuthor);
 
 } // namespace atlas::index

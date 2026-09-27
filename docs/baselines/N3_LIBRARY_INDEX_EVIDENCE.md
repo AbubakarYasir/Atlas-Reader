@@ -82,3 +82,19 @@ Exact corrected implementation/package head `7a3a217710c7bcba41ce1ce240d21f6adb9
 GitHub artifact `10922991795`, `atlas-reader-n3-windows-x64-7a3a217710c7bcba41ce1ce240d21f6adb9aab1f`, is 79,598,673 bytes with workflow digest `sha256:d29cd01ac91430ab6a205f899260360041c04e9b3ed2d0ea4737bc654db47ab0`; the downloaded outer artifact matches that digest exactly. Its owner ZIP is 40,165,221 bytes with SHA-256 `70ac892127ed838b7d93ff78cfe3c10ab3479567867a13363e0f4c86f0d279e8`, matching the packaged checksum file. The packaged `N3_BUILD_INFO.txt` identifies the same implementation/checkout SHA and Release configuration; the packaged executable independently reports Windows GUI subsystem `2`.
 
 This closes the identified implementation defects but does not manufacture owner acceptance. Owner retest of the corrected package is required; skipped owner check 12 also remains open. N3 therefore remains **Ready for owner test**, and N4 remains closed.
+
+## Owner-test round 2 metadata hierarchy correction — 2026-09-27
+
+The owner passed the corrected console and card-action checks, but supplied real Library screenshots proving that plausible internal PDF titles such as `Binde.pdf`, `TIFF.pdf` and a wrapped `(PDF)` title could still displace the actual Arabic filename. The owner clarified the intended long-term editing model: filename is primary; internal/user-set title and author are secondary; extension is a separate protected value; the same behavior must extend to EPUB and later admitted formats.
+
+- The primary card name now comes from the current filename stem and never from embedded metadata. The extension is omitted from the large name so later stem editing can select a clean name without selecting or deleting the suffix.
+- A distinct embedded/user-set document title remains visible on a labelled secondary line and remains indexed for search. Author metadata and the actual uppercase extension appear on a separate information line; meaningless `Unknown author` placeholders are hidden.
+- File extension is a model role used by both the badge and information line, not a hardcoded `PDF` label. N3 still discovers PDFs only; this creates a reusable presentation/rename contract rather than falsely claiming EPUB implementation.
+- Normal Library, folder and Favorites queries sort by the same filename users see, so hidden embedded titles cannot make the list appear randomly ordered. A repository test locks this behavior.
+- The contract is reusable for EPUB, AZW3, KFX, MOBI, PRC, CBR and CBZ, but those formats remain future gated work; this N3 package discovers and opens PDF only.
+- The binding feature scope now separates metadata editing from filesystem renaming and requires normal renames to preserve `.pdf`, `.epub` or another supported extension.
+- Debug and Release each pass all 24 local tests, including the three exact owner-reported metadata shapes and unknown-author suppression.
+- Rendered review used temporary copies of the owner-reported Arabic PDFs with their real internal metadata. English wide, 760 px narrow and Arabic/RTL dark layouts preserve the hierarchy, keep actions within the card and show the extension separately. Source PDFs were not modified.
+- Local environment correction: the invalid saved Build Tools CMake entry was replaced with the installed Visual Studio Community CMake 4.2.3 path; `VCPKG_ROOT` now names this checkout's pinned bootstrap and `CMAKE_PREFIX_PATH` names Qt 6.10.3. With the Qt runtime active, both Visual Studio 2026 Debug and Release suites pass 24/24 without DLL dialogs.
+
+This correction requires a new packaged owner retest. Check 12 remains skipped, so N3 is still **Ready for owner test**, not Accepted, and N4 remains closed.

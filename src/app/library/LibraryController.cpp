@@ -85,11 +85,17 @@ QVariant LibraryController::data(const QModelIndex& modelIndex, int role) const 
     const auto& record = records_.at(static_cast<std::size_t>(modelIndex.row()));
     switch (role) {
     case DocumentIdRole: return QString::fromUtf8(record.id);
-    case TitleRole: return atlas::index::libraryDisplayTitle(
-        QString::fromUtf8(record.title), pathToQString(record.source.stem()));
+    case TitleRole: return atlas::index::libraryDisplayTitle(QString::fromUtf8(record.title), QString{});
     case AuthorRole: return atlas::index::libraryDisplayAuthor(QString::fromUtf8(record.author));
     case SourceRole: return pathToQString(record.source);
     case FileNameRole: return pathToQString(record.source.filename());
+    case FileStemRole: return atlas::index::libraryPrimaryDisplayName(
+        pathToQString(record.source.stem()), QString::fromUtf8(record.title));
+    case FileExtensionRole: {
+        QString extension = pathToQString(record.source.extension());
+        if (extension.startsWith(QLatin1Char('.'))) extension.remove(0, 1);
+        return extension.toUpper();
+    }
     case AvailabilityRole: return availabilityName(record.availability);
     case FavoriteRole: return favoriteIds_.contains(record.id);
     default: return {};
@@ -99,7 +105,8 @@ QVariant LibraryController::data(const QModelIndex& modelIndex, int role) const 
 QHash<int, QByteArray> LibraryController::roleNames() const {
     return {
         {DocumentIdRole, "documentId"}, {TitleRole, "bookTitle"}, {AuthorRole, "bookAuthor"},
-        {SourceRole, "sourcePath"}, {FileNameRole, "fileName"}, {AvailabilityRole, "availability"},
+        {SourceRole, "sourcePath"}, {FileNameRole, "fileName"}, {FileStemRole, "fileStem"},
+        {FileExtensionRole, "fileExtension"}, {AvailabilityRole, "availability"},
         {FavoriteRole, "favorite"},
     };
 }

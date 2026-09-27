@@ -132,6 +132,29 @@ void checkSchemaAndFts() {
     }
 }
 
+void checkFilenameOrdering() {
+    TemporaryDirectory temporary;
+    const auto databasePath = temporary.path() / "filename-order.sqlite3";
+    const auto rootPath = temporary.path() / "library";
+
+    atlas::index::SqliteLibraryIndex index{databasePath};
+    index.registerRoot({"root", rootPath, atlas::index::LibraryRootAvailability::available});
+    index.upsertRecord({"z-title", rootPath / "Alpha.pdf", "Zebra internal title", "", atlas::document::Availability::available}, "root");
+    index.upsertRecord({"a-title", rootPath / "Beta.pdf", "Alpha internal title", "", atlas::document::Availability::available}, "root");
+    index.setFavorite("z-title", true);
+    index.setFavorite("a-title", true);
+
+    const auto all = index.allRecords();
+    require(all.size() == 2 && all[0].id == "z-title" && all[1].id == "a-title",
+        "The Library must sort by the visible filename rather than hidden embedded title metadata.");
+    const auto root = index.recordsForRoot("root");
+    require(root.size() == 2 && root[0].id == "z-title" && root[1].id == "a-title",
+        "A folder view must use the same visible-filename ordering as the full Library.");
+    const auto favorites = index.favorites();
+    require(favorites.size() == 2 && favorites[0].id == "z-title" && favorites[1].id == "a-title",
+        "Favorites must use the same visible-filename ordering as normal Library views.");
+}
+
 void checkScanGenerationSafety() {
     TemporaryDirectory temporary;
     const auto databasePath = temporary.path() / "scan-state.sqlite3";
@@ -392,6 +415,7 @@ void checkNewerSchemaIsPreserved() {
 int main() {
     try {
         checkSchemaAndFts();
+        checkFilenameOrdering();
         checkScanGenerationSafety();
         checkMigrationRollback();
         checkDurableReconciliation();

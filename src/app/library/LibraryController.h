@@ -43,6 +43,8 @@ public:
         AuthorRole,
         SourceRole,
         FileNameRole,
+        FileStemRole,
+        FileExtensionRole,
         AvailabilityRole,
         FavoriteRole,
     };

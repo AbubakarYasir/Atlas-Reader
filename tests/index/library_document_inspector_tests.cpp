@@ -33,8 +33,22 @@ int main(int argc, char* argv[]) {
         require(atlas::index::libraryDisplayTitle(QStringLiteral("عنوان عربي صحيح"), QStringLiteral("fallback"))
                 == QStringLiteral("عنوان عربي صحيح"),
             "A credible Unicode title must remain unchanged.");
+        require(atlas::index::libraryPrimaryDisplayName(
+                    QStringLiteral("الاحتساب على الشذوذ"), QStringLiteral("<(PDF) الاحتساب على الشذوذ>"))
+                == QStringLiteral("الاحتساب على الشذوذ"),
+            "The current filename stem must be the Library card's primary name.");
+        require(atlas::index::libraryPrimaryDisplayName(
+                    QStringLiteral("الفرائد اللؤلؤية في القواعد النحوية"), QStringLiteral("Binde.pdf"))
+                == QStringLiteral("الفرائد اللؤلؤية في القواعد النحوية"),
+            "A plausible-looking embedded filename must not replace the real filename stem in the UI.");
+        require(atlas::index::libraryPrimaryDisplayName(
+                    QStringLiteral("الاحتساب على الأطفال"), QStringLiteral("TIFF.pdf"))
+                == QStringLiteral("الاحتساب على الأطفال"),
+            "A conversion-tool title must not replace the current filename stem in the UI.");
         require(atlas::index::libraryDisplayAuthor(QStringLiteral("<4D6963726F736F6674>")).isEmpty(),
             "Undecoded author metadata must not be exposed in the Library.");
+        require(atlas::index::libraryDisplayAuthor(QStringLiteral("Unknown author")).isEmpty(),
+            "A generic unknown-author placeholder must not be exposed in the Library.");
 
         atlas::index::QtPdfDocumentInspector inspector;
         const auto readable = inspector.inspect(argv[1]);

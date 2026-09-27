@@ -66,9 +66,22 @@ QString libraryDisplayTitle(const QString& embeddedTitle, const QString& fileBas
     return title;
 }
 
+QString libraryPrimaryDisplayName(const QString& fileStem, const QString& embeddedTitle) {
+    const QString currentFileName = normalizedMetadata(fileStem);
+    if (!currentFileName.isEmpty()) return currentFileName;
+    return libraryDisplayTitle(embeddedTitle, QString{});
+}
+
 QString libraryDisplayAuthor(const QString& embeddedAuthor) {
     const QString author = normalizedMetadata(embeddedAuthor);
-    return unusableMetadata(author) ? QString{} : author;
+    const QString folded = author.toCaseFolded();
+    static const QSet<QString> placeholders{
+        QStringLiteral("unknown"), QStringLiteral("unknown author"),
+        QStringLiteral("not specified"), QStringLiteral("unspecified"),
+        QStringLiteral("n/a"), QStringLiteral("none"),
+        QStringLiteral("مؤلف غير معروف"), QStringLiteral("مؤلف غير مسجل"),
+    };
+    return unusableMetadata(author) || placeholders.contains(folded) ? QString{} : author;
 }
 
 } // namespace atlas::index

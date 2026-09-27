@@ -736,3 +736,25 @@ Finder/sandbox/security-scoped behavior as applicable, menus, printing, Metal qu
 Document picker/security-scoped URLs, lifecycle/sharing, Pencil, mobile shell; reuse the same document/bookmark capability semantics.
 
 Platform adaptation does not reopen Windows 2.0 architecture casually. If a port exposes a flawed abstraction, change it through an ADR and cross-platform tests rather than creating a platform-specific duplicate core.
+
+---
+
+## Book-format checkpoints after Windows 2.0
+
+Format delivery follows `docs/FORMAT_EXPANSION_ROADMAP.md`; merely recognizing an extension is not support.
+
+### F1 — EPUB
+
+Qualify and deliver lawful non-DRM EPUB Library admission and reading, including reflow, TOC/navigation, search, typography, Arabic/RTL, accessibility, hostile-package containment and source preservation. Fixed-layout EPUB remains separately gated. **Stop gate:** no `F1 PASS`, DRM ambiguity, unsafe active content or failed layout/accessibility corpus blocks acceptance.
+
+### F2 — Comic archives
+
+Qualify and deliver CBZ, then CBR only after a licensed RAR route exists, with natural page ordering, covers, virtualization and strict archive/decompression limits. **Stop gate:** traversal, decompression-bomb exposure, corrupt-entry crashes or unbounded memory blocks acceptance and `F2 PASS`.
+
+### F3 — Legacy Kindle formats
+
+Qualify non-DRM AZW3/MOBI/PRC using lawful fixtures and content-aware detection, then deliver only the fidelity level the evidence proves. DRM bypass is never included. **Stop gate:** misleading compatibility, typography/metadata loss, unclear DRM state or absent `F3 PASS` blocks acceptance.
+
+### KFX research gate
+
+KFX has no promised delivery checkpoint. An ADR may propose one only after lawful non-DRM fixtures, maintainable parsing, license/security review and interoperability evidence exist. Research must not add KFX to the supported-file picker.

@@ -61,6 +61,7 @@ Each book can represent:
 - metadata editing and filesystem renaming are separate explicit operations; a normal rename edits only the stem and must preserve the admitted extension (`.pdf`, `.epub`, or another supported type);
 - sort normal Library, folder and Favorites views by that visible filename rather than by hidden embedded title metadata;
 - keep the presentation contract format-neutral for `.pdf`, `.epub`, `.azw3`, `.kfx`, `.mobi`, `.prc`, `.cbr` and `.cbz`, while admitting each format to discovery/opening only after its own implementation and compatibility gates pass;
+- treat `docs/FORMAT_EXPANSION_ROADMAP.md` as post-2.0 planning, not as a claim that these deferred formats are supported by the Windows 2.0 release;
 - favorites;
 - recent/opened state;
 - reading progress;

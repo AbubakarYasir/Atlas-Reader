@@ -167,6 +167,8 @@ Explicitly deferred from Windows 2.0 unless owner scope changes:
 - multimedia/3D;
 - full EPUB rendering/annotation.
 
+Other-book support is planned rather than implied. After Windows 2.0, the format track admits EPUB first, CBZ/CBR second, then non-DRM AZW3/MOBI/PRC. KFX remains research-only until a lawful, maintainable and interoperable route is proven. The binding admission order, shared behavior, security limits and owner gates live in `docs/FORMAT_EXPANSION_ROADMAP.md`.
+
 A competitor having one of these does not make Atlas 2.0 a failure. Core quality has priority over feature-count vanity.
 
 ## V. Architectural constraints

@@ -72,6 +72,15 @@ target_include_directories(atlas_library_scan_service PUBLIC ${CMAKE_CURRENT_SOU
 target_link_libraries(atlas_library_scan_service PUBLIC atlas_library_scanner atlas_library_index)
 atlas_enable_warnings(atlas_library_scan_service)
 
+add_library(atlas_library_document_inspector STATIC
+    src/app/index/ILibraryDocumentInspector.h
+    src/app/index/QtPdfDocumentInspector.cpp
+    src/app/index/QtPdfDocumentInspector.h
+)
+target_include_directories(atlas_library_document_inspector PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_library_document_inspector PUBLIC atlas_core Qt6::Core Qt6::Pdf)
+atlas_enable_warnings(atlas_library_document_inspector)
+
 add_library(atlas_app_support STATIC
     src/app/diagnostics/ShellMetrics.cpp
     src/app/diagnostics/ShellMetrics.h
@@ -195,7 +204,20 @@ target_link_libraries(atlas_library_scanner_tests PRIVATE atlas_library_scanner 
 atlas_enable_warnings(atlas_library_scanner_tests)
 add_test(NAME atlas_library_scanner COMMAND atlas_library_scanner_tests)
 
+add_executable(atlas_library_document_inspector_tests tests/index/library_document_inspector_tests.cpp)
+target_link_libraries(atlas_library_document_inspector_tests PRIVATE atlas_library_document_inspector)
+atlas_enable_warnings(atlas_library_document_inspector_tests)
+
 set(ATLAS_N2_PDF_FIXTURE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
+
+add_test(
+    NAME atlas_library_document_inspector
+    COMMAND atlas_library_document_inspector_tests
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A001_simple_text.pdf"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A006_unicode_semantics.pdf"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A007_malformed_truncated.pdf"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A008_password_rc4_40.pdf"
+)
 
 add_test(
     NAME n2_qt_pdf_a001_simple_text

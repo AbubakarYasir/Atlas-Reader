@@ -12,7 +12,7 @@
 
 **Current build:** `2.0.0-alpha.2`
 
-**Current N3 status:** **In progress — N3.2 safe scanning active; N3.1 CRT-linkage verification refresh pending**
+**Current N3 status:** **In progress — N3.1 storage/schema verified; N3.2 safe scanning active**
 
 **Current branch:** `native-v2-n3-library-index-foundation`
 

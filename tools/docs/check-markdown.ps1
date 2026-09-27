@@ -3,7 +3,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$ignoredSegments = @('\build\', '\out\', '\vendor\', '\third_party\')
+$ignoredSegments = @('\artifacts\', '\build\', '\out\', '\vendor\', '\third_party\')
 $markdownFiles = Get-ChildItem -LiteralPath $repoRoot -Recurse -File -Filter '*.md' |
     Where-Object {
         $path = $_.FullName

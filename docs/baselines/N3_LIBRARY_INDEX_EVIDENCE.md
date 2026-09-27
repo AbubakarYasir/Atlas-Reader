@@ -46,4 +46,8 @@
 | Built-in PDF reading | N3 opens an available result in the current Windows PDF app | N4; Atlas Reader usability and correctness gates block N4 acceptance |
 | OCR for image-only PDFs | N3 indexes available metadata only | Outside current N3 scope; any future OCR requires a separate documented checkpoint and privacy/performance contract |
 
+## Final-CI corrective record
+
+The first strict exact-head Debug job (`36289801631`, job `108537578568`) failed during QML cache compilation because MSVC promoted Qt 6.10.3's own `C4702` unreachable-code warning in Qt headers to an error. Atlas warnings remain errors. The correction suppresses only `C4702` on the QML executable target, where Qt-generated sources and Atlas `main.cpp` are compiled; all Atlas libraries and tests retain the full warning gate. A local Visual Studio 2026 Debug rebuild with `ATLAS_WARNINGS_AS_ERRORS=ON` passed before the correction was pushed for CI rerun.
+
 The final N3 handoff must identify exact commit/workflow/artifact IDs, test results, artifact SHA-256 and explicit limitations. Physical owner test, mature-product comparison and owner `N3 PASS` must be recorded separately from CI using [the owner checklist](../N3_OWNER_TEST.md).

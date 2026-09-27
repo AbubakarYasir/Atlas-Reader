@@ -6,6 +6,8 @@ Atlas should feel like a serious research instrument, not an office-suite toolba
 
 It must also avoid the recognizable "AI-generated app" look: no generic dashboard of equal cards, decorative gradients, inflated headings, random glow, novelty icons, or filler copy. The visual language should feel intentionally designed by an experienced product team—modern, calm, essential and durable rather than trendy or dated.
 
+The owner-selected application mark is stored in `assets/branding`. Use its standardized derivatives for application/package identity; do not treat its illustrative style as permission to add gradients, glow or decorative imagery to the working interface.
+
 Default UI principles:
 
 - content first;

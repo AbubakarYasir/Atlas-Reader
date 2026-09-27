@@ -129,7 +129,15 @@ target_link_libraries(atlas_library_ui PUBLIC
 )
 atlas_enable_warnings(atlas_library_ui)
 
-qt_add_executable(atlas_reader src/app/main.cpp)
+set(ATLAS_READER_PLATFORM_SOURCES)
+if(WIN32)
+    list(APPEND ATLAS_READER_PLATFORM_SOURCES assets/windows/atlas_reader.rc)
+endif()
+
+qt_add_executable(atlas_reader
+    src/app/main.cpp
+    ${ATLAS_READER_PLATFORM_SOURCES}
+)
 
 qt_add_qml_module(atlas_reader
     URI AtlasReader

@@ -119,6 +119,8 @@ Do not commit/distribute fonts, icons, sample PDFs, screenshots, or test fixture
 - personal/private PDFs remain opt-in local fixtures and are never committed;
 - competitor assets/UI screenshots are reference material, not distributable product assets unless permission/license permits.
 
+The Atlas Reader application mark in `assets/branding` and its Windows ICO derivative were supplied and explicitly selected for project use by the project owner on 2026-09-27. Its source identity, checksums, conversion method and no-unapproved-modification rule are recorded in `assets/branding/README.md`.
+
 ## Dependency acceptance checklist
 
 Before adding a production dependency:

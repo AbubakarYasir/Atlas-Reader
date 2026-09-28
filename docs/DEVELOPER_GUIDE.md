@@ -4,9 +4,9 @@
 
 ## Current state
 
-Native engineering version: `2.0.0-beta.1`. N0–N3 are Accepted; N4 has not started in this accepted snapshot. See the [N3 acceptance record](baselines/N3_ACCEPTANCE.md), [N3 plan](N3_LIBRARY_INDEX_PLAN.md), [evidence ledger](baselines/N3_LIBRARY_INDEX_EVIDENCE.md), and [owner test](N3_OWNER_TEST.md). The built-in Reader, bookmark editor and annotations are not complete.
+Native engineering version: `2.0.0-beta.1`. N0–N3 are Accepted; N4 native reader foundation is In progress toward planned `2.0.0-beta.2`. See the [N4 plan](N4_READER_FOUNDATION_PLAN.md), [N4 evidence ledger](baselines/N4_READER_FOUNDATION_EVIDENCE.md), and [N3 acceptance record](baselines/N3_ACCEPTANCE.md). The built-in Reader is not complete; bookmark editing and annotations remain later checkpoints.
 
-Permanent branches are `main` (accepted native work) and `legacy/flutter` (stopped, obsolete backup). The completed N3 branch is merged and deleted only after exact-main verification. N4 work must use `native-v2-n4-reader-foundation` from that accepted merge; do not revive Flutter.
+Permanent branches are `main` (accepted native work) and `legacy/flutter` (stopped, obsolete backup). N4 work uses `native-v2-n4-reader-foundation` from accepted merge `739508e3`; do not revive Flutter.
 
 ## Before changing anything
 

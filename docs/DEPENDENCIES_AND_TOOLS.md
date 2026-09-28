@@ -1,6 +1,6 @@
 # Atlas Reader Native — Dependencies, Tools, Plugins, and Reuse Policy
 
-<!-- atlas-status: N3|accepted -->
+<!-- atlas-status: N4|in-progress -->
 
 ## Purpose
 

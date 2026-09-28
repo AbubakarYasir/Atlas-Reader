@@ -1,7 +1,7 @@
 # Building Atlas Reader Native
 
 N0–N3 are Accepted. N3 introduced the first production dependency through the
-pinned vcpkg manifest; N4 has not started in this accepted snapshot.
+pinned vcpkg manifest; N4 native reader foundation is In progress.
 
 Before push, run the documentation governance check:
 

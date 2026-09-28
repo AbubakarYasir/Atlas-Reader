@@ -1,12 +1,12 @@
 # Atlas Reader Native — Master Plan to 2.0
 
-<!-- atlas-status: N3|accepted -->
+<!-- atlas-status: N4|in-progress -->
 
-**Status:** N0–N3 Accepted as of 2026-09-27; N4 has not started
+**Status:** N0–N3 Accepted; N4 native reader foundation in progress from 2026-09-28
 
 **Current engineering preview:** `2.0.0-beta.1`
 
-**Accepted checkpoints:** N0, N1, N2 and N3
+**Accepted checkpoints:** N0, N1, N2 and N3; N4 is not yet Accepted
 
 **Primary implementation target:** Windows 11
 
@@ -296,7 +296,7 @@ N2 requires:
 - strict final CI;
 - explicit owner `N2 PASS`.
 
-N3 is Accepted; its frozen decision and detailed evidence are governed by `docs/baselines/N3_ACCEPTANCE.md` and `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md`. N4 is the next checkpoint.
+N3 is Accepted; its frozen decision and detailed evidence are governed by `docs/baselines/N3_ACCEPTANCE.md` and `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md`. N4 is active under `docs/N4_READER_FOUNDATION_PLAN.md`; N4.1 session/open contracts come first.
 
 ## VII. Threading/performance model
 

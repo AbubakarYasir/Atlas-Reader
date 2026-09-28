@@ -1,8 +1,15 @@
 # Changelog
 
-<!-- atlas-status: N3|accepted -->
+<!-- atlas-status: N4|in-progress -->
 
 All notable changes to Atlas Reader Native are documented here.
+
+## N4 start — 2026-09-28
+
+- Opened `native-v2-n4-reader-foundation` from verified accepted `main` merge `739508e3e698016e8a6a4cb8b87c2b4aa418d66d` only after PR #5 merged, all permanent-branch workflows passed and the completed N3 branch was deleted locally/remotely.
+- Set N4 to **In progress** with N4.1 session/open model as the only active subgate. The source stays `2.0.0-beta.1`; `2.0.0-beta.2` is earned only at N4 acceptance.
+- Added a binding read-only reader plan and empty evidence ledger covering virtualized rendering, mixed geometry/rotation, zoom/fit/navigation, outlines/text/search/links, tabs/restoration, side-by-side and simplified text view, offline security, Arabic/Urdu, accessibility, rendered UI review, bounded memory and exact owner/package gates.
+- N5 bookmarks, N6 ink/annotations and every PDF mutation remain closed. N4 must prove source hashes unchanged.
 
 ## N3 owner acceptance — 2026-09-27
 

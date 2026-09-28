@@ -10,7 +10,7 @@ Atlas Reader is working toward a better way to study: bring your books together,
 
 [Explore the vision](PLAN.md) · [See our progress](CHECKPOINTS.md) · [For developers](docs/DEVELOPER_GUIDE.md)
 
-<!-- atlas-status: N3|accepted -->
+<!-- atlas-status: N4|in-progress -->
 
 ## A library is more than a folder of files
 
@@ -48,7 +48,7 @@ The project owner tested and approved **N3** on **27 September 2026**. Its nativ
 
 **First, your library.** N3 is Accepted: finding, indexing, and organizing local PDFs now has a verified native foundation.
 
-**Then, your reading workspace.** N4 is next: native PDF viewing, navigation, and search.
+**Now, your reading workspace.** N4 is in progress: native PDF viewing, navigation, search and a focused, accessible reading canvas. It is not ready for owner testing yet.
 
 **Next, your research tools.** Resilient bookmarks, followed by ink and annotations.
 

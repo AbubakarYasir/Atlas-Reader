@@ -38,9 +38,9 @@ The following describes our product direction, not features available today.
 
 We have established the native Windows application shell and tested the PDF technology behind future reading and editing features. The approved stage includes Arabic/Urdu sample rendering, image-only PDFs, navigation, document-preservation tests, and repeated stability checks.
 
-The project owner tested and approved **N3** on **27 September 2026**. Its native Library can add folders, index PDFs in the background, search English/Arabic/Urdu metadata, show Favorites and Recents, and protect a book's identity when files move or drives disappear. The accepted engineering version is **`2.0.0-beta.1`**. This is a verified development beta foundation, not a finished consumer release.
+The project owner tested and approved **N3** on **27 September 2026**. Its native Library can add folders, index PDFs in the background, search English/Arabic/Urdu metadata, show Favorites and Recents, and protect a book's identity when files move or drives disappear. The accepted engineering version is **[`2.0.0-beta.1`](https://github.com/AbubakarYasir/Atlas-Reader/releases/tag/v2.0.0-beta.1)**. This is a verified development beta foundation, not the finished Atlas Reader 2.0.
 
-**What's not ready yet:** the built-in reading interface, bookmark editor, and annotations begin in later stages. There is no finished native consumer release to download today. Test packages are for engineering evaluation, and success on our test samples does not mean every PDF has been proven perfect.
+**What's not ready yet:** the built-in reading interface, bookmark editor, and annotations begin in later stages. The published beta is for engineering/early evaluation, not everyday reading yet; success on our test samples does not mean every PDF has been proven perfect.
 
 [What N3 passed—and what it means](docs/baselines/N3_ACCEPTANCE.md) · [Detailed N3 evidence](docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md)
 

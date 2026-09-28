@@ -4,11 +4,17 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## `2.0.0-beta.1` released — 2026-09-28
+
+- Published the first accepted native Library beta as immutable tag `v2.0.0-beta.1` from verified N3 merge `739508e3e698016e8a6a4cb8b87c2b4aa418d66d`.
+- Attached the exact Windows x64 ZIP and checksum file to the GitHub prerelease. The ZIP SHA-256 is `75b2ca930c60175e9e8dd97048fba62a131efc47b5bb26691e48b1004fe87692`.
+- The beta remains an early evaluation build: it provides the accepted Library foundation and opens PDFs externally; the in-app Reader starts in N4.
+
 ## N3 owner acceptance — 2026-09-27
 
 - Owner recorded exact `N3 PASS` after exercising checks 1–11, reviewing the filename-first corrections and receiving the completed Calibre 9.9 comparison for check 12.
 - Promoted the native engineering version from `2.0.0-alpha.2` to `2.0.0-beta.1`, the planned first useful Library beta milestone.
-- Added the frozen [N3 acceptance record](docs/baselines/N3_ACCEPTANCE.md), synchronized live status documentation, and kept N3 **Accepted** distinct from **Released**. A tag/download is not claimed until an accepted artifact is deliberately published.
+- Added the frozen [N3 acceptance record](docs/baselines/N3_ACCEPTANCE.md) and synchronized live status documentation. The separate release act was completed on 2026-09-28 as recorded above.
 - N4 may start only from the verified accepted `main` merge on `native-v2-n4-reader-foundation`; the completed N3 branch is deleted after ancestry and remote synchronization checks.
 
 ## Planning corrections — 2026-09-27

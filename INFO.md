@@ -2,7 +2,7 @@
 
 <!-- atlas-status: N3|accepted -->
 
-N0–N3 are Accepted. The owner recorded explicit `N3 PASS` on 2026-09-27. Current version: `2.0.0-beta.1`.
+N0–N3 are Accepted. The owner recorded explicit `N3 PASS` on 2026-09-27. `2.0.0-beta.1` was published as an immutable GitHub prerelease from verified merge `739508e3` on 2026-09-28.
 
 Active branch: `native-v2-n3-library-index-foundation`. Native C++/Qt is active; Flutter is stopped and retained on `legacy/flutter` for backup and migration reference.
 

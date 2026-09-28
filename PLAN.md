@@ -2,7 +2,7 @@
 
 <!-- atlas-status: N3|accepted -->
 
-**Status:** N0–N3 Accepted as of 2026-09-27; N4 has not started
+**Status:** N0–N3 Accepted; `2.0.0-beta.1` Released on 2026-09-28; N4 has not started on `main`
 
 **Current engineering preview:** `2.0.0-beta.1`
 

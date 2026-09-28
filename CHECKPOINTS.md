@@ -11,7 +11,7 @@ This file controls implementation order. Only one checkpoint is active at a time
 | Field | Value |
 |---|---|
 | Checkpoint | **N3 — Library/index foundation** |
-| Version | `2.0.0-beta.1` (accepted development beta; not yet Released) |
+| Version | `2.0.0-beta.1` (Accepted and Released as a GitHub prerelease on 2026-09-28) |
 | Status | **Accepted by owner with explicit `N3 PASS` on 2026-09-27** |
 | Previous checkpoint | **N2 Accepted by owner on 2026-09-27** |
 | Branch | `native-v2-n3-library-index-foundation` |
@@ -61,7 +61,7 @@ N2 and N3 are frozen and Accepted. N3.1–N3.4, exact-head Debug/Release CI, inh
 | N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Accepted** |
 | N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **Accepted** |
 | N2 | `2.0.0-alpha.2` | PDF engine qualification spike | **Accepted** |
-| N3 | `2.0.0-beta.1` | Library/index foundation | **Accepted** |
+| N3 | `2.0.0-beta.1` | Library/index foundation | **Accepted; beta Released** |
 | N4 | `2.0.0-beta.2` | Native reader foundation | Not started |
 | N5 | `2.0.0-beta.3` | Core resilience + complete bookmarks | Not started |
 | N6 | `2.0.0-beta.4` | Ink + standard annotations | Not started |

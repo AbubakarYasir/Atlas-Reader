@@ -61,7 +61,7 @@ N2 and N3 are frozen and Accepted. N4 opened on 2026-09-28 only after PR #5 merg
 | N0 | `2.0.0-alpha.0` | Native repository bootstrap | **Accepted** |
 | N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **Accepted** |
 | N2 | `2.0.0-alpha.2` | PDF engine qualification spike | **Accepted** |
-| N3 | `2.0.0-beta.1` | Library/index foundation | **Accepted** |
+| N3 | `2.0.0-beta.1` | Library/index foundation | **Accepted; beta Released** |
 | N4 | `2.0.0-beta.2` | Native reader foundation | **In progress** |
 | N5 | `2.0.0-beta.3` | Core resilience + complete bookmarks | Not started |
 | N6 | `2.0.0-beta.4` | Ink + standard annotations | Not started |

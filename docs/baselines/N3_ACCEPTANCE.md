@@ -23,7 +23,14 @@ The owner exercised checks 1–11, reported visible and metadata defects, retest
 - GitHub artifact ID `10930131644`, name `atlas-reader-n3-windows-x64-ed12d162c26aa86d35918a295b94c624599a870b`, workflow digest `sha256:f38ec762419099a1302dd27889b37dc9dda077f12b5ebd5cbaad91a7115191d5`.
 - The preceding exact owner package at implementation-equivalent head `1db167faf9a3a16b097bed898cb3c431af4f18fd` was downloaded, checksum-verified and clean-profile smoke-tested; later changes through `ed12d16` were documentation-only.
 
-The acceptance/version synchronization commit and final `main` merge must still pass their own exact-head CI before the branch is deleted or the next checkpoint opens. This record does not claim that N3 is Released; publishing a tagged beta artifact is a separate release act.
+The acceptance/version synchronization commit and final `main` merge subsequently passed their exact-head CI. PR #5 merged as `739508e3e698016e8a6a4cb8b87c2b4aa418d66d`; all eight permanent-branch workflows passed and the completed N3 branch was deleted locally/remotely.
+
+## Release record — 2026-09-28
+
+- Immutable tag: `v2.0.0-beta.1`, pointing to verified merge `739508e3e698016e8a6a4cb8b87c2b4aa418d66d`.
+- GitHub prerelease: `https://github.com/AbubakarYasir/Atlas-Reader/releases/tag/v2.0.0-beta.1`.
+- Windows x64 ZIP SHA-256: `75b2ca930c60175e9e8dd97048fba62a131efc47b5bb26691e48b1004fe87692`, verified against the packaged checksum before publication.
+- The release is an accepted development beta, not stable 2.0 and not a claim that the built-in Reader exists.
 
 ## Frozen boundaries
 

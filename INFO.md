@@ -2,7 +2,7 @@
 
 <!-- atlas-status: N4|in-progress -->
 
-N0–N3 are Accepted. N4 native reader foundation is In progress. Current source version: `2.0.0-beta.1`; planned N4 acceptance version: `2.0.0-beta.2`.
+N0–N3 are Accepted. `2.0.0-beta.1` was published as an immutable GitHub prerelease from verified merge `739508e3` on 2026-09-28. N4 native reader foundation is In progress; planned N4 acceptance version: `2.0.0-beta.2`.
 
 Active branch: `native-v2-n4-reader-foundation`, based exactly on verified accepted `main` merge `739508e3e698016e8a6a4cb8b87c2b4aa418d66d`. Native C++/Qt is active; Flutter is stopped and retained on `legacy/flutter` for backup and migration reference.
 

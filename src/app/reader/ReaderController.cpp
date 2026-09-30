@@ -81,11 +81,17 @@ ReaderController::~ReaderController() {
         QObject::disconnect(pending->watcher.get(), nullptr, this, nullptr);
         pending->watcher->cancel();
     }
+    for (auto& pending : retired_) {
+        QObject::disconnect(pending->watcher.get(), nullptr, this, nullptr);
+        pending->watcher->cancel();
+    }
     for (auto& [id, pending] : pending_) {
         Q_UNUSED(id);
         pending->watcher->waitForFinished();
     }
+    for (auto& pending : retired_) pending->watcher->waitForFinished();
     pending_.clear();
+    retired_.clear();
 }
 
 int ReaderController::rowCount(const QModelIndex& parent) const {
@@ -245,9 +251,27 @@ void ReaderController::launchOpen(
 void ReaderController::cancelPending(std::uint64_t sessionId) {
     const auto pending = pending_.find(sessionId);
     if (pending == pending_.end()) return;
-    QObject::disconnect(pending->second->watcher.get(), nullptr, this, nullptr);
-    pending->second->watcher->cancel();
+
+    auto retired = std::move(pending->second);
     pending_.erase(pending);
+    auto* watcher = retired->watcher.get();
+    QObject::disconnect(watcher, nullptr, this, nullptr);
+    watcher->cancel();
+    retired_.push_back(std::move(retired));
+
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher] {
+        scheduleRetiredCleanup(watcher);
+    });
+    if (watcher->isFinished()) scheduleRetiredCleanup(watcher);
+}
+
+void ReaderController::scheduleRetiredCleanup(QFutureWatcher<atlas::reader::OpenResult>* watcher) {
+    QTimer::singleShot(0, this, [this, watcher] {
+        const auto retired = std::find_if(retired_.begin(), retired_.end(), [watcher](const auto& pending) {
+            return pending->watcher.get() == watcher;
+        });
+        if (retired != retired_.end()) retired_.erase(retired);
+    });
 }
 
 void ReaderController::refreshModel(int previousActiveIndex, int previousCount) {

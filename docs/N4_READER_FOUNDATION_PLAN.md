@@ -33,6 +33,8 @@ Implement asynchronous direct/Library open, immutable read sessions, tab lifecyc
 
 Tests cover success/error transitions, cancellation, reopen, duplicate opens, tab switching/closing, stale revisions, offline paths, restart policy and clean resource release.
 
+**Current implementation checkpoint (2026-09-30):** the Atlas-owned session state machine, duplicate/reopen/tab lifecycle, background direct/Library open, initial in-app status workspace and opt-in path-only restoration are implemented. N4.1 is still In progress until the remaining restart/restoration, cancellation/resource-release, Windows sharing, password-entry, full regression and rendered accessibility evidence is complete. Page rendering belongs to N4.2 and has not started.
+
 ### N4.2 — Virtual viewport and render scheduler
 
 Define engine-independent page geometry and render requests, visible/near-visible priorities, cancellation tokens, scale buckets, texture ownership, cache keys, eviction and hard budgets. No eager full-document rasterization.

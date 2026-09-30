@@ -33,14 +33,18 @@ namespace {
 #endif
 }
 
-[[nodiscard]] atlas::reader::OpenResult inspectPdf(const QString& sourcePath) {
+[[nodiscard]] atlas::reader::OpenResult inspectPdf(
+    const QString& sourcePath,
+    const QString& password = {}) {
     using atlas::reader::OpenResult;
     using atlas::reader::OpenState;
     const QFileInfo fileInfo{sourcePath};
     if (!fileInfo.exists() || !fileInfo.isFile()) {
         return {OpenState::missing, {}, 0, "The file is no longer available."};
     }
+
     QPdfDocument document;
+    if (!password.isEmpty()) document.setPassword(password);
     switch (const auto error = document.load(sourcePath)) {
     case QPdfDocument::Error::None: {
         const QString title = atlas::index::libraryDisplayTitle(
@@ -51,7 +55,8 @@ namespace {
     case QPdfDocument::Error::FileNotFound:
         return {OpenState::missing, {}, 0, "The file is no longer available."};
     case QPdfDocument::Error::IncorrectPassword:
-        return {OpenState::passwordRequired, {}, 0, "This PDF requires a password."};
+        return {OpenState::passwordRequired, {}, 0,
+            password.isEmpty() ? "password-required" : "incorrect-password"};
     case QPdfDocument::Error::UnsupportedSecurityScheme:
         return {OpenState::unsupportedSecurity, {}, 0, "This PDF uses unsupported security."};
     case QPdfDocument::Error::InvalidFileFormat:
@@ -71,7 +76,16 @@ ReaderController::ReaderController(std::filesystem::path profileDirectory, QObje
 }
 
 ReaderController::~ReaderController() {
-    for (auto& pending : pending_) pending.second->watcher->waitForFinished();
+    for (auto& [id, pending] : pending_) {
+        Q_UNUSED(id);
+        QObject::disconnect(pending->watcher.get(), nullptr, this, nullptr);
+        pending->watcher->cancel();
+    }
+    for (auto& [id, pending] : pending_) {
+        Q_UNUSED(id);
+        pending->watcher->waitForFinished();
+    }
+    pending_.clear();
 }
 
 int ReaderController::rowCount(const QModelIndex& parent) const {
@@ -128,10 +142,7 @@ void ReaderController::closeAt(int index) {
     const int previousActive = activeIndex();
     const int previousCount = rowCount();
     const auto id = model_.sessions().at(static_cast<std::size_t>(index)).id;
-    if (auto pending = pending_.find(id); pending != pending_.end()) {
-        pending->second->watcher->cancel();
-        pending_.erase(pending);
-    }
+    cancelPending(id);
     beginResetModel();
     const bool closed = model_.close(id);
     Q_ASSERT(closed);
@@ -147,12 +158,30 @@ void ReaderController::retryAt(int index) {
     const auto& session = model_.sessions().at(static_cast<std::size_t>(index));
     const auto id = session.id;
     const QString sourcePath = pathToQString(session.source);
+    cancelPending(id);
     const auto revision = model_.reopen(id);
     if (!revision.has_value()) return;
     libraryVisible_ = false;
     emit dataChanged(this->index(index), this->index(index));
     if (previousActive != activeIndex()) emit activeIndexChanged();
     launchOpen(id, *revision, sourcePath);
+}
+
+void ReaderController::submitPassword(int index, const QString& password) {
+    if (index < 0 || index >= rowCount() || password.isEmpty()) return;
+    const auto& session = model_.sessions().at(static_cast<std::size_t>(index));
+    if (session.state != atlas::reader::OpenState::passwordRequired) return;
+
+    const int previousActive = activeIndex();
+    const auto id = session.id;
+    const QString sourcePath = pathToQString(session.source);
+    cancelPending(id);
+    const auto revision = model_.reopen(id);
+    if (!revision.has_value()) return;
+    libraryVisible_ = false;
+    emit dataChanged(this->index(index), this->index(index));
+    if (previousActive != activeIndex()) emit activeIndexChanged();
+    launchOpen(id, *revision, sourcePath, password);
 }
 
 void ReaderController::closeActive() { closeAt(activeIndex()); }
@@ -179,7 +208,12 @@ void ReaderController::beginOpen(const QString& sourcePath) {
 }
 
 void ReaderController::launchOpen(
-    std::uint64_t sessionId, std::uint64_t revision, const QString& sourcePath) {
+    std::uint64_t sessionId,
+    std::uint64_t revision,
+    const QString& sourcePath,
+    const QString& password) {
+    cancelPending(sessionId);
+
     auto pending = std::make_unique<PendingOpen>();
     pending->sessionId = sessionId;
     pending->revision = revision;
@@ -195,10 +229,25 @@ void ReaderController::launchOpen(
             emit dataChanged(index(row), index(row));
             saveSessions();
         }
-        QTimer::singleShot(0, this, [this, sessionId] { pending_.erase(sessionId); });
+        QTimer::singleShot(0, this, [this, sessionId, revision, watcher] {
+            const auto pending = pending_.find(sessionId);
+            if (pending != pending_.end()
+                && pending->second->revision == revision
+                && pending->second->watcher.get() == watcher) {
+                pending_.erase(pending);
+            }
+        });
     });
     pending_.emplace(sessionId, std::move(pending));
-    watcher->setFuture(QtConcurrent::run([sourcePath] { return inspectPdf(sourcePath); }));
+    watcher->setFuture(QtConcurrent::run([sourcePath, password] { return inspectPdf(sourcePath, password); }));
+}
+
+void ReaderController::cancelPending(std::uint64_t sessionId) {
+    const auto pending = pending_.find(sessionId);
+    if (pending == pending_.end()) return;
+    QObject::disconnect(pending->second->watcher.get(), nullptr, this, nullptr);
+    pending->second->watcher->cancel();
+    pending_.erase(pending);
 }
 
 void ReaderController::refreshModel(int previousActiveIndex, int previousCount) {

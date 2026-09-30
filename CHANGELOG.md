@@ -16,7 +16,7 @@ All notable changes to Atlas Reader Native are documented here.
 - Added the first Atlas-owned read-session contract and focused lifecycle tests: asynchronous open states, duplicate-tab policy, deterministic tab activation/close, reopen revisions and stale-result rejection.
 - Routed Library and direct local PDF opens into an initial in-app tab workspace instead of the external Windows reader. The workspace currently proves open/session/error state only; virtual page rendering remains N4.2 and is not claimed.
 - Added opt-in local tab restoration, disabled by default and storing no passwords, plus clear missing, malformed, password-required and unsupported-security states.
-- Local Visual Studio 2026/Qt 6.10.3 Debug build, focused reader/library/core tests and isolated-profile startup pass. N4.1 remains In progress pending its remaining component, sharing, Release, rendered accessibility/RTL and CI evidence.
+- Local Visual Studio 2026/Qt 6.10.3 Debug build, complete 25/25 CTest suite and isolated-profile startup pass. N4.1 remains In progress pending its remaining component, sharing, Release, rendered accessibility/RTL and CI evidence.
 
 ## `2.0.0-beta.1` released — 2026-09-28
 

@@ -14,7 +14,7 @@
 
 | Subgate | Status | Implementation SHA | Automated evidence | Rendered/owner evidence | Open blockers |
 |---|---|---|---|---|---|
-| N4.1 Session/open model | In progress | pending checkpoint commit | Debug build; focused `atlas_reader_session`, `atlas_library_document_inspector` and smoke tests pass locally | UI launches cleanly; full rendered/owner review not yet performed | restoration/resource-release component tests, password-entry flow, Windows sharing proof and full QA remain |
+| N4.1 Session/open model | In progress | `dd03fe0` | local Debug build and 25/25 CTest pass, including `atlas_reader_session` | UI launches cleanly; full rendered/owner review not yet performed | restoration/resource-release component tests, password-entry flow, Windows sharing proof, Release/CI and full QA remain |
 | N4.2 Virtual viewport | Not started | — | — | — | depends on accepted N4.1 contracts |
 | N4.3 Navigation | Not started | — | — | — | depends on viewport geometry |
 | N4.4 Outline/text/search/links | Not started | — | — | — | normalized reader adapters not implemented |
@@ -48,9 +48,10 @@ Implemented, without claiming N4.1 completion:
 
 Focused local evidence on Visual Studio 2026/Qt 6.10.3 Debug:
 
+- complete CTest suite: 25/25 PASS;
 - `atlas_reader_session`: PASS;
 - `atlas_library_document_inspector`: PASS;
 - `atlas_core_smoke`: PASS;
 - `atlas_reader.exe --quit-after-ms 1200` with an isolated profile: clean exit.
 
-This is a resumable source checkpoint, not an owner package. N4.1 remains **In progress** because restart/restoration, clean release, cancellation/resource release, Windows file-sharing, password entry, full Debug/Release regression, rendered accessibility/RTL review and GitHub CI evidence have not all been completed.
+This is a resumable source checkpoint, not an owner package. N4.1 remains **In progress** because restart/restoration, clean release, cancellation/resource release, Windows file-sharing, password entry, Release regression, rendered accessibility/RTL review and GitHub CI evidence have not all been completed.

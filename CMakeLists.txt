@@ -286,6 +286,10 @@ target_link_libraries(atlas_reader_session_tests PRIVATE atlas_reader_session)
 atlas_enable_warnings(atlas_reader_session_tests)
 add_test(NAME atlas_reader_session COMMAND atlas_reader_session_tests)
 
+add_executable(atlas_reader_controller_tests tests/reader/reader_controller_tests.cpp)
+target_link_libraries(atlas_reader_controller_tests PRIVATE atlas_reader_ui)
+atlas_enable_warnings(atlas_reader_controller_tests)
+
 add_executable(atlas_document_identity_tests tests/index/document_identity_reconciler_tests.cpp)
 target_link_libraries(atlas_document_identity_tests PRIVATE atlas_document_identity)
 atlas_enable_warnings(atlas_document_identity_tests)
@@ -318,6 +322,13 @@ target_link_libraries(atlas_library_document_inspector_tests PRIVATE atlas_libra
 atlas_enable_warnings(atlas_library_document_inspector_tests)
 
 set(ATLAS_N2_PDF_FIXTURE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
+
+add_test(
+    NAME atlas_reader_controller
+    COMMAND atlas_reader_controller_tests
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A001_simple_text.pdf"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A008_password_rc4_40.pdf"
+)
 
 add_test(
     NAME atlas_library_document_inspector

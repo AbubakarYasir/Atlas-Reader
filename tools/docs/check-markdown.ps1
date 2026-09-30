@@ -42,8 +42,8 @@ $liveStatusFiles = @(
     'CHANGELOG.md',
     'AGENTS.md',
     'docs/README.md',
-    'docs/N3_LIBRARY_INDEX_PLAN.md',
-    'docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md',
+    'docs/N4_READER_FOUNDATION_PLAN.md',
+    'docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md',
     'docs/DEPENDENCIES_AND_TOOLS.md'
 )
 
@@ -73,14 +73,20 @@ foreach ($relativePath in $liveStatusFiles) {
 
 # Closed checkpoint records keep their historical status when the active
 # checkpoint advances.
-$acceptedHistoryFile = 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md'
-$acceptedHistoryText = Get-Content -LiteralPath (Join-Path $repoRoot $acceptedHistoryFile) -Raw
-$acceptedHistoryMatch = [regex]::Match(
-    $acceptedHistoryText,
-    '<!--\s*atlas-status:\s*([^>]+?)\s*-->'
-)
-if (-not $acceptedHistoryMatch.Success -or $acceptedHistoryMatch.Groups[1].Value.Trim() -ne 'N2|accepted') {
-    $errors.Add("Closed checkpoint record must retain historical status N2|accepted: $acceptedHistoryFile")
+$acceptedHistoryFiles = @{
+    'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md' = 'N2|accepted'
+    'docs/N3_LIBRARY_INDEX_PLAN.md' = 'N3|accepted'
+    'docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md' = 'N3|accepted'
+}
+foreach ($acceptedHistory in $acceptedHistoryFiles.GetEnumerator()) {
+    $acceptedHistoryText = Get-Content -LiteralPath (Join-Path $repoRoot $acceptedHistory.Key) -Raw
+    $acceptedHistoryMatch = [regex]::Match(
+        $acceptedHistoryText,
+        '<!--\s*atlas-status:\s*([^>]+?)\s*-->'
+    )
+    if (-not $acceptedHistoryMatch.Success -or $acceptedHistoryMatch.Groups[1].Value.Trim() -ne $acceptedHistory.Value) {
+        $errors.Add("Closed checkpoint record must retain historical status $($acceptedHistory.Value): $($acceptedHistory.Key)")
+    }
 }
 
 $checkpointText = Get-Content -LiteralPath (Join-Path $repoRoot 'CHECKPOINTS.md') -Raw

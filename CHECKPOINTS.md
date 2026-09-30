@@ -1,6 +1,6 @@
 # Atlas Reader Native — Checkpoints to Windows 2.0
 
-<!-- atlas-status: N3|accepted -->
+<!-- atlas-status: N4|in-progress -->
 
 This file controls implementation order. Only one checkpoint is active at a time. A checkpoint may be **Not started**, **In progress**, **Ready for owner test**, **Accepted**, or **Blocked**.
 
@@ -10,19 +10,19 @@ This file controls implementation order. Only one checkpoint is active at a time
 
 | Field | Value |
 |---|---|
-| Checkpoint | **N3 — Library/index foundation** |
-| Version | `2.0.0-beta.1` (Accepted and Released as a GitHub prerelease on 2026-09-28) |
-| Status | **Accepted by owner with explicit `N3 PASS` on 2026-09-27** |
-| Previous checkpoint | **N2 Accepted by owner on 2026-09-27** |
-| Branch | `native-v2-n3-library-index-foundation` |
-| Base | accepted native `main` at `84a9b45b10b24ece595bb7069136fefd2ed2cc5b` |
-| Scope | versioned SQLite/FTS5 storage and repositories; safe multi-root scanning; guarded identity/reconciliation; useful Arabic/Unicode library search and workflows |
-| Explicitly excluded | Production PDF Reader/viewport, full bookmark editor/local overlay, annotations/ink, Flutter migration/backup, installer, OCR, AI document analysis |
+| Checkpoint | **N4 — Native reader foundation** |
+| Planned version | `2.0.0-beta.2` (source remains accepted `2.0.0-beta.1` until promotion is earned) |
+| Status | **In progress — N4.1 session/open model** |
+| Previous checkpoint | **N3 Accepted by owner on 2026-09-27 and merged/verified on `main`** |
+| Branch | `native-v2-n4-reader-foundation` |
+| Base | accepted native `main` at `739508e3e698016e8a6a4cb8b87c2b4aa418d66d` |
+| Scope | read-only PDF sessions, virtualized viewport, navigation, outline/text/search/links and a production offline reading workspace |
+| Explicitly excluded | Bookmark mutation/local overlay, annotations/ink, PDF content/page/form/redaction/signature edits, Flutter migration/backup, installer, OCR, online/collaboration features |
 | Primary platform | Windows 11, while preserving cross-platform adapter boundaries |
 | Inherited toolchain | accepted N1 Qt 6.10.3/MSVC 2022/C++23 baseline; candidate-specific probe tooling must be documented separately |
-| Plan | `docs/N3_LIBRARY_INDEX_PLAN.md` |
-| Evidence sheet | `docs/baselines/N3_ACCEPTANCE.md`, `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md` and `docs/CHECKPOINT_QA_MATRIX.md` |
-| Accepted predecessor | `docs/baselines/N2_ACCEPTANCE.md` and `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` |
+| Plan | `docs/N4_READER_FOUNDATION_PLAN.md` |
+| Evidence sheet | `docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md` and `docs/CHECKPOINT_QA_MATRIX.md` |
+| Accepted predecessor | `docs/baselines/N3_ACCEPTANCE.md` |
 
 N2 was deliberately opened on 2026-09-22 after explicit N1 acceptance. The
 qualification is complete and owner-approved: the frozen route is
@@ -30,7 +30,7 @@ official dynamic Qt PDF 6.10.3 for read/render/text/navigation plus the
 first-party qpdf 12.4.1 CLI for structure/security/write. ADR-0004 was
 Accepted by owner on 2026-09-27.
 
-N2 and N3 are frozen and Accepted. N3.1–N3.4, exact-head Debug/Release CI, inherited regressions, package/checksum verification, owner checks 1–11, corrective retesting and the Calibre 9.9 comparison all passed. The owner recorded explicit `N3 PASS` on 2026-09-27. N4 may open only from the verified accepted `main` merge.
+N2 and N3 are frozen and Accepted. N4 opened on 2026-09-28 only after PR #5 merged, accepted head ancestry was verified, every `main` regression passed and the completed N3 branch was deleted locally and remotely. N4.1 is the sole active subgate.
 
 ## Operating contract
 
@@ -62,7 +62,7 @@ N2 and N3 are frozen and Accepted. N3.1–N3.4, exact-head Debug/Release CI, inh
 | N1 | `2.0.0-alpha.1` | Windows toolchain + empty-shell baseline | **Accepted** |
 | N2 | `2.0.0-alpha.2` | PDF engine qualification spike | **Accepted** |
 | N3 | `2.0.0-beta.1` | Library/index foundation | **Accepted; beta Released** |
-| N4 | `2.0.0-beta.2` | Native reader foundation | Not started |
+| N4 | `2.0.0-beta.2` | Native reader foundation | **In progress** |
 | N5 | `2.0.0-beta.3` | Core resilience + complete bookmarks | Not started |
 | N6 | `2.0.0-beta.4` | Ink + standard annotations | Not started |
 | N7 | `2.0.0-beta.5` | Printing, covers + portable metadata | Not started |

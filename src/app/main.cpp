@@ -1,6 +1,7 @@
 #include "app/diagnostics/ShellMetrics.h"
 #include "app/library/LibraryController.h"
 #include "app/logging/Logging.h"
+#include "app/reader/ReaderController.h"
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
@@ -161,6 +162,12 @@ int main(int argc, char* argv[]) {
         : QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     atlas::app::LibraryController libraryController(
         filesystemPath(QDir{profileDirectory}.filePath(QStringLiteral("library.sqlite3"))));
+    atlas::app::ReaderController readerController(filesystemPath(profileDirectory));
+    QObject::connect(
+        &libraryController,
+        &atlas::app::LibraryController::openDocumentRequested,
+        &readerController,
+        &atlas::app::ReaderController::openLocalFile);
     for (const auto& rootPath : parser.values(addLibraryRootOption)) {
         libraryController.addRoot(QUrl::fromLocalFile(QDir::cleanPath(rootPath)));
     }
@@ -170,6 +177,7 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty(QStringLiteral("atlasInitialArabic"), isArabic);
     engine.rootContext()->setContextProperty(QStringLiteral("atlasInitialDark"), initialDark);
     engine.rootContext()->setContextProperty(QStringLiteral("libraryController"), &libraryController);
+    engine.rootContext()->setContextProperty(QStringLiteral("readerController"), &readerController);
 
     QObject::connect(
         &engine,

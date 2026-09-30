@@ -43,6 +43,14 @@ add_library(atlas_core INTERFACE)
 target_include_directories(atlas_core INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_features(atlas_core INTERFACE cxx_std_23)
 
+add_library(atlas_reader_session STATIC
+    src/core/reader/ReaderSessionModel.cpp
+    src/core/reader/ReaderSessionModel.h
+)
+target_include_directories(atlas_reader_session PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_reader_session PUBLIC atlas_core)
+atlas_enable_warnings(atlas_reader_session)
+
 add_library(atlas_document_identity STATIC
     src/core/index/DocumentIdentityReconciler.cpp
     src/core/index/DocumentIdentityReconciler.h
@@ -131,6 +139,17 @@ target_link_libraries(atlas_library_ui PUBLIC
 )
 atlas_enable_warnings(atlas_library_ui)
 
+add_library(atlas_reader_ui STATIC
+    src/app/reader/ReaderController.cpp
+    src/app/reader/ReaderController.h
+)
+target_include_directories(atlas_reader_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_reader_ui PUBLIC
+    atlas_reader_session atlas_library_document_inspector
+    Qt6::Core Qt6::Concurrent Qt6::Pdf
+)
+atlas_enable_warnings(atlas_reader_ui)
+
 set(ATLAS_READER_PLATFORM_SOURCES)
 if(WIN32)
     list(APPEND ATLAS_READER_PLATFORM_SOURCES assets/windows/atlas_reader.rc)
@@ -152,7 +171,7 @@ qt_add_qml_module(atlas_reader
 
 target_compile_definitions(atlas_reader PRIVATE ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}")
 target_link_libraries(atlas_reader
-    PRIVATE atlas_core atlas_app_support atlas_library_ui
+    PRIVATE atlas_core atlas_app_support atlas_library_ui atlas_reader_ui
     Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2
 )
 atlas_enable_warnings(atlas_reader)
@@ -262,6 +281,15 @@ target_link_libraries(atlas_core_smoke PRIVATE atlas_core)
 atlas_enable_warnings(atlas_core_smoke)
 add_test(NAME atlas_core_smoke COMMAND atlas_core_smoke)
 
+add_executable(atlas_reader_session_tests tests/reader/reader_session_model_tests.cpp)
+target_link_libraries(atlas_reader_session_tests PRIVATE atlas_reader_session)
+atlas_enable_warnings(atlas_reader_session_tests)
+add_test(NAME atlas_reader_session COMMAND atlas_reader_session_tests)
+
+add_executable(atlas_reader_controller_tests tests/reader/reader_controller_tests.cpp)
+target_link_libraries(atlas_reader_controller_tests PRIVATE atlas_reader_ui)
+atlas_enable_warnings(atlas_reader_controller_tests)
+
 add_executable(atlas_document_identity_tests tests/index/document_identity_reconciler_tests.cpp)
 target_link_libraries(atlas_document_identity_tests PRIVATE atlas_document_identity)
 atlas_enable_warnings(atlas_document_identity_tests)
@@ -294,6 +322,13 @@ target_link_libraries(atlas_library_document_inspector_tests PRIVATE atlas_libra
 atlas_enable_warnings(atlas_library_document_inspector_tests)
 
 set(ATLAS_N2_PDF_FIXTURE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
+
+add_test(
+    NAME atlas_reader_controller
+    COMMAND atlas_reader_controller_tests
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A001_simple_text.pdf"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A008_password_rc4_40.pdf"
+)
 
 add_test(
     NAME atlas_library_document_inspector

@@ -1,13 +1,13 @@
 # Atlas Reader Native — Agent Rules
 
-<!-- atlas-status: N3|accepted -->
+<!-- atlas-status: N4|in-progress -->
 
 Read this before changing the repository.
 
 ## Start with the current checkpoint
 
 1. Read `CHECKPOINTS.md` and identify the active checkpoint.
-2. Read the active checkpoint plan/evidence files. For N2 these are `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` and `docs/baselines/N2_PDF_ENGINE_MATRIX.md`.
+2. Read the active checkpoint plan/evidence files. For N4 these are `docs/N4_READER_FOUNDATION_PLAN.md` and `docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md`.
 3. Read only the relevant requirements/ADRs before editing.
 4. Respect the checkpoint's explicit exclusions.
 5. Do not begin work from a later checkpoint because it is convenient while touching the same files.
@@ -192,10 +192,10 @@ Never inspect, print, commit, or request secrets unnecessarily. Password-protect
 
 ## Current stop gate
 
-**N0, N1, N2 and N3 are Accepted. N4 has not started on this branch.**
+**N0, N1, N2 and N3 are Accepted. N4 native reader foundation is In progress.**
 
 N2 is frozen: do not reopen its engine qualification or change the accepted Qt PDF/qpdf responsibility split without new regression evidence and an explicit decision update.
 
-N3 implementation, exact-head CI, package and owner acceptance are complete. Do **not** add N4 Reader/viewport work on this completed branch. N4 must start from the verified accepted `main` merge on its own `native-v2-n4-reader-foundation` branch.
+N4 work occurs only on `native-v2-n4-reader-foundation`, based on verified accepted `main` merge `739508e3e698016e8a6a4cb8b87c2b4aa418d66d`. Follow N4.1 → N4.5 in order. Do not begin bookmark mutation/local overlay, annotations/ink, PDF editing, migration, installer or later-format implementation.
 
-Use `docs/baselines/N3_ACCEPTANCE.md` for the frozen owner decision and `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md` for detailed evidence. Do not reopen N3 without concrete regression evidence.
+Use `docs/N4_READER_FOUNDATION_PLAN.md` for scope and `docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md` for results. N4 is read-only: source PDFs must remain byte-identical. Do not claim N4 Verified, Accepted or `2.0.0-beta.2` until every required gate and explicit owner `N4 PASS` are recorded.

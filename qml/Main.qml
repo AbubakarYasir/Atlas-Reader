@@ -24,7 +24,9 @@ ApplicationWindow {
     minimumWidth: 760
     minimumHeight: 560
     visible: true
-    title: arabic ? "أطلس ريدر — المكتبة" : "Atlas Reader — Library"
+    title: readerController.activeIndex >= 0
+        ? (arabic ? "أطلس ريدر — القارئ" : "Atlas Reader — Reader")
+        : (arabic ? "أطلس ريدر — المكتبة" : "Atlas Reader — Library")
     color: canvas
 
     palette.window: canvas
@@ -64,12 +66,21 @@ ApplicationWindow {
 
     Shortcut { sequence: "Ctrl+K"; onActivated: searchField.forceActiveFocus() }
     Shortcut { sequence: "Ctrl+O"; onActivated: folderDialog.open() }
+    Shortcut { sequence: "Ctrl+Shift+O"; onActivated: pdfDialog.open() }
+    Shortcut { sequence: "Ctrl+W"; enabled: readerController.activeIndex >= 0; onActivated: readerController.closeActive() }
     Shortcut { sequence: "F5"; onActivated: libraryController.rescan() }
 
     FolderDialog {
         id: folderDialog
         title: root.arabic ? "اختر مجلد الكتب" : "Choose a book folder"
         onAccepted: libraryController.addRoot(selectedFolder)
+    }
+
+    FileDialog {
+        id: pdfDialog
+        title: root.arabic ? "افتح ملف PDF" : "Open a PDF"
+        nameFilters: [root.arabic ? "ملفات PDF (*.pdf)" : "PDF files (*.pdf)"]
+        onAccepted: readerController.openLocalFile(selectedFile)
     }
 
     Connections {
@@ -210,6 +221,17 @@ ApplicationWindow {
             }
             Item { Layout.fillWidth: true }
             AtlasButton {
+                visible: readerController.hasSessions && readerController.activeIndex < 0
+                text: root.arabic ? "العودة إلى القارئ" : "Return to reader"
+                Accessible.name: text
+                onClicked: readerController.activeIndex = 0
+            }
+            AtlasButton {
+                text: root.arabic ? "فتح PDF" : "Open PDF"
+                Accessible.name: root.arabic ? "فتح ملف PDF، كنترول شفت أو" : "Open a PDF, Ctrl+Shift+O"
+                onClicked: pdfDialog.open()
+            }
+            AtlasButton {
                 text: root.arabic ? "English" : "العربية"
                 Accessible.name: root.arabic ? "Switch to English" : "التبديل إلى العربية"
                 onClicked: root.arabic = !root.arabic
@@ -225,6 +247,7 @@ ApplicationWindow {
     RowLayout {
         anchors.fill: parent
         spacing: 0
+        visible: readerController.activeIndex < 0
 
         Rectangle {
             Layout.preferredWidth: root.width < 900 ? 190 : 230
@@ -512,8 +535,8 @@ ApplicationWindow {
                                         Layout.alignment: Qt.AlignVCenter
                                         enabled: availability === "available" || availability === "readOnly"
                                         opacity: enabled ? 1.0 : 0.42
-                                        Accessible.description: root.arabic ? "يفتح في قارئ ويندوز حالياً؛ قارئ أطلس يأتي في N4" : "Opens in the Windows PDF app for now; the Atlas reader arrives in N4"
-                                        onClicked: libraryController.openExternally(documentId)
+                                        Accessible.description: root.arabic ? "يفتح هذا الملف في تبويب قارئ أطلس" : "Opens this file in an Atlas Reader tab"
+                                        onClicked: libraryController.openInReader(documentId)
                                     }
                                 }
                             }
@@ -534,6 +557,228 @@ ApplicationWindow {
                     font.pixelSize: 16
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
+                }
+            }
+        }
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
+        visible: readerController.activeIndex >= 0
+        spacing: 0
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 48
+            color: root.panel
+            border.color: root.line
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                spacing: 8
+
+                AtlasButton {
+                    text: root.arabic ? "المكتبة" : "Library"
+                    flat: true
+                    Accessible.name: root.arabic ? "العودة إلى المكتبة" : "Return to Library"
+                    onClicked: readerController.showLibrary()
+                }
+
+                ListView {
+                    id: tabList
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    orientation: ListView.Horizontal
+                    spacing: 6
+                    clip: true
+                    model: readerController
+
+                    delegate: Rectangle {
+                        required property int index
+                        required property string title
+                        required property string status
+                        width: Math.min(240, Math.max(150, tabTitle.implicitWidth + 64))
+                        height: 36
+                        radius: 7
+                        color: index === readerController.activeIndex ? root.accentSoft : "transparent"
+                        border.color: index === readerController.activeIndex ? root.accent : root.line
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 4
+                            spacing: 4
+                            Label {
+                                id: tabTitle
+                                Layout.fillWidth: true
+                                text: parent.parent.status === "loading" ? parent.parent.title + "…" : parent.parent.title
+                                color: root.ink
+                                elide: Text.ElideRight
+                            }
+                            AtlasButton {
+                                text: "×"
+                                flat: true
+                                Layout.preferredWidth: 32
+                                Layout.minimumWidth: 32
+                                Layout.maximumWidth: 32
+                                Accessible.name: root.arabic ? "إغلاق التبويب" : "Close tab"
+                                onClicked: readerController.closeAt(parent.parent.index)
+                            }
+                        }
+                        TapHandler { onTapped: readerController.activeIndex = parent.index }
+                    }
+                }
+
+                AtlasButton {
+                    text: "+"
+                    flat: true
+                    Accessible.name: root.arabic ? "فتح ملف PDF آخر" : "Open another PDF"
+                    onClicked: pdfDialog.open()
+                }
+            }
+        }
+
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            Repeater {
+                model: readerController
+
+                delegate: Rectangle {
+                    id: readerPage
+                    required property int index
+                    required property string title
+                    required property string sourcePath
+                    required property string status
+                    required property int pageCount
+                    required property string detail
+                    anchors.fill: parent
+                    visible: index === readerController.activeIndex
+                    color: root.canvas
+
+                    ColumnLayout {
+                        anchors.centerIn: parent
+                        width: Math.min(620, parent.width - 56)
+                        spacing: 14
+
+                        BusyIndicator {
+                            Layout.alignment: Qt.AlignHCenter
+                            visible: readerPage.status === "loading"
+                            running: visible
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            text: readerPage.title
+                            color: root.ink
+                            font.pixelSize: 26
+                            font.bold: true
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideMiddle
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            text: readerPage.status === "ready"
+                                ? (root.arabic
+                                    ? "الملف جاهز للقراءة • " + readerPage.pageCount + " صفحة"
+                                    : "Document ready • " + readerPage.pageCount + " pages")
+                                : readerPage.status === "loading"
+                                    ? (root.arabic ? "جارٍ فتح الملف دون إيقاف الواجهة…" : "Opening without blocking the interface…")
+                                    : readerPage.status === "passwordRequired"
+                                        ? (readerPage.detail === "incorrect-password"
+                                            ? (root.arabic ? "كلمة المرور غير صحيحة. حاول مرة أخرى." : "That password was not accepted. Try again.")
+                                            : (root.arabic ? "يتطلب هذا الملف كلمة مرور." : "This PDF needs a password."))
+                                        : readerPage.status === "missing"
+                                            ? (root.arabic ? "لم يعد الملف موجوداً في هذا المكان." : "The file is no longer at this location.")
+                                            : readerPage.status === "unsupportedSecurity"
+                                                ? (root.arabic ? "نظام حماية هذا الملف غير مدعوم." : "This PDF uses unsupported security.")
+                                                : (root.arabic ? "تعذر فتح هذا الملف كملف PDF صالح." : "Atlas could not open this as a valid PDF.")
+                            color: root.muted
+                            wrapMode: Text.WordWrap
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        AtlasTextField {
+                            id: passwordField
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.preferredWidth: Math.min(360, parent.width)
+                            visible: readerPage.status === "passwordRequired"
+                            placeholderText: root.arabic ? "كلمة مرور PDF" : "PDF password"
+                            echoMode: TextInput.Password
+                            selectByMouse: true
+                            Accessible.name: root.arabic ? "كلمة مرور ملف PDF" : "PDF password"
+                            Accessible.description: root.arabic
+                                ? "تُستخدم لفتح هذا الملف فقط ولا يحفظها أطلس"
+                                : "Used only to open this file; Atlas does not save it"
+                            onVisibleChanged: {
+                                if (visible) forceActiveFocus()
+                                else text = ""
+                            }
+                            onAccepted: {
+                                if (text.length === 0) return
+                                const submittedPassword = text
+                                text = ""
+                                readerController.submitPassword(readerPage.index, submittedPassword)
+                            }
+                        }
+                        AtlasButton {
+                            Layout.alignment: Qt.AlignHCenter
+                            visible: readerPage.status === "passwordRequired"
+                            enabled: passwordField.text.length > 0
+                            highlighted: true
+                            text: root.arabic ? "فتح الملف" : "Unlock PDF"
+                            Accessible.description: root.arabic
+                                ? "لا تُحفظ كلمة المرور"
+                                : "The password is not saved"
+                            onClicked: {
+                                const submittedPassword = passwordField.text
+                                passwordField.text = ""
+                                readerController.submitPassword(readerPage.index, submittedPassword)
+                            }
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            text: readerPage.sourcePath
+                            color: root.muted
+                            font.pixelSize: 11
+                            elide: Text.ElideMiddle
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            visible: readerPage.status === "ready"
+                            text: root.arabic
+                                ? "عرض الصفحات الافتراضي يأتي في N4.2؛ لم يغيّر أطلس الملف."
+                                : "The virtual page canvas arrives in N4.2; Atlas has not changed this file."
+                            color: root.muted
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                        }
+                        RowLayout {
+                            Layout.alignment: Qt.AlignHCenter
+                            visible: readerPage.status !== "loading"
+                            AtlasButton {
+                                visible: readerPage.status !== "ready" && readerPage.status !== "passwordRequired"
+                                text: root.arabic ? "إعادة المحاولة" : "Try again"
+                                highlighted: true
+                                onClicked: readerController.retryAt(readerPage.index)
+                            }
+                            AtlasButton {
+                                text: root.arabic ? "إغلاق التبويب" : "Close tab"
+                                onClicked: readerController.closeAt(readerPage.index)
+                            }
+                        }
+                        CheckBox {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: root.arabic ? "استعادة علامات التبويب عند بدء أطلس" : "Restore reader tabs when Atlas starts"
+                            checked: readerController.restoreEnabled
+                            onToggled: readerController.restoreEnabled = checked
+                            Accessible.description: root.arabic
+                                ? "اختياري ومحلي؛ لا تُحفظ كلمات المرور"
+                                : "Optional and local; passwords are never saved"
+                        }
+                    }
                 }
             }
         }

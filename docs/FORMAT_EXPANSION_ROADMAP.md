@@ -1,6 +1,6 @@
 # Atlas Reader — Book-format expansion roadmap
 
-<!-- atlas-status: N3|accepted -->
+<!-- atlas-status: N4|in-progress -->
 
 ## Purpose
 

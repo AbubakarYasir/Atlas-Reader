@@ -1,8 +1,22 @@
 # Changelog
 
-<!-- atlas-status: N3|accepted -->
+<!-- atlas-status: N4|in-progress -->
 
 All notable changes to Atlas Reader Native are documented here.
+
+## N4 start — 2026-09-28
+
+- Opened `native-v2-n4-reader-foundation` from verified accepted `main` merge `739508e3e698016e8a6a4cb8b87c2b4aa418d66d` only after PR #5 merged, all permanent-branch workflows passed and the completed N3 branch was deleted locally/remotely.
+- Set N4 to **In progress** with N4.1 session/open model as the only active subgate. The source stays `2.0.0-beta.1`; `2.0.0-beta.2` is earned only at N4 acceptance.
+- Added a binding read-only reader plan and empty evidence ledger covering virtualized rendering, mixed geometry/rotation, zoom/fit/navigation, outlines/text/search/links, tabs/restoration, side-by-side and simplified text view, offline security, Arabic/Urdu, accessibility, rendered UI review, bounded memory and exact owner/package gates.
+- N5 bookmarks, N6 ink/annotations and every PDF mutation remain closed. N4 must prove source hashes unchanged.
+
+## N4.1 partial checkpoint — 2026-09-30
+
+- Added the first Atlas-owned read-session contract and focused lifecycle tests: asynchronous open states, duplicate-tab policy, deterministic tab activation/close, reopen revisions and stale-result rejection.
+- Routed Library and direct local PDF opens into an initial in-app tab workspace instead of the external Windows reader. The workspace currently proves open/session/error state only; virtual page rendering remains N4.2 and is not claimed.
+- Added opt-in local tab restoration, disabled by default and storing no passwords, plus clear missing, malformed, password-required and unsupported-security states.
+- Local Visual Studio 2026/Qt 6.10.3 Debug build, complete 25/25 CTest suite and isolated-profile startup pass. N4.1 remains In progress pending its remaining component, sharing, Release, rendered accessibility/RTL and CI evidence.
 
 ## `2.0.0-beta.1` released — 2026-09-28
 

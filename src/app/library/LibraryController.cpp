@@ -3,7 +3,6 @@
 #include "app/index/LibraryMetadataPolicy.h"
 
 #include <QDateTime>
-#include <QDesktopServices>
 #include <QDir>
 #include <QFileInfo>
 #include <QFuture>
@@ -210,15 +209,12 @@ void LibraryController::setFavorite(const QString& documentId, bool favorite) {
     });
 }
 
-void LibraryController::openExternally(const QString& documentId) {
+void LibraryController::openInReader(const QString& documentId) {
     const auto found = std::find_if(records_.begin(), records_.end(), [&](const auto& record) {
         return QString::fromUtf8(record.id) == documentId;
     });
     if (found == records_.end() || found->source.empty()) return;
-    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(pathToQString(found->source)))) {
-        emit operationError(QStringLiteral("Windows could not open this PDF."));
-        return;
-    }
+    emit openDocumentRequested(QUrl::fromLocalFile(pathToQString(found->source)));
     const auto id = found->id;
     const auto openedAt = QDateTime::currentMSecsSinceEpoch();
     runOnWorker([this, id, openedAt] {

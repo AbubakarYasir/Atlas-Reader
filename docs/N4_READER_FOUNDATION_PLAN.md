@@ -33,7 +33,7 @@ Implement asynchronous direct/Library open, immutable read sessions, tab lifecyc
 
 Tests cover success/error transitions, cancellation, reopen, duplicate opens, tab switching/closing, stale revisions, offline paths, restart policy and clean resource release.
 
-**Current implementation checkpoint (2026-09-30):** the Atlas-owned session state machine, duplicate/reopen/tab lifecycle, background direct/Library open, initial in-app status workspace and opt-in path-only restoration are implemented. N4.1 is still In progress until the remaining restart/restoration, cancellation/resource-release, Windows sharing, password-entry, full regression and rendered accessibility evidence is complete. Page rendering belongs to N4.2 and has not started.
+**Current gate (2026-09-30): Ready for owner test.** The Atlas-owned session state machine, duplicate/reopen/tab lifecycle, background direct/Library open, password retry flow, initial in-app status workspace, opt-in path-only restoration and deterministic worker/resource cleanup are implemented. Exact implementation-head Windows Debug and Release builds/tests pass 43/43, including controller-level password, restart, sharing and cancellation coverage, and inherited PDF regression workflows pass. The remaining N4.1 gate is the rendered owner review in `docs/N4_1_OWNER_TEST.md`: English/Arabic/RTL, 100%/200%, keyboard/Narrator, actual restart/password behavior, file release and read-only observations. N4.2 must not begin until defects found there are fixed/retested and the owner records `N4.1 PASS`. Page rendering belongs to N4.2 and has not started.
 
 ### N4.2 — Virtual viewport and render scheduler
 

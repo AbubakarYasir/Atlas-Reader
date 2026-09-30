@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 namespace atlas::app {
 
@@ -69,6 +70,7 @@ private:
         const QString& sourcePath,
         const QString& password = {});
     void cancelPending(std::uint64_t sessionId);
+    void scheduleRetiredCleanup(QFutureWatcher<atlas::reader::OpenResult>* watcher);
     void refreshModel(int previousActiveIndex, int previousCount);
     void restoreSessions();
     void saveSessions() const;
@@ -79,6 +81,7 @@ private:
     atlas::reader::ReaderSessionModel model_;
     std::filesystem::path profileDirectory_;
     std::unordered_map<std::uint64_t, std::unique_ptr<PendingOpen>> pending_;
+    std::vector<std::unique_ptr<PendingOpen>> retired_;
     bool restoreEnabled_{};
     bool libraryVisible_{true};
 };

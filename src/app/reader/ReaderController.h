@@ -46,6 +46,7 @@ public:
     Q_INVOKABLE void openLocalFile(const QUrl& file);
     Q_INVOKABLE void closeAt(int index);
     Q_INVOKABLE void retryAt(int index);
+    Q_INVOKABLE void submitPassword(int index, const QString& password);
     Q_INVOKABLE void closeActive();
     Q_INVOKABLE void showLibrary();
 
@@ -62,7 +63,12 @@ private:
     };
 
     void beginOpen(const QString& sourcePath);
-    void launchOpen(std::uint64_t sessionId, std::uint64_t revision, const QString& sourcePath);
+    void launchOpen(
+        std::uint64_t sessionId,
+        std::uint64_t revision,
+        const QString& sourcePath,
+        const QString& password = {});
+    void cancelPending(std::uint64_t sessionId);
     void refreshModel(int previousActiveIndex, int previousCount);
     void restoreSessions();
     void saveSessions() const;

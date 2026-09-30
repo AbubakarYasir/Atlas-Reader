@@ -149,11 +149,19 @@ int main(int argc, char* argv[]) {
 
         for (int iteration = 0; iteration < 12; ++iteration) {
             const QString cancellationProfile = temp.filePath(QStringLiteral("cancel-%1").arg(iteration));
-            atlas::app::ReaderController controller{toPath(cancellationProfile)};
-            controller.openLocalFile(QUrl::fromLocalFile(simplePdf));
-            require(controller.rowCount() == 1, "Cancellation stress must create one pending session.");
-            controller.closeAt(0);
-            require(controller.rowCount() == 0, "Closing a pending session must release it immediately.");
+            {
+                atlas::app::ReaderController controller{toPath(cancellationProfile)};
+                controller.openLocalFile(QUrl::fromLocalFile(simplePdf));
+                require(controller.rowCount() == 1, "Cancellation stress must create one pending session.");
+                controller.closeAt(0);
+                require(controller.rowCount() == 0, "Closing a pending session must remove it immediately.");
+            }
+
+            const QString movedAfterCancel = temp.filePath(QStringLiteral("cancel-release-%1.pdf").arg(iteration));
+            require(QFile::rename(simplePdf, movedAfterCancel),
+                "Destroying a controller after cancelling an open must wait for the worker and release the PDF handle.");
+            require(QFile::rename(movedAfterCancel, simplePdf),
+                "The cancellation release fixture could not be restored to its original path.");
         }
 
         QCoreApplication::processEvents(QEventLoop::AllEvents, 50);

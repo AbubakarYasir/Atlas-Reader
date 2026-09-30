@@ -648,6 +648,7 @@ ApplicationWindow {
                 model: readerController
 
                 delegate: Rectangle {
+                    id: readerPage
                     required property int index
                     required property string title
                     required property string sourcePath
@@ -665,12 +666,12 @@ ApplicationWindow {
 
                         BusyIndicator {
                             Layout.alignment: Qt.AlignHCenter
-                            visible: parent.parent.status === "loading"
+                            visible: readerPage.status === "loading"
                             running: visible
                         }
                         Label {
                             Layout.fillWidth: true
-                            text: parent.parent.title
+                            text: readerPage.title
                             color: root.ink
                             font.pixelSize: 26
                             font.bold: true
@@ -679,26 +680,66 @@ ApplicationWindow {
                         }
                         Label {
                             Layout.fillWidth: true
-                            text: parent.parent.status === "ready"
+                            text: readerPage.status === "ready"
                                 ? (root.arabic
-                                    ? "الملف جاهز للقراءة • " + parent.parent.pageCount + " صفحة"
-                                    : "Document ready • " + parent.parent.pageCount + " pages")
-                                : parent.parent.status === "loading"
+                                    ? "الملف جاهز للقراءة • " + readerPage.pageCount + " صفحة"
+                                    : "Document ready • " + readerPage.pageCount + " pages")
+                                : readerPage.status === "loading"
                                     ? (root.arabic ? "جارٍ فتح الملف دون إيقاف الواجهة…" : "Opening without blocking the interface…")
-                                    : parent.parent.status === "passwordRequired"
-                                        ? (root.arabic ? "يتطلب هذا الملف كلمة مرور. إدخال كلمة المرور يأتي في خطوة N4 التالية." : "This PDF needs a password. Password entry is the next N4 reader step.")
-                                        : parent.parent.status === "missing"
+                                    : readerPage.status === "passwordRequired"
+                                        ? (readerPage.detail === "incorrect-password"
+                                            ? (root.arabic ? "كلمة المرور غير صحيحة. حاول مرة أخرى." : "That password was not accepted. Try again.")
+                                            : (root.arabic ? "يتطلب هذا الملف كلمة مرور." : "This PDF needs a password."))
+                                        : readerPage.status === "missing"
                                             ? (root.arabic ? "لم يعد الملف موجوداً في هذا المكان." : "The file is no longer at this location.")
-                                            : parent.parent.status === "unsupportedSecurity"
+                                            : readerPage.status === "unsupportedSecurity"
                                                 ? (root.arabic ? "نظام حماية هذا الملف غير مدعوم." : "This PDF uses unsupported security.")
                                                 : (root.arabic ? "تعذر فتح هذا الملف كملف PDF صالح." : "Atlas could not open this as a valid PDF.")
                             color: root.muted
                             wrapMode: Text.WordWrap
                             horizontalAlignment: Text.AlignHCenter
                         }
+                        AtlasTextField {
+                            id: passwordField
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.preferredWidth: Math.min(360, parent.width)
+                            visible: readerPage.status === "passwordRequired"
+                            placeholderText: root.arabic ? "كلمة مرور PDF" : "PDF password"
+                            echoMode: TextInput.Password
+                            selectByMouse: true
+                            Accessible.name: root.arabic ? "كلمة مرور ملف PDF" : "PDF password"
+                            Accessible.description: root.arabic
+                                ? "تُستخدم لفتح هذا الملف فقط ولا يحفظها أطلس"
+                                : "Used only to open this file; Atlas does not save it"
+                            onVisibleChanged: {
+                                if (visible) forceActiveFocus()
+                                else text = ""
+                            }
+                            onAccepted: {
+                                if (text.length === 0) return
+                                const submittedPassword = text
+                                text = ""
+                                readerController.submitPassword(readerPage.index, submittedPassword)
+                            }
+                        }
+                        AtlasButton {
+                            Layout.alignment: Qt.AlignHCenter
+                            visible: readerPage.status === "passwordRequired"
+                            enabled: passwordField.text.length > 0
+                            highlighted: true
+                            text: root.arabic ? "فتح الملف" : "Unlock PDF"
+                            Accessible.description: root.arabic
+                                ? "لا تُحفظ كلمة المرور"
+                                : "The password is not saved"
+                            onClicked: {
+                                const submittedPassword = passwordField.text
+                                passwordField.text = ""
+                                readerController.submitPassword(readerPage.index, submittedPassword)
+                            }
+                        }
                         Label {
                             Layout.fillWidth: true
-                            text: parent.parent.sourcePath
+                            text: readerPage.sourcePath
                             color: root.muted
                             font.pixelSize: 11
                             elide: Text.ElideMiddle
@@ -706,7 +747,7 @@ ApplicationWindow {
                         }
                         Label {
                             Layout.fillWidth: true
-                            visible: parent.parent.status === "ready"
+                            visible: readerPage.status === "ready"
                             text: root.arabic
                                 ? "عرض الصفحات الافتراضي يأتي في N4.2؛ لم يغيّر أطلس الملف."
                                 : "The virtual page canvas arrives in N4.2; Atlas has not changed this file."
@@ -716,16 +757,16 @@ ApplicationWindow {
                         }
                         RowLayout {
                             Layout.alignment: Qt.AlignHCenter
-                            visible: parent.parent.status !== "loading"
+                            visible: readerPage.status !== "loading"
                             AtlasButton {
-                                visible: parent.parent.status !== "ready"
+                                visible: readerPage.status !== "ready" && readerPage.status !== "passwordRequired"
                                 text: root.arabic ? "إعادة المحاولة" : "Try again"
                                 highlighted: true
-                                onClicked: readerController.retryAt(parent.parent.index)
+                                onClicked: readerController.retryAt(readerPage.index)
                             }
                             AtlasButton {
                                 text: root.arabic ? "إغلاق التبويب" : "Close tab"
-                                onClicked: readerController.closeAt(parent.parent.index)
+                                onClicked: readerController.closeAt(readerPage.index)
                             }
                         }
                         CheckBox {

@@ -12,7 +12,7 @@ This file controls implementation order. Only one checkpoint is active at a time
 |---|---|
 | Checkpoint | **N4 — Native reader foundation** |
 | Planned version | `2.0.0-beta.2` (source remains accepted `2.0.0-beta.1` until promotion is earned) |
-| Status | **In progress — N4.1 session/open model** |
+| Status | **In progress — N4.1 ready for owner review; review-build preparation active** |
 | Previous checkpoint | **N3 Accepted by owner on 2026-09-27 and merged/verified on `main`** |
 | Branch | `native-v2-n4-reader-foundation` |
 | Base | accepted native `main` at `739508e3e698016e8a6a4cb8b87c2b4aa418d66d` |

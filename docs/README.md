@@ -10,6 +10,8 @@ New visitor? Read the [public project introduction](../README.md). Building or c
 
 **N4 In progress:** see the [native reader plan](N4_READER_FOUNDATION_PLAN.md) and [N4 evidence ledger](baselines/N4_READER_FOUNDATION_EVIDENCE.md). N3 remains frozen in its [acceptance record](baselines/N3_ACCEPTANCE.md). Flutter development has stopped; native C++/Qt is the active project.
 
+N4.1 is ready for owner review: start with the [plain-language review guide](N4_1_QUICK_START.md), then the [full owner checklist](N4_1_OWNER_TEST.md). Page display begins only after this review, in N4.2.
+
 1. **`../README.md`** — project entry point and current status.
 2. **`../PLAN.md`** — master product/engineering north star.
 3. **`../CHECKPOINTS.md`** — current checkpoint, release mapping, stop gates.

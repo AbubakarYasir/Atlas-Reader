@@ -16,7 +16,11 @@ Checks 1–11 were exercised by the owner and their reported defects were correc
 
 ## Active work
 
-N4.1 defines asynchronous read-only PDF sessions, tabs, open/error/password states, local opt-in restoration and clean resource release. The [N4 plan](docs/N4_READER_FOUNDATION_PLAN.md) and [evidence ledger](docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md) are binding. No N4 implementation or verification is claimed at branch opening.
+N4.1 is **Ready for owner review**. Background local/Library opening, tabs, password entry/retry, optional path-only restoration and worker/file-handle release are implemented. The current N4.1 code passed 43/43 tests in both GitHub Windows Debug and Release. The remaining gate is the rendered Windows, Arabic/RTL, scaling, keyboard/Narrator and source-preservation review in the [owner checklist](docs/N4_1_OWNER_TEST.md). The [quick start](docs/N4_1_QUICK_START.md) explains the review build in plain language.
+
+The active source folder is named `native-v2-n4-reader-foundation`; the old `atlas_native_v2_n2` folder is no longer the source checkout. Build dependencies must be bootstrapped for the active folder using [BUILDING](docs/BUILDING.md).
+
+PDF page display remains unimplemented until N4.2. N4.1 approval does not accept N4, authorize a merge, or promote the version to beta.2. The [N4 plan](docs/N4_READER_FOUNDATION_PLAN.md) and [evidence ledger](docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md) are binding.
 
 ## Windows 2.0 sequence
 

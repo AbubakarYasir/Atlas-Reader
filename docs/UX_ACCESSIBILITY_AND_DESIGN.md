@@ -141,6 +141,8 @@ Tree navigation uses conventional arrow-key semantics. Every context menu must b
 
 Shortcuts are discoverable in tooltips/menus/settings and localizable by label, not by changing actual key definitions unpredictably.
 
+During N4.1 review, the accepted Library's `Ctrl+O` Add folder shortcut is retained and direct PDF open uses `Ctrl+Shift+O`. Reader tab selection uses `Ctrl+Tab` / `Ctrl+Shift+Tab`, or focus a named tab and press Enter/Space. The final Reader/command shortcut reconciliation remains an explicit N4.5 workspace review item.
+
 ## 7. Focus/accessibility
 
 Every interactive custom control needs:

@@ -103,18 +103,20 @@ QVariant ReaderController::data(const QModelIndex& index, int role) const {
     const auto& session = model_.sessions().at(static_cast<std::size_t>(index.row()));
     switch (role) {
     case SessionIdRole: return QVariant::fromValue<qulonglong>(session.id);
-    case TitleRole: return fromUtf8(session.title);
+    case TitleRole: return pathToQString(session.source.stem());
     case SourceRole: return pathToQString(session.source);
     case StatusRole: return QString::fromLatin1(atlas::reader::openStateName(session.state));
     case PageCountRole: return session.pageCount;
     case DetailRole: return fromUtf8(session.detail);
+    case DocumentTitleRole: return fromUtf8(session.title);
     default: return {};
     }
 }
 
 QHash<int, QByteArray> ReaderController::roleNames() const {
     return {{SessionIdRole, "sessionId"}, {TitleRole, "title"}, {SourceRole, "sourcePath"},
-        {StatusRole, "status"}, {PageCountRole, "pageCount"}, {DetailRole, "detail"}};
+        {StatusRole, "status"}, {PageCountRole, "pageCount"}, {DetailRole, "detail"},
+        {DocumentTitleRole, "documentTitle"}};
 }
 
 int ReaderController::activeIndex() const { return libraryVisible_ ? -1 : model_.activeIndex(); }

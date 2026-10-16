@@ -68,7 +68,15 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+O"; onActivated: folderDialog.open() }
     Shortcut { sequence: "Ctrl+Shift+O"; onActivated: pdfDialog.open() }
     Shortcut { sequence: "Ctrl+W"; enabled: readerController.activeIndex >= 0; onActivated: readerController.closeActive() }
+    Shortcut { sequence: "Ctrl+Tab"; enabled: readerController.hasSessions; onActivated: root.cycleReaderTab(1) }
+    Shortcut { sequence: "Ctrl+Shift+Tab"; enabled: readerController.hasSessions; onActivated: root.cycleReaderTab(-1) }
     Shortcut { sequence: "F5"; onActivated: libraryController.rescan() }
+
+    function cycleReaderTab(step) {
+        if (tabList.count === 0) return
+        const current = readerController.activeIndex
+        readerController.activeIndex = current < 0 ? 0 : (current + step + tabList.count) % tabList.count
+    }
 
     FolderDialog {
         id: folderDialog
@@ -312,7 +320,7 @@ ApplicationWindow {
                 }
                 Label {
                     Layout.fillWidth: true
-                    text: atlasVersion + " · N3"
+                    text: atlasVersion + " · N4.1 review"
                     color: root.muted
                     font.pixelSize: 11
                     horizontalAlignment: Text.AlignHCenter
@@ -594,16 +602,31 @@ ApplicationWindow {
                     spacing: 6
                     clip: true
                     model: readerController
+                    currentIndex: readerController.activeIndex
+                    onCurrentIndexChanged: {
+                        if (currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
+                    }
 
                     delegate: Rectangle {
+                        id: readerTab
                         required property int index
                         required property string title
                         required property string status
                         width: Math.min(240, Math.max(150, tabTitle.implicitWidth + 64))
-                        height: 36
+                        height: 40
+                        y: 4
                         radius: 7
                         color: index === readerController.activeIndex ? root.accentSoft : "transparent"
-                        border.color: index === readerController.activeIndex ? root.accent : root.line
+                        border.color: activeFocus || index === readerController.activeIndex ? root.accent : root.line
+                        border.width: activeFocus ? 2 : 1
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.PageTab
+                        Accessible.name: title
+                        Accessible.focusable: true
+                        Accessible.selected: index === readerController.activeIndex
+                        Accessible.onPressAction: readerController.activeIndex = index
+                        Keys.onReturnPressed: readerController.activeIndex = index
+                        Keys.onSpacePressed: readerController.activeIndex = index
 
                         RowLayout {
                             anchors.fill: parent
@@ -623,8 +646,13 @@ ApplicationWindow {
                                 Layout.preferredWidth: 32
                                 Layout.minimumWidth: 32
                                 Layout.maximumWidth: 32
-                                Accessible.name: root.arabic ? "إغلاق التبويب" : "Close tab"
-                                onClicked: readerController.closeAt(parent.parent.index)
+                                Layout.preferredHeight: 32
+                                Layout.minimumHeight: 32
+                                Layout.maximumHeight: 32
+                                topPadding: 5
+                                bottomPadding: 5
+                                Accessible.name: (root.arabic ? "إغلاق " : "Close ") + readerTab.title
+                                onClicked: readerController.closeAt(readerTab.index)
                             }
                         }
                         TapHandler { onTapped: readerController.activeIndex = parent.index }
@@ -655,6 +683,7 @@ ApplicationWindow {
                     required property string status
                     required property int pageCount
                     required property string detail
+                    required property string documentTitle
                     anchors.fill: parent
                     visible: index === readerController.activeIndex
                     color: root.canvas
@@ -680,10 +709,18 @@ ApplicationWindow {
                         }
                         Label {
                             Layout.fillWidth: true
+                            visible: readerPage.documentTitle.length > 0 && readerPage.documentTitle !== readerPage.title
+                            text: readerPage.documentTitle
+                            color: root.muted
+                            elide: Text.ElideRight
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        Label {
+                            Layout.fillWidth: true
                             text: readerPage.status === "ready"
                                 ? (root.arabic
                                     ? "الملف جاهز للقراءة • " + readerPage.pageCount + " صفحة"
-                                    : "Document ready • " + readerPage.pageCount + " pages")
+                                    : "Document ready • " + readerPage.pageCount + (readerPage.pageCount === 1 ? " page" : " pages"))
                                 : readerPage.status === "loading"
                                     ? (root.arabic ? "جارٍ فتح الملف دون إيقاف الواجهة…" : "Opening without blocking the interface…")
                                     : readerPage.status === "passwordRequired"
@@ -749,8 +786,8 @@ ApplicationWindow {
                             Layout.fillWidth: true
                             visible: readerPage.status === "ready"
                             text: root.arabic
-                                ? "عرض الصفحات الافتراضي يأتي في N4.2؛ لم يغيّر أطلس الملف."
-                                : "The virtual page canvas arrives in N4.2; Atlas has not changed this file."
+                                ? "تختبر هذه النسخة فتح الملفات وعلامات التبويب. عرض الصفحات يأتي في الخطوة التالية. ملفك لم يتغير."
+                                : "This review checks opening files and tabs. Page viewing comes next. Your PDF is unchanged."
                             color: root.muted
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.WordWrap

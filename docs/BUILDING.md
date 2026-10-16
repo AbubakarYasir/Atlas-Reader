@@ -55,6 +55,31 @@ git -C .\build\vcpkg checkout 9e2895bf6afb246396d85232ba70fcfa1fa67ba1
 $env:VCPKG_ROOT = (Resolve-Path .\build\vcpkg).Path
 ```
 
+The active source folder is `native-v2-n4-reader-foundation`. A folder rename or replacement can leave a saved `VCPKG_ROOT` pointing to an obsolete checkout. Having a `.git` directory alone does not prove a usable dependency installation: `scripts/buildsystems/vcpkg.cmake` and `vcpkg.exe` must both exist.
+
+After bootstrap, use the validated helper from the active source root:
+
+```powershell
+. ./tools/dev/enter-windows-environment.ps1
+```
+
+It sets Qt and vcpkg for the current PowerShell process, validates the frozen baseline and adds the Qt runtime directory to that process's PATH. Use `-Persist` to also update the current user's saved `VCPKG_ROOT` and `CMAKE_PREFIX_PATH`. Existing terminals can dot-source the helper without restarting an editor. This does not change the accepted CI toolchain or a machine-wide PATH.
+
+## N4.1 review package
+
+After a successful Release build/test, create a new output directory with:
+
+```powershell
+./tools/release/package-n4-review.ps1 `
+  -Executable build/windows-msvc2026/Release/atlas_reader.exe `
+  -QtRoot $env:CMAKE_PREFIX_PATH `
+  -OutputDirectory artifacts/n4-review-local
+```
+
+The script refuses to overwrite an existing review build. It deploys the runtime, restores accepted `qt.conf`, includes public samples, review instructions, Atlas/Qt notices and Qt SBOM material, records commit/executable identity, runs an isolated-profile startup, and creates file/ZIP SHA-256 checksums. It requires Internet only while gathering development/package notices; the packaged app runs offline. The package is for N4.1 owner review, not an accepted N4 release. See [quick start](N4_1_QUICK_START.md).
+
+The active N4 branch's Windows CI publishes the separately named N4.1 review ZIP for 30 days. Its builds no longer receive the accepted N3 package label. The immutable N3 release remains unchanged.
+
 Before running CTest, prepare the generated N2 fixtures just as CI does:
 
 ```powershell

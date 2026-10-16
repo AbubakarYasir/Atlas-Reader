@@ -48,7 +48,7 @@ The project owner tested and approved **N3** on **27 September 2026**. Its nativ
 
 **First, your library.** N3 is Accepted: finding, indexing, and organizing local PDFs now has a verified native foundation.
 
-**Now, your reading workspace.** N4 is in progress: native PDF viewing, navigation, search and a focused, accessible reading canvas. It is not ready for owner testing yet.
+**Now, your reading workspace.** The first part of N4—opening books, tabs, passwords and optional tab restoration—is ready for hands-on review. Showing the document pages, navigation and document search are the next parts. [Current review guide](docs/N4_1_QUICK_START.md).
 
 **Next, your research tools.** Resilient bookmarks, followed by ink and annotations.
 

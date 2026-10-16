@@ -194,6 +194,8 @@ Never inspect, print, commit, or request secrets unnecessarily. Password-protect
 
 **N0, N1, N2 and N3 are Accepted. N4 native reader foundation is In progress.**
 
+N4.1 implementation/automated checks are complete and owner review is pending. Use `docs/N4_1_QUICK_START.md` and `docs/N4_1_OWNER_TEST.md` for the review handoff. Keep PR #6 Draft and unmerged. N4.2 page rendering remains closed until the owner records `N4.1 PASS` after required fixes/retests.
+
 N2 is frozen: do not reopen its engine qualification or change the accepted Qt PDF/qpdf responsibility split without new regression evidence and an explicit decision update.
 
 N4 work occurs only on `native-v2-n4-reader-foundation`, based on verified accepted `main` merge `739508e3e698016e8a6a4cb8b87c2b4aa418d66d`. Follow N4.1 → N4.5 in order. Do not begin bookmark mutation/local overlay, annotations/ink, PDF editing, migration, installer or later-format implementation.

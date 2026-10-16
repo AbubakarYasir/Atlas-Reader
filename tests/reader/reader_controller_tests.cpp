@@ -1,6 +1,7 @@
 #include "app/reader/ReaderController.h"
 
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QElapsedTimer>
 #include <QEventLoop>
 #include <QFile>
@@ -71,6 +72,14 @@ QByteArray readSettings(const QString& profileDirectory) {
     return file.readAll();
 }
 
+QByteArray sourceHash(const QString& source) {
+    QFile file{source};
+    require(file.open(QIODevice::ReadOnly), "Could not read the disposable preservation fixture.");
+    QCryptographicHash hash{QCryptographicHash::Sha256};
+    require(hash.addData(&file), "Could not hash the disposable preservation fixture.");
+    return hash.result();
+}
+
 void requirePasswordsAbsent(const QByteArray& settings) {
     require(!settings.contains("atlas-user"), "The correct fixture password must never be persisted.");
     require(!settings.contains("atlas-wrong"), "A rejected fixture password must never be persisted.");
@@ -93,6 +102,8 @@ int main(int argc, char* argv[]) {
             QString::fromLocal8Bit(argv[1]), temp, QStringLiteral("simple.pdf"));
         const QString passwordPdf = copyFixture(
             QString::fromLocal8Bit(argv[2]), temp, QStringLiteral("password.pdf"));
+        const auto initialSimpleHash = sourceHash(simplePdf);
+        const auto initialPasswordHash = sourceHash(passwordPdf);
 
         {
             atlas::app::ReaderController controller{toPath(profileDirectory)};
@@ -104,6 +115,12 @@ int main(int argc, char* argv[]) {
             require(waitForStatus(controller, 0, QStringLiteral("ready")),
                 "A normal PDF must reach the ready state asynchronously.");
             require(pageCountAt(controller, 0) == 1, "The simple fixture must report one page.");
+            require(controller.data(controller.index(0), atlas::app::ReaderController::TitleRole).toString()
+                    == QStringLiteral("simple"),
+                "Reader tabs must use the actual filename stem rather than embedded title metadata.");
+            require(!controller.data(controller.index(0), atlas::app::ReaderController::DocumentTitleRole)
+                         .toString().isEmpty(),
+                "Embedded document title must remain available separately from the filename.");
 
             const QString movedSimplePdf = temp.filePath(QStringLiteral("simple-renamed.pdf"));
             require(QFile::rename(simplePdf, movedSimplePdf),
@@ -145,6 +162,20 @@ int main(int argc, char* argv[]) {
             require(detailAt(restored, 1) == QStringLiteral("password-required"),
                 "Restart must not silently reuse a previously supplied password.");
             requirePasswordsAbsent(readSettings(profileDirectory));
+            restored.setRestoreEnabled(false);
+            require(!readSettings(profileDirectory).contains("simple.pdf"),
+                "Disabling restoration must remove the stored source paths.");
+        }
+
+        {
+            atlas::app::ReaderController disabled{toPath(profileDirectory)};
+            require(!disabled.restoreEnabled() && disabled.rowCount() == 0,
+                "Restart after disabling restoration must not reopen previous tabs.");
+            disabled.openLocalFile(QUrl::fromLocalFile(temp.filePath(QStringLiteral("missing.pdf"))));
+            require(waitForStatus(disabled, 0, QStringLiteral("missing")),
+                "A missing direct-open path must produce a recoverable missing state.");
+            disabled.openLocalFile(QUrl{QStringLiteral("https://example.com/untrusted.pdf")});
+            require(disabled.rowCount() == 1, "Reader open must not accept network URLs.");
         }
 
         for (int iteration = 0; iteration < 12; ++iteration) {
@@ -165,6 +196,8 @@ int main(int argc, char* argv[]) {
         }
 
         QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        require(sourceHash(simplePdf) == initialSimpleHash && sourceHash(passwordPdf) == initialPasswordHash,
+            "Open, password retry, restoration, cancellation and shutdown must leave both PDF bytes unchanged.");
     } catch (const std::exception& error) {
         std::cerr << "Reader controller test failed: " << error.what() << '\n';
         return 1;

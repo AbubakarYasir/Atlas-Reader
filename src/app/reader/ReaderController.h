@@ -29,6 +29,7 @@ public:
         StatusRole,
         PageCountRole,
         DetailRole,
+        DocumentTitleRole,
     };
     Q_ENUM(Role)
 

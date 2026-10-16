@@ -53,7 +53,9 @@ jobs:
           $files = @(
             'tools/bench/measure-windows-shell.ps1',
             'tools/bench/run-n1-qualification.ps1',
-            'tools/bench/run-n1-packaged-qualification.ps1'
+            'tools/bench/run-n1-packaged-qualification.ps1',
+            'tools/dev/enter-windows-environment.ps1',
+            'tools/release/package-n4-review.ps1'
           )
           foreach ($file in $files) {
             $tokens = $null
@@ -137,7 +139,7 @@ jobs:
           Write-Host "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
           Write-Host "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
           Write-Host "Configuration: ${{ matrix.configuration }}"
-          Write-Host 'Checkpoint: N2 PDF engine qualification'
+          Write-Host 'Checkpoint: N4 reader foundation; inherited N2 regression probes'
           if (-not (Test-Path (Join-Path $env:QT_ROOT_DIR 'lib/cmake/Qt6Pdf'))) {
             throw 'Qt PDF CMake package is missing after qtpdf module installation'
           }
@@ -461,7 +463,7 @@ jobs:
           retention-days: 14
 
       - name: Stage accepted N3 Library beta package
-        if: matrix.configuration == 'Release'
+        if: matrix.configuration == 'Release' && (github.head_ref || github.ref_name) == 'main'
         shell: pwsh
         run: |
           $stage = Join-Path $PWD 'artifact/n3-windows-x64'
@@ -507,7 +509,7 @@ jobs:
           "$archiveHash  atlas-reader-n3-windows-x64.zip" | Set-Content -Encoding UTF8 "$archive.sha256"
 
       - name: Upload accepted N3 Library beta package
-        if: matrix.configuration == 'Release'
+        if: matrix.configuration == 'Release' && (github.head_ref || github.ref_name) == 'main'
         uses: actions/upload-artifact@v4
         with:
           name: atlas-reader-n3-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
@@ -517,3 +519,25 @@ jobs:
             artifact/atlas-reader-n3-windows-x64.zip.sha256
           if-no-files-found: error
           retention-days: 14
+
+      - name: Stage N4.1 owner review package
+        if: matrix.configuration == 'Release' && (github.head_ref || github.ref_name) == 'native-v2-n4-reader-foundation'
+        shell: pwsh
+        run: |
+          ./tools/release/package-n4-review.ps1 `
+            -Executable build/ci-Release/Release/atlas_reader.exe `
+            -QtRoot $env:QT_ROOT_DIR `
+            -OutputDirectory artifacts/n4-review `
+            -ImplementationSha $env:ATLAS_IMPLEMENTATION_SHA `
+            -CheckoutSha $env:ATLAS_CHECKOUT_SHA
+
+      - name: Upload N4.1 owner review package
+        if: matrix.configuration == 'Release' && (github.head_ref || github.ref_name) == 'native-v2-n4-reader-foundation'
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-n4.1-review-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            artifacts/n4-review/atlas-reader-n4.1-review-windows-x64.zip
+            artifacts/n4-review/atlas-reader-n4.1-review-windows-x64.zip.sha256
+          if-no-files-found: error
+          retention-days: 30

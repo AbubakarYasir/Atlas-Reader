@@ -2,7 +2,7 @@
 
 <!-- atlas-status: N4|in-progress -->
 
-**Status:** N0–N3 Accepted; `2.0.0-beta.1` Released on 2026-09-28; N4 native reader foundation In progress
+**Status:** N0–N3 Accepted; `2.0.0-beta.1` Released on 2026-09-28; N4 In progress, with N4.1 ready for owner review
 
 **Current engineering preview:** `2.0.0-beta.1`
 

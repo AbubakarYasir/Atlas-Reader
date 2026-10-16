@@ -8,6 +8,8 @@ Use this checklist only for N4.1. Page rendering is intentionally absent until N
 
 Test the exact `native-v2-n4-reader-foundation` head named in `docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md`. Do not review a stale `main` or `2.0.0-beta.1` release build.
 
+Start with the [plain-language quick start](N4_1_QUICK_START.md). The N4.1 review ZIP has `BUILD-INFO.json`, `SHA256SUMS.txt`, sample PDFs and the guide. Read the build commit from `BUILD-INFO.json` when reporting results. The source version still says beta.1; the commit identifies the newer N4.1 work.
+
 ## Before starting
 
 - Use disposable or backed-up PDFs only.

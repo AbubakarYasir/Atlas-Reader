@@ -92,3 +92,24 @@ The earlier local Visual Studio 2026/Qt 6.10.3 Debug evidence remains useful his
 No automated evidence can replace the actual rendered Windows review. The owner must complete `docs/N4_1_OWNER_TEST.md`, covering the N4.1 surface in English/Arabic, RTL, 100%/200%, keyboard/Narrator, password/restart behavior, close-during-open behavior, file release and read-only/source-preservation observations.
 
 N4.1 remains **Ready for owner test**, not Accepted, until defects from that review are fixed/retested and the owner records `N4.1 PASS`. N4.2 must not begin earlier.
+
+## Review preparation and local setup repair — 2026-10-16
+
+The active source checkout is now `native-v2-n4-reader-foundation`. The old `atlas_native_v2_n2` folder retained an incomplete dependency directory; the saved user `VCPKG_ROOT` still targeted it. Restored vcpkg under the active checkout's ignored `build/vcpkg`, checked out the exact declared baseline `9e2895bf6afb246396d85232ba70fcfa1fa67ba1`, bootstrapped it with metrics disabled and updated the saved user setting. Qt stays at 6.10.3; CMake/CTest resolve to the installed Visual Studio tools. `tools/dev/enter-windows-environment.ps1` now validates the kit, executable/toolchain files and baseline before setting the current process environment. No product dependency pin or accepted CI toolchain changed.
+
+### Verification and corrections
+
+- Clean local VS 2026 / MSVC 19.51.36246.0 / SDK 10.0.26100.0 configure and Debug/Release builds pass with warnings as errors.
+- Local production-route CTest: **26/26 PASS in Debug and Release**. PDFium probes are disabled locally; the historical 43-test CI total includes the extra comparison probes and must not be substituted for these local totals.
+- Extended the controller test to prove disabled-restoration restart, rejection of an HTTPS open request, filename-first presentation, separately retained document title and identical SHA-256 source bytes after ordinary/protected open, retry, restart, rename and cancellation/shutdown.
+- Actual rendered review covered English light at 1260 × 800 and Arabic dark at 760 × 560 logical pixels. Additional English/Arabic dark screenshots use `QT_SCALE_FACTOR=2` at 760 × 560 logical pixels. Controls fit without clipping. This simulated Qt scale check does not replace the owner's Windows display-scale/Narrator review.
+- Live Windows input verified Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+W and wrong/correct public fixture passwords submitted with Enter. UI Automation exposes named tab items, per-file close actions, Library/Open actions and restoration control; password text is masked.
+- The inspection tool did not expose a password-field name or a reliable focused-element report. Password keyboard submission worked, but **Narrator naming/focus remains unverified** and must pass owner checklist 8 before N4.1 acceptance.
+- Review corrected Reader primary names to filename stems while keeping embedded titles secondary, added keyboard/accessible tab selection and selected-tab visibility, kept close controls inset, removed the stale N3 UI label and replaced viewport implementation jargon with plain review-stage text.
+- Raw screenshots and local test output stay under ignored `artifacts/n4-qa/`; no personal PDFs or profile data are committed.
+
+### Delivery contract
+
+`tools/release/package-n4-review.ps1` stages a separate N4.1 review ZIP with the dynamic Qt/PDF runtime, restored accepted font configuration, public fixture/provenance files, build/executable identity, notices, installed Qt SBOM documents and file/ZIP checksums. Its startup smoke uses a separate profile and removes Qt/plugin/import environment paths from the child environment. Existing output directories are preserved.
+
+The N4 branch's Release CI now uploads the N4.1 review ZIP for 30 days. It no longer labels N4 builds as accepted N3 packages; the published N3 release remains immutable. The plain-language guide is `docs/N4_1_QUICK_START.md`. Package identity/checksum and current GitHub run results are recorded in the delivery follow-up after the review package is built. PR #6 stays Draft and unmerged, the source version remains beta.1 and owner `N4.1 PASS` is pending.

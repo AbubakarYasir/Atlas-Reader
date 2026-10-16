@@ -4,6 +4,15 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N4.1 review-build preparation — 2026-10-16
+
+- Synchronized the public roadmap, checkpoint summary, current notes and agent/documentation entry points with the N4.1 Ready for owner review gate. The earlier partial implementation entry below remains historical.
+- Added a validated Windows environment helper for the active checkout, replacing reliance on the removed old checkout's vcpkg path while retaining the exact accepted dependency baseline.
+- Added separate N4.1 review packaging with runtime deployment, build identity, fixture provenance, notices, file/archive checksums and a packaged startup check. N4 branch builds must no longer be labelled as accepted N3 packages.
+- Added plain-language review instructions. N4.1 owner acceptance, N4.2 page display, beta.2 promotion and merge remain pending; no product version or dependency pin changes.
+- Rendered/source review found that Reader tabs used embedded titles and lacked keyboard selection. Reader primary names now use filename stems with document titles secondary, tab semantics include name/selected state, Enter/Space and Ctrl+Tab/Ctrl+Shift+Tab work, selected tabs stay visible, and close controls remain inset. Replaced the viewport implementation jargon with plain review-stage wording.
+- Extended controller integration checks for disabled-restoration restart, rejected network URLs and unchanged SHA-256 source bytes after the complete open/password/restoration/cancellation lifecycle.
+
 ## N4 start — 2026-09-28
 
 - Opened `native-v2-n4-reader-foundation` from verified accepted `main` merge `739508e3e698016e8a6a4cb8b87c2b4aa418d66d` only after PR #5 merged, all permanent-branch workflows passed and the completed N3 branch was deleted locally/remotely.

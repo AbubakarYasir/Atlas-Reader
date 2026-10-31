@@ -19,7 +19,7 @@ The owner chose **batched reviews** and a **focused 2.0** ([PLAN.md decision log
 | Subgate | Status | Implementation SHA | Automated evidence | Rendered/owner evidence | Open blockers |
 |---|---|---|---|---|---|
 | N4.1 Session/open model | **Implemented; automated Verified** | `5ac63df7da45d711380cfaac0e83f0b96deda7f4` | Windows CI run `36690884159`: Debug + Release build/test PASS, 43/43 tests; `atlas_reader_controller` PASS; inherited Fidelity `36690884055`, Stress `36690884080`, Coordinates `36690883965`, Selected Production Route `36690883948` PASS | owner checks folded into the end-of-N4 review ([guide](../N4_REVIEW.md), checks 1–4 and 9) | Narrator naming of the password field and Windows 200% scale remain unverified until that review |
-| N4.2 Virtual viewport | **Active; not started** | — | — | — | — |
+| N4.2 Virtual viewport | **In progress**: core layout, render planning, scheduling and cache budget implemented | see N4.2 log | local g++ 13 `-Wall -Wextra -Wpedantic -Wconversion -Werror` + ASan/UBSan: `atlas_reader_viewport` PASS; Windows CI pending | — | Qt PDF render adapter and viewport item not yet built |
 | N4.3 Navigation | Not started | — | — | — | depends on viewport geometry |
 | N4.4 Outline/text/search/links | Not started | — | — | — | normalized reader adapters not implemented |
 | N4.5 Workspace | Not started | — | — | — | production reader UI not implemented |
@@ -117,3 +117,16 @@ The active source checkout is now `native-v2-n4-reader-foundation`. The old `atl
 `tools/release/package-n4-review.ps1` stages a separate N4.1 review ZIP with the dynamic Qt/PDF runtime, restored accepted font configuration, public fixture/provenance files, build/executable identity, notices, installed Qt SBOM documents and file/ZIP checksums. Its startup smoke uses a separate profile and removes Qt/plugin/import environment paths from the child environment. Existing output directories are preserved.
 
 The N4 branch's Release CI now uploads the N4.1 review ZIP for 30 days. It no longer labels N4 builds as accepted N3 packages; the published N3 release remains immutable. The plain-language guide is `docs/N4_1_QUICK_START.md`. Package identity/checksum and current GitHub run results are recorded in the delivery follow-up after the review package is built. PR #6 stays Draft and unmerged, the source version remains beta.1 and owner `N4.1 PASS` is pending.
+
+## N4.2 log
+
+### Core viewport model — 2026-11-01
+
+Pure C++ (`atlas_reader_viewport`, no Qt or engine types):
+
+- `ViewportLayout`: continuous single-column geometry in logical px from page sizes in points; page `/Rotate` combined with a user view rotation; centred narrower pages; margins and gaps; binary-searched `pagesInBand`/`pageAt`; page-jump offsets; fit-width and fit-page zoom; zoom clamped to 5%–6400%.
+- `planRenders`: visible pages first, then a configurable prefetch band above and below, each ordered by distance from the viewport centre; scale buckets in quarter-octave steps that never render blurrier than requested; huge pages capped to an 8192 px texture side (tiling is a later step).
+- `RenderScheduler`: bounded concurrency; each new plan cancels in-flight work that is no longer wanted and replaces the queue, so a fast jump starts the new page immediately; late results from cancelled tickets are ignored; cached pages are skipped.
+- `PageTextureCache`: byte-budget LRU; visible textures pinned and never evicted; stale document revisions dropped on reopen; best-available lower-resolution texture for instant feedback while a sharper one renders.
+
+`tests/reader/viewport_tests.cpp` covers rotation, layout, band queries, fit zoom, buckets, planning order, cancellation after a jump, cache eviction/pinning/reuse, and a **2,000-page memory series**: reading through a 2,000-page book at 150% zoom on a 2× display rendered 858 textures with a peak of 236 MiB against a 256 MiB budget. Memory is bounded by the budget, not by page count (inherited N2 limitation "Qt working-set trend", core half).

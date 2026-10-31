@@ -4,6 +4,10 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N4.2 core viewport model — 2026-11-01
+
+- Added `atlas_reader_viewport`: engine-independent page layout, render planning with scale buckets, a cancelling render scheduler and a byte-budgeted texture cache with pinning. New `atlas_reader_viewport` test includes a 2,000-page memory series (peak 236 MiB within a 256 MiB budget). No UI change yet; page display arrives with the Qt render adapter.
+
 ## Focused 2.0 plan and documentation consolidation — 2026-11-01
 
 - **Scope (owner decision):** Windows 2.0 now means Library + Reader + Bookmarks + annotations + everyday tools + backup/migration + Arabic/accessibility qualification. EPUB, comics, DRM-free Kindle files, the KFX decision, PDF editing tools (E1–E5), form filling (C20), side-by-side reading (C17), the reflow view (C18) and read-aloud (C11) moved to [after 2.0](docs/AFTER_2_0.md), with their requirements kept.

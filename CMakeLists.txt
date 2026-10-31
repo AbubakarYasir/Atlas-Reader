@@ -51,6 +51,16 @@ target_include_directories(atlas_reader_session PUBLIC ${CMAKE_CURRENT_SOURCE_DI
 target_link_libraries(atlas_reader_session PUBLIC atlas_core)
 atlas_enable_warnings(atlas_reader_session)
 
+add_library(atlas_reader_viewport STATIC
+    src/core/reader/ViewportLayout.cpp
+    src/core/reader/ViewportLayout.h
+    src/core/reader/RenderPlanner.cpp
+    src/core/reader/RenderPlanner.h
+)
+target_include_directories(atlas_reader_viewport PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_reader_viewport PUBLIC atlas_core)
+atlas_enable_warnings(atlas_reader_viewport)
+
 add_library(atlas_document_identity STATIC
     src/core/index/DocumentIdentityReconciler.cpp
     src/core/index/DocumentIdentityReconciler.h
@@ -285,6 +295,11 @@ add_executable(atlas_reader_session_tests tests/reader/reader_session_model_test
 target_link_libraries(atlas_reader_session_tests PRIVATE atlas_reader_session)
 atlas_enable_warnings(atlas_reader_session_tests)
 add_test(NAME atlas_reader_session COMMAND atlas_reader_session_tests)
+
+add_executable(atlas_reader_viewport_tests tests/reader/viewport_tests.cpp)
+target_link_libraries(atlas_reader_viewport_tests PRIVATE atlas_reader_viewport)
+atlas_enable_warnings(atlas_reader_viewport_tests)
+add_test(NAME atlas_reader_viewport COMMAND atlas_reader_viewport_tests)
 
 add_executable(atlas_reader_controller_tests tests/reader/reader_controller_tests.cpp)
 target_link_libraries(atlas_reader_controller_tests PRIVATE atlas_reader_ui)

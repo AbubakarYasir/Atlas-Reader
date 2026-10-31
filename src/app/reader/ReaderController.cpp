@@ -151,6 +151,7 @@ void ReaderController::closeAt(int index) {
     const int previousCount = rowCount();
     const auto id = model_.sessions().at(static_cast<std::size_t>(index)).id;
     cancelPending(id);
+    sessionPasswords_.erase(id);
     beginResetModel();
     const bool closed = model_.close(id);
     Q_ASSERT(closed);
@@ -192,6 +193,21 @@ void ReaderController::submitPassword(int index, const QString& password) {
     launchOpen(id, *revision, sourcePath, password);
 }
 
+std::optional<ReaderController::RenderSource> ReaderController::renderSource(qulonglong sessionId) const {
+    for (const auto& session : model_.sessions()) {
+        if (session.id != sessionId) continue;
+        if (session.state != atlas::reader::OpenState::ready) return std::nullopt;
+        RenderSource source;
+        source.path = pathToQString(session.source);
+        source.revision = session.revision;
+        if (const auto it = sessionPasswords_.find(sessionId); it != sessionPasswords_.end()) {
+            source.password = it->second;
+        }
+        return source;
+    }
+    return std::nullopt;
+}
+
 void ReaderController::closeActive() { closeAt(activeIndex()); }
 
 void ReaderController::showLibrary() {
@@ -227,13 +243,21 @@ void ReaderController::launchOpen(
     pending->revision = revision;
     pending->watcher = std::make_unique<QFutureWatcher<atlas::reader::OpenResult>>();
     auto* watcher = pending->watcher.get();
-    connect(watcher, &QFutureWatcherBase::finished, this, [this, sessionId, revision, watcher] {
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, sessionId, revision, watcher, password] {
         const auto& sessions = model_.sessions();
         const auto found = std::find_if(sessions.begin(), sessions.end(), [sessionId](const auto& session) {
             return session.id == sessionId;
         });
         const int row = found == sessions.end() ? -1 : static_cast<int>(std::distance(sessions.begin(), found));
-        if (!watcher->isCanceled() && model_.completeOpen(sessionId, revision, watcher->result()) && row >= 0) {
+        const bool accepted = !watcher->isCanceled() && model_.completeOpen(sessionId, revision, watcher->result());
+        if (accepted) {
+            if (!password.isEmpty() && watcher->result().state == atlas::reader::OpenState::ready) {
+                sessionPasswords_[sessionId] = password;
+            } else {
+                sessionPasswords_.erase(sessionId);
+            }
+        }
+        if (accepted && row >= 0) {
             emit dataChanged(index(row), index(row));
             saveSessions();
         }

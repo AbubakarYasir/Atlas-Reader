@@ -2,6 +2,7 @@
 #include "app/library/LibraryController.h"
 #include "app/logging/Logging.h"
 #include "app/reader/ReaderController.h"
+#include "app/reader/ReaderViewport.h"
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
@@ -10,6 +11,7 @@
 #include <QImage>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QtQml/qqml.h>
 #include <QQuickWindow>
 #include <QStyleHints>
 #include <QStandardPaths>
@@ -153,6 +155,10 @@ int main(int argc, char* argv[]) {
     metrics.recordCheckpoint(QStringLiteral("startup.qgui_application_ready_ms"), applicationReady);
     metrics.recordCheckpoint(QStringLiteral("startup.arguments_ready_ms"), argumentsReady);
     metrics.recordStage(QStringLiteral("startup.metrics_ready_ms"));
+
+    qmlRegisterType<atlas::app::ReaderViewport>("Atlas.Reader", 1, 0, "ReaderViewport");
+    qmlRegisterUncreatableType<atlas::app::ReaderController>(
+        "Atlas.Reader", 1, 0, "ReaderController", QStringLiteral("Provided by the application"));
 
     QQmlApplicationEngine engine;
     metrics.recordStage(QStringLiteral("startup.qml_engine_ready_ms"));

@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -52,6 +53,15 @@ public:
     Q_INVOKABLE void closeActive();
     Q_INVOKABLE void showLibrary();
 
+    // For the in-process page renderer only; never exposed to QML. The password
+    // lives in memory for the tab's lifetime and is never persisted or logged.
+    struct RenderSource {
+        QString path;
+        QString password;
+        quint64 revision{};
+    };
+    [[nodiscard]] std::optional<RenderSource> renderSource(qulonglong sessionId) const;
+
 signals:
     void activeIndexChanged();
     void countChanged();
@@ -83,6 +93,7 @@ private:
     std::filesystem::path profileDirectory_;
     std::unordered_map<std::uint64_t, std::unique_ptr<PendingOpen>> pending_;
     std::vector<std::unique_ptr<PendingOpen>> retired_;
+    std::unordered_map<std::uint64_t, QString> sessionPasswords_;
     bool restoreEnabled_{};
     bool libraryVisible_{true};
 };

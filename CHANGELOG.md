@@ -4,6 +4,13 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N4.2 page display — 2026-11-01
+
+- **Atlas now shows PDF pages.** Opening a book shows a smooth, virtualized page view fitted to the window width, with a page box, page count, zoom out/in, Fit width and Fit page, scroll bars, wheel and keyboard navigation, and Ctrl+wheel zoom at the pointer. Only visible and nearby pages render, on a background thread; texture memory is capped.
+- Open PDFs are read into memory once, so the file is never locked and never changed.
+- *Restore reader tabs* moved into the reader's "More" menu.
+- New test `atlas_reader_viewport_render` renders a generated 60-page PDF offscreen and checks display, clipping, page jumps, zoom, fit page, file release and unchanged bytes.
+
 ## N4.2 core viewport model — 2026-11-01
 
 - Added `atlas_reader_viewport`: engine-independent page layout, render planning with scale buckets, a cancelling render scheduler and a byte-budgeted texture cache with pinning. New `atlas_reader_viewport` test includes a 2,000-page memory series (peak 236 MiB within a 256 MiB budget). No UI change yet; page display arrives with the Qt render adapter.

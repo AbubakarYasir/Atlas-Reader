@@ -9,7 +9,7 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | | |
 |---|---|
 | Active stage | **N4: Reader**, planned `2.0.0-beta.2` |
-| Active sub-stage | **N4.2: Virtual viewport**, in progress: core layout/planning/cache done, Qt render adapter next |
+| Active sub-stage | **N4.2: Virtual viewport**, implemented (pages now display); awaiting Windows CI. **N4.3 Navigation** next |
 | Done in N4 | N4.1 Opening, tabs and passwords: implemented and automated-verified (43/43 CI tests, run `36690884159`) |
 | Branch | `native-v2-n4-reader-foundation`, from accepted `main` merge `739508e3` |
 | Released | `2.0.0-beta.1` (Library), 2026-09-28 |
@@ -79,7 +79,7 @@ A passed stage is not reopened without new evidence of a user-facing regression.
 
 Background open from the Library or a direct path; one tab per file; tab switching and closing; clear missing, malformed, password and unsupported states; password retry; opt-in, path-only restore; no file handle left locking the PDF. CI `36690884159` at `5ac63df`: 43/43 Debug and Release. The rendered owner check moves into the end-of-N4 review.
 
-### N4.2 — Virtual viewport ← **next**
+### N4.2 — Virtual viewport ✅ Implemented (Windows CI pending)
 
 - Engine-independent page geometry and render requests; visible pages render first, then neighbors; obsolete work is cancelled.
 - Scale buckets, texture ownership, cache keys, eviction and hard CPU/GPU memory budgets. Never render the whole document up front.

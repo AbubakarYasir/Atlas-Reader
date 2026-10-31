@@ -1,0 +1,177 @@
+// N4.2 integration test: Qt PDF render worker + ReaderViewport in a real
+// (offscreen, software-rendered) Qt Quick window. Generates its own PDF, so it
+// needs no fixture files. Verifies that pages actually appear, navigation and
+// zoom work, the source file is never locked and its bytes never change.
+
+#include "app/reader/ReaderController.h"
+#include "app/reader/ReaderViewport.h"
+
+#include <QColor>
+#include <QCryptographicHash>
+#include <QElapsedTimer>
+#include <QFile>
+#include <QGuiApplication>
+#include <QPageSize>
+#include <QPainter>
+#include <QPdfWriter>
+#include <QQuickItem>
+#include <QQuickWindow>
+#include <QTemporaryDir>
+#include <QUrl>
+
+#include <functional>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
+namespace {
+
+void require(bool condition, const std::string& message) {
+    if (!condition) throw std::runtime_error(message);
+}
+
+bool waitFor(const std::function<bool()>& condition, int timeoutMs = 10000) {
+    QElapsedTimer timer;
+    timer.start();
+    while (timer.elapsed() < timeoutMs) {
+        if (condition()) return true;
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+    }
+    return condition();
+}
+
+void settle(int ms) {
+    QElapsedTimer timer;
+    timer.start();
+    while (timer.elapsed() < ms) QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+}
+
+QByteArray sha256(const QString& path) {
+    QFile file{path};
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    return QCryptographicHash::hash(file.readAll(), QCryptographicHash::Sha256);
+}
+
+constexpr int kPages = 60;
+
+void writeBook(const QString& path) {
+    QPdfWriter writer{path};
+    writer.setPageSize(QPageSize{QPageSize::A4});
+    writer.setResolution(72);
+    QPainter painter{&writer};
+    for (int page = 1; page <= kPages; ++page) {
+        if (page > 1) writer.newPage();
+        // A solid red block near the top-left of every page is easy to detect.
+        painter.fillRect(QRect{40, 40, 160, 160}, QColor{220, 20, 20});
+        QFont font = painter.font();
+        font.setPixelSize(48);
+        painter.setFont(font);
+        painter.drawText(QRect{0, 300, 595, 80}, Qt::AlignCenter, QStringLiteral("Page %1").arg(page));
+    }
+}
+
+int countRed(const QImage& image) {
+    int red = 0;
+    for (int y = 0; y < image.height(); y += 2) {
+        for (int x = 0; x < image.width(); x += 2) {
+            const QColor c = image.pixelColor(x, y);
+            if (c.red() > 180 && c.green() < 80 && c.blue() < 80) ++red;
+        }
+    }
+    return red;
+}
+
+} // namespace
+
+int main(int argc, char** argv) {
+    qputenv("QT_QPA_PLATFORM", "offscreen");
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
+    QGuiApplication app{argc, argv};
+
+    try {
+        QTemporaryDir dir;
+        require(dir.isValid(), "A temporary directory is required.");
+        const QString source = dir.filePath(QStringLiteral("long book.pdf"));
+        writeBook(source);
+        const QByteArray before = sha256(source);
+        require(!before.isEmpty(), "The generated PDF must exist.");
+
+        atlas::app::ReaderController controller{
+            std::filesystem::path{dir.filePath(QStringLiteral("profile")).toStdWString()}};
+        controller.openLocalFile(QUrl::fromLocalFile(source));
+        require(waitFor([&] {
+                    return controller.data(controller.index(0), atlas::app::ReaderController::StatusRole)
+                               .toString() == QStringLiteral("ready");
+                }),
+                "The session must reach ready state.");
+        const auto sessionId =
+            controller.data(controller.index(0), atlas::app::ReaderController::SessionIdRole)
+                .toULongLong();
+
+        QQuickWindow window;
+        window.resize(800, 600);
+        window.setColor(QColor{233, 230, 222});
+        // Offset the viewport so placement and clipping in item space are tested.
+        auto* header = new QQuickItem{window.contentItem()};
+        header->setSize({800, 120});
+        auto* viewport = new atlas::app::ReaderViewport{window.contentItem()};
+        viewport->setPosition({0, 120});
+        viewport->setSize({800, 480});
+        viewport->setController(&controller);
+        viewport->setSessionId(sessionId);
+        viewport->setActive(true);
+        window.show();
+
+        require(waitFor([&] { return viewport->pageCount() == kPages && !viewport->loading(); }),
+                "The viewport must load every page geometry.");
+        require(viewport->errorKey().isEmpty(), "Opening for rendering must not fail.");
+        require(viewport->fitMode() == atlas::app::ReaderViewport::FitMode::Width &&
+                    viewport->zoom() > 0.5 && viewport->zoom() < 2.0,
+                "A new document opens fitted to the width.");
+        require(viewport->currentPage() == 1 && viewport->contentY() == 0.0,
+                "A new document opens at its first page.");
+        require(viewport->contentHeight() > kPages * 480.0,
+                "Content height must cover every page.");
+
+        settle(800);
+        QImage frame = window.grabWindow();
+        const int redFirst = countRed(frame.copy(0, 120, 800, 480));
+        require(redFirst > 500, "The first page must be rendered inside the viewport.");
+        require(countRed(frame.copy(0, 0, 800, 120)) == 0,
+                "Rendering must stay clipped to the viewport (nothing drawn over the header).");
+
+        viewport->goToPage(45);
+        require(viewport->currentPage() == 45, "Jumping must land on the requested page.");
+        settle(800);
+        frame = window.grabWindow();
+        require(countRed(frame.copy(0, 120, 800, 480)) > 500, "The jumped-to page must render.");
+
+        viewport->zoomBy(2.0);
+        require(viewport->fitMode() == atlas::app::ReaderViewport::FitMode::None,
+                "A manual zoom leaves fit mode.");
+        require(viewport->currentPage() == 45, "Zooming must keep the current page in view.");
+
+        viewport->setFitMode(atlas::app::ReaderViewport::FitMode::Page);
+        settle(500);
+        require(viewport->currentPage() == 45 && viewport->zoom() < 1.0,
+                "Fit page must show the whole current page.");
+
+        viewport->goToPage(kPages + 10);
+        require(viewport->currentPage() == kPages, "Jumping past the end clamps to the last page.");
+
+        // The renderer holds the document in memory, not the file.
+        const QString moved = dir.filePath(QStringLiteral("moved book.pdf"));
+        require(QFile::rename(source, moved), "Atlas must not block renaming an open PDF.");
+        require(sha256(moved) == before, "Reading must never change the PDF's bytes.");
+
+        viewport->setActive(false);
+        settle(200);
+        delete viewport;
+        settle(100);
+    } catch (const std::exception& error) {
+        std::cerr << "FAIL: " << error.what() << '\n';
+        return 1;
+    }
+    std::cout << "reader viewport render tests passed\n";
+    return 0;
+}

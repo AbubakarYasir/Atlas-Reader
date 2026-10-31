@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Dialogs
 import QtQuick.Layouts
+import Atlas.Reader
 
 ApplicationWindow {
     id: root
@@ -17,6 +18,7 @@ ApplicationWindow {
     property color line: darkMode ? "#3a414b" : "#d9ddd4"
     property color accent: darkMode ? "#9fc8a7" : "#28633a"
     property color accentSoft: darkMode ? "#243d2c" : "#e3f0e5"
+    property color readerBackdrop: darkMode ? "#0f1113" : "#e9e6de"
     property string errorText: ""
 
     width: 1260
@@ -684,11 +686,192 @@ ApplicationWindow {
                     required property int pageCount
                     required property string detail
                     required property string documentTitle
+                    required property var sessionId
                     anchors.fill: parent
                     visible: index === readerController.activeIndex
-                    color: root.canvas
+                    color: readerPage.status === "ready" ? root.readerBackdrop : root.canvas
 
+                    // ---- Reading workspace (N4.2): toolbar + virtualized page viewport
                     ColumnLayout {
+                        anchors.fill: parent
+                        spacing: 0
+                        visible: readerPage.status === "ready"
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 44
+                            color: root.panel
+                            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.line }
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 12
+                                spacing: 6
+
+                                Label {
+                                    text: root.arabic ? "صفحة" : "Page"
+                                    color: root.muted
+                                }
+                                AtlasTextField {
+                                    id: pageField
+                                    Layout.preferredWidth: 64
+                                    implicitHeight: 32
+                                    topPadding: 4
+                                    bottomPadding: 4
+                                    horizontalAlignment: Text.AlignHCenter
+                                    inputMethodHints: Qt.ImhDigitsOnly
+                                    validator: IntValidator { bottom: 1; top: Math.max(1, readerView.pageCount) }
+                                    Binding on text {
+                                        when: !pageField.activeFocus
+                                        value: String(readerView.currentPage)
+                                    }
+                                    Accessible.name: root.arabic ? "الانتقال إلى صفحة" : "Go to page"
+                                    onAccepted: {
+                                        readerView.goToPage(parseInt(text))
+                                        readerView.forceActiveFocus()
+                                    }
+                                    onActiveFocusChanged: if (activeFocus) selectAll()
+                                }
+                                Label {
+                                    text: (root.arabic ? "من " : "of ") + readerView.pageCount
+                                    color: root.muted
+                                }
+                                Item { Layout.fillWidth: true }
+                                AtlasButton {
+                                    implicitWidth: 36
+                                    implicitHeight: 32
+                                    leftPadding: 0
+                                    rightPadding: 0
+                                    flat: true
+                                    text: "\u2212"
+                                    Accessible.name: root.arabic ? "تصغير" : "Zoom out"
+                                    ToolTip.visible: hovered
+                                    ToolTip.text: (root.arabic ? "تصغير" : "Zoom out") + "  (Ctrl+-)"
+                                    onClicked: readerView.zoomBy(0.8)
+                                }
+                                Label {
+                                    Layout.preferredWidth: 52
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: "\u2066" + Math.round(readerView.zoom * 100) + "%\u2069"
+                                    color: root.ink
+                                    Accessible.name: (root.arabic ? "التكبير " : "Zoom ") + text
+                                }
+                                AtlasButton {
+                                    implicitWidth: 36
+                                    implicitHeight: 32
+                                    leftPadding: 0
+                                    rightPadding: 0
+                                    flat: true
+                                    text: "+"
+                                    Accessible.name: root.arabic ? "تكبير" : "Zoom in"
+                                    ToolTip.visible: hovered
+                                    ToolTip.text: (root.arabic ? "تكبير" : "Zoom in") + "  (Ctrl+=)"
+                                    onClicked: readerView.zoomBy(1.25)
+                                }
+                                AtlasButton {
+                                    implicitHeight: 32
+                                    flat: readerView.fitMode !== ReaderViewport.Width
+                                    highlighted: readerView.fitMode === ReaderViewport.Width
+                                    text: root.arabic ? "ملء العرض" : "Fit width"
+                                    Accessible.description: "Ctrl+1"
+                                    onClicked: readerView.fitMode = ReaderViewport.Width
+                                }
+                                AtlasButton {
+                                    implicitHeight: 32
+                                    flat: readerView.fitMode !== ReaderViewport.Page
+                                    highlighted: readerView.fitMode === ReaderViewport.Page
+                                    text: root.arabic ? "الصفحة كاملة" : "Fit page"
+                                    Accessible.description: "Ctrl+2"
+                                    onClicked: readerView.fitMode = ReaderViewport.Page
+                                }
+                                AtlasButton {
+                                    implicitWidth: 36
+                                    implicitHeight: 32
+                                    leftPadding: 0
+                                    rightPadding: 0
+                                    flat: true
+                                    text: "\u22ef"
+                                    Accessible.name: root.arabic ? "المزيد" : "More"
+                                    onClicked: readerMenu.open()
+                                    Menu {
+                                        id: readerMenu
+                                        y: parent.height
+                                        MenuItem {
+                                            text: root.arabic ? "استعادة علامات التبويب عند بدء أطلس" : "Restore reader tabs when Atlas starts"
+                                            checkable: true
+                                            checked: readerController.restoreEnabled
+                                            onToggled: readerController.restoreEnabled = checked
+                                        }
+                                        MenuItem {
+                                            text: root.arabic ? "إغلاق التبويب" : "Close tab"
+                                            onTriggered: readerController.closeAt(readerPage.index)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+
+                            ReaderViewport {
+                                id: readerView
+                                anchors.fill: parent
+                                controller: readerController
+                                sessionId: readerPage.sessionId
+                                active: readerPage.visible && readerPage.status === "ready"
+                                pageColor: "#ffffff"
+                                pageShadowColor: root.darkMode ? "#66000000" : "#26000000"
+                                focus: readerPage.visible
+                                Accessible.role: Accessible.Pane
+                                Accessible.name: (root.arabic ? "صفحات المستند، صفحة " : "Document pages, page ")
+                                    + readerView.currentPage + (root.arabic ? " من " : " of ") + readerView.pageCount
+                            }
+
+                            ScrollBar {
+                                id: vbar
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                anchors.right: parent.right
+                                orientation: Qt.Vertical
+                                policy: readerView.contentHeight > readerView.height ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                                size: readerView.contentHeight > 0 ? readerView.height / readerView.contentHeight : 1
+                                position: readerView.contentHeight > 0 ? readerView.contentY / readerView.contentHeight : 0
+                                onPositionChanged: if (pressed) readerView.contentY = position * readerView.contentHeight
+                            }
+                            ScrollBar {
+                                anchors.left: parent.left
+                                anchors.right: vbar.left
+                                anchors.bottom: parent.bottom
+                                orientation: Qt.Horizontal
+                                policy: readerView.contentWidth > readerView.width ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                                size: readerView.contentWidth > 0 ? readerView.width / readerView.contentWidth : 1
+                                position: readerView.contentWidth > 0 ? readerView.contentX / readerView.contentWidth : 0
+                                onPositionChanged: if (pressed) readerView.contentX = position * readerView.contentWidth
+                            }
+
+                            BusyIndicator {
+                                anchors.centerIn: parent
+                                running: readerView.loading
+                                visible: running
+                            }
+                            Label {
+                                anchors.centerIn: parent
+                                width: Math.min(520, parent.width - 48)
+                                visible: readerView.errorKey.length > 0
+                                text: root.arabic ? "تعذر عرض صفحات هذا الملف." : "Atlas could not display this PDF's pages."
+                                color: root.ink
+                                wrapMode: Text.WordWrap
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+                        }
+                    }
+
+                    // ---- Status view (loading, password, errors)
+                    ColumnLayout {
+                        visible: readerPage.status !== "ready"
                         anchors.centerIn: parent
                         width: Math.min(620, parent.width - 56)
                         spacing: 14
@@ -781,16 +964,6 @@ ApplicationWindow {
                             font.pixelSize: 11
                             elide: Text.ElideMiddle
                             horizontalAlignment: Text.AlignHCenter
-                        }
-                        Label {
-                            Layout.fillWidth: true
-                            visible: readerPage.status === "ready"
-                            text: root.arabic
-                                ? "تختبر هذه النسخة فتح الملفات وعلامات التبويب. عرض الصفحات يأتي في الخطوة التالية. ملفك لم يتغير."
-                                : "This review checks opening files and tabs. Page viewing comes next. Your PDF is unchanged."
-                            color: root.muted
-                            horizontalAlignment: Text.AlignHCenter
-                            wrapMode: Text.WordWrap
                         }
                         RowLayout {
                             Layout.alignment: Qt.AlignHCenter

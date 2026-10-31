@@ -152,11 +152,15 @@ atlas_enable_warnings(atlas_library_ui)
 add_library(atlas_reader_ui STATIC
     src/app/reader/ReaderController.cpp
     src/app/reader/ReaderController.h
+    src/app/reader/PdfRenderWorker.cpp
+    src/app/reader/PdfRenderWorker.h
+    src/app/reader/ReaderViewport.cpp
+    src/app/reader/ReaderViewport.h
 )
 target_include_directories(atlas_reader_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(atlas_reader_ui PUBLIC
-    atlas_reader_session atlas_library_document_inspector
-    Qt6::Core Qt6::Concurrent Qt6::Pdf
+    atlas_reader_session atlas_reader_viewport atlas_library_document_inspector
+    Qt6::Core Qt6::Concurrent Qt6::Gui Qt6::Quick Qt6::Pdf
 )
 atlas_enable_warnings(atlas_reader_ui)
 
@@ -300,6 +304,11 @@ add_executable(atlas_reader_viewport_tests tests/reader/viewport_tests.cpp)
 target_link_libraries(atlas_reader_viewport_tests PRIVATE atlas_reader_viewport)
 atlas_enable_warnings(atlas_reader_viewport_tests)
 add_test(NAME atlas_reader_viewport COMMAND atlas_reader_viewport_tests)
+
+add_executable(atlas_reader_viewport_render_tests tests/reader/reader_viewport_render_tests.cpp)
+target_link_libraries(atlas_reader_viewport_render_tests PRIVATE atlas_reader_ui Qt6::Gui Qt6::Quick)
+atlas_enable_warnings(atlas_reader_viewport_render_tests)
+add_test(NAME atlas_reader_viewport_render COMMAND atlas_reader_viewport_render_tests)
 
 add_executable(atlas_reader_controller_tests tests/reader/reader_controller_tests.cpp)
 target_link_libraries(atlas_reader_controller_tests PRIVATE atlas_reader_ui)

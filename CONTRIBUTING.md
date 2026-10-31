@@ -1,42 +1,22 @@
 # Contributing
 
-Atlas Reader Native is checkpoint-driven. Before contributing, read `AGENTS.md`,
-`PLAN.md`, the active section of `CHECKPOINTS.md`,
-`docs/CHECKPOINT_QA_MATRIX.md` and `docs/GIT_WORKFLOW.md`.
+Atlas is built stage by stage. Before contributing, read [AGENTS.md](AGENTS.md), the **Status now** section of [CHECKPOINTS.md](CHECKPOINTS.md), and [docs/WORKFLOW.md](docs/WORKFLOW.md).
 
 ## Principles
 
-- Keep changes within the active checkpoint.
-- Prefer small, testable domain changes over UI-first feature patches.
-- Add tests with new behavior.
-- Measure performance-sensitive changes.
-- Preserve Arabic/RTL/accessibility for user-facing work.
-- Keep platform-specific implementation behind ports.
-- Update documentation when behavior/contracts change.
+- Stay within the active sub-stage and respect its exclusions.
+- Prefer small, testable domain changes over UI-first patches; add tests with every behavior change.
+- Measure performance-sensitive changes in Release builds.
+- Every UI change follows [docs/DESIGN.md](docs/DESIGN.md): tokens, translations, keyboard, Narrator, 200%, Arabic/RTL, rendered review.
+- Keep platform code behind ports and PDF engines behind Atlas facades.
+- Update documentation in the same change when behavior or contracts change.
 
 ## Code style
 
-- C++23.
-- `clang-format` using repository `.clang-format`.
-- Prefer RAII, value semantics, `std::unique_ptr` for ownership, `std::span`/views where appropriate, and explicit lifetime boundaries.
-- Avoid shared ownership unless the domain genuinely requires it.
-- Avoid exceptions crossing subsystem/plugin boundaries without an explicit error contract.
-- Core APIs should use standard types and stable value objects rather than GUI framework objects.
+C++23 · `clang-format` with the repository `.clang-format` · RAII and value semantics · `std::unique_ptr` for ownership, `std::span`/views where they fit · shared ownership only when the domain needs it · no exceptions crossing subsystem boundaries without an explicit error contract · core APIs use standard types, not GUI objects.
 
-## Pull request evidence
+## Pull requests
 
-A PR should state:
+State the stage and requirement, the tests run (with CI run IDs), performance impact, platform, PDF/data-safety and accessibility/i18n implications, and the docs changed. Before pushing, run `tools/docs/check-markdown.ps1` and the relevant build and tests, read the full diff, and confirm the pushed head equals your local head. Owner PASS, merge and release are separate steps.
 
-- checkpoint and requirement addressed;
-- tests added/run;
-- performance impact when relevant;
-- platform implications;
-- PDF/data-safety implications;
-- accessibility/i18n implications;
-- documentation changes.
-
-Do not merge feature work that advances the next checkpoint before the current owner stop gate is accepted.
-
-Before pushing, run `tools/docs/check-markdown.ps1` in addition to the relevant
-build/tests, inspect the complete diff and verify the local branch head matches
-the pushed remote head. Owner PASS, merge and release/tag are separate actions.
+Security issues: please follow [SECURITY.md](SECURITY.md), not public issues.

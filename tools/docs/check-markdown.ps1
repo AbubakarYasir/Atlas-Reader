@@ -1,9 +1,18 @@
 [CmdletBinding()]
 param()
 
+# Documentation governance for Atlas Reader.
+# 1. Every relative Markdown link resolves (frozen docs/history is skipped).
+# 2. Live status markers agree.
+# 3. Closed evidence records keep their historical status.
+# 4. CHECKPOINTS.md keeps Automated QA / Owner review / Stop gate for N4-N11.
+# 5. Key cross-references exist.
+
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$ignoredSegments = @('\artifacts\', '\build\', '\out\', '\vendor\', '\third_party\')
+$sep = [IO.Path]::DirectorySeparatorChar
+$ignoredSegments = @('artifacts', 'build', 'out', 'vendor', 'third_party', 'docs/history') |
+    ForEach-Object { $sep + ($_ -replace '/', $sep) + $sep }
 $markdownFiles = Get-ChildItem -LiteralPath $repoRoot -Recurse -File -Filter '*.md' |
     Where-Object {
         $path = $_.FullName
@@ -35,16 +44,14 @@ foreach ($file in $markdownFiles) {
 }
 
 $liveStatusFiles = @(
-    'CHECKPOINTS.md',
-    'PLAN.md',
     'README.md',
-    'INFO.md',
-    'CHANGELOG.md',
+    'PLAN.md',
+    'CHECKPOINTS.md',
     'AGENTS.md',
+    'CHANGELOG.md',
     'docs/README.md',
-    'docs/N4_READER_FOUNDATION_PLAN.md',
-    'docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md',
-    'docs/DEPENDENCIES_AND_TOOLS.md'
+    'docs/N4_REVIEW.md',
+    'docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md'
 )
 
 $expectedStatus = $null
@@ -71,11 +78,8 @@ foreach ($relativePath in $liveStatusFiles) {
     }
 }
 
-# Closed checkpoint records keep their historical status when the active
-# checkpoint advances.
+# Closed evidence records keep their historical status when the active stage advances.
 $acceptedHistoryFiles = @{
-    'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md' = 'N2|accepted'
-    'docs/N3_LIBRARY_INDEX_PLAN.md' = 'N3|accepted'
     'docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md' = 'N3|accepted'
 }
 foreach ($acceptedHistory in $acceptedHistoryFiles.GetEnumerator()) {
@@ -85,56 +89,40 @@ foreach ($acceptedHistory in $acceptedHistoryFiles.GetEnumerator()) {
         '<!--\s*atlas-status:\s*([^>]+?)\s*-->'
     )
     if (-not $acceptedHistoryMatch.Success -or $acceptedHistoryMatch.Groups[1].Value.Trim() -ne $acceptedHistory.Value) {
-        $errors.Add("Closed checkpoint record must retain historical status $($acceptedHistory.Value): $($acceptedHistory.Key)")
+        $errors.Add("Closed evidence record must retain historical status $($acceptedHistory.Value): $($acceptedHistory.Key)")
     }
 }
 
 $checkpointText = Get-Content -LiteralPath (Join-Path $repoRoot 'CHECKPOINTS.md') -Raw
-foreach ($number in 3..11) {
+foreach ($number in 4..11) {
     $sectionMatch = [regex]::Match(
         $checkpointText,
-        "(?ms)^## N$number\b.*?(?=^## N$($number + 1)\b|^## Platform checkpoints|\z)"
+        "(?ms)^## N$number\b.*?(?=^## |\z)"
     )
     if (-not $sectionMatch.Success) {
-        $errors.Add("Missing checkpoint section N$number in CHECKPOINTS.md")
+        $errors.Add("Missing stage section N$number in CHECKPOINTS.md")
         continue
     }
 
     $section = $sectionMatch.Value
-    foreach ($requiredHeading in @('Automated QA', 'Owner test', 'Stop gate')) {
-        if ($section -notmatch "(?m)^### $([regex]::Escape($requiredHeading))\s*$" -and
-            $section -notmatch "(?m)^\*\*$([regex]::Escape($requiredHeading)):\*\*") {
-            $errors.Add("N$number is missing '$requiredHeading' in CHECKPOINTS.md")
+    foreach ($requiredHeading in @('Automated QA', 'Owner review', 'Stop gate')) {
+        if ($section -notmatch "(?m)^### $([regex]::Escape($requiredHeading))\s*$") {
+            $errors.Add("N$number is missing '### $requiredHeading' in CHECKPOINTS.md")
         }
     }
-}
-
-$editingText = Get-Content -LiteralPath (Join-Path $repoRoot 'docs/OFFLINE_EDITING_ROADMAP.md') -Raw
-foreach ($number in 1..5) {
-    $section = [regex]::Match($editingText, "(?ms)^## E$number\b.*?(?=^## |\z)")
-    if (-not $section.Success) {
-        $errors.Add("Missing offline editing checkpoint E$number")
-        continue
-    }
-    foreach ($heading in @('Work', 'Automated QA', 'Owner test')) {
-        if ($section.Value -notmatch "(?m)^### $([regex]::Escape($heading))\s*$") {
-            $errors.Add("E$number is missing '$heading'")
-        }
-    }
-    if ($section.Value -notmatch '(?m)^\*\*Stop gate:\*\*' -or
-        $section.Value -notmatch "E$number PASS") {
-        $errors.Add("E$number is missing its stop gate or explicit owner PASS")
+    if ($section -notmatch "N$number PASS") {
+        $errors.Add("N$number stop gate must name the explicit owner result 'N$number PASS'")
     }
 }
 
 $requiredReferences = @(
-    @{ File = 'CHECKPOINTS.md'; Text = 'OFFLINE_EDITING_ROADMAP.md' },
-    @{ File = 'docs/FEATURE_SCOPE_2_0.md'; Text = 'OFFLINE_EDITING_ROADMAP.md' },
-    @{ File = 'docs/CHECKPOINT_QA_MATRIX.md'; Text = 'OFFLINE_EDITING_ROADMAP.md' },
-    @{ File = 'docs/README.md'; Text = 'CHECKPOINT_QA_MATRIX.md' },
-    @{ File = 'docs/README.md'; Text = 'GIT_WORKFLOW.md' },
-    @{ File = 'docs/DEVELOPMENT_WORKFLOW.md'; Text = 'GIT_WORKFLOW.md' },
-    @{ File = 'docs/QUALITY_AND_TESTING.md'; Text = 'CHECKPOINT_QA_MATRIX.md' }
+    @{ File = 'README.md'; Text = 'CHECKPOINTS.md' },
+    @{ File = 'PLAN.md'; Text = 'AFTER_2_0.md' },
+    @{ File = 'CHECKPOINTS.md'; Text = 'N4_REVIEW.md' },
+    @{ File = 'AGENTS.md'; Text = 'DESIGN.md' },
+    @{ File = 'docs/README.md'; Text = 'WORKFLOW.md' },
+    @{ File = 'docs/README.md'; Text = 'QUALITY.md' },
+    @{ File = 'docs/QUALITY.md'; Text = 'CHECKPOINTS.md' }
 )
 foreach ($reference in $requiredReferences) {
     $text = Get-Content -LiteralPath (Join-Path $repoRoot $reference.File) -Raw
@@ -144,7 +132,7 @@ foreach ($reference in $requiredReferences) {
 }
 
 if ($errors.Count -gt 0) {
-    $errors | ForEach-Object { Write-Error $_ }
+    $errors | ForEach-Object { Write-Error $_ -ErrorAction Continue }
     throw "Markdown governance validation failed with $($errors.Count) error(s)."
 }
 

@@ -4,6 +4,16 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## Focused 2.0 plan and documentation consolidation — 2026-11-01
+
+- **Scope (owner decision):** Windows 2.0 now means Library + Reader + Bookmarks + annotations + everyday tools + backup/migration + Arabic/accessibility qualification. EPUB, comics, DRM-free Kindle files, the KFX decision, PDF editing tools (E1–E5), form filling (C20), side-by-side reading (C17), the reflow view (C18) and read-aloud (C11) moved to [after 2.0](docs/AFTER_2_0.md), with their requirements kept.
+- **Process (owner decision):** one owner review per stage instead of per sub-stage. Sub-stages close on automated evidence plus a recorded rendered self-review. N4.1 closes as Implemented and automated-Verified; its owner checks move into the end-of-N4 [review guide](docs/N4_REVIEW.md); **N4.2 is now active**. The next stage may start once a review build is delivered; merge, tag and release still need the owner's `N# PASS`.
+- **Versions renumbered** after beta.1 (nothing later was published): N5 beta.3, N6 beta.4, N7 beta.5, N8 beta.6, N9 beta.7, N10 rc.1, N11 2.0.0.
+- **Docs consolidated:** 35 reference files in `docs/` became 9 plus an index (DESIGN, ARCHITECTURE, DATA_AND_SAFETY, QUALITY, WORKFLOW, BUILDING, DEPENDENCIES, AFTER_2_0, N4_REVIEW). `INFO.md` was merged into README and CHECKPOINTS. README, PLAN, CHECKPOINTS, AGENTS and CONTRIBUTING were rewritten. Every previous file is preserved unchanged under [docs/history/plan-v1](docs/history/README.md).
+- **New design system** ([DESIGN.md](docs/DESIGN.md)): character, measured contrast for the existing palette, a new `controlBorder` token for WCAG 1.4.11, type scale with Arabic rules, spacing, radii, motion, components, keyboard map, a design-review matrix, and a plan for a `Theme` singleton plus Qt Linguist translations in N4.5.
+- **Tooling:** the docs governance check now validates the new document set, skips frozen history, and requires Automated QA / Owner review / Stop gate sections for N4–N11. CI copies of the N2/N3 plans point at their history location. The review packager ships `docs/N4_REVIEW.md` as `START-HERE.md`.
+- No product code, dependency pin, toolchain or source version changed.
+
 ## N4.1 review-build preparation — 2026-10-16
 
 - Synchronized the public roadmap, checkpoint summary, current notes and agent/documentation entry points with the N4.1 Ready for owner review gate. The earlier partial implementation entry below remains historical.

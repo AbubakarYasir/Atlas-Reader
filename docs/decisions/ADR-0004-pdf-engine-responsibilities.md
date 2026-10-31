@@ -223,10 +223,9 @@ If N2 rejects one or more candidates, this ADR will record the rejection and the
 
 ## Related documents
 
-- `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md`
+- `docs/history/plan-v1/docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` (frozen)
 - `docs/baselines/N2_PDF_ENGINE_MATRIX.md`
 - `docs/ARCHITECTURE.md`
-- `docs/DEPENDENCIES_AND_TOOLS.md`
-- `docs/QUALITY_AND_TESTING.md`
-- `docs/LICENSING.md`
+- `docs/DEPENDENCIES.md` (dependencies and licensing)
+- `docs/QUALITY.md`
 - `CHECKPOINTS.md`

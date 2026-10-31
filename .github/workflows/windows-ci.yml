@@ -284,7 +284,7 @@ jobs:
           Copy-Item $pdfiumSearchProbe (Join-Path $pdfiumProbeStage 'atlas_pdfium_search_probe.exe')
           Copy-Item $pdfiumSecurityProbe (Join-Path $pdfiumProbeStage 'atlas_pdfium_security_probe.exe')
           Copy-Item $pdfiumDll (Join-Path $pdfiumProbeStage 'pdfium.dll')
-          Copy-Item 'docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md' (Join-Path $docs 'N2_PDF_ENGINE_QUALIFICATION_PLAN.md')
+          Copy-Item 'docs/history/plan-v1/docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md' (Join-Path $docs 'N2_PDF_ENGINE_QUALIFICATION_PLAN.md')
           Copy-Item 'docs/baselines/N2_PDF_ENGINE_MATRIX.md' (Join-Path $docs 'N2_PDF_ENGINE_MATRIX.md')
           Copy-Item 'docs/baselines/N2_PDFIUM_PROVENANCE.md' (Join-Path $docs 'N2_PDFIUM_PROVENANCE.md')
           Copy-Item 'tests/fixtures/pdf/manifest.json' (Join-Path $fixtureStage 'manifest.json')
@@ -473,10 +473,10 @@ jobs:
           $source = Join-Path $PWD 'build/ci-Release/Release/atlas_reader.exe'
           Copy-Item $source (Join-Path $stage 'atlas_reader.exe')
           Copy-Item 'qt.conf' (Join-Path $stage 'qt.conf')
-          Copy-Item 'docs/N3_LIBRARY_INDEX_PLAN.md' $docs
+          Copy-Item 'docs/history/plan-v1/docs/N3_LIBRARY_INDEX_PLAN.md' $docs
           Copy-Item 'docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md' $docs
           Copy-Item 'docs/baselines/N3_ACCEPTANCE.md' $docs
-          Copy-Item 'docs/CHECKPOINT_QA_MATRIX.md' $docs
+          Copy-Item 'docs/history/plan-v1/docs/CHECKPOINT_QA_MATRIX.md' $docs
 
           $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
           & $deploy --release --no-translations --compiler-runtime --qmldir (Join-Path $PWD 'qml') (Join-Path $stage 'atlas_reader.exe')

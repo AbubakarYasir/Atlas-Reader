@@ -1,487 +1,213 @@
-# Atlas Reader Native — Master Plan to 2.0
+# Atlas Reader — Plan to 2.0
 
 <!-- atlas-status: N4|in-progress -->
 
-**Status:** N0–N3 Accepted; `2.0.0-beta.1` Released on 2026-09-28; N4 In progress, with N4.1 ready for owner review
+This is the single source of direction: what Atlas is, what Windows 2.0 must contain, what comes later, and how we judge quality. Order and status live in [CHECKPOINTS.md](CHECKPOINTS.md). The detailed contracts live in the [docs folder](docs/README.md).
 
-**Current engineering preview:** `2.0.0-beta.1`
+**Owner:** Abu Bakar (`AbubakarYasir`) · **Current version:** `2.0.0-beta.1` · **Active stage:** N4 Reader · **Target:** Windows 11, then other platforms after 2.0
 
-**Accepted checkpoints:** N0, N1, N2 and N3; N4 is not yet Accepted
+## 1. North star
 
-**Primary implementation target:** Windows 11
+> **Find the book → read it smoothly → navigate and research it deeply → keep that research safe.**
 
-**Future platform order:** Android → Linux → macOS → iOS/iPadOS
+Atlas is a local-first reading and research environment for serious readers: students of knowledge, researchers and anyone who works across many long books, often in Arabic, Urdu and English together. It competes by being **exceptionally good at a few workflows**, not by matching every feature of Acrobat or Foxit.
 
-**Core stack:** C++23 · Qt 6/Qt Quick/QML · SQLite/FTS5 from N3 · replaceable Atlas-owned PDF contracts · Qt PDF/PDFium/qpdf qualification in N2 · CMake · vcpkg manifest for qualified non-Qt dependencies
+What makes Atlas different is the combination:
 
-## I. North Star
+1. **Library and reader as one product.** It is not a "File → Open" viewer.
+2. **Deep bookmarks as the main research object.** They are not a narrow sidebar feature.
+3. **Portable when possible, local when necessary.** Protected, read-only, signed or offline PDFs stay fully usable for research.
+4. **Arabic, Urdu and RTL correctness**, proven by tests, not a translated skin.
+5. **Accessibility** built into custom reader and tree controls.
+6. **Speed you can measure**, even with large books and large libraries.
+7. **Honest states:** no silent overwrite and no false "saved".
+8. **Calm, beautiful design** that feels made by an experienced product team.
 
-Atlas Reader is a fast, local-first reading and research environment where a user can find a book, get to the exact place, preserve deep research navigation, and keep ownership of their data without being trapped by a proprietary cloud database.
-
-The native successor exists to make that promise compatible with graphics-heavy PDF workloads, low-latency pen input, very large local libraries, safe PDF mutation, and long-term desktop/mobile deployment.
-
-### Non-negotiable principles
+## 2. Principles
 
 | Principle | Meaning |
 |---|---|
-| **Index → Reader → Bookmarks** | Core product work is prioritized in that order |
-| **Native responsiveness** | Expensive work never executes synchronously on the UI/render thread |
-| **Portable when possible** | PDF-native data belongs in the PDF when safe and permitted |
-| **Local when necessary** | Non-writable/unsafe documents retain research usability through explicit local overlays |
-| **Never lost silently** | No false save success, blind overwrite, ambiguous relinking, or destructive unavailable-root reconciliation |
-| **Core is portable** | Shared domain/application rules contain no Windows-only assumptions |
-| **Engine replaceability** | PDF vendor libraries remain behind Atlas-owned interfaces |
-| **Format-ready core** | Shared book identity, Library, metadata, search, progress, backup and UI models do not assume every future book is a PDF; PDF-only rendering and mutation stay inside explicit PDF adapters |
-| **Arabic/RTL first-class** | Unicode, bidi, Arabic UI, mixed-script metadata/outlines are release requirements |
-| **Accessibility first** | Keyboard, Narrator/UIA, visible focus, text scale, high contrast are architectural gates |
-| **Evidence before claims** | Planned, Implemented, Verified, Accepted, Released are distinct |
-| **Measure before optimize** | Profilers/benchmarks identify bottlenecks; “C++” alone is not a performance guarantee |
-| **Scope beats feature-count** | Atlas competes by excellence in chosen workflows, not by cloning every Acrobat/Foxit function |
-| **Checkpoint immutability** | A passed checkpoint is not reopened without new evidence of a user-facing regression |
-
-## II. Current execution state
-
-### N0 — Accepted
-
-Native repository/bootstrap architecture accepted on 2026-09-22.
-
-### N1 — Accepted
-
-Windows toolchain + empty-shell baseline accepted on 2026-09-22 after physical performance, Arabic/RTL/theme/scale/lifecycle and keyboard qualification.
-
-Accepted user-qualified N1 runtime:
-
-`73f567cf2c557f185371d7f944ebf6d69453105a`
-
-N1 is frozen unless concrete user-facing regression evidence appears.
-
-### N2 — Accepted
-
-N2 was deliberately opened only after N1 acceptance and branched from accepted N1 integration commit:
-
-`f8bdc2e5bc74ccb94d593e7a7e5307ae6163afe2`
-
-N2 exists to decide PDF **responsibilities** before product Reader/Index/Bookmark code depends on one engine assumption.
-
-Binding N2 documents:
-
-- `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md`;
-- `docs/baselines/N2_PDF_ENGINE_MATRIX.md`;
-- `tests/fixtures/pdf/README.md`;
-- `docs/decisions/ADR-0004-pdf-engine-responsibilities.md`.
-
-ADR-0004 is **Accepted** with the frozen/requalified route assigning
-official dynamic Qt PDF 6.10.3 to read/render/text/navigation and the first-party
-qpdf 12.4.1 CLI to structural/security/write responsibilities. Standalone
-PDFium remains comparison evidence and a replaceable future candidate, not an N2
-production dependency. The route was Accepted by owner `N2 PASS` on 2026-09-27.
-
-N2 closure was completed and reported to the owner before N3 began on 2026-09-27. N3 implementation, automated checks, exact package and owner testing are complete; the owner recorded `N3 PASS` on 2026-09-27. See `docs/baselines/N3_ACCEPTANCE.md`.
-
-Every future checkpoint is governed by `docs/CHECKPOINT_QA_MATRIX.md`: automated
-evidence, manual/owner evidence, blocking failures and transferred limitations
-must be named before work begins. Git/PR/status synchronization follows
-`docs/GIT_WORKFLOW.md`.
-
-### Recorded plan changes
-
-Owner confirmation also requires [E1–E5 offline editing](docs/OFFLINE_EDITING_ROADMAP.md): page organization, original text/image editing, equations, form authoring, secure redaction and offline signatures after F4 and before N8. OCR, audio notebooks, online services and collaboration remain excluded. N3 stays active; this is a plan change only.
-
-Owner direction on 2026-09-27 expanded Windows 2.0 to include F1 EPUB, F2 CBZ/CBR and F3 user-owned, DRM-free AZW3, MOBI and PRC files after N7, plus F4 KFX decision before N8. This increases delivery work and the final QA matrix; no unchanged date is implied. The [competitive action register](docs/COMPETITIVE_GAP_ACTIONS.md) is mandatory in its assigned stages.
-
-Plan changes are recorded instead of silently rewriting why a decision was
-made:
-
-| Date | Original direction | Evidence discovered | Binding change |
-|---|---|---|---|
-| 2026-09-27 | The first A014/PDFium reference raster was treated as the visual oracle | owner review found broken Arabic joining/diacritics, inappropriate Urdu typeface and later incorrect physical alignment | rebuilt A014 with pinned Noto Naskh Arabic + Noto Nastaliq Urdu and RTL layout; owner visual result now passes with bounded-corpus limitation |
-| 2026-09-27 | PDFium was provisionally favored for the combined read path on bounded capability/performance evidence | only a community binary was qualified; an official Atlas-controlled production source/build/notices route was not frozen, while official Qt PDF integrated with the accepted stack | final Proposed N2 route changed to official Qt PDF 6.10.3 + first-party qpdf 12.4.1 CLI; PDFium evidence is retained for future replacement comparison |
-| 2026-09-27 | Future checkpoint descriptions had uneven QA detail and several limitations said only “later” | cross-document audit found missing named owner tests for N6–N11 and no explicit checkpoint owner for Windows integration/settings/diagnostics | added the binding N0–N11 QA matrix, exact limitation ownership, Git documentation and CI documentation-governance check; product scope/order did not shrink |
-
-## III. Windows 2.0 product pillars
-
-### Pillar 1 — Library and Index (P0)
-
-- explicit library roots plus direct-open PDFs;
-- progressive bounded scanning;
-- SQLite/FTS5 metadata/bookmark search;
-- guarded identity across safe moves/renames;
-- unavailable/offline/restricted/unreadable states;
-- no destructive root purge when enumeration fails;
-- Arabic/Unicode paths/metadata;
-- Recents/Favorites/Folders and Command Center;
-- measurable responsiveness at large scale.
-
-Implementation begins in N3, after N2 PDF responsibilities are accepted.
-
-### Pillar 2 — Reader (P0)
-
-- Atlas-owned GPU-backed virtualized page viewport;
-- visible/near-visible page texture priority;
-- bounded caches/memory;
-- continuous/page reading modes;
-- free zoom + fit page/width;
-- page index/label/academic-offset separation;
-- thumbnails, outline, text/search/links where supported;
-- multi-document workspace;
-- byte-backed/read-session behavior where useful;
-- no PDF parse/render/save or large SQL on UI thread.
-
-The production PDF reader begins in N4. F1–F3 then reuse the proven viewport/library shell through format-specific adapters before N8 and final release qualification. N2 only qualifies the PDF engines/adapters N4 may use.
-
-### Pillar 3 — Bookmarks and Outlines (P0 / strategic differentiator)
-
-- deep hierarchy, duplicate visible names, exact destinations/breadcrumb identity;
-- complete create/edit/move/reorder/nest/delete;
-- library-wide search/Command Center;
-- embedded PDF outline when safe;
-- first-class local overlay for restricted/read-only/signed/offline/conflicted documents;
-- security/password capability model;
-- external-revision conflict/reconciliation;
-- safe promotion into PDF;
-- lossless Atlas JSON + Markdown/CSV import/export;
-- backup/recovery.
-
-Production bookmark implementation begins in N5. N2 may inspect/transform outlines only as fixture-based engine qualification.
-
-### Pillar 4 — Standard Writing and Annotations (P1)
-
-After the first three pillars are dependable: low-latency live ink, highlighter, selection/erase/undo/redo, standard markup/notes where interop passes. Live drawing is a GPU/UI overlay first; PDF persistence happens asynchronously through the same safe-save capability model.
-
-### Pillar 5 — Essential Desktop Utilities (P1)
-
-Printing, cover generation, useful document details, selected portable metadata editing, Windows shell integration, installer, backup/migration.
-
-### Pillar 6 — Platform Quality
-
-Windows reaches full 2.0 release quality first. Later platforms adapt storage/input/shell/printing/lifecycle/UI while reusing the core rules and most QML components.
-
-## IV. Scope contract
-
-The detailed Windows 2.0 feature contract lives in `docs/FEATURE_SCOPE_2_0.md`. P0 features cannot be silently dropped during implementation.
-
-Explicitly deferred from Windows 2.0 unless owner scope changes:
-
-- OCR;
-- cloud accounts/sync;
-- AI document chat/analysis;
-- PDF password cracking/restriction bypass;
-- audio notebooks;
-- online collaboration/shared reviews;
-- office conversion;
-- multimedia/3D;
-- DRM bypass or dependence on proprietary account/cloud delivery for book opening.
-
-Other-book support is part of Windows 2.0 rather than an implied later possibility. After the PDF-first N4–N7 foundation, F1 admits DRM-free EPUB, F2 admits CBZ/CBR, and F3 admits user-owned, DRM-free AZW3, MOBI and PRC files before migration and final qualification. F4 must decide KFX from lawful evidence before 2.0 but cannot promise support or bypass DRM in advance. The binding admission order, shared behavior, open-source dependency rule, security limits and owner gates live in `docs/FORMAT_EXPANSION_ROADMAP.md`.
-
-A competitor having one of these does not make Atlas 2.0 a failure. Core quality has priority over feature-count vanity.
-
-## V. Architectural constraints
-
-### Pure shared core
-
-Reusable domain/application logic uses standard C++ types where practical and never exposes Qt GUI, Win32, Java/Kotlin, Swift/Objective-C, Windows HANDLEs, Android URIs, Apple security-scoped handles, Qt PDF objects, PDFium handles, or qpdf object types as domain identity.
-
-### UI boundary
-
-QML handles presentation/interaction composition. Business rules do not live in QML JavaScript. Controllers/view models translate to application commands/state.
-
-### PDF boundary
-
-Application code depends on Atlas PDF contracts/facades, never directly on Qt PDF, PDFium, or qpdf.
-
-N2 intentionally permits responsibility splitting. The working conceptual boundary is:
-
-```text
-Atlas application/domain
-        |
-        v
-Atlas normalized PDF contracts
-        |
-        +----------------------+----------------------+
-        |                      |                      |
-        v                      v                      v
-read/render/text          navigation/outline     structure/write
-Qt PDF or PDFium          Qt PDF or PDFium            qpdf
-```
-
-This is a hypothesis shape, not a final selection. ADR-0004 decides only after evidence.
-
-### Storage boundary
-
-SQLite + FTS5 remain behind schema/migrations/repositories. Writes are serialized/batched as appropriate. UI never executes arbitrary SQL. SQLite implementation is closed until N3.
-
-### Platform boundary
-
-At minimum:
-
-- filesystem/storage/document-reference port;
-- watcher;
-- picker;
-- printing;
-- stylus/touch specialization;
-- shell/open-with/share integration;
-- lifecycle/power/session behavior;
-- secure credential facility only if a future ADR introduces persistent secret storage.
-
-See `docs/ARCHITECTURE.md`.
-
-## VI. N2 PDF-engine qualification contract
-
-### Qt PDF
-
-Qualify as a candidate for:
-
-- open/page metadata;
-- page labels/geometry;
-- raster rendering;
-- Unicode text extraction/search;
-- links/navigation;
-- outlines/destinations.
-
-Atlas qualifies engine APIs, not Qt's complete viewer UI.
-
-### PDFium
-
-Qualify against the same normalized read/render/text/navigation expectations.
-
-N2 treats as evidence-relevant constraints:
-
-- current public PDFium API is documented as non-thread-safe, so adapter calls must be serialized correctly;
-- official source builds use Chromium-style `depot_tools`/`gclient`, GN/Ninja and Clang/clang-cl tooling;
-- no standard Microsoft vcpkg `pdfium` port was found in the inspected registry;
-- any community prebuilt used for a spike requires exact pin, SHA-256, provenance and notices and does not pre-approve production distribution.
-
-### qpdf
-
-Qualify primarily for:
-
-- structural inspection;
-- encryption/security/restriction information;
-- outline/object-level operations needed by later workflows;
-- preservation-sensitive transformations/validation.
-
-At N2 opening, current upstream release/docs/vcpkg version surfaces are not identical. Exact qpdf version must be recorded for each experiment rather than inferred from “latest.”
-
-### N2 evidence vocabulary
-
-Per-capability results are:
-
-- PASS;
-- PASS WITH LIMITATION;
-- FAIL;
-- BLOCKED;
-- N/A;
-- PENDING.
-
-There is no aggregate score that can hide a fatal correctness, Arabic/Unicode, preservation, licensing, concurrency or reproducibility failure.
-
-### N2 fixture discipline
-
-Committed fixtures require stable IDs, provenance, redistribution permission, SHA-256, expected behavior and mutation permission. Private owner PDFs remain outside Git and public logs.
-
-Mutation probes always use disposable copies.
-
-### N2 stop gate
-
-N2 requires:
-
-- comparable Qt PDF/PDFium evidence or explicit evidence-backed rejection/blocking;
-- qpdf structural/security/preservation evidence;
-- Arabic/Unicode, labels, links, outlines/destinations, rotations/boxes, encryption and malformed fixtures;
-- exact versions/acquisition/licenses/build paths;
-- adapter boundary proof;
-- final responsibility table;
-- Accepted ADR-0004;
-- strict final CI;
-- explicit owner `N2 PASS`.
-
-N3 is Accepted; its frozen decision and detailed evidence are governed by `docs/baselines/N3_ACCEPTANCE.md` and `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md`. N4 is active under `docs/N4_READER_FOUNDATION_PLAN.md`; N4.1 session/open contracts come first.
-
-## VII. Threading/performance model
-
-The GUI/render thread must not perform:
-
-- directory traversal;
-- PDF parsing/structural validation;
-- CPU page rasterization;
-- cover generation;
-- large hashing/fingerprinting;
-- large SQL queries;
-- PDF serialization/save;
-- large import/export;
-- expensive tree reconciliation.
-
-Bounded queues prioritize interactive viewport/search work over prefetch/background scan work. Cancellation/reprioritization is first-class.
-
-Performance budgets/evidence rules live in `docs/PERFORMANCE.md`; profiling/tooling policy lives in `docs/DEPENDENCIES_AND_TOOLS.md` and `docs/QUALITY_AND_TESTING.md`.
-
-N2 timing comparisons use Release builds, the same fixture/work request, declared warm/cold context, median/p95 where appropriate, and correctness before speed.
-
-## VIII. Safety and data ownership
-
-Every production PDF mutation will eventually recheck:
-
-1. document identity/location;
-2. external source revision;
-3. filesystem writability;
-4. PDF security/permission capability;
-5. signed/certified consequence;
-6. destination/storage availability;
-7. preservation invariants.
-
-Future commit model: **temp → validate → backup/replace → reopen → re-index → mark committed**.
-
-N2 does not implement the production save pipeline. It uses copied fixtures to discover what each candidate preserves/changes and to inform later safe-save implementation.
-
-Local data is never labeled Embedded before successful validated re-read.
-
-A non-writable document is not a broken research workflow; Atlas keeps local state clearly and exportably.
-
-See `docs/CORE_WORKFLOWS.md`.
-
-## IX. Accessibility and internationalization
-
-From the first user-facing beta:
-
-- English + Arabic resources;
-- RTL layout/bidi isolation;
-- Arabic/English/Urdu mixed fixtures;
-- keyboard-only operation;
-- Narrator/UI Automation semantics;
-- visible focus;
-- 200% UI/text testing;
-- system high-contrast behavior;
-- non-color-only state;
-- reduced motion where relevant.
-
-N9 is final qualification, not the first implementation pass.
-
-N2 must already include Arabic/Unicode text/search/outline evidence because an engine that loses those semantics cannot be repaired by UI polish later.
-
-See `docs/UX_ACCESSIBILITY_AND_DESIGN.md`.
-
-## X. Quality model
-
-A feature or engine responsibility is Done only when relevant layers have evidence:
-
-- domain/unit tests;
-- adapter/component tests;
-- integration/fixture tests;
-- preservation/round-trip tests;
-- Release build;
-- benchmark budget for hot paths;
-- Arabic/RTL/accessibility evidence where applicable;
-- failure/recovery evidence;
-- documentation status update;
-- owner checkpoint acceptance.
-
-Critical defects found in beta/owner testing receive regression tests or a documented manual checklist item.
-
-See `docs/QUALITY_AND_TESTING.md`.
-
-## XI. Dependency/open-source strategy
-
-Atlas deliberately reuses mature components where quality improves:
-
-- Qt for cross-platform native UI/platform infrastructure;
-- SQLite/FTS5 for local transactional search/index beginning N3;
-- qpdf candidate for PDF structure/transformation in N2;
-- Qt PDF/PDFium candidates for rendering/inspection in N2;
-- Catch2/Qt Test for testing when justified;
-- Google Benchmark for performance tests where the fixture runner needs dedicated microbenchmarks;
-- nlohmann/json candidate for versioned Atlas JSON interchange;
-- xxHash candidate as one guarded fingerprint signal;
-- spdlog only if needed;
-- vcpkg manifest mode for qualified non-Qt native dependency reproducibility.
-
-Development-only quality tools include QML Profiler, Tracy, RenderDoc, WPA/WPR, Visual Studio profiler, Accessibility Insights, clang-format/tidy, CodeQL, CodeGraph, and GitHub Actions.
-
-No dependency bypasses license/performance/portability/abstraction/reproducibility review.
-
-Probe-only adoption and production adoption are distinct states.
-
-See `docs/DEPENDENCIES_AND_TOOLS.md`, `docs/UPSTREAM_CATALOG.md`, and `docs/LICENSING.md`.
-
-## XII. Competitive strategy
-
-Adobe/Foxit define mature security/interoperability/desktop expectations; Librera informs reader/library flow; Xournal++ demonstrates pen/local-layer value; SumatraPDF reinforces startup/minimal-latency expectations; Okular is a useful open-source cross-platform reference.
-
-Atlas differentiation is the combination of:
-
-- serious local library;
-- fast native reader;
-- deep first-class bookmarks;
-- protected-document local fallback;
-- local-first ownership;
-- Arabic/RTL;
-- accessibility;
-- transparent conflict/recovery.
-
-See `docs/COMPETITIVE_BASELINE.md`.
-
-## XIII. Release program
-
-Native V2 uses:
-
-- N0: `2.0.0-alpha.0` — Accepted;
-- N1: `2.0.0-alpha.1` — Accepted;
-- N2: `2.0.0-alpha.2` — Accepted by owner on 2026-09-27;
-- N3 onward: `2.0.0-beta.N` usable milestone builds;
-- N10: `2.0.0-rc.N`;
-- N11: stable `2.0.0` Windows.
-
-Later Android/Linux/macOS/iOS adaptations occur after Windows 2.0 rather than delaying Windows indefinitely.
-
-See `docs/RELEASE_STRATEGY.md` and `CHECKPOINTS.md`.
-
-## XIV. Success definition for Windows 2.0
-
-Atlas 2.0 succeeds when:
-
-- all P0 Windows scope is Accepted;
-- no known core path silently loses research data;
-- protected/signed/read-only/offline/conflicted PDFs have explicit tested behavior;
-- large libraries remain usable while indexing;
-- large PDFs navigate with bounded memory and responsive UI;
-- 10k bookmark search/navigation meets recorded target;
-- embedded portable data round-trips in independent readers for accepted fixtures;
-- backup/restore and legacy migration are tested;
-- Arabic/RTL/Narrator matrix has no untested core workflow;
-- installer/upgrade/uninstall preserve user books/data;
-- exact dependency/toolchain/SBOM/notices and release evidence are archived;
-- owner explicitly accepts the release candidate.
-
-## XV. Migration rule
-
-The Flutter application is a **behavior/data reference**, not a source-code template. Port contracts deliberately; do not recreate its widget/service structure in C++/QML.
-
-Native Atlas is the active product. The stopped Flutter source is retained only as an obsolete backup and migration reference; no Flutter builds are part of the current plan. PDFs are the strongest portable bridge. Any legacy app-local migration is implemented only after the native schema/identity model is stable enough to avoid repeated destructive converters.
-
-## XVI. Documentation map
-
-- `README.md` — entry point/current status.
-- `PLAN.md` — this master plan.
-- `CHECKPOINTS.md` — execution order/releases/stop gates.
-- `INFO.md` — compact orientation.
-- `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md` — active N2 execution plan.
-- `docs/baselines/N2_PDF_ENGINE_MATRIX.md` — active N2 evidence sheet.
-- `tests/fixtures/pdf/README.md` — N2 fixture contract.
-- `docs/decisions/ADR-0004-pdf-engine-responsibilities.md` — Accepted N2 architecture decision.
-- `docs/FEATURE_SCOPE_2_0.md` — exact Windows 2.0 product scope.
-- `docs/ARCHITECTURE.md` — boundaries/data/threading.
-- `docs/CORE_WORKFLOWS.md` — capability/local-overlay/save/conflict contract.
-- `docs/TECH_STACK.md` — technical choices and alternatives.
-- `docs/DEPENDENCIES_AND_TOOLS.md` — open-source/tool/plugin/agent policy.
-- `docs/UPSTREAM_CATALOG.md` — concrete upstream candidates/current integration facts.
-- `docs/PERFORMANCE.md` — performance budgets/benchmarks.
-- `docs/QUALITY_AND_TESTING.md` — test/evidence/security quality gates.
-- `docs/UX_ACCESSIBILITY_AND_DESIGN.md` — UX/a11y/RTL contract.
-- `docs/COMPETITIVE_BASELINE.md` — competitor research/differentiation.
-- `docs/RELEASE_STRATEGY.md` — alpha/beta/RC/stable rules.
-- `docs/DEVELOPMENT_WORKFLOW.md` — branches/PRs/ADRs/agent workflow.
-- `docs/PLATFORM_ROADMAP.md` — Windows-first portability program.
-- `docs/MIGRATION_FROM_FLUTTER.md` — legacy migration.
-- `docs/BUILDING.md` — canonical build instructions.
-- `docs/LICENSING.md` — license/distribution guardrails.
-- `docs/decisions/` — ADRs.
+| **Index → Reader → Bookmarks** | Core work happens in this order; later features never weaken it |
+| **Never lost silently** | No false save success, blind overwrite, guessed relinking or purge of offline roots |
+| **Portable when possible, local when necessary** | Research goes into the PDF only when safe and permitted; otherwise it is kept locally, clearly labeled and exportable |
+| **The interface never waits** | Parsing, rendering, scanning, hashing, saving and large queries never run on the UI thread |
+| **Measure, don't guess** | Speed claims need numbers on named hardware; profilers find bottlenecks, not intuition |
+| **Arabic and accessibility from day one** | Every user-facing stage ships English + Arabic, keyboard, Narrator, 200% scale and high contrast |
+| **Designed, not decorated** | A deliberate design system; no generic "AI app" look, no gradients or glow, no clutter |
+| **Replaceable engines** | PDF libraries sit behind Atlas-owned interfaces; vendor types never reach the core |
+| **Portable core** | Shared rules contain no Windows-only types, so Android/macOS/iOS stay possible |
+| **Evidence before claims** | Planned → Implemented → Verified → Accepted → Released are distinct states |
+| **Offline and private** | No accounts, telemetry, uploads or update checks in 2.0 |
+| **Focus beats feature count** | A feature that threatens the four core steps carries a higher burden of proof |
+
+## 3. When goals conflict
+
+Use this order:
+
+1. Research data safety and integrity
+2. Correctness and interoperability
+3. Responsiveness of core workflows
+4. Accessibility, Arabic/RTL and clarity
+5. Visual quality and beauty
+6. Resource efficiency
+7. Feature breadth
+
+Beauty ranks high and is a release requirement (see [DESIGN.md](docs/DESIGN.md)), but it can never hide a failure above it.
+
+## 4. Windows 2.0 scope
+
+Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after the core is dependable · **P2** nice to have, may move after 2.0 with an owner decision. The checkpoint that delivers each item is shown in brackets.
+
+### 4.1 Library and index — P0 (accepted in N3, extended in N5/N7)
+
+- Multiple library folders, including removable and offline drives; offline folders are kept, never purged.
+- Open single files outside library folders without silently adding their parent folder.
+- Background, progressive, cancellable scanning; safe overlapping folders; protection against junction/symlink loops.
+- Guarded document identity: moves and renames keep research; copies stay separate; ambiguous matches are never guessed.
+- Clear per-book states: available, locked, read-only/restricted, signed, offline, missing, cloud placeholder, unreadable, changed, unsupported.
+- Filename-first names (extension kept separately and protected); embedded title and author shown as secondary.
+- Search across metadata, with a documented Arabic/Unicode normalization policy; Favorites, Recents and folders.
+- Global **Command Center** (`Ctrl+K`) for books and bookmarks [N5].
+- Sorting, filters, safe rename, collections and tags [N7].
+
+### 4.2 Reader — P0 [N4]
+
+- Atlas-owned virtualized viewport: only visible and nearby pages are rendered; memory stays bounded on 2,000+ page books.
+- Continuous and single-page modes, facing and cover-page spreads, reading direction independent of UI language.
+- Free zoom, actual size, fit page/width; exact page jump; page labels separate from page numbers; optional academic page offset.
+- Correct rotation, crop/media boxes and mixed page sizes.
+- Tabs with bounded resources; opt-in session restore (off by default; never stores passwords).
+- Navigation panel: Outline · Pages (thumbnails) · Bookmarks · Annotations (from N6).
+- Text selection and copy, cancellable document search, internal and external links, Back/Forward history.
+- Focus/full-screen reading with a discoverable exit; per-book position and zoom remembered.
+- Image-only PDFs read normally, with an honest "no text layer" state. There is no OCR.
+- Offline safety: no document JavaScript, launches or remote fetches; external links need explicit confirmation.
+
+### 4.3 Bookmarks and outlines — P0, the signature feature [N5]
+
+- Unlimited practical depth, duplicate names under different parents, Arabic/Urdu/mixed-direction titles, full breadcrumbs, exact destinations, reveal current section.
+- Complete editing: create, rename, delete, edit destination, move, reorder, nest/unnest, undo; full keyboard and screen-reader operation.
+- Storage states shown honestly: **Embedded · Local only · Pending embed · Local override · Locally hidden · Conflict**.
+- Restricted, read-only, signed, locked and offline PDFs remain bookmarkable locally; work can be embedded later, or saved as a copy.
+- External changes are detected and reconciled, never overwritten.
+- Safe save: temporary write → validate → backup → replace → reopen → only then "Embedded".
+- Lossless versioned `.atlas-bookmarks.json`, plus Markdown and CSV export (all, subtree or local-only); import with preview and append/merge/replace/local-only modes.
+- 10,000-bookmark search and navigation under 100 ms p95.
+
+### 4.4 Ink and annotations — P1 [N6]
+
+- Low-latency pen with pressure where the hardware supports it reliably; freehand highlighter; text highlight, underline and strikeout on real text.
+- Color, opacity and width presets; stroke and partial erasing; lasso/rectangle selection; move, resize, copy, duplicate and delete; undo/redo.
+- Typed notes, sticky notes, and line/arrow/rectangle/ellipse markup.
+- Annotation list with search, filter, jump and edit; show/hide without deleting.
+- Standard PDF structures that reopen correctly in an independent reader; local fallback for protected files.
+- Annotation export as versioned JSON (lossless, re-importable) and Markdown (readable report).
+- Physical pen tests: stylus-button eraser, palm/touch separation, and a recovery budget after a crash.
+
+### 4.5 Everyday tools — P1 [N7]
+
+- Printing: printer choice, preview, page and label ranges, copies, orientation, paper size, scaling, grayscale. The source file stays byte-identical.
+- Covers: generated from page one, with correct cache invalidation and a fallback for locked or offline books.
+- Book details panel that separates PDF values from Atlas-local values; selected metadata editing with preview through the N5 safe-save path.
+- Sort (filename, title, author, last opened), filters with one-step clear, safe filename rename separate from metadata editing.
+- Local collections and tags that never move or delete files.
+- Windows integration: Open With, drag and drop, clipboard, long and Unicode paths, and no lost work when Windows shuts down or the session ends.
+- Settings, kept small: Library & Storage · Appearance & Language · Reader & Writing · Accessibility & Keyboard · Data, Backup & Safety · About.
+- Privacy-safe rotating logs; a diagnostic bundle the user generates and previews.
+
+### 4.6 Backup and migration — P0 before stable [N8]
+
+- Versioned Atlas backup of local research (overlays, tombstones, notes, tags, collections, favorites, progress, folders, identity links, settings). Books are excluded by default.
+- Restore with preview, validation and explicit unresolved books; never relink by filename alone.
+- Read-only, repeatable import from the old Flutter app's profile; the old data is never modified.
+
+### 4.7 Cross-cutting — P0 [every stage, qualified in N9–N10]
+
+- English + Arabic UI; mirrored layout; bidi isolation for paths and mixed text; Urdu content.
+- Keyboard-only operation for every core task; Narrator/UI Automation names, roles and states; visible focus; 100% and 200% scale; high contrast; reduced motion; never color alone.
+- Performance budgets from [QUALITY.md](docs/QUALITY.md) met on named hardware.
+- Installer, upgrade and uninstall that never delete books or research; optional file association [N11].
+
+## 5. After 2.0 and never
+
+**Moved after 2.0 by the 2026-11-01 focus decision.** These are kept fully specified in [AFTER_2_0.md](docs/AFTER_2_0.md):
+
+- EPUB · CBZ/CBR comics · DRM-free AZW3/MOBI/PRC · KFX feasibility decision
+- Page organization (merge, split, reorder) · original text/image editing and equations · AcroForm filling and authoring · secure redaction · offline signatures
+- Side-by-side reading · simplified text (reflow) view · offline read-aloud
+- Android → Linux → macOS → iOS/iPadOS
+
+Until those ship, 2.0 shows honest "not supported yet" states, for example for forms, XFA, attachments and signatures (detected but not validated).
+
+**Not planned for any release:** cloud accounts or sync, collaboration or shared reviews, AI document chat, telemetry or crash upload, Office conversion, OCR, audio notebooks, multimedia/3D, executable plugins, password cracking, restriction removal or DRM bypass.
+
+## 6. What "excellent" means for 2.0
+
+"Perfect" is not a measurable goal, so Atlas uses these. 2.0 ships only when **all** are true:
+
+1. Every P0/P1 item above is Accepted by the owner.
+2. No known path loses research or silently changes a user's PDF.
+3. Protected, signed, read-only, offline and conflicted PDFs have tested behavior.
+4. Speed budgets pass on named hardware: first page, scrolling, search, 10k bookmarks, ink latency, memory on 2,000-page books.
+5. Embedded bookmarks and annotations round-trip in an independent PDF reader.
+6. The Arabic/RTL + keyboard + Narrator + 200% + high-contrast matrix has no untested core workflow.
+7. The design review in [DESIGN.md](docs/DESIGN.md) passes on every screen, in every state, in both languages and themes.
+8. Backup/restore and legacy migration are proven on clean profiles.
+9. Install, upgrade and uninstall preserve user data; licenses, notices and SBOM are complete.
+10. Side-by-side comparisons on the same files show Atlas at least matching Foxit/Acrobat/SumatraPDF on its core tasks, and leading on bookmarks, safety and Arabic.
+
+## 7. Competitive references
+
+We learn from mature products **without copying their design**:
+
+| Product | What it teaches | Atlas response |
+|---|---|---|
+| Acrobat | Security, signatures, annotation interoperability | Match safety expectations; never bypass |
+| Foxit | Responsive desktop reading, complete bookmark editing | Equal editing depth plus local fallback |
+| SumatraPDF | Instant startup, minimal friction | Startup and simple reading are measured from N1 |
+| Xournal++ | Pen-first feel, separate local layer | Live ink never waits on PDF saving |
+| Librera / Okular | Library flow, open multi-platform reading | A research library, not a file picker |
+
+At the end of each stage we run the same tasks on the same files in a relevant mature product and record version, task, result and what Atlas must improve. Comparisons never become marketing claims without measurements.
+
+## 8. Main risks
+
+| Risk | Level | Guard |
+|---|---|---|
+| Silent PDF or research corruption | Critical | Safe-save pipeline, preservation tests, failure injection, local fallback |
+| Overwriting a file changed by another app | Critical | Revision check before every write; reconcile instead |
+| Research attached to the wrong copy | Critical | Guarded identity ([ADR-0005](docs/decisions/ADR-0005-document-identity-and-reconciliation.md)); no filename-only matching |
+| Licensing mistake (Qt LGPL, fonts, codecs) | Critical | Admission checklist, notices/SBOM every release |
+| Scope creep delaying 2.0 | High | **Focused 2.0** (section 5); new ideas go to [AFTER_2_0.md](docs/AFTER_2_0.md) |
+| UI stalls or memory blow-up on long books | High | Thread rules, virtualized viewport, budgets, 2,000-page memory series |
+| Arabic/RTL or accessibility retrofitted late | High | Required at every stage, not only N9 |
+| Windows assumptions leaking into the core | High | Ports/adapters; storage references, not paths |
+| Owner review becoming a bottleneck | Medium | One batched review per stage with a short plain-language guide |
+| Docs drifting from code | Medium | One status marker, automated link/status check in CI |
+
+## 9. Decision log
+
+| Date | Decision |
+|---|---|
+| 2026-09-22 | Native C++23 + Qt Quick replaces Flutter ([ADR-0001](docs/decisions/ADR-0001-native-stack.md)); N0 and N1 accepted |
+| 2026-09-27 | Qt PDF 6.10.3 for reading/rendering and qpdf 12.4.1 CLI for structure/security/writes ([ADR-0004](docs/decisions/ADR-0004-pdf-engine-responsibilities.md)); N2 and N3 accepted |
+| 2026-09-27 | Scope was expanded to multi-format and offline editing before 2.0 (now superseded) |
+| 2026-09-28 | `2.0.0-beta.1` released; N4 started |
+| **2026-11-01** | **Focused 2.0.** EPUB/comics/Kindle, PDF editing tools (E1–E5), form filling, side-by-side, reflow view and read-aloud move after 2.0. **Batched owner reviews:** one review per stage instead of per sub-stage. **Docs consolidated:** 35 reference files in `docs/` became 9 plus an index, and `INFO.md` was merged into README/CHECKPOINTS; the previous set is kept unchanged in [docs/history](docs/history/README.md) |
+
+Every change to scope, priority or release gates is added here with its reason.
+
+## 10. Where things live
+
+| Need | Document |
+|---|---|
+| Status, stage tasks, tests, review gates | [CHECKPOINTS.md](CHECKPOINTS.md) |
+| Look, feel, accessibility, Arabic/RTL | [docs/DESIGN.md](docs/DESIGN.md) |
+| Layers, threads, engines, stack | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Document safety, data formats, security | [docs/DATA_AND_SAFETY.md](docs/DATA_AND_SAFETY.md) |
+| Tests, evidence, speed budgets | [docs/QUALITY.md](docs/QUALITY.md) |
+| Branches, commits, releases | [docs/WORKFLOW.md](docs/WORKFLOW.md) |
+| Building | [docs/BUILDING.md](docs/BUILDING.md) |
+| Libraries, tools, licenses | [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) |
+| After 2.0 | [docs/AFTER_2_0.md](docs/AFTER_2_0.md) |
+| Rules for coding agents | [AGENTS.md](AGENTS.md) |

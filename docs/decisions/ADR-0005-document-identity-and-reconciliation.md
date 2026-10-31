@@ -93,7 +93,7 @@ safety and reviewable persistence.
 ## Related checkpoints and documents
 
 - `CHECKPOINTS.md` — N3.3 identity/reconciliation gate
-- `docs/N3_LIBRARY_INDEX_PLAN.md`
+- `docs/history/plan-v1/docs/N3_LIBRARY_INDEX_PLAN.md` (frozen)
 - `docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md`
 - `docs/ARCHITECTURE.md`
-- `docs/QUALITY_AND_TESTING.md`
+- `docs/QUALITY.md`

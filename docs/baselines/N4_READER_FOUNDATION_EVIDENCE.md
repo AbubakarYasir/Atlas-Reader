@@ -2,6 +2,10 @@
 
 <!-- atlas-status: N4|in-progress -->
 
+## Process change — 2026-11-01
+
+The owner chose **batched reviews** and a **focused 2.0** ([PLAN.md decision log](../../PLAN.md#9-decision-log)). Sub-stages now close on automated evidence plus a recorded rendered self-review; the owner reviews once at the end of N4 using [N4_REVIEW.md](../N4_REVIEW.md). N4.1 therefore closes as Implemented and automated-Verified, and **N4.2 is the active sub-stage**. The N4.1 rendered owner items (English/Arabic/RTL, 200%, keyboard/Narrator, restart/password, file release, source preservation) are carried into that review and still block `N4 PASS`. Side-by-side reading (C17) and the simplified text view (C18) left N4 scope and moved after 2.0. Sections below that mention a separate `N4.1 PASS` describe the earlier process and are kept as a historical record.
+
 ## Opening record — 2026-09-28
 
 - Accepted predecessor: N3 `2.0.0-beta.1`.
@@ -14,8 +18,8 @@
 
 | Subgate | Status | Implementation SHA | Automated evidence | Rendered/owner evidence | Open blockers |
 |---|---|---|---|---|---|
-| N4.1 Session/open model | **Ready for owner test** | `5ac63df7da45d711380cfaac0e83f0b96deda7f4` | Windows CI run `36690884159`: Debug + Release build/test PASS, 43/43 tests; `atlas_reader_controller` PASS; inherited Fidelity `36690884055`, Stress `36690884080`, Coordinates `36690883965`, Selected Production Route `36690883948` PASS | owner checklist in `docs/N4_1_OWNER_TEST.md` pending | rendered English/Arabic/RTL, 100%/200%, keyboard/Narrator and owner runtime verdict |
-| N4.2 Virtual viewport | Not started | — | — | — | depends on accepted N4.1 contracts |
+| N4.1 Session/open model | **Implemented; automated Verified** | `5ac63df7da45d711380cfaac0e83f0b96deda7f4` | Windows CI run `36690884159`: Debug + Release build/test PASS, 43/43 tests; `atlas_reader_controller` PASS; inherited Fidelity `36690884055`, Stress `36690884080`, Coordinates `36690883965`, Selected Production Route `36690883948` PASS | owner checks folded into the end-of-N4 review ([guide](../N4_REVIEW.md), checks 1–4 and 9) | Narrator naming of the password field and Windows 200% scale remain unverified until that review |
+| N4.2 Virtual viewport | **Active; not started** | — | — | — | — |
 | N4.3 Navigation | Not started | — | — | — | depends on viewport geometry |
 | N4.4 Outline/text/search/links | Not started | — | — | — | normalized reader adapters not implemented |
 | N4.5 Workspace | Not started | — | — | — | production reader UI not implemented |
@@ -33,7 +37,7 @@
 - Mature-reader workflow comparison and defect disposition.
 - Owner checklist and explicit `N4 PASS`.
 
-N4 is **In progress**, not Verified, Accepted or Released. N4.1 being Ready for owner test does not accept N4 and does not authorize merging PR #6.
+N4 is **In progress**, not Verified, Accepted or Released. PR #6 stays Draft until the owner records `N4 PASS`.
 
 ## N4.1 implementation checkpoint — 2026-09-30
 
@@ -87,7 +91,7 @@ Inherited exact-head regressions also pass:
 
 The earlier local Visual Studio 2026/Qt 6.10.3 Debug evidence remains useful historical evidence but is superseded for N4.1 closure by the exact implementation-head GitHub Debug/Release evidence above.
 
-## N4.1 remaining owner gate
+## N4.1 remaining owner gate (superseded on 2026-11-01; see Process change)
 
 No automated evidence can replace the actual rendered Windows review. The owner must complete `docs/N4_1_OWNER_TEST.md`, covering the N4.1 surface in English/Arabic, RTL, 100%/200%, keyboard/Narrator, password/restart behavior, close-during-open behavior, file release and read-only/source-preservation observations.
 

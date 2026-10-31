@@ -50,4 +50,4 @@ Ordinary implementation details do not need an ADR.
 - `ADR-0004-pdf-engine-responsibilities.md` — **Accepted** — N2 evidence-driven assignment of read/render/text/navigation versus structure/security/transformation responsibilities.
 - `ADR-0005-document-identity-and-reconciliation.md` — **Accepted** — Atlas-owned document IDs with conservative, reviewable move/copy/offline reconciliation.
 
-ADR-0004 was Accepted by owner `N2 PASS` on 2026-09-27. The selected route is Qt PDF 6.10.3 plus qpdf 12.4.1 CLI. N3 is in progress; ADR-0005 now governs its identity and reconciliation implementation.
+ADR-0004 was Accepted by owner `N2 PASS` on 2026-09-27: Qt PDF 6.10.3 for reading/rendering plus qpdf 12.4.1 CLI for structure/security/writes. ADR-0005 governs identity and reconciliation (implemented in N3, extended by N5). Scope and priority decisions that are not architectural are recorded in the [PLAN.md decision log](../../PLAN.md#9-decision-log).

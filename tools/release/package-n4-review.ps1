@@ -30,13 +30,10 @@ $buildDirectory = Split-Path (Split-Path $sourceExe)
 $sqliteNotice = Join-Path $buildDirectory 'vcpkg_installed/x64-windows-static-md/share/sqlite3/copyright'
 if (-not (Test-Path -LiteralPath $sqliteNotice)) { throw 'Pinned SQLite notice is missing from this build.' }
 Copy-Item -LiteralPath $sqliteNotice -Destination (Join-Path $notices 'sqlite3-copyright.txt')
-foreach ($doc in @('N4_1_OWNER_TEST.md', 'N4_READER_FOUNDATION_PLAN.md', 'LICENSING.md')) {
+foreach ($doc in @('N4_REVIEW.md', 'DEPENDENCIES.md')) {
     Copy-Item -LiteralPath (Join-Path $repo "docs/$doc") -Destination $docs
 }
-Copy-Item -LiteralPath (Join-Path $repo 'docs/N4_1_QUICK_START.md') -Destination (Join-Path $stage 'START-HERE.md')
-Copy-Item -LiteralPath (Join-Path $repo 'docs/N4_1_QUICK_START.md') -Destination $docs
-$quickStart = (Get-Content -LiteralPath (Join-Path $stage 'START-HERE.md') -Raw).Replace('(N4_1_OWNER_TEST.md)', '(docs/N4_1_OWNER_TEST.md)')
-$quickStart | Set-Content -LiteralPath (Join-Path $stage 'START-HERE.md') -Encoding utf8
+Copy-Item -LiteralPath (Join-Path $repo 'docs/N4_REVIEW.md') -Destination (Join-Path $stage 'START-HERE.md')
 foreach ($fixture in @('A001_simple_text.pdf','A002_geometry_labels.pdf','A006_unicode_semantics.pdf','A008_password_rc4_40.pdf')) {
     Copy-Item -LiteralPath (Join-Path $repo "tests/fixtures/pdf/generated/$fixture") -Destination $samples
 }

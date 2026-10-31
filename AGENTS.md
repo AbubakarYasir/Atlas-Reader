@@ -1,203 +1,64 @@
-# Atlas Reader Native — Agent Rules
+# Atlas Reader — Rules for Coding Agents and Contributors
 
 <!-- atlas-status: N4|in-progress -->
 
-Read this before changing the repository.
+Read this before changing anything. AI-written code gets no lower bar than human code.
 
-## Start with the current checkpoint
+## 1. Start every session
 
-1. Read `CHECKPOINTS.md` and identify the active checkpoint.
-2. Read the active checkpoint plan/evidence files. For N4 these are `docs/N4_READER_FOUNDATION_PLAN.md` and `docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md`.
-3. Read only the relevant requirements/ADRs before editing.
-4. Respect the checkpoint's explicit exclusions.
-5. Do not begin work from a later checkpoint because it is convenient while touching the same files.
+1. Read [CHECKPOINTS.md](CHECKPOINTS.md) → **Status now**. Work only on the active sub-stage (currently **N4.2**), in order.
+2. Read the stage section, the [N4 evidence ledger](docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md), and only the docs relevant to your change:
+   - UI → [DESIGN.md](docs/DESIGN.md) · threads/engines/layers → [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+   - identity, bookmarks, saving, import/export, passwords → [DATA_AND_SAFETY.md](docs/DATA_AND_SAFETY.md)
+   - tests and speed → [QUALITY.md](docs/QUALITY.md) · new library or tool → [DEPENDENCIES.md](docs/DEPENDENCIES.md)
+3. Check `git status --short --branch` and `git log -5 --oneline`. Never reset, clean or force-push someone's work.
+4. Respect the stage's **Excluded** list. Don't start later-stage work because you're "already in that file".
 
-The Windows 2.0 release program is defined in `docs/RELEASE_STRATEGY.md`.
+## 2. Architecture (never break)
 
-## Checkpoint immutability
+- Core is portable C++23: no Win32, QML, OS handles or paths, or Qt GUI types in domain contracts.
+- QML is presentation only. Identity, reconciliation, PDF security, SQL and save policy never live in QML/JavaScript.
+- PDF access goes only through Atlas-owned facades: Qt PDF for reading and rendering, qpdf for structure, security and writes ([ADR-0004](docs/decisions/ADR-0004-pdf-engine-responsibilities.md)). Engine types never cross the boundary.
+- Database access goes through repositories; the UI never emits SQL.
+- **Never on the UI thread:** directory traversal, PDF parse/render/save, hashing, covers, large SQL, import/export, reconciliation.
+- A decision that constrains the future (formats, schema, identity, threading, dependency strategy) needs an ADR in `docs/decisions/`.
 
-A passed checkpoint cannot be reopened without new evidence of a user-facing regression.
+## 3. Document safety (never break)
 
-N0 and N1 are Accepted. N2 work may rely on their accepted contracts but must not retune or reinterpret the N1 shell/toolchain baseline merely because a new dependency experiment makes a different configuration convenient.
+- Never bypass passwords, permissions or DRM. Passwords never reach disk, logs, exports or test snapshots.
+- Never silently modify a signed or certified original. Never overwrite a file that changed outside Atlas.
+- Never report local work as "Embedded" before a validated write and reopen.
+- An unavailable folder is not proof that its books were deleted. Ambiguous identity never moves research to another copy.
+- N4 is read-only: source PDF hashes must not change.
+- Mutation tests use copied fixtures only. Private PDFs, titles, paths and text never enter Git or CI logs.
 
-## Product priority
+## 4. Design and accessibility (every UI change)
 
-Work in the order **Index → Reader → Bookmarks** unless the active checkpoint explicitly requires another supporting slice. N2 is a deliberate pre-feature PDF-engine qualification checkpoint; it does not authorize building the production Reader early.
+- Use `Theme` tokens and shared components; no literal colors or sizes in screens. Strings go through `qsTr` with English and Arabic translations.
+- Every control is keyboard-operable, has an accessible name, role and state, shows visible focus, works at 200% and in RTL, and doesn't rely on color alone.
+- Look at the rendered result in all required states before saying it's done ([DESIGN.md §10](docs/DESIGN.md#10-design-review)). Code alone isn't evidence.
 
-Windows 2.0 scope is defined in `docs/FEATURE_SCOPE_2_0.md`; P0 scope cannot be silently removed. Product success and regression priorities are defined in `docs/SUCCESS_METRICS.md`.
+## 5. Evidence
 
-## Architecture rules
+- Every behavior change comes with the smallest test that proves it. Every defect from a review gets a regression test or a numbered manual check.
+- Hot-path changes need Release-build measurements: hardware, fixture, percentiles. Never claim "zero lag".
+- Use statuses exactly: **Planned · Implemented · Verified · Accepted · Released**. Only the owner's written `N# PASS` makes a stage Accepted.
+- Never mark something done from documentation alone, and never upgrade a status because code compiles.
 
-Read `docs/ARCHITECTURE.md` before changing cross-layer structure.
+## 6. Dependencies and tools
 
-- Shared domain/core code is C++23 and platform-neutral.
-- Do not introduce Win32, QML, Java/Kotlin, Objective-C/Swift, OS handles/URIs, or GUI types into core domain contracts.
-- QML is presentation. Do not implement reconciliation, PDF security logic, identity matching, database rules, or save policy in QML/JavaScript.
-- Platform behavior goes behind adapters.
-- PDF behavior goes behind `IPdfEngine`/Atlas-owned facades. Never bind application logic directly to one PDF vendor API.
-- N2 may split PDF responsibilities across read/render and structural adapters; engine-native types must not cross the Atlas-owned contract boundary.
-- Database access goes behind repositories/services; UI code never emits arbitrary SQL.
-- Do not add a production dependency without applying `docs/DEPENDENCIES_AND_TOOLS.md` and `docs/LICENSING.md`.
-- Persisted format/schema/architecture decisions that materially constrain the future require an ADR in `docs/decisions/`.
+Don't add a library, service, telemetry, plugin or GitHub app because it's "useful". Show the problem, why Qt/the standard library/existing code can't solve it, the license and the exit plan ([DEPENDENCIES.md](docs/DEPENDENCIES.md)). Development-only tools never become runtime dependencies. Use local CodeGraph (`.codegraph/`, ignored) for navigation when present. Keep credentials in the environment, never in files.
 
-## N2 PDF-engine rules
+## 7. Before you push
 
-Before PDF-engine work, read:
+```powershell
+pwsh -NoProfile -File tools/docs/check-markdown.ps1
+git diff --check
+cmake --build --preset windows-release; ctest --preset windows-release
+```
 
-- `docs/N2_PDF_ENGINE_QUALIFICATION_PLAN.md`;
-- `docs/baselines/N2_PDF_ENGINE_MATRIX.md`;
-- `docs/decisions/ADR-0004-pdf-engine-responsibilities.md`;
-- `tests/fixtures/pdf/README.md`;
-- `docs/QUALITY_AND_TESTING.md`;
-- `docs/LICENSING.md`.
+Then follow [WORKFLOW.md](docs/WORKFLOW.md): one intent per commit, update docs together with behavior, and confirm the local head equals the remote head after pushing.
 
-N2 rules:
+## 8. Keep documents in sync
 
-- the selected route is frozen as official dynamic Qt PDF 6.10.3 for
-  read/render/text/navigation plus first-party qpdf 12.4.1 CLI for
-  structure/security/write, accepted by owner `N2 PASS` on 2026-09-27;
-- ADR-0004 is **Accepted** following owner `N2 PASS` on 2026-09-27;
-- use the same normalized fixture expectations when comparing Qt PDF and PDFium;
-- qpdf is primarily a structure/security/transformation candidate, not a raster engine;
-- PDFium's upstream non-thread-safe API contract must be respected; do not invent concurrent calls to make a benchmark look better;
-- if a community PDFium binary distribution is used for a spike, pin the exact package/revision and SHA-256 and record that it is not Google-official binary provenance;
-- record exact qpdf release/vcpkg version rather than collapsing differing upstream version surfaces;
-- mutation experiments use disposable fixture copies, never user originals;
-- do not add SQLite/FTS5, production reader UI, bookmarks editor, annotations, migration, or installer work in N2.
-
-## Data-format rules
-
-Before changing document identity, bookmarks, destinations, SQLite persistence, import/export, backup, migration, or local overlays, read `docs/DATA_MODEL_AND_FORMATS.md`.
-
-- Engines/databases are implementations; Atlas-owned data semantics stay engine-independent.
-- Do not identify documents by filename/path alone.
-- Do not treat FTS/cache structures as durable research data.
-- Do not introduce an unversioned Atlas-owned persisted/interchange format.
-- Do not silently downgrade or discard unknown/newer durable data.
-- A bookmark is not merely title + page number; preserve stable identity, hierarchy/order, destination semantics, and storage state.
-
-## Performance rules
-
-Before changing hot/background/document work, read `docs/PERFORMANCE.md`.
-
-Never synchronously perform directory traversal, PDF parse/render/save, hashing, cover generation, large SQL work, import/export, or large reconciliation on the UI/render thread.
-
-Do not claim “zero lag.” Measure named scenarios and publish startup/frame/search/render/ink metrics using Release builds.
-
-For N2, rendering/open/text/search comparisons must use the same fixture/work request, state warm/cold context, report median/p95 where applicable, and never prefer a faster incorrect result.
-
-Use profiling tools (QML Profiler, Tracy, RenderDoc, WPA/WPR, VS profiler) to find measured bottlenecks rather than speculative rewrites.
-
-## Document safety rules
-
-Before touching save/security/bookmark behavior, read `docs/CORE_WORKFLOWS.md`, `docs/SECURITY_MODEL.md`, and `docs/QUALITY_AND_TESTING.md`.
-
-- Never bypass PDF security/password restrictions.
-- Never silently mutate a signed/certified original when doing so may affect integrity.
-- Never blindly overwrite a document that changed outside Atlas.
-- Never report local work as embedded before validated commit/reopen.
-- An unavailable library root is not evidence that all its books were deleted.
-- Ambiguous document identity must not steal another copy's research data.
-- Mutation tests use copied fixtures, never irreplaceable personal originals.
-
-## Fixture/privacy rules
-
-Committed PDF fixtures require documented provenance, redistribution permission and SHA-256. Private owner PDFs may supplement qualification locally, but their bytes, personal paths, titles, extracted text and passwords do not belong in public Git history or ordinary CI logs.
-
-Test passwords must be synthetic and have no value outside the fixture.
-
-Do not make one candidate engine the sole oracle for expected output from another engine.
-
-## Accessibility/i18n rules
-
-Read `docs/UX_ACCESSIBILITY_AND_DESIGN.md` for user-facing work.
-
-Preserve Arabic/RTL, mixed-script text, keyboard access, Narrator/UIA semantics, visible focus, 200% scaling, high contrast/system contrast, reduced-motion expectations, and non-color-only state.
-
-N2 engine qualification must include Arabic/Unicode text/search/outline fixtures because N9 is final qualification, not permission to postpone Arabic correctness.
-
-## Quality/testing rules
-
-Every behavioral change needs the smallest relevant evidence layer from `docs/QUALITY_AND_TESTING.md`:
-
-- domain/unit;
-- component/adapter;
-- integration/fixture;
-- preservation/interoperability;
-- benchmark for hot path;
-- manual hardware/a11y only where automation cannot prove it.
-
-A defect found in beta/owner testing should gain a regression test or documented manual checklist entry.
-
-Use `docs/RISK_REGISTER.md` when a change creates or changes a significant architecture, data, licensing, platform, security, or delivery risk.
-
-## Documentation/status rules
-
-Keep README, PLAN, CHECKPOINTS, INFO, CHANGELOG, `docs/README.md`, relevant specialized docs, and ADRs consistent.
-
-Follow `docs/GIT_WORKFLOW.md` for branch/PR/merge/tag/remote verification and
-run `tools/docs/check-markdown.ps1` before push. Follow
-`docs/CHECKPOINT_QA_MATRIX.md` when transferring any limitation to another
-checkpoint; vague “later” work is not a valid handoff.
-
-Every meaningful N2 experiment updates the durable matrix with exact engine version/revision, fixture IDs, evidence, limitation/failure and decision impact.
-
-Use these meanings precisely:
-
-- **Planned** — documented requirement only.
-- **Implemented** — code exists.
-- **Verified** — automated/manual evidence exists.
-- **Accepted** — owner explicitly passed the checkpoint.
-- **Released** — accepted artifact published under version/tag.
-
-Never upgrade a status merely because code compiles.
-
-## Dependency and tooling rule
-
-Do not add libraries, IDE plugins, cloud services, GitHub apps, telemetry, or external review tools “because they are useful.” First show the problem they solve and why existing Qt/C++/GitHub tooling does not solve it sufficiently.
-
-Use `docs/UPSTREAM_CATALOG.md` as the operational candidate list. Non-Qt native production dependencies move toward pinned vcpkg manifest mode from N2. Qt remains separately pinned/installed.
-
-Development-only profilers/analyzers must not accidentally become runtime dependencies.
-
-## CodeGraph / repository navigation
-
-When a `.codegraph/` index exists locally, use CodeGraph for symbol/caller/impact navigation before repeated blind grep/search. The database is machine-local and ignored.
-
-Project-local `.codex/config.toml` also defines a read-only GitHub MCP endpoint. Keep `GITHUB_PAT_TOKEN` in the user environment/secret store; never commit credentials.
-
-## AI-generated code
-
-AI/agent code has no reduced quality bar. Accept only when it:
-
-- belongs to current checkpoint;
-- follows architecture/dependency/data-format rules;
-- compiles;
-- passes relevant tests/static analysis;
-- includes tests for new behavior;
-- updates docs/contracts when needed;
-- contains no secrets/incompatible copied code.
-
-Do not merge broad speculative refactors just because an agent proposes them.
-
-## Migration rule
-
-The Flutter implementation is a behavioral/data reference. Do not copy its widget architecture or reproduce known performance problems mechanically. Port contracts, fixtures, and user-visible behavior deliberately.
-
-Legacy profile migration is read-only from the source and must never destructively modify the old database.
-
-## Secrets
-
-Never inspect, print, commit, or request secrets unnecessarily. Password-protected PDF fixture passwords must be test-only values, never personal document passwords.
-
-## Current stop gate
-
-**N0, N1, N2 and N3 are Accepted. N4 native reader foundation is In progress.**
-
-N4.1 implementation/automated checks are complete and owner review is pending. Use `docs/N4_1_QUICK_START.md` and `docs/N4_1_OWNER_TEST.md` for the review handoff. Keep PR #6 Draft and unmerged. N4.2 page rendering remains closed until the owner records `N4.1 PASS` after required fixes/retests.
-
-N2 is frozen: do not reopen its engine qualification or change the accepted Qt PDF/qpdf responsibility split without new regression evidence and an explicit decision update.
-
-N4 work occurs only on `native-v2-n4-reader-foundation`, based on verified accepted `main` merge `739508e3e698016e8a6a4cb8b87c2b4aa418d66d`. Follow N4.1 → N4.5 in order. Do not begin bookmark mutation/local overlay, annotations/ink, PDF editing, migration, installer or later-format implementation.
-
-Use `docs/N4_READER_FOUNDATION_PLAN.md` for scope and `docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md` for results. N4 is read-only: source PDFs must remain byte-identical. Do not claim N4 Verified, Accepted or `2.0.0-beta.2` until every required gate and explicit owner `N4 PASS` are recorded.
+When status, scope or a contract changes, update in the same commit: `README.md`, `PLAN.md` (decision log), `CHECKPOINTS.md`, `CHANGELOG.md`, the evidence ledger, and the affected `docs/` file. All live status markers must match (`<!-- atlas-status: … -->`). Files under `docs/history/` are frozen and are never edited.

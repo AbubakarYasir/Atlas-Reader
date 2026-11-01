@@ -187,7 +187,9 @@ int main(int argc, char** argv) {
 
         // N4.5 text: info, search (incl. whole words), selection, word count.
         require(waitFor([&] { return viewport->textReady(); }), "Document text information must arrive.");
-        require(viewport->hasText() && viewport->pageLabels().size() == kPages, "Text and page labels must be read.");
+        require(viewport->hasText(), "Document text must be detected.");
+        require(viewport->pageLabels().size() == kPages,
+                "Page labels must be read (got " + std::to_string(viewport->pageLabels().size()) + ").");
         viewport->find(QStringLiteral("page 42"), false, true);
         require(waitFor([&] { return !viewport->searching(); }), "Search must finish.");
         require(viewport->searchHits().size() == 1 && viewport->currentPage() == 42,

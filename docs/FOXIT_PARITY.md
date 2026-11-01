@@ -8,7 +8,7 @@
 
 **What is not copied:** Foxit's icon artwork, logos, skin images, colours used as brand (purple), text of their manual, or any file from `C:\Program Files\Foxit Software`. Those are Foxit's copyrighted assets and the licence forbids extracting them. Atlas uses Fluent UI System Icons (MIT, thin-line, same 16/20/24 px grid), its own colours and its own name.
 
-**Sources:** 14 owner screenshots of Foxit PDF Editor at 100% scale (1919 × 1044 window), measured with pixel analysis on 2026-11-01; Foxit PDF Editor User Manual (workspace, skins, Touch mode, navigation pane, status bar, keyboard shortcuts appendix). Measurements are in device-independent pixels at 100%.
+**Sources:** the owner's Foxit UI reference package (`foxit-ui-ux-reference-2026.1.1.36485`: 26 runtime screenshots and skin colour definitions, used for measurements and colour values only); 14 owner screenshots of Foxit PDF Editor at 100% scale (1919 × 1044 window), measured with pixel analysis on 2026-11-01; Foxit PDF Editor User Manual (workspace, skins, Touch mode, navigation pane, status bar, keyboard shortcuts appendix). Measurements are in device-independent pixels at 100%.
 
 ---
 
@@ -55,15 +55,15 @@ y 190 ├──┬──┬─────────────────�
 | File page (backstage) | left list 210 px, items 31 px, selected item filled with accent (10 px inset, radius 2); second column 300 px; recent-file rows 54 px (16 px file icon, 14 px name, 12 px path) | |
 | Preferences window | ~770 × 500, category list 160 px with a search box on top, OK / Cancel bottom right | |
 
-Neutral light colours measured (Atlas reuses the *structure*, with its own warm values in [DESIGN.md §4](DESIGN.md)):
+Neutral colours measured (Atlas uses these values for its neutral roles, [DESIGN.md §4.1](DESIGN.md); the accent stays Atlas's):
 
-| Role | Foxit light | Atlas light |
+| Role | Foxit light | Atlas light (dark) |
 |---|---|---|
-| Ribbon surface | `#FBFBFD` | `Theme.chrome` |
-| Rails, File page list | `#F5F6FA` | `Theme.rail` |
-| Gaps, inactive tabs | `#F0F1F5` | `Theme.sunken` |
-| Lines | `#C7CCD9` | `Theme.line` |
-| Hover / pressed / separators | `#E6E9F0` | `Theme.hover` |
+| Ribbon surface | `#FBFBFD` | `#fbfbfd` (`#333333`) |
+| Rails, File page list | `#F5F6FA` | `#f5f6fa` (`#424242`) |
+| Gaps, inactive tabs | `#F0F1F5` | `#f0f1f5` (`#242424` / `#424242`) |
+| Lines | `#C7CCD9` | `#c7ccd9` (`#131313`) |
+| Hover / pressed / separators | `#E6E9F0` | `#e6e9f0` (`#424242`) |
 | Title bar (Colourful skin) | brand purple | Atlas green `#28633A` or the chosen theme colour |
 
 ## 2. Skins

@@ -74,7 +74,7 @@ Rectangle {
                         font.family: I18n.uiFamily
                         font.pixelSize: Math.round(14 * I18n.sizeScale)
                         font.weight: tabButton.selected ? Font.DemiBold : Font.Normal
-                        color: tabButton.selected ? Theme.brand : Theme.ink
+                        color: tabButton.selected ? Theme.brand : Theme.muted
                     }
                     Rectangle { // 3 px underline the width of the text (Foxit)
                         visible: tabButton.selected
@@ -106,7 +106,7 @@ Rectangle {
             Layout.bottomMargin: 2
             Layout.leftMargin: 4
             Layout.rightMargin: 4
-            color: Theme.hover
+            color: Theme.spacing
         }
 
         // Home

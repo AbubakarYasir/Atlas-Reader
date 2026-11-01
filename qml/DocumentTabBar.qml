@@ -38,12 +38,12 @@ Rectangle {
         ToolTip.text: contentText
 
         background: Rectangle {
-            color: tabItem.active ? Theme.canvas : tabItem.hovered ? Theme.hover : Theme.sunken
+            color: tabItem.active ? Theme.raised : tabItem.hovered ? Theme.hover : Theme.docTab
             Rectangle { // divider
                 anchors.right: parent.right
                 width: 1
                 height: parent.height
-                color: Theme.chromeLine
+                color: Theme.line
             }
             Rectangle {
                 anchors.fill: parent

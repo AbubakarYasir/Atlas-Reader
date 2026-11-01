@@ -62,18 +62,22 @@ All values live in one QML singleton, `Theme`. Screens never contain literal col
 
 ### 4.1 Color
 
-Chrome roles follow Foxit's neutral structure (measured in FOXIT_PARITY §1) in Atlas's warm values:
+**Neutral colours are Foxit's measured skin roles** (from the owner's Foxit UI reference package, `skins/Color/Light` and `skins/Ribbon/Black`, values only; see [FOXIT_PARITY §2](FOXIT_PARITY.md#2-skins)). The accent is Atlas's: green by default, or one of six theme colours for the Colourful title bar (Atlas Green `#28633a`, Indigo `#3f4a9a`, Teal `#16656b`, Plum `#6b3a6b`, Amber `#8a5a12`, Graphite `#3c4148`), each with white text at ≥ 7:1.
 
-| Token | Light | Dark | Use |
+| Token | Light | Dark | Foxit role |
 |---|---|---|---|
-| `chrome` | `#fbfaf7` | `#22262c` | Ribbon and tab row |
-| `rail` | `#f4f2ec` | `#1d2126` | Navigation rail, File page list |
-| `sunken` | `#efece4` | `#1b1e23` | Gap under the ribbon, inactive document tabs |
-| `titleBar` | `#f4f2ec` (Classic) or theme colour (Colourful) | `#16191d` | Title bar |
-| `hover` | `#e9e6dd` | `#2f343c` | Hover, pressed, group separators |
+| `canvas` / `readerBackdrop` | `#f0f1f5` | `#242424` | Content background |
+| `panel` / `chrome` | `#fbfbfd` | `#333333` | Top bar, ribbon, panels, status bar |
+| `raised` | `#ffffff` | `#333333` | Buttons, inputs, cards, active document tab |
+| `rail` | `#f5f6fa` | `#424242` | Navigation rail, File page list |
+| `docTab` | `#f0f1f5` | `#424242` | Inactive document tab |
+| `hover` / `pressed` | `#d8dbe5` / `#e6e9f0` | `#515151` / `#424242` | Hover / active (selected tool) |
+| `spacing` | `#e6e9f0` | `#242424` | Ribbon and menu separators |
+| `line` / `chromeLine` | `#d8dbe5` / `#c7ccd9` | `#242424` / `#131313` | Tab borders / frame borders |
+| `ink` / `inkStrong` / `muted` | `#131313` / `#333333` / `#515151` | `#e3e3e3` / `#f7f7f7` / `#bdbdbd` | Primary, title, introductory text |
+| `controlBorder` / `buttonBorder` | `#9197a8` / `#bcc1d1` | `#7a7a7a` / `#999999` | Inputs, check, radio / buttons |
 
-Theme colours for the Colourful skin: Atlas Green `#28633a` (default), Indigo `#3f4a9a`, Teal `#16656b`, Plum `#6b3a6b`, Amber `#8a5a12`, Graphite `#3c4148`. Each keeps white title-bar text at ≥ 7:1.
-
+The table below is the earlier warm palette, kept for history; the values above supersede it.
 
 | Token | Light | Dark | Use | Contrast |
 |---|---|---|---|---|

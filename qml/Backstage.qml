@@ -53,7 +53,7 @@ Rectangle {
         Layout.topMargin: 6
         Layout.bottomMargin: 6
         implicitHeight: 1
-        color: Theme.hover
+        color: Theme.spacing
     }
 
     RowLayout {

@@ -2,11 +2,11 @@
 
 This is the design contract. A user-facing change is done only when it meets this document in its **rendered** form, in **English, Arabic and Urdu**.
 
-**Foxit concepts, Atlas design (owner decision 2026-11-01).** Atlas adopts the main interaction and accessibility *concepts* of Foxit PDF Editor (studied from the installed app and its manual) so Foxit users feel at home: see the concept table in [PLAN.md §7](../PLAN.md#7-competitive-references). Atlas never copies Foxit's artwork, icons, branding, colours, wording or files; the look below is Atlas's own.
+**Foxit workspace, Atlas colours (owner decision 2026-11-01, [ADR-0007](decisions/ADR-0007-foxit-workspace-parity.md)).** The workspace reproduces Foxit PDF Editor's layout, measurements, command placement and shortcuts, measured in [FOXIT_PARITY.md](FOXIT_PARITY.md). Icons are Fluent UI System Icons (MIT) at Foxit's sizes; colours, wording and name are Atlas's. Nothing is extracted from Foxit's program files.
 
 ## 1. Character
 
-**A quiet study room.** Atlas should feel like a serious research instrument made by an experienced product team: calm, warm, precise and durable. It is not an office-suite toolbar wall, a decorative consumer reader, or a generic "AI app".
+**A mature desktop PDF workspace with a quiet study-room palette.** Atlas should feel like the tool its users already trust (Foxit's ribbon workspace: same places, sizes and keys) while its colours, type and states stay calm, warm and precise. It is not a decorative consumer reader or a generic "AI app".
 
 Atlas looks **designed** when it has:
 
@@ -17,7 +17,7 @@ Atlas looks **designed** when it has:
 - real empty, loading and error states written in plain reader language;
 - the book page as the visual hero, with interface chrome receding while you read.
 
-Atlas never has: dashboards of equal cards, decorative gradients, glow, inflated headings, novelty icons, filler copy, large square grey defaults, or engineering jargon in labels.
+Atlas never has: invented layouts where Foxit already has a familiar one, dashboards of equal cards, decorative gradients, glow, inflated headings, novelty icons, filler copy, large square grey defaults, or engineering jargon in labels.
 
 The application mark in `assets/branding` is used for app and package identity only. Its illustrative style is not a license to decorate the working interface.
 
@@ -34,35 +34,46 @@ The application mark in `assets/branding` is used for app and package identity o
 
 ## 3. Structure
 
-**Shell destinations:** Library · Recents · Favorites · Folders · Bookmarks (N5) · Settings (N7).
-
-**Reader workspace** (Foxit concepts in Atlas styling; mirrored automatically in Arabic and Urdu):
+The full measured layout is in [FOXIT_PARITY.md §1](FOXIT_PARITY.md#1-window-anatomy-measured). Mirrored completely in Arabic and Urdu.
 
 ```text
-┌ title bar: mark · Library/location · ………… · Command Center (Ctrl+K) · language · theme · Open ┐
-├ tab bar: [book A ×] [book B ×] [+]                                                         ┤
-├ command bar: File | Navigate | Zoom | View   (one row; groups collapse into "More" when narrow) ┤
-│ rail │ panel (F4)  │                                                                   │
-│ ▤    │ Outline     │                  page canvas (dominant)                            │
-│ ▦    │ Pages       │          gutters 24 px · soft page shadow · reading colours        │
-│ 🔖   │ Bookmarks   │                                                                   │
-│ 🔍   │ Search      │                                                                   │
-├──────┴─────────────┴ status bar: |◀ ◀ [ 12 ] / 340 ▶ ▶| · layout · ──●── 125% · fit ──────┤
+┌ title bar 48: mark │ QAT: Open · Touch ▾ │ file name ………………… (search, N5) │ ─ □ ✕ ┐
+├ ribbon tabs 28: File  Home  View  Accessibility  Help   (+ Comment N6 …)       ┤
+├ ribbon 72: [Hand] │ [Zoom▾][Page Fit▾][Rotate View▾] │ …                    ⌃ ┤
+├ 7 px                                                                          ┤
+├ tabs 28: [Library][book A.pdf ✕][book B.pdf]   (124 px each)                ▾ ┤
+│rail│ panel (F4)│                                                          │sb│
+│ 40 │           │                  page canvas                             │  │
+├────┴───────────┴ status 32: « ‹ [ 12 / 340 ] › »  ……  layouts − ━●━ + 125% ⛶ ┤
 ```
 
-- **Title bar:** app mark and current place (Library or book name); the Command Center box (Ctrl+K, Alt+Q also works) for books, bookmarks and commands; language menu (English · العربية · اردو); theme; Open.
-- **Tab bar:** filename-first titles, close on hover/focus, `+` to open, Ctrl+Tab cycling, middle-click closes.
-- **Command bar:** a single calm row of grouped commands, not a ribbon wall. *File* (Open, Close) · *Navigate* (first/previous/next/last) · *Zoom* (out, %, in, Fit width, Fit page, Actual size) · *View* (Rotate, Read mode, Full screen, Reading colours). Labels show beside icons when space allows; below about 900 px only icons with tooltips remain; overflow goes into **More (⋯)**. Later stages add *Bookmark* (N5) and *Annotate* (N6) groups.
-- **Left rail + panel:** icon rail always visible; clicking an icon opens its panel (Outline, Pages, Bookmarks, Annotations, Search); clicking again or F4 collapses. The panel is resizable (200–480 px) and remembers its width. In narrow windows it overlays the page as a drawer with the same order and keys. Icons appear only when their panel works.
-- **Status bar:** page navigation with a page box that accepts numbers and (from N4.4) labels, layout buttons (single/continuous/facing from N4.4), zoom slider with percentage, fit buttons. It can auto-hide in Read mode.
-- **Read mode (Ctrl+H):** hides title, command and status bars and the panel; a small floating bar (page, zoom, exit) appears near the bottom on mouse movement or focus. **Full screen (F11):** the page fills the screen; Esc exits; both restore focus where it was.
-- Progressive disclosure: details, export/import, reconciliation, save copy, advanced print and diagnostics live in menus and sheets, never in permanent toolbars.
+- **Title bar (custom, Windows snap kept):** app mark; Quick Access Toolbar (Open, Mouse/Touch mode; Save/Undo/Redo from N5, Print from N7; customize from N7); file name; title-bar search box from N5 (Alt+Q); minimize, maximize, close. Colourful skin tints it with the theme colour; Classic keeps it neutral.
+- **Ribbon:** *File* opens the File page (backstage). Task tabs follow Foxit's order and appear only with working commands: **Home · View · Accessibility · Help** in N4.3, **Comment** in N6, others after 2.0. Commands are grouped with 1 px separators; large buttons (24 px icon over a 12 px label, ▾ for menus) and small buttons (16 px icon, 2–3 per column). Ctrl+F11 or the ⌃ button collapses the ribbon to its tab row; clicking a tab then shows it as a temporary overlay.
+- **Document tabs:** the **Library** is the first, pinned tab (Foxit's *Start* tab). Book tabs are 124 px wide, filename-first with ellipsis, close ✕ on the active or hovered tab, Ctrl+Tab cycling, middle-click closes, overflow ▾ lists all tabs.
+- **Navigation rail:** 40 px, icon buttons for panels (Pages N4.4, Outline/Search N4.5, Bookmarks N5, Comments N6); a panel opens beside the rail, resizable (200–480 px), F4 toggles; icons appear only when their panel works.
+- **Status bar:** « ‹ page box "n / total" › » on the leading side; page-display buttons (N4.4), zoom −, slider, +, percentage menu and Full screen on the trailing side. View → View Setting can show, auto-hide or hide it.
+- **File page:** left list (Open, Close, Close All, Skins, Preferences, About, Exit; Save/Print/Properties as their stages land); Open shows *Recent Documents* (from the Library's history) and *Computer* (file dialog).
+- **Preferences (Ctrl+K):** window with a search box over a category list (General, Languages, Skins, Page Display, Accessibility in N4.3; more per stage) and OK / Cancel.
+- **Read mode (Ctrl+H):** hides title bar, ribbon, tabs, rail and status bar; a floating mini bar appears on mouse movement or focus. **Full screen (F11):** the page fills the screen; Esc exits.
 
 ## 4. Tokens
 
 All values live in one QML singleton, `Theme`. Screens never contain literal colors, font sizes, radii or durations. The starting palette is the one already shipped in N3/N4.1, now formalized. Contrast ratios below are measured against WCAG 2.2.
 
 ### 4.1 Color
+
+Chrome roles follow Foxit's neutral structure (measured in FOXIT_PARITY §1) in Atlas's warm values:
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `chrome` | `#fbfaf7` | `#22262c` | Ribbon and tab row |
+| `rail` | `#f4f2ec` | `#1d2126` | Navigation rail, File page list |
+| `sunken` | `#efece4` | `#1b1e23` | Gap under the ribbon, inactive document tabs |
+| `titleBar` | `#f4f2ec` (Classic) or theme colour (Colourful) | `#16191d` | Title bar |
+| `hover` | `#e9e6dd` | `#2f343c` | Hover, pressed, group separators |
+
+Theme colours for the Colourful skin: Atlas Green `#28633a` (default), Indigo `#3f4a9a`, Teal `#16656b`, Plum `#6b3a6b`, Amber `#8a5a12`, Graphite `#3c4148`. Each keeps white title-bar text at ≥ 7:1.
+
 
 | Token | Light | Dark | Use | Contrast |
 |---|---|---|---|---|
@@ -112,7 +123,7 @@ The storage states (Embedded, Local only, Pending, Conflict, Signed, Read-only, 
 - **Spacing (4 px grid):** `xs 4 · sm 8 · md 12 · lg 16 · xl 24 · xxl 32 · xxxl 48`.
 - **Radii:** `small 4` (chips, badges) · `control 8` (buttons, fields, rows) · `surface 12` (sheets, menus, dialogs). The page itself has a 0–2 px radius.
 - **Depth:** level 0 is flat with `line`; level 1 (menus, popovers) uses a border and a 0 2 8 shadow at 12% black; the page uses a 0 1 3 shadow at 15% black. No other shadows.
-- **Sizes:** minimum pointer target 32×32 px (WCAG 2.2 target size is 24 px); touch mode 40×40 px; icons 16 px (dense) or 20 px; standard control height 32 px, compact 28 px.
+- **Sizes (Foxit-measured):** title bar 48, ribbon tab row 28, ribbon command area 72, document tab bar 28 (tabs 124 wide), rail 40, status bar 32; large ribbon button min 42 wide with a 24 px icon, small ribbon button 24 × 24 with a 16 px icon, Quick Access buttons 32 wide with 16 px icons. Minimum pointer target 24 px (WCAG 2.2); Touch mode adds 8 px to every target and bar. Library controls 32 px high.
 - **Motion:** `fast 120 ms` (hover, press), `normal 180 ms` (panels, menus), `slow 240 ms` (sheets). Ease-out to enter, ease-in to exit; always interruptible. With reduced motion, durations are 0 and nothing scales or slides. Large page surfaces never animate in a way that costs frame time.
 
 ## 5. Components
@@ -149,14 +160,17 @@ Write the way a helpful librarian speaks: short, specific and calm. Never "Error
 
 ## 7. Keyboard
 
-Foxit-compatible where a Foxit equivalent exists, so muscle memory carries over.
+Foxit's default keys for every command Atlas has ([FOXIT_PARITY §4](FOXIT_PARITY.md#4-keyboard)), so muscle memory carries over.
 
 | Action | Keys |
 |---|---|
-| Open PDF | `Ctrl+O` (in the Library, *Add folder* is on its button and `Ctrl+Shift+A`) |
-| Close tab / all tabs | `Ctrl+W` or `Ctrl+F4` / `Ctrl+Shift+W` |
+| Open PDF | `Ctrl+O` (in the Library, *Add folder* is on its button and `Ctrl+Shift+O`) |
+| Close tab / all tabs / exit | `Ctrl+W` or `Ctrl+F4` / `Ctrl+Shift+W` / `Ctrl+Q` |
+| Preferences | `Ctrl+K` |
+| Collapse or pin the ribbon | `Ctrl+F11` |
 | Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
-| Command Center | `Ctrl+K` or `Alt+Q` (N5) |
+| Title-bar search / Command Center | `Alt+Q` (N5) |
+| Find in the Library | `Ctrl+F` |
 | Find in document / next / previous | `Ctrl+F` / `F3` / `Shift+F3` (N4.5) |
 | Go to page | `Ctrl+G` (focuses the page box) |
 | Next / previous page | `Ctrl+Page Down` / `Ctrl+Page Up`, also `→` `←` when the page fits |

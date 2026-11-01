@@ -8,7 +8,7 @@ Read this before changing anything. AI-written code gets no lower bar than human
 
 1. Read [CHECKPOINTS.md](CHECKPOINTS.md) → **Status now**. Work only on the active sub-stage (currently **N4.3**), in order.
 2. Read the stage section, the [N4 evidence ledger](docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md), and only the docs relevant to your change:
-   - UI → [DESIGN.md](docs/DESIGN.md) · threads/engines/layers → [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+   - UI → [DESIGN.md](docs/DESIGN.md) and [FOXIT_PARITY.md](docs/FOXIT_PARITY.md) (layout, sizes, shortcuts; never Foxit's files or icons) · threads/engines/layers → [ARCHITECTURE.md](docs/ARCHITECTURE.md)
    - identity, bookmarks, saving, import/export, passwords → [DATA_AND_SAFETY.md](docs/DATA_AND_SAFETY.md)
    - tests and speed → [QUALITY.md](docs/QUALITY.md) · new library or tool → [DEPENDENCIES.md](docs/DEPENDENCIES.md)
 3. Check `git status --short --branch` and `git log -5 --oneline`. Never reset, clean or force-push someone's work.

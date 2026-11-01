@@ -43,6 +43,20 @@ All writes reuse the N5 safe-save, capability and conflict system and write to a
 | E4 | Secure redaction (mark → apply to a new copy) | Leave targeted content recoverable through text, objects, images or revisions |
 | E5 | Visible signature marks; local-certificate cryptographic signing; offline verification with honest trust/revocation states | Leak keys; call untrusted "valid"; use the network |
 
+## Track E: Foxit parity candidates (proposed 2.2+)
+
+From the command-by-command map in [FOXIT_PARITY.md](FOXIT_PARITY.md). Each goes in the ribbon tab Foxit uses for it.
+
+| ID | Capability | Foxit place | Key gates |
+|---|---|---|---|
+| X1 | Offline OCR for scans (English, Arabic, Urdu), searchable-text layer saved to a new copy | Convert → Recognize Text; Home → Quick Recognition | Open-source engine with Arabic/Urdu (Nastaliq) accuracy proven on a lawful corpus; never uploads; never alters the original |
+| X2 | Export pages or all images to PNG/JPEG; export text to plain text/Markdown | Convert → Export All Images, To Image, To Other | Correct colour, DPI, page ranges; Arabic text order in exported text |
+| X3 | Stamps and custom stamps | Comment → Stamp | Standard annotation round trip |
+| X4 | Watermark, background, header & footer, Bates numbering | Organize | New file by default; preservation tests |
+| X5 | Attachments, signatures, layers panels (read-only first) | Navigation rail | Never execute attachments; honest signature states |
+| X6 | Rulers, line weights, compare documents, loupe/magnifier, split view | View, Home | Accessible, keyboard-operable |
+| X7 | Ribbon customization (custom tabs/groups, import/export) | right-click ribbon → Customize | Settings backup includes it |
+
 ## Track D: Platforms
 
 Order: **Android → Linux → macOS → iOS/iPadOS**, each as its own `2.x` line.
@@ -58,7 +72,7 @@ A platform may use different adapters and layout, but it may never change the co
 
 ## Never planned
 
-Cloud accounts/sync, collaboration, AI document chat, telemetry, Office conversion, OCR, audio notebooks, multimedia/3D, executable plugins, password cracking, restriction removal, DRM bypass.
+Cloud accounts/sync, collaboration and shared/email review, AI document chat or assistant, telemetry, notifications, Office conversion, document JavaScript, measuring/accounting tools, audio notebooks, multimedia/3D, executable plugins, password cracking, restriction removal, DRM bypass. (OCR moved to Track E candidate X1 on 2026-11-01.)
 
 ## Adding an idea
 

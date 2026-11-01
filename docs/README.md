@@ -18,6 +18,7 @@ Each topic has exactly one home. If two documents seem to disagree, fix the wron
 | Document | Owns |
 |---|---|
 | [DESIGN.md](DESIGN.md) | Design system, tokens, components, keyboard, accessibility, Arabic/RTL, design review |
+| [FOXIT_PARITY.md](FOXIT_PARITY.md) | Measured Foxit workspace layout, skins, shortcuts, and every Foxit command mapped to an Atlas stage |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Technology choices, layers, threads, reader viewport, PDF facade, platform ports |
 | [DATA_AND_SAFETY.md](DATA_AND_SAFETY.md) | Identity, bookmark states, safe save, import/export, backup/migration, security model |
 | [QUALITY.md](QUALITY.md) | Test layers, fixtures, preservation, failure injection, speed budgets, evidence record |

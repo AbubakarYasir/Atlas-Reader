@@ -10,7 +10,7 @@ This is the single source of direction: what Atlas is, what Windows 2.0 must con
 
 > **Find the book → read it smoothly → navigate and research it deeply → keep that research safe.**
 
-Atlas is a local-first reading and research environment for serious readers: students of knowledge, researchers and anyone who works across many long books, often in Arabic, Urdu and English together. It competes by being **exceptionally good at a few workflows**, not by matching every feature of Acrobat or Foxit.
+Atlas is a local-first reading and research environment for serious readers: students of knowledge, researchers and anyone who works across many long books, often in Arabic, Urdu and English together. It looks and works like the desktop PDF tool its users already know (Foxit's workspace, [ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md)) and competes by being **exceptionally good at a few workflows**: Foxit's other features arrive in stages, before or after 2.0.
 
 What makes Atlas different is the combination:
 
@@ -21,7 +21,7 @@ What makes Atlas different is the combination:
 5. **Accessibility** built into custom reader and tree controls.
 6. **Speed you can measure**, even with large books and large libraries.
 7. **Honest states:** no silent overwrite and no false "saved".
-8. **Calm, beautiful design** that feels made by an experienced product team.
+8. **A mature desktop workspace** (Foxit's layout with Atlas's colours) that feels made by an experienced product team.
 
 ## 2. Principles
 
@@ -34,7 +34,7 @@ What makes Atlas different is the combination:
 | **Measure, don't guess** | Speed claims need numbers on named hardware; profilers find bottlenecks, not intuition |
 | **Three languages and accessibility from day one** | Every user-facing stage ships complete English, Arabic and Urdu strings, RTL layouts, keyboard, Narrator, 200% scale and high contrast. No screen ships with a missing translation |
 | **Any language in your content** | Titles, bookmarks, notes, tags, annotations and search accept and preserve every Unicode script exactly (Arabic, Urdu, Persian, English, Hebrew, Devanagari, CJK and more), including mixed-direction text |
-| **Designed, not decorated** | A deliberate design system; no generic "AI app" look, no gradients or glow, no clutter |
+| **Familiar, not invented** | Foxit's proven workspace, sizes and shortcuts ([FOXIT_PARITY.md](docs/FOXIT_PARITY.md)); no generic "AI app" look, no gradients or glow, no clutter |
 | **Replaceable engines** | PDF libraries sit behind Atlas-owned interfaces; vendor types never reach the core |
 | **Portable core** | Shared rules contain no Windows-only types, so Android/macOS/iOS stay possible |
 | **Evidence before claims** | Planned → Implemented → Verified → Accepted → Released are distinct states |
@@ -68,7 +68,8 @@ Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after
 - Clear per-book states: available, locked, read-only/restricted, signed, offline, missing, cloud placeholder, unreadable, changed, unsupported.
 - Filename-first names (extension kept separately and protected); embedded title and author shown as secondary.
 - Search across metadata, with a documented Arabic/Unicode normalization policy; Favorites, Recents and folders.
-- Global **Command Center** (`Ctrl+K`) for books and bookmarks [N5].
+- Global **Command Center** in the title-bar search box (`Alt+Q`, Foxit's key) for commands, books and bookmarks [N5].
+- The Library is the pinned first document tab (Foxit's *Start* tab) [N4.3].
 - Sorting, filters, safe rename, collections and tags [N7].
 
 ### 4.2 Reader — P0 [N4]
@@ -81,6 +82,7 @@ Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after
 - Navigation panel: Outline · Pages (thumbnails) · Bookmarks · Annotations (from N6).
 - Text selection and copy, cancellable document search, internal and external links, Back/Forward history.
 - Focus/full-screen reading with a discoverable exit; per-book position and zoom remembered.
+- Foxit's ribbon tools for reading: Hand, Select text, SnapShot, Zoom (marquee, zoom to), Fit Visible, AutoScroll, Reverse View (right-to-left page order), page display buttons, Word Count [N4.4–N4.5].
 - Image-only PDFs read normally, with an honest "no text layer" state. There is no OCR.
 - Offline safety: no document JavaScript, launches or remote fetches; external links need explicit confirmation.
 
@@ -113,7 +115,7 @@ Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after
 - Sort (filename, title, author, last opened), filters with one-step clear, safe filename rename separate from metadata editing.
 - Local collections and tags that never move or delete files.
 - Windows integration: Open With, drag and drop, clipboard, long and Unicode paths, and no lost work when Windows shuts down or the session ends.
-- Settings, kept small: Library & Storage · Appearance & Language · Reader & Writing · Accessibility & Keyboard · Data, Backup & Safety · About.
+- Preferences window like Foxit's (searchable category list; Ctrl+K): General · Languages · Skins · Page Display · Reading · Accessibility · History · Documents · Commenting · Print · Security · Library (Atlas) · Backup (Atlas). Quick Access Toolbar customization; Set as default PDF reader; offline User Guide (F1) and Command Line Help.
 - Privacy-safe rotating logs; a diagnostic bundle the user generates and previews.
 
 ### 4.6 Backup and migration — P0 before stable [N8]
@@ -137,11 +139,12 @@ Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after
 - EPUB · CBZ/CBR comics · DRM-free AZW3/MOBI/PRC · KFX feasibility decision
 - Page organization (merge, split, reorder) · original text/image editing and equations · AcroForm filling and authoring · secure redaction · offline signatures
 - Side-by-side reading · simplified text (reflow) view · offline read-aloud
+- Further Foxit features mapped in [FOXIT_PARITY.md](docs/FOXIT_PARITY.md): offline OCR (Arabic/Urdu/English), export to images and plain text, stamps, watermark/header/footer, attachments and signatures panels, rulers, compare, loupe/magnifier
 - Android → Linux → macOS → iOS/iPadOS
 
 Until those ship, 2.0 shows honest "not supported yet" states, for example for forms, XFA, attachments and signatures (detected but not validated).
 
-**Not planned for any release:** cloud accounts or sync, collaboration or shared reviews, AI document chat, telemetry or crash upload, Office conversion, OCR, audio notebooks, multimedia/3D, executable plugins, password cracking, restriction removal or DRM bypass.
+**Not planned for any release:** cloud accounts or sync, collaboration or shared/email reviews, AI document chat or assistant, telemetry or crash upload, Office conversion, notifications, document JavaScript, measuring/accounting tools, audio notebooks, multimedia/3D, executable plugins, password cracking, restriction removal or DRM bypass.
 
 ## 6. What "excellent" means for 2.0
 
@@ -160,25 +163,11 @@ Until those ship, 2.0 shows honest "not supported yet" states, for example for f
 
 ## 7. Competitive references
 
-**Owner decision (2026-11-01): adopt Foxit's main interaction and accessibility concepts**, studied from the installed Foxit PDF Editor and its user manual, because they are familiar to Atlas's users. Atlas adopts the *concepts* below and builds its own visual design, icons, wording and code; it never copies Foxit's artwork, icons, branding, layouts pixel-for-pixel or files.
+**Owner decision (2026-11-01, second): Atlas reproduces Foxit PDF Editor's workspace** ([ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md)): title bar with Quick Access Toolbar, ribbon tabs and grouped commands, fixed-width document tabs with the Library as the first tab, left navigation rail (F4), status bar, File page, Preferences window, skins and Touch mode, at Foxit's measured sizes and with Foxit's shortcuts. Atlas keeps its own icons (Fluent, MIT), colours and name, and never extracts anything from Foxit's program files.
 
-| Foxit concept | Atlas version | Stage |
-|---|---|---|
-| Title bar with a command/search box (Alt+Q) | Title bar with the Command Center (Ctrl+K, Alt+Q also works) | N4.3 shell, N5 search |
-| Ribbon of task tabs with grouped commands | A slim **command bar** with a few task groups (File · Navigate · Zoom · View); collapses to a single row; never a toolbar wall | N4.3 |
-| Document tab bar | Tab bar with filename-first titles, close buttons, Ctrl+Tab | N4.1, restyled N4.3 |
-| Left navigation pane with an icon rail (Bookmarks, Pages…), F4 to show/hide, resizable | Icon rail: Outline · Pages · Bookmarks · Annotations · Search; F4; resizable and collapsible | Rail N4.3, panels N4.4–N6 |
-| Status bar: page box, first/previous/next/last, zoom slider, layout buttons | Same concept in Atlas styling | N4.3 |
-| Read Mode (Ctrl+H) and Full Screen (F11) | Read mode hides chrome with a floating mini bar; full screen with Esc to exit | N4.3 |
-| Light / Dark / Use system skin, light-theme colour choice | Light / Dark / System with Atlas accents | N4.3 |
-| Mouse / Touch mode | Touch mode enlarges targets to 40 px | N4.3 |
-| Accessibility: replace document colours (Windows scheme, high-contrast pairs, custom page/text colour, only black text) | Reading colours: Paper, Sepia, Night, High contrast and Custom, rendering-only | N4.3 |
-| Override page layout / zoom defaults | Default layout and zoom preferences | N4.4 |
-| Always show keyboard selection cursor; system selection colour | Caret browsing and system highlight colour options | N4.5 |
-| Familiar shortcuts (Ctrl+1 actual size, Ctrl+2 fit width, Ctrl+0 fit page, Ctrl+Shift+± rotate, F4, Ctrl+H, F11, Ctrl+B bookmark) | Same keys, so Foxit users feel at home | N4.3 |
-| Read Out Loud | Offline read-aloud stays after 2.0 ([AFTER_2_0](docs/AFTER_2_0.md)) | 2.x |
+Every Foxit command is mapped to an Atlas stage in **[docs/FOXIT_PARITY.md](docs/FOXIT_PARITY.md)**: what lands now, what lands before 2.0 (reader, bookmarks, annotations, everyday tools, accessibility), what moves after 2.0 (page organization, editing, forms, OCR, conversion to images/text, signing, redaction) and what is not planned (cloud, accounts, AI assistant, email review, JavaScript, multimedia).
 
-Where Atlas goes further: **Arabic and Urdu interface languages** (Foxit ships neither), deep local-fallback bookmarks, and honest storage states.
+Where Atlas goes further: **Arabic and Urdu interface languages** (Foxit ships neither), the Library as a research home, deep local-fallback bookmarks, and honest storage states.
 
 Other products we learn from:
 
@@ -215,6 +204,7 @@ At the end of each stage we run the same tasks on the same files in a relevant m
 | 2026-09-27 | Qt PDF 6.10.3 for reading/rendering and qpdf 12.4.1 CLI for structure/security/writes ([ADR-0004](docs/decisions/ADR-0004-pdf-engine-responsibilities.md)); N2 and N3 accepted |
 | 2026-09-27 | Scope was expanded to multi-format and offline editing before 2.0 (now superseded) |
 | 2026-09-28 | `2.0.0-beta.1` released; N4 started |
+| **2026-11-01** | **Foxit workspace parity** ([ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md)). Owner: copy Foxit's UI/UX as exactly as possible so Atlas never looks like a generic AI app. Layout, measurements, command placement and shortcuts follow Foxit; icons, colours and brand stay Atlas's. Foxit's features are staged in [FOXIT_PARITY.md](docs/FOXIT_PARITY.md): necessary ones before 2.0, others after. Offline OCR, image/text export and stamps move from "never" to after-2.0 candidates. Supersedes the "concepts only, slim command bar" decision of the same morning |
 | **2026-11-01** | **Trilingual interface and any-language content.** English (default), Arabic and Urdu UI ship complete in the first version; all user content accepts any language. **Foxit concepts adopted** (section 7) for familiarity and accessibility, with Atlas's own visual design. **UI revamp moved forward** to N4.3 so every later reader feature is built into the new workspace |
 | **2026-11-01** | **Focused 2.0.** EPUB/comics/Kindle, PDF editing tools (E1–E5), form filling, side-by-side, reflow view and read-aloud move after 2.0. **Batched owner reviews:** one review per stage instead of per sub-stage. **Docs consolidated:** 35 reference files in `docs/` became 9 plus an index, and `INFO.md` was merged into README/CHECKPOINTS; the previous set is kept unchanged in [docs/history](docs/history/README.md) |
 
@@ -226,6 +216,7 @@ Every change to scope, priority or release gates is added here with its reason.
 |---|---|
 | Status, stage tasks, tests, review gates | [CHECKPOINTS.md](CHECKPOINTS.md) |
 | Look, feel, accessibility, Arabic/RTL | [docs/DESIGN.md](docs/DESIGN.md) |
+| Foxit layout measurements and feature map | [docs/FOXIT_PARITY.md](docs/FOXIT_PARITY.md) |
 | Layers, threads, engines, stack | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Document safety, data formats, security | [docs/DATA_AND_SAFETY.md](docs/DATA_AND_SAFETY.md) |
 | Tests, evidence, speed budgets | [docs/QUALITY.md](docs/QUALITY.md) |

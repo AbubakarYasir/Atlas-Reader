@@ -9,7 +9,7 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | | |
 |---|---|
 | Active stage | **N4: Reader**, planned `2.0.0-beta.2` |
-| Active sub-stage | **N4.3: Workspace revamp, design system and three languages** (English, Arabic, Urdu). N4.2 Virtual viewport is implemented and verified: pages display (CI `41242163280`, 45/45) |
+| Active sub-stage | **N4.3: Foxit workspace, design system and three languages** (English, Arabic, Urdu; [ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md)). First pass verified (CI `41277932148`). N4.2 Virtual viewport is implemented and verified: pages display (CI `41242163280`, 45/45) |
 | Done in N4 | N4.1 Opening, tabs and passwords: implemented and automated-verified (43/43 CI tests, run `36690884159`) |
 | Branch | `native-v2-n4-reader-foundation`, from accepted `main` merge `739508e3` |
 | Released | `2.0.0-beta.1` (Library), 2026-09-28 |
@@ -86,28 +86,26 @@ Background open from the Library or a direct path; one tab per file; tab switchi
 - While zooming or scrolling fast, show the existing texture and sharpen asynchronously; never block input.
 - **Tests:** mixed sizes, all rotations, crop/media boxes, fast jumps, resize and scale changes, cancellation, cache invalidation, a 2,000-page memory series (memory must not grow with page count).
 
-### N4.3 — Workspace revamp, design system and three languages ← **active**
+### N4.3 — Foxit workspace, design system and three languages ← **active**
 
-Moved forward on 2026-11-01 so every later reader feature lands in the final workspace ([PLAN.md §7](PLAN.md#7-competitive-references), [DESIGN.md](docs/DESIGN.md)).
+Moved forward on 2026-11-01 so every later reader feature lands in the final workspace. **Layout, measurements and shortcuts follow Foxit PDF Editor** ([ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md), measured spec in [FOXIT_PARITY.md](docs/FOXIT_PARITY.md)); icons, colours and name are Atlas's.
 
-- **Design system:** `Theme` singleton (colours, type, spacing, radii, motion, sizes); shared components (button variants, icon button, text field, tab strip, command bar, status bar, banner, empty state, menu); one consistent outline icon set; no literal colours or sizes in views. `Main.qml` split into focused views.
-- **Three interface languages:** English (default), Arabic and Urdu, switchable live from the title bar and remembered between runs. Every string comes from the `I18n` tables ([ADR-0006](docs/decisions/ADR-0006-interface-languages.md)); a CI check fails on any key missing in any language. Arabic and Urdu mirror the layout; Urdu uses bundled Noto Nastaliq Urdu.
-- **Workspace (Foxit concepts, Atlas design):** title bar (app mark, location, language, theme, Open) · document tab bar · command bar (File · Navigate · Zoom · View groups) · left icon rail for panels (F4; panels arrive with their features) · document pane · status bar (first/previous/page box/next/last, zoom slider and percentage, fit buttons).
-- **Reading modes:** Read mode (Ctrl+H) hides chrome and shows a floating mini bar; Full screen (F11, Esc exits); view rotation (Ctrl+Shift+Plus/Minus).
-- **Appearance and accessibility:** Light / Dark / System; reading colours Paper, Sepia, Night and High contrast (rendering only, never changes the PDF); Touch mode (40 px targets); Foxit-compatible shortcuts (Ctrl+1 actual size, Ctrl+2 fit width, Ctrl+0 fit page).
-- **Library restyle:** same behaviour, new components, three languages.
-- **Tests:** string-table completeness (EN/AR/UR); offscreen rendered screenshots in English, Arabic and Urdu × light/dark; keyboard route and accessible names; existing viewport and controller suites.
+- **Done in the first pass (commit `2cc4a97`, CI 41277932148 green):** `Theme`/`I18n`/`AppState` singletons, shared components, complete English/Arabic/Urdu tables with live switching and CI completeness check, bundled Nastaliq/Naskh, reading colours, rotation, Read mode, Full screen, Light/Dark/System, Touch mode, library list/grid, files opened from the command line.
+- **Foxit workspace (second pass):** custom 48 px title bar (app mark, Quick Access Toolbar with Open and Mouse/Touch mode, file name, window buttons with Windows snap) · ribbon tab row (**File, Home, View, Accessibility, Help**; others appear with their stage) with 72 px grouped command area, large/small buttons, collapse (Ctrl+F11) · 28 px document tab bar with fixed 124 px tabs and **Library as the first tab** · 40 px navigation rail (F4; panels arrive with their features) · status bar (« ‹ page/total › », zoom −/slider/+/percentage, full screen) · **File page** (Open: Recent / Computer, Close, Close all, Skins, Preferences, About, Exit) · **Preferences window** (searchable categories: General, Languages, Skins, Page Display, Accessibility) · **Skins** (Light/Dark/System; Classic or Colourful light theme with Atlas colours).
+- **Home tab now:** Hand · Zoom ▾ (in, out, levels) · Page Fit Option ▾ (Actual Size, Fit Page, Fit Width) · Rotate View ▾. **View tab now:** Read Mode · Visual Mode ▾ (reading colours) · Rotate View · View Setting ▾ (Navigation Panels, Status Bar, Full Screen). **Accessibility:** Reading Option (reading colours, Touch mode). **Help:** About Atlas Reader.
+- **Keyboard:** Foxit defaults (Ctrl+K Preferences, Ctrl+Q exit, Ctrl+Shift+W close all, Ctrl+F11 ribbon, F4 panels, Ctrl+H, F11, Ctrl+1/2/0, Ctrl+Shift+±, Ctrl+Home/End, Ctrl+G); Add folder moves to Ctrl+Shift+O; Ctrl+F finds in the Library.
+- **Tests:** string-table completeness (EN/AR/UR); rendered screenshots in English, Arabic and Urdu × Light/Dark compared side by side with Foxit at 1280 × 800 and 1920 × 1040; keyboard route and accessible names for every ribbon control; existing viewport and controller suites.
 
 ### N4.4 — Navigation
 
-- Continuous and single-page; facing and cover spreads; reading direction set separately from UI language (C03).
-- Fit height; page jump by label; academic offset; **Pages panel** (thumbnails) in the rail; default layout/zoom preferences; tiling for pages beyond 8192 px.
-- Back/Forward history across links, jumps and search results; per-book position and zoom remembered (C02).
+- Continuous and single-page; facing and cover spreads (View tab page-display buttons and status-bar layout buttons, as in Foxit); **Reverse View** = reading direction set separately from UI language (C03); **AutoScroll** (Ctrl+Shift+H, Esc stops).
+- Fit height and **Fit Visible** (Ctrl+3); **Zoom to** (Ctrl+M) and marquee zoom; page jump by label; academic offset; **Pages panel** (thumbnails) in the rail; default layout/zoom preferences; tiling for pages beyond 8192 px.
+- Back/Forward history across links, jumps and search results (Alt+Left/Right, status-bar buttons); per-book position and zoom remembered (C02).
 - **Tests:** Fit/FitH/FitV normalization, bounds, labels, rotations, spread rules, LTR/RTL progression, focus at 100% and 200%.
 
 ### N4.5 — Outline, text, search and links
 
-- **Outline panel** (read-only) and **Search panel**; text selection and copy; caret browsing and system selection colour options; cancellable search with next/previous; internal and external links through Atlas-owned models.
+- **Outline panel** (read-only) and **Search panel** (right panel, Ctrl+Shift+F) with **Find** (Ctrl+F, F3/Shift+F3); Home → **Select** (Alt+6) and **SnapShot** (Alt+7), Clipboard ▾; View → **Word Count**; single-key accelerators option; text selection and copy; caret browsing and system selection colour options; cancellable search with next/previous; internal and external links through Atlas-owned models.
 - Semantic de-duplication of Qt PDF's duplicate link rows; destinations normalized with rotation and crop.
 - Document text and reading order exposed to assistive technology; tagged, untagged and image-only content are told apart (C04).
 - No document JavaScript, launches or remote fetches; external links show their destination and need a click to confirm (C05, C22). Honest unsupported states for forms, XFA, attachments and signatures (C15).
@@ -143,7 +141,7 @@ Owner records **`N4 PASS`** after required fixes, when the reader is comfortable
 
 - **N5.1 Capability check:** open vs edit permission; open password vs permissions password; read-only file system; signed/certified; locked; offline; external revision. Modern encryption fixtures; never a bypass.
 - **N5.2 Local overlay:** Embedded/Local/Pending/Override/Hidden/Conflict states persisted and recoverable after a crash. Versioned location envelope for durable destinations (C06).
-- **N5.3 Complete editor:** create, rename, delete, edit destination, move, reorder, nest; duplicate names; deep Unicode trees; keyboard tree semantics; undo. Bookmarks tab in the navigation panel; **Command Center** (`Ctrl+K`) for books and bookmarks.
+- **N5.3 Complete editor:** create, rename, delete, edit destination, move, reorder, nest; duplicate names; deep Unicode trees; keyboard tree semantics; undo. **Bookmarks panel** in the rail and **Bookmark** buttons where Foxit has them (Home, Edit; Ctrl+B); Auto Create Bookmarks from the outline (candidate); **Command Center** in the title-bar search box (Alt+Q) for commands, books and bookmarks; Quick Access Toolbar gains Save, Undo, Redo.
 - **N5.4 Reconcile and safe save:** diff, merge, conflicts; temp → validate → backup → replace → reopen; never a blind overwrite.
 - **N5.5 Portability:** Atlas JSON import/export (versioned, rejects newer schemas), Markdown, CSV; all, subtree or local-only.
 
@@ -171,6 +169,7 @@ Run each fixture through edit → close → reopen → conflict → recovery: no
 
 - Live GPU stroke layer, never coupled to PDF saving; pen and highlighter presets; pressure where verified; eraser (whole and partial); lasso/rectangle selection; move, resize, copy, duplicate, delete; undo/redo (C07).
 - Text highlight, underline, strikeout, sticky and typed notes, line/arrow/rectangle/ellipse (C19); annotation list with search, filter and jump (C08); show/hide without deleting (C16).
+- **Comment ribbon tab** with Foxit's groups and keys for the tools above (Shift+H highlight, Ctrl+U underline, Shift+S strikeout, Ctrl+Shift+N note, Shift+T typewriter, Shift+P pencil); Comments panel in the rail; Keep Tool Selected; Show/Hide all comments (Ctrl+8 / Ctrl+Shift+8).
 - Annotation JSON/Markdown export; explicit print/flatten-to-new-copy choices; reuses N5 safety for protected files.
 - Published table of annotation types and operations, including imported read-only types.
 
@@ -194,7 +193,8 @@ On real pen/touch hardware, draw short, long and fast strokes while scrolling, z
 
 **Goal:** the essential desktop utilities, without turning Atlas into an office suite.
 
-- Printing with preview, ranges, labels, layout and grayscale; source hash unchanged.
+- Printing with preview, ranges, labels, layout and grayscale (File → Print, Ctrl+P); source hash unchanged.
+- Foxit File page and Preferences completed: Properties (Ctrl+D), Preferences categories for every shipped feature, Quick Access Toolbar customization (above/below ribbon), Help tab (offline User Guide F1, Command Line Help, Set as default PDF reader).
 - Covers queue with invalidation; details panel; selected metadata/XMP editing with preview and preservation.
 - Sorting, filters, safe rename, collections and tags (C09, C10, C21).
 - Open With, drag and drop, clipboard, long and Unicode paths, session-end safety; settings; privacy-safe logs and diagnostic bundle.
@@ -242,7 +242,7 @@ Using a copy of real legacy data: preview matches, import twice, run old and new
 
 **Goal:** close the remaining gaps across everything built. This is qualification, not the first time these are done.
 
-Run the full workflow matrix (Library, Reader, Bookmarks, protected/local, conflicts, import/export, ink, print, metadata, backup/migration) in the English, Arabic and Urdu interfaces with an any-script content corpus (Arabic, Urdu, Persian, English, Hebrew, Devanagari, CJK, mixed direction), keyboard-only, with Narrator, Accessibility Insights, 100%/200%, high contrast and reduced motion (C13).
+Accessibility ribbon tab completed: Setup Assistant (first-run accessibility settings), Reading Order view. Run the full workflow matrix (Library, Reader, Bookmarks, protected/local, conflicts, import/export, ink, print, metadata, backup/migration) in the English, Arabic and Urdu interfaces with an any-script content corpus (Arabic, Urdu, Persian, English, Hebrew, Devanagari, CJK, mixed direction), keyboard-only, with Narrator, Accessibility Insights, 100%/200%, high contrast and reduced motion (C13).
 
 ### Automated QA
 

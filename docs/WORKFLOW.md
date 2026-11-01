@@ -27,6 +27,8 @@ Never reset, clean, overwrite or force-push other work to make the tree look tid
 
 ## 3. Commits
 
+Commits are authored by the owner and **signed** (SSH signing key registered on the owner's GitHub account), so every commit shows **Verified**. Commits carry no AI co-author or session lines, whoever drafted them.
+
 One reviewable intent per commit, with a prefix: `build:` `core:` `pdf:` `index:` `reader:` `bookmarks:` `ink:` `a11y:` `i18n:` `design:` `platform:` `test:` `docs:` `fix:`. Don't mix dependency upgrades, rewrites, redesigns and features in one commit.
 
 Before committing:

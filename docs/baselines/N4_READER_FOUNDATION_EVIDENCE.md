@@ -163,3 +163,9 @@ Owner request (2026-11-01, second): copy Foxit's UI/UX as exactly as possible, w
 - Options: `--native-frame` (system caption fallback) and `--show backstage|skins|preferences[:page]|about|ribbon-<tab>` for visual QA.
 - Rendered self-review (Qt 6.4 / Xvfb, 1280 × 800): Library and reader in English light, Urdu dark; File page and Skins (English), Preferences → Languages (Arabic), View ribbon (Urdu). Found and fixed: `onAccent`/`onTitleBar` colour tokens were read as signal-handler names and rendered black (renamed `accentText`/`titleBarText`); Preferences category column swallowed the page area; the Library tab collapsed to its text width; the page box reversed "12 / 340" in right-to-left layouts.
 - Known gaps: navigation rail and panels arrive with their first panel (Pages, N4.4); Snap Layouts flyout on the maximize button (native hit-test) tracked for N10; window behaviour must be checked on Windows in the review build.
+
+### Complete plan and logo colours — 2026-11-01
+
+- Owner: use the reference package fully and plan every Foxit feature; main colour from the logo. Inventory extracted on the owner's PC (read-only) from `data/pe-resources.json` (English menus and dialog titles), `data/modules.json` and the skin XML; nothing from the package is shipped.
+- Logo palette measured from `assets/branding/atlas-reader-icon.png` (navy `#002058`–`#003880`, royal blue `#0050b0`, cyan `#00a0f8`, ice `#e0f0f8`); contrast checked (accent 7.7:1 on white, Sky 6.6:1 on `#333333`).
+- Rendered check (Qt 6.4 / Xvfb): Library English light and reader Urdu dark with the new palette.

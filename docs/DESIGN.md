@@ -10,7 +10,7 @@ This is the design contract. A user-facing change is done only when it meets thi
 
 Atlas looks **designed** when it has:
 
-- one warm paper-toned surface family and one ink-green accent, used sparingly;
+- Foxit's neutral surface family and one Atlas Blue accent from the logo, used sparingly;
 - hierarchy built from type size, weight and space, not from boxes and color;
 - everything aligned to a 4 px grid, with generous space in the Library and calm density in reader panels;
 - borders before shadows; a single soft shadow only for the page and floating surfaces;
@@ -62,7 +62,7 @@ All values live in one QML singleton, `Theme`. Screens never contain literal col
 
 ### 4.1 Color
 
-**Neutral colours are Foxit's measured skin roles** (from the owner's Foxit UI reference package, `skins/Color/Light` and `skins/Ribbon/Black`, values only; see [FOXIT_PARITY §2](FOXIT_PARITY.md#2-skins)). The accent is Atlas's: green by default, or one of six theme colours for the Colourful title bar (Atlas Green `#28633a`, Indigo `#3f4a9a`, Teal `#16656b`, Plum `#6b3a6b`, Amber `#8a5a12`, Graphite `#3c4148`), each with white text at ≥ 7:1.
+**Neutral colours are Foxit's measured skin roles** (from the owner's Foxit UI reference package, `skins/Color/Light` and `skins/Ribbon/Black`, values only; see [FOXIT_PARITY §2](FOXIT_PARITY.md#2-skins)). **The accent comes from the Atlas logo** ([FOXIT_PARITY §2.1](FOXIT_PARITY.md#21-atlas-colours-from-the-logo)): `accent` Atlas Blue `#0b4fae` (dark mode: Sky `#6cc4ff`), `accentSoft` `#e3f1fb` (dark `#123a66`), decorative `highlight` cyan `#00a0f8`. Colourful title bar: Atlas Blue `#0b3d91` (default), Midnight `#0a2f6e`, Sky `#0b4fae`, Teal `#155e75`, Plum `#6b3a6b`, Graphite `#3c4148`, each with white text at ≥ 7:1.
 
 | Token | Light | Dark | Foxit role |
 |---|---|---|---|

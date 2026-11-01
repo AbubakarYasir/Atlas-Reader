@@ -4,6 +4,13 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## Complete Foxit feature plan and logo colours — 2026-11-01
+
+- **Every Foxit PDF Editor feature is now planned** (owner direction). [FOXIT_PARITY.md §3](docs/FOXIT_PARITY.md#3-complete-foxit-feature-catalogue-and-atlas-plan) catalogues all of them from the owner's reference package — 11 ribbon tabs, the classic menu bar, 114 menus, 159 core dialogs, 34 Preferences categories, every navigation panel and context menu, 107 modules and 62 plug-ins — and gives each a stage before 2.0 or an after-2.0 track.
+- [AFTER_2_0.md](docs/AFTER_2_0.md) is reorganized into tracks **A–K** (Reading Plus, Formats, Pages/Create/Convert, Edit, Forms, Protect & Sign, OCR/Accessibility/Standards, Automate, Review & Share, Connected opt-in, Platforms). Offline by default stays; connected features are opt-in. Only cracking, bypasses and hidden data collection are never built.
+- Pre-2.0 stages gained the Foxit items they own (N4.4 tab/page/recent menus and rail; N4.5 search options, Word Count, link/image menus; N5 Auto Create Bookmarks, Signatures panel; N6 full Comment tab and panel; N7 Help tab, menu bar, tray; N9 Reading Option).
+- **Atlas's main colour now comes from its logo:** Atlas Blue accent (`#0b4fae`, Sky `#6cc4ff` in dark mode), navy title bar (`#0b3d91`), cyan highlight; theme colours Atlas Blue, Midnight, Sky, Teal, Plum, Graphite. Green is gone.
+
 ## N4.3 Foxit workspace — 2026-11-01
 
 - **Atlas now looks and works like Foxit PDF Editor** (owner decision, [ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md)): Atlas's own 48 px title bar with Quick Access Toolbar (Open, Mouse/Touch mode) and window buttons; ribbon tabs **File · Home · View · Accessibility · Help** with Foxit-sized buttons and menus (Hand, Zoom, Page Fit Option, Rotate View, Read Mode, Full Screen, Visual Mode, View Setting, Reading Option, Touch Mode, About); collapsible ribbon (Ctrl+F11); Foxit-style document tabs with the **Library as the first tab**; Foxit-style status bar (« ‹ 12 / 340 › », zoom slider and percentage menu, full screen).

@@ -2,13 +2,13 @@
 
 <!-- Living reference. Decision: ADR-0007. -->
 
-**Owner decision (2026-11-01):** Atlas copies the *layout, measurements, command placement, interaction model and keyboard shortcuts* of Foxit PDF Editor (Windows, ribbon mode, version installed on the owner's PC) as closely as possible, so the product feels like a mature desktop PDF tool instead of a generic "AI-looking" app. Foxit features are added in Atlas's own stages: what a reader and research tool needs before 2.0, the rest after 2.0 ([ADR-0007](decisions/ADR-0007-foxit-workspace-parity.md)).
+**Owner decision (2026-11-01):** Atlas copies the *layout, measurements, command placement, interaction model and keyboard shortcuts* of Foxit PDF Editor (Windows, ribbon mode, version installed on the owner's PC) as closely as possible, so the product feels like a mature desktop PDF tool instead of a generic "AI-looking" app. **Every Foxit feature will be covered**: what a reader and research tool needs before 2.0, the rest in the after-2.0 tracks (§3) ([ADR-0007](decisions/ADR-0007-foxit-workspace-parity.md)).
 
 **What is copied:** structure, sizes, spacing, order of tabs, groups and commands, labels (translated), menus, panels, status bar, File page, Preferences window, skins model, Touch mode, shortcuts and single-key accelerators.
 
 **What is not copied:** Foxit's icon artwork, logos, skin images, colours used as brand (purple), text of their manual, or any file from `C:\Program Files\Foxit Software`. Those are Foxit's copyrighted assets and the licence forbids extracting them. Atlas uses Fluent UI System Icons (MIT, thin-line, same 16/20/24 px grid), its own colours and its own name.
 
-**Sources:** the owner's Foxit UI reference package (`foxit-ui-ux-reference-2026.1.1.36485`: 26 runtime screenshots and skin colour definitions, used for measurements and colour values only); 14 owner screenshots of Foxit PDF Editor at 100% scale (1919 × 1044 window), measured with pixel analysis on 2026-11-01; Foxit PDF Editor User Manual (workspace, skins, Touch mode, navigation pane, status bar, keyboard shortcuts appendix). Measurements are in device-independent pixels at 100%.
+**Sources:** the owner's Foxit UI reference package (`foxit-ui-ux-reference-2026.1.1.36485`: 26 runtime screenshots, light/dark skin colour definitions, 114 English menus, 159 core dialog titles, 107 modules and 62 plug-ins; used for measurements, colour values and the feature inventory only); 14 owner screenshots of Foxit PDF Editor at 100% scale (1919 × 1044 window), measured with pixel analysis on 2026-11-01; Foxit PDF Editor User Manual (workspace, skins, Touch mode, navigation pane, status bar, keyboard shortcuts appendix). Measurements are in device-independent pixels at 100%.
 
 ---
 
@@ -71,134 +71,258 @@ Neutral colours measured (Atlas uses these values for its neutral roles, [DESIGN
 Foxit: **File → Skins**, mode Light / Dark / Use system setting; in Light mode a *Colourful* option tints the title bar with a theme colour. Atlas copies this model:
 
 - **Mode:** Light, Dark, System.
-- **Light theme:** *Classic* (neutral title bar) or *Colourful* (title bar in the theme colour). Theme colours: Atlas Green (default), Indigo, Teal, Plum, Amber, Graphite. Not Foxit purple, not blue as default.
+- **Light theme:** *Classic* (neutral title bar) or *Colourful* (title bar in the theme colour). Theme colours come from the **Atlas logo** (§2.1): Atlas Blue (default), Midnight, Sky, Teal, Plum, Graphite. Never Foxit purple.
 - **Touch mode** button on the Quick Access Toolbar: larger targets in ribbon and toolbar (+8 px).
 - Reading colours (Paper, Sepia, Night, High contrast) stay in **Accessibility → Reading Option** and View, like Foxit's "Replace document colours".
 
-## 3. Command inventory and Atlas placement
+### 2.1 Atlas colours from the logo
 
-Legend: **Now** = in the N4.3 workspace revamp · **N4.x / N5–N9** = Atlas stage before 2.0 · **2.x** = after 2.0 ([AFTER_2_0.md](AFTER_2_0.md)) · **No** = not planned (reason). A command only appears in Atlas when it works; until then its group is absent, never greyed out as a promise.
+Atlas's own colour is built from its logo (`assets/branding/atlas-reader-icon.png`): deep navy globe, royal-blue pages, cyan bookmark and compass, ice-white paper. Foxit's neutral greys stay; Foxit's purple is never used.
 
-### Title bar and Quick Access Toolbar
+| Role | Light | Dark | From the logo | Contrast |
+|---|---|---|---|---|
+| `accent` (selected ribbon tab, primary buttons, focus, links) | `#0b4fae` Atlas Blue | `#6cc4ff` Sky | Royal-blue pages / cyan star | 7.7:1 on white · 6.6:1 on `#333333` |
+| `accentText` (text on accent) | `#ffffff` | `#131313` | | 7.7:1 · 9.7:1 |
+| `accentSoft` (selected rows, info banners) | `#e3f1fb` | `#123a66` | Ice paper / navy | accent text ≥ 6.3:1 |
+| `brandDeep` (title bar in Colourful skin) | `#0b3d91` | — | Navy globe | white 10:1 |
+| `highlight` (decorative only: bookmark marks, progress) | `#00a0f8` | `#00a0f8` | Cyan bookmark | not for text |
 
-| Foxit | Atlas |
+Colourful title-bar choices: **Atlas Blue** `#0b3d91` (default), **Midnight** `#0a2f6e`, **Sky** `#0b4fae`, **Teal** `#155e75`, **Plum** `#6b3a6b`, **Graphite** `#3c4148`; all keep white text ≥ 7:1.
+
+## 3. Complete Foxit feature catalogue and Atlas plan
+
+**Owner direction (2026-11-01):** Atlas will cover **every feature** of Foxit PDF Editor 2026.1 at some point. This section lists all of them, from the owner's reference package (11 ribbon tabs, the classic menu bar, 114 menus, 159 core dialogs, 107 modules and 62 plug-ins) plus the manual, and gives each one a home:
+
+- **Done** — shipped in N4.1–N4.3.
+- **N4.4 … N10** — a stage before Windows 2.0 ([CHECKPOINTS.md](../CHECKPOINTS.md)).
+- **Track A–K** — after 2.0, in the tracks of [AFTER_2_0.md](AFTER_2_0.md). Track order is decided at N11 from user value.
+
+A command appears in Atlas only when it works; until then its group is absent, never greyed out as a promise. Every feature keeps Atlas's rules: offline by default, nothing changes a PDF without the safe-save path, protected files are never bypassed, all three languages, keyboard and Narrator.
+
+### 3.1 Window, title bar, tabs, panels, status bar
+
+| Foxit feature | Where in Foxit | Atlas |
+|---|---|---|
+| Custom title bar, file name, window buttons | Title bar | Done (N4.3) |
+| Quick Access Toolbar: Open, Save, Print, Create, Undo, Redo, Hand/Select, Mouse/Touch | Title bar | Done: Open, Mouse/Touch · N5: Save, Undo, Redo · N7: Print · N4.5: Hand/Select |
+| Customize Quick Access Toolbar (add, remove, order, above/below ribbon) | ▾ on QAT, right-click ribbon | N7 |
+| Customize ribbon (new tabs/groups, rename, reorder, import/export, reset) and keyboard shortcuts | Right-click ribbon → Customize | Track H |
+| Title-bar search (commands, text, help; Alt+Q), collapsed search option | Title bar | N5 (Command Center) |
+| Notifications bell | Title bar | Track J (local notices only before that) |
+| Ribbon collapse / pin (Ctrl+F11), double-click a tab | Ribbon | Done (N4.3) |
+| Classic menu bar (File, Edit, View, Tools, Help) as an option | View → Menu Bar | N7 (keyboard Alt menus) |
+| Document tabs: Ctrl+Tab, middle-click close, overflow list | Tab bar | Done (N4.3) |
+| Tab context menu: Close, Close Others, Close Left, Close Right, Close All, Copy Path, Open Containing Folder, Print Current/All Tabs | Right-click tab | N4.4 (Print items N7) |
+| Tab groups: New Horizontal/Vertical Tab Group, move tabs between groups | Right-click tab | Track A (C17 side-by-side) |
+| Start page with recent files and tool wizard | Start tab | Done as the Library tab; tool wizard Track H |
+| Navigation rail and panels; F4; Reset All Panels; dock/float panels; resize | Left pane | Rail N4.4 · float/dock Track A |
+| Right panel (Search, Format) and Right Panel Switch | Right side | N4.5 (Search) · N6 (Format) |
+| Status bar: page navigation, previous/next view, page layouts, zoom slider, zoom menu (1%–6400%), full screen; show / auto-hide / hide | Bottom | Done: navigation, zoom, full screen, show/auto-hide/hide · N4.4: previous/next view, layouts, full zoom list |
+| Mouse/Touch mode | QAT | Done (N4.3) |
+| Skins: Light / Dark / System; Colourful theme colour | File → Skins | Done (N4.3) |
+| Minimize to tray; tray menu | System tray | N7 |
+| Multiple windows / single-document reading | Preferences → Documents | Track A |
+
+### 3.2 File page and file handling
+
+| Foxit feature | Atlas |
 |---|---|
-| App menu, Open, Save, Print, Create, Undo, Redo, Hand/Select, Customize ▾ | Now: Open, Touch mode. N5: Save, Undo, Redo. N7: Print. N7: Customize (add/remove, above/below ribbon) |
-| File name | Now |
-| Search box (commands, text, help; Alt+Q) | N5 Command Center (commands, books, bookmarks); Alt+Q |
-| Notifications | No (no accounts or cloud) |
-| Min / max / close, own title bar | Now (custom title bar with Windows snap) |
-
-### File (backstage)
-
-| Foxit | Atlas |
-|---|---|
-| Open → Recent Documents, Computer | Now (Recent from Library history; Computer = file dialog) |
-| Create | 2.x (Track C) |
-| Properties (Ctrl+D) | N7 details panel |
+| Open → Recent Documents (pin, open a copy, copy path, remove), Computer, cloud places | Done: recent, Computer, remove · N4.4: pin, copy path, open a copy · cloud places Track J |
+| Create (blank, from file, scanner, clipboard, web page, template, portfolio, binder) | Track C (portfolio/binder Track H) |
+| Properties (Ctrl+D): description, security, fonts, initial view, custom, advanced, XMP | N7 (view and permitted edits) |
 | Save (Ctrl+S), Save As (Ctrl+Shift+S), Revert | N5 safe save |
-| Print (Ctrl+P), Batch Print | N7 print; batch print 2.x |
-| Share | No (cloud) |
-| Export | N5 bookmarks export; N6 annotations export |
-| Close (Ctrl+W), Close all (Ctrl+Shift+W), Exit (Ctrl+Q) | Now |
-| PDF Optimizer, Index, Action Wizard | 2.x candidates (Index ≈ Atlas Library search already) |
-| Skins | Now |
-| Preferences (Ctrl+K) | Now: General, Languages, Skins, Page Display, Accessibility, Reading, History; more categories as features land |
+| Print (Ctrl+P), Print preview, Batch Print, print current/all tabs | N7 (batch print Track H) |
+| Share: e-mail current/all tabs (Ctrl+Shift+L / K) | Track I |
+| Export (to images, Office, HTML, text) | Track C |
+| Close, Close All, Exit | Done |
+| PDF Optimizer: reduce file size, advanced optimization, optimize scanned PDF, multiple files | Track G |
+| Index: create, manage embedded index, search across indexed PDFs | Library search already covers this need · embedded indexes Track H |
+| Action Wizard: create, manage, run actions (batch steps) | Track H |
+| Preferences (Ctrl+K) | Done: General, Languages, Skins, Accessibility · each stage adds its categories (below) |
 
-### Home
+### 3.3 Preferences categories (all 34)
+
+3D · Accessibility · Action Wizard · Commenting · Create PDF · Documents · ECM Integration · Editing · File Associations · Forms · Full Screen · General · History · Identity · Index · JavaScript · Languages · Layout Grid · Measuring · Multimedia · Page Display · PDF Sign · Print · Reading · Reviewing · Search · Security · Signature · Speech · Spelling · Tablet · Text Recognition · Trust Manager · Updater.
+
+| Atlas stage | Categories it adds |
+|---|---|
+| Done (N4.3) | General, Languages, Skins, Accessibility |
+| N4.4 | Page Display (default layout, zoom, rendering), Full Screen, History (restore position), Documents (tabs, restore, open behaviour) |
+| N4.5 | Search, Reading (reading order, caret) |
+| N5 | Security (protected files, local research), Identity (author name for notes and bookmarks) |
+| N6 | Commenting, Tablet (pen and touch) |
+| N7 | Print, File Associations, Library (Atlas), Backup (N8) |
+| N9 | Accessibility completed, Speech (when read-aloud lands, Track A) |
+| Tracks | Editing, Spelling, Layout Grid (D) · Forms, JavaScript (E) · PDF Sign, Signature, Trust Manager (F) · Text Recognition, Create PDF (C/G) · Action Wizard, Index (H) · Reviewing (I) · ECM Integration, Updater (J) · Measuring, 3D, Multimedia (D) |
+
+### 3.4 Home
 
 | Group | Foxit commands | Atlas |
 |---|---|---|
-| Tools | Hand (Alt+3), Select ▾ (Text and Image Alt+6, Annotation), SnapShot (Alt+7), Clipboard ▾, Bookmark | Hand Now; Select text N4.5; Select annotation N6; SnapShot N4.5; Clipboard ▾ N4.5; Bookmark N5 |
-| View | Zoom ▾ (In, Out, Marquee, Loupe, Magnifier, Zoom to Ctrl+M), Page Fit Option ▾ (Actual Ctrl+1, Fit Page Ctrl+0, Fit Width Ctrl+2, Fit Visible Ctrl+3), Reflow (Ctrl+4), Rotate View ▾ | Zoom, Page Fit, Rotate View Now; Fit Visible, Zoom to, Marquee zoom N4.4; Loupe/Magnifier 2.x; Reflow 2.x (C18) |
-| Edit | Edit Text, Edit Object ▾ | 2.x (E2) |
+| Tools | Hand (Alt+3), Select Text and Image (Alt+6), Select Annotation, SnapShot (Alt+7), Clipboard ▾ (copy, paste, paste in place), Bookmark | Hand Done · Select text, SnapShot, Clipboard N4.5 · Select annotation N6 · Bookmark N5 |
+| View | Zoom ▾ (in, out, marquee, loupe, magnifier, Zoom To Ctrl+M), Page Fit Option ▾ (Actual Size Ctrl+1, Fit Page Ctrl+0, Fit Width Ctrl+2, Fit Visible Ctrl+3), Reflow (Ctrl+4), Rotate View ▾ | Zoom, Page Fit, Rotate View Done · Fit Visible, Zoom To, marquee N4.4 · loupe, magnifier, Reflow Track A |
+| Edit | Edit Text, Edit Object ▾ | Track D |
 | Comment | Typewriter, Highlight | N6 |
-| Pages | Rotate Pages ▾, Insert ▾ | 2.x (E1) |
-| Scan / OCR | From Scanner ▾, Quick Recognition | 2.x candidate (offline OCR with Arabic/Urdu; moved from "never" to candidate) |
-| Sign | Fill & Sign | 2.x (E5) |
+| Pages | Rotate Pages ▾, Insert ▾ | Track C |
+| Scan | From Scanner ▾, Quick Recognition | Track G |
+| Sign | Fill & Sign | Track F |
 
-### Convert
+### 3.5 Convert
 
-| Foxit | Atlas |
-|---|---|
-| From Files / Scanner / Clipboard / Web Page, Form, PDF Portfolio, Make Binder, Combine Files, Blank, From Template | 2.x (Combine, Blank, From images); Web page, Portfolio, Binder: No |
-| Export All Images, To Image | 2.x (render-based, offline) |
-| To MS Office, To HTML, To Other | 2.x candidate: plain text / Markdown only; Office: No |
-| Recognize Text, Quick Recognition, Suspect Results | 2.x candidate (offline OCR) |
-| Preflight | No |
-
-### Edit
-
-| Foxit | Atlas |
-|---|---|
-| Edit Text, Edit Object, Link & Join Text, Check Spelling, Search & Replace, Add Text/Images/Shapes, Reflow Editing, Article Box | 2.x (E2) |
-| Web Links ▾, Link | Following links N4.5; creating links 2.x |
-| Bookmark (Ctrl+B), Auto Create Bookmarks, Cross Reference | Bookmark N5; Auto Create Bookmarks (from outline/headings) N5 candidate; Cross Reference 2.x |
-| File Attachment, Image Annotation, Audio & Video, Add 3D | Attachments list (read-only, save copy) 2.x; multimedia/3D: No |
-
-### Organize
-
-| Foxit | Atlas |
-|---|---|
-| Insert, Delete, Extract, Reverse, Rearrange, Move, Duplicate, Replace, Split, Swap, Interleaving, Rotate/Crop/Resize Pages, Flatten | 2.x (E1), always to a new file by default |
-| Watermark, Background, Header & Footer, Bates Numbering, Format Page Numbers | 2.x candidates; Format Page Numbers (page labels) N4.4 reads them, editing 2.x |
-
-### Comment
-
-| Group | Foxit | Atlas |
+| Group | Foxit commands | Atlas |
 |---|---|---|
-| Text markup | Highlight (Shift+H), Underline (Ctrl+U), Squiggly (Shift+U), Strikeout (Shift+S), Replace Text, Insert Text (Shift+I) | N6 (highlight, underline, strikeout; squiggly, replace/insert text as display + 2.x authoring) |
-| Pin | Note (Ctrl+Shift+N), File | Note N6; File 2.x |
-| Typewriter | Typewriter (Shift+T), Textbox (Shift+E), Callout (Shift+C) | N6 typed notes; callout 2.x |
-| Drawing | Drawing ▾ (line, arrow, rectangle, oval, polygon, cloud), Pencil (Shift+P), Eraser | N6 |
-| Area | Area Highlight, Search & Highlight | N6 area highlight; search & highlight 2.x |
-| Measure | Measure ▾, Accounting Calculator | No (CAD/accounting) |
-| Stamp | Stamp ▾, Custom Stamp ▾ | 2.x candidate |
-| Symbols | Symbols, Numbers, Letters | 2.x |
-| Manage | Summarize Comments, Import, Export (Ctrl+L), FDF via Email, Manage Comments (show/hide Ctrl+8 / Ctrl+Shift+8), Keep Tool Selected | N6: export, show/hide, keep tool selected; summarize 2.x; email: No |
+| Create | From Files, From Scanner, From Clipboard, From Web Page, Form, PDF Portfolio, Make Binder, Combine Files, Blank, From Template | Files, Clipboard, Combine, Blank, Template Track C · Scanner Track G · Web Page Track C (offline snapshot of a local or saved page) · Portfolio, Binder Track H |
+| Export | Export All Images, To MS Office (Word, Excel, PowerPoint), To Image, To HTML, To Other (text, RTF, XPS, PDF/A…) | Track C (text, Markdown, images first; Office and HTML through an open-source converter, ADR needed) |
+| Recognize | Recognize Text, Quick Recognition, Suspect Results | Track G (English, Arabic, Urdu Nastaliq) |
+| Preflight | Preflight | Track G |
 
-### View
+### 3.6 Edit
 
-| Group | Foxit | Atlas |
+| Group | Foxit commands | Atlas |
 |---|---|---|
-| Modes | Read Mode (Ctrl+H), Reflow, Reverse View, Visual Mode ▾, Text Viewer (Ctrl+6) | Read Mode Now; Reverse View (right-to-left page order) N4.4 (C03); Visual Mode = reading colours Now; Reflow, Text Viewer 2.x |
-| Rotate | Rotate View ▾ (Ctrl+Shift+Plus/Minus) | Now |
-| Ruler | Toggle Ruler (Ctrl+R), Line Weights (Ctrl+5) | 2.x |
-| Page display | Single Page, Continuous, Facing, Continuous Facing, Separate Cover Page, Split ▾ | N4.4 (split 2.x, C17) |
-| Scrolling | AutoScroll (Ctrl+Shift+H, Esc stops) | N4.4 |
-| Transitions | Page Transitions | No |
-| Assistant, Read | AI Assistant, Read aloud (Ctrl+Shift+V/B/E/P/Y) | Assistant: No; Read aloud 2.x (C11) |
-| Compare, Word Count | | Word Count N4.5 (from text layer); Compare 2.x |
-| View Setting ▾ | Navigation Panels (F4), Status Bar (show/auto-hide/hide), Start Page, Full Screen (F11) | Now |
+| Content | Edit Text, Edit Object (text, image, shape, shading), Link & Join Text, Check Spelling, Search & Replace (Ctrl+T) | Track D |
+| Add | Add Text, Add Images, Add Shapes, Reflow Editing, Add Article Box, Articles panel | Track D |
+| Links | Web Links ▾ (create from URLs, remove all), Link, Bookmark (Ctrl+B), Auto Create Bookmarks, Cross Reference (Ctrl+Shift+C) | Following links N4.5 · Bookmark N5 · Auto Create Bookmarks from outline/headings N5 · creating links, web-link detection, cross reference Track D |
+| Insert | File Attachment, Image Annotation, Audio & Video, Add 3D | Attachments panel (read, save copy) Track D · image annotation Track D · audio/video and 3D playback Track D (sandboxed, off by default) |
+| Image editing | Page Editor tools: magic wand, lasso, polygonal lasso, filters (dodge, greyen, sharpen, binarize, soften…), add image | Track D |
 
-### Form, Protect, Share, Accessibility, Help
+### 3.7 Organize (all page operations write to a new file by default)
 
-| Tab | Foxit | Atlas |
+Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete · Extract · Reverse · Rearrange · Move · Duplicate · Replace · Split (document, pages) · Swap · Interleaving · Rotate Pages · Crop Pages · Resize Pages · Flatten · Watermark · Background · Header & Footer · Bates Numbering · Format Page Numbers (page labels) · Page Transitions · Pages panel context menu (enlarge/reduce thumbnails, embed/remove thumbnails, properties).
+
+| Atlas |
+|---|
+| Reading page labels N4.4 · thumbnail size and Pages panel N4.4 · every other Organize command Track C (Page Transitions Track A for full-screen presentations) |
+
+### 3.8 Comment
+
+| Group | Foxit commands | Atlas |
 |---|---|---|
-| Form | Field recognition, field authoring, templates, XFA, calculation order, reset, import/export data, JavaScript | 2.x (C20/E3) filling first; JavaScript: No |
-| Protect | Redaction, Whiteout, Hidden Data, Secure Document, Fill & Sign, Sign & Certify, Time Stamp, Validate | Show security and signature *status* N5; redaction, signing 2.x (E4/E5); encryption changes: No |
-| Share | Email, Evernote, OneNote, collaboration, shared/email review, Tracker | No (no cloud, no accounts) |
-| Accessibility | Autotag, Full Check, Report, Setup Assistant, Reading Option (Ctrl+Shift+5), Reading Order (Ctrl+Shift+U), Alternate Text, Area order | Reading Option (reading colours, page reading settings) Now; Setup Assistant N9; Reading Order view N9; tagging/checking 2.x |
-| Help | User Manual (F1), Help Center, Command Line Help, Online Tutorial, Plug-in Management, Set to Default PDF Reader, About, Deactivate | User Guide (offline) N7; Command Line Help N7; Set as default PDF reader N7; About Now; plug-ins, accounts: No |
+| Text markup | Highlight (Shift+H), Underline (Ctrl+U), Squiggly (Shift+U), Strikeout (Shift+S), Replace Text (Ctrl+Shift+R), Insert Text (Shift+I) | Highlight, underline, strikeout N6 · squiggly, replace/insert text N6 (display) and Track D (authoring) |
+| Pin | Note (Ctrl+Shift+N), File | Note N6 · File Track D |
+| Typewriter | Typewriter (Shift+T), Textbox (Shift+E), Callout (Shift+C) | Typewriter, Textbox N6 · Callout Track D |
+| Drawing | Line, Arrow, Rectangle, Oval, Polygon, Polyline, Cloud, Pencil (Shift+P), Eraser | Line, arrow, rectangle, oval, pencil, eraser N6 · polygon, polyline, cloud Track D |
+| Area | Area Highlight, Search & Highlight | Area highlight N6 · Search & Highlight N6 |
+| Measure | Distance, Perimeter, Area, calibration; Accounting Calculator | Track D |
+| Stamp | Stamps, Custom Stamp, Dynamic Stamp, Sequential Stamp, Manage/Favourite Stamps | Track D |
+| Symbols | Symbols, Numbers, Letters, TickMark (previous/next) | Track D |
+| Manage | Summarize Comments (PDF Summary), Import, Export (Ctrl+L, FDF/XFDF/CSV), Export Highlighted Text (Ctrl+I), FDF via Email, Manage Comments: show/hide all (Ctrl+8 / Ctrl+Shift+8), open/close all pop-ups, Keep Tool Selected | Export (JSON/Markdown + FDF/XFDF), show/hide, pop-ups, Keep Tool Selected, Export Highlighted Text N6 · Summarize Track D · FDF via e-mail Track I |
+| Comment context menu | Set Status (None, Accepted, Rejected, Cancelled, Completed, Deferred, Future), checkmark, labels, reply, group/ungroup, properties, set as default | Reply, properties, set as default N6 · status, checkmark, labels Track I |
+| Comments panel | Sort by page, type, author, date, status, checkmark, colour; filter; search | N6 |
 
-### Navigation panels (rail)
+### 3.9 View
 
-| Foxit panel | Atlas |
+| Group | Foxit commands | Atlas |
+|---|---|---|
+| Modes | Read Mode (Ctrl+H), Full Screen (F11), Reflow, Reverse View, Night Mode, Visual Mode ▾, Text Viewer (Ctrl+6, colours, font, find) | Read Mode, Full Screen, Visual Mode (reading colours incl. Night) Done · Reverse View N4.4 · Reflow, Text Viewer Track A |
+| Rotate | Rotate View ▾ | Done |
+| Ruler | Rulers (units: points, picas, mm, cm, inches), Guides, Line Weights (Ctrl+5), Layout Grid | Track A |
+| Page display | Single Page, Continuous, Facing, Continuous Facing, Show Cover Page, Split (vertical, horizontal, spreadsheet) | Layouts N4.4 · Split Track A |
+| AutoScroll | AutoScroll (Ctrl+Shift+H), speed, Esc stops | N4.4 |
+| Page Transitions | Full-screen transitions | Track A |
+| Assistant | AI Assistant, Translate Assistant | Track J (local model first, opt-in) |
+| Read | Read aloud (current page, from page, pause, stop; Ctrl+Shift+V/B/P/E/Y) | Track A (C11) |
+| Compare | Compare documents (text and visual), results tab | Track A |
+| Word Count | Word Count | N4.5 |
+| View Setting | Navigation Panels, Status Bar, Start Page, Full Screen | Done (Status Bar, Full Screen, Library) · Navigation Panels N4.4 |
+
+### 3.10 Form
+
+| Foxit commands | Atlas |
 |---|---|
-| Bookmarks | N5 (Atlas's signature editor) |
-| Pages (thumbnails) | N4.4 |
+| Fill fields, reset form (Reset a Form), import/export form data (FDF, XFDF, XML, CSV, combine forms to a sheet), submit (honest offline state) | Track E |
+| Run Form Field Recognition, Designer Assistant | Track E |
+| Field tools: push button, check box, radio button, combo box, list box, text field, signature field, image field, date field, barcode field; properties, tab order, duplicate, multiple copies, align/distribute/size, place on multiple pages | Track E |
+| Page Templates, Edit Static XFA Form, Calculation Order, Add Tooltip | Track E |
+| JavaScript (document JavaScript, console, editor) | Track E, sandboxed and off by default; never runs in 2.0 |
+
+### 3.11 Protect
+
+| Foxit commands | Atlas |
+|---|---|
+| Show security, permissions, signature status of a file | N5 |
+| Mark for Redaction (text, area, page, search & redact, smart redact patterns), Apply, Whiteout, Mosaic | Track F (to a new copy, verified unrecoverable) |
+| Hidden Data: remove hidden information, sanitize document | Track F |
+| Secure Document: password protection, certificate protection, permissions, remove security (with the password only), security policies | Track F (never bypasses; removing security needs the owner password) |
+| Fill & Sign (typed, drawn, image signature; initials; check marks) | Track F |
+| Sign & Certify (digital IDs, certify, timestamp, validate, export certificates, trusted certificates, Trust Manager) | Track F (offline validation with honest trust states) |
+| Microsoft Information Protection / RMS / AIP labels, Batch Encrypt, Security Watermark | Track J (enterprise, opt-in) |
+
+### 3.12 Share
+
+| Foxit commands | Atlas |
+|---|---|
+| E-mail current tab / all tabs through the local mail app | Track I |
+| Send for Shared Review (shared network folder or service), Send for Email Review, join, merge comments, Tracker (sent/joined reviews, deadlines, reviewers) | Track I (shared folder and e-mail first; no Atlas server) |
+| Evernote, OneNote, cloud collaboration, PDF Collaboration links | Track J (opt-in connectors) |
+
+### 3.13 Accessibility
+
+| Foxit commands | Atlas |
+|---|---|
+| Reading Option (Ctrl+Shift+5): replace document colours, reading order, page vs document reading | Done: reading colours · N9: reading order and page/document options |
+| Setup Assistant | N9 (first-run accessibility settings) |
+| Reading Order (Ctrl+Shift+U), Set Alternate Text, Set Area Reading Order, Change/Apply Area Order | View of reading order N9 · editing Track G |
+| Autotag Document, Autotag Form Field, Full Check, Accessibility Report, PDF/UA | Track G |
+| Untagged document read with assistive technology prompt | N4.5 (C04) |
+
+### 3.14 Help
+
+| Foxit commands | Atlas |
+|---|---|
+| About | Done |
+| User Manual (F1, offline), Command Line Help, Set to Default PDF Reader, Report Error (local diagnostic bundle) | N7 |
+| Help Center, Online Tutorial, Foxit homepage, Registration, Buy, Deactivate, licence manager | Not applicable (Atlas is free and has no licence server); online help links Track J |
+| Plug-in Management | Track H (signed, sandboxed plug-in model; ADR needed) |
+| Check for updates (Updater) | Track J (opt-in) |
+
+### 3.15 Navigation panels (all)
+
+| Panel | Atlas |
+|---|---|
+| Pages (thumbnails, page operations menu) | N4.4 (view) · Track C (operations) |
+| Bookmarks (Atlas's signature editor) | N5 |
+| Outline / document bookmarks (read) | N4.5 |
 | Comments | N6 |
-| Layers, Attachments, Signatures, Content, Tags, Destinations, Fields, Order, Links | Attachments and Signatures (read-only) 2.x; others 2.x candidates |
-| Right panel: Search (Ctrl+Shift+F), Format | Search N4.5; Format N6 |
+| Search (right panel; whole words, case, include bookmarks/comments, highlight all, save results to PDF/CSV) | N4.5 (save results Track H) |
+| Attachments | Track D (read and save copy first) |
+| Layers (show/hide, list for all/visible pages, reset, print/export overrides, import, merge, flatten) | Track D (view first) |
+| Signatures | N5 (status) · Track F (validation) |
+| Destinations (named positions; new, sort by name/page) | N4.5 (go to) · Track D (create) |
+| Content, Tags, Order, Fields, Links, Articles, Model Tree (3D) | Track G (Tags, Order, Content) · Track E (Fields) · Track D (Links, Articles, 3D) |
 
-### Status bar
+### 3.16 Context menus
 
-| Foxit | Atlas |
+| Foxit menu | Atlas |
 |---|---|
-| First « (Ctrl+Home), Previous ‹, page box "n / total" (Ctrl+G), Next ›, Last » (End) | Now |
-| Previous / next view (Alt+Left / Alt+Right) | N4.4 |
-| Page layout buttons (single, continuous, facing, continuous facing) | N4.4 |
-| Zoom out −, slider, zoom in +, percentage menu, Full screen ⛶ | Now |
+| Page background (paste, add bookmark, read mode, zoom, fit, rotate, reverse view, print, rulers, navigation panels, look up, preferences) | N4.4 (items appear as their features land) |
+| Document tab (close, others, left, right, copy path, open folder, print, tab groups) | N4.4 / N7 / Track A |
+| Text selection (copy, highlight, underline, strikeout, add bookmark, search) | N4.5, N5, N6 |
+| Link (open in browser after confirmation, copy link location; open in tab/new document for PDFs) | N4.5 |
+| Image (copy, save image as, bookmark, extract text, edit image) | N4.5 (copy, save as) · Track D/G |
+| Recent file (open, open a copy, pin, copy path, remove) | N4.4 |
+| Zoom list (1%–6400%, fit options, Zoom To) | N4.4 |
+| Ribbon (customize QAT, customize ribbon, minimize the ribbon) | N7 / Track H |
+| Navigation pane (show panels, reset all panels) | N4.4 |
+
+### 3.17 Modules with no single ribbon home
+
+| Module | Atlas |
+|---|---|
+| Cloud drives (OneDrive, Google Drive, Dropbox, Box, Egnyte, ShareFile, Foxit Drive) and ECM/DMS (SharePoint, iManage, NetDocuments, Documentum, OpenText, Alfresco, Worldox) | Track J: opt-in connectors; local sync folders already work as normal library folders in 2.0 |
+| E-signature services (DocuSign, Foxit eSign) | Track J |
+| Accounts, subscription, licence manager, crash upload, analytics | Not applicable: Atlas has no accounts or licences; crash reports stay a local, user-previewed bundle (N7) |
+| Office add-ins (Word, Excel, PowerPoint, Outlook, Visio, Project), browser add-ins, shell extensions (preview, thumbnails, right-click convert) | Track H (Explorer thumbnails/preview first) |
+| Speech (read aloud) | Track A |
+| 3D (U3D/PRC) viewer | Track D |
+| Portfolio, Binder | Track H |
+| Calculator | Track D (with Measure) |
+| Translate Assistant, AI Assistant, IDoxAI | Track J (on-device first, opt-in, never uploads without explicit consent) |
+| PDF/A, preflight, optimizer | Track G |
+
+### 3.18 Dialog reference
+
+The 159 core Foxit dialogs (Go to Page, Zoom To, Document Information, Batch Print, Create Link, Custom/Dynamic/Sequential Stamp, Calibration, Word Count, Text Viewer Settings, Security Settings, Password, Permission Settings, Optimization Options, Scan presets, JavaScript Console, Preflight, …) are the layout reference for Atlas's equivalent dialogs when their feature lands: same title, field order and OK/Cancel placement, Atlas styling, three languages. The owner's package keeps their reconstructed layouts for side-by-side review.
 
 ## 4. Keyboard
 

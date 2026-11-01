@@ -13,8 +13,8 @@ QtObject {
     // Skins (Foxit model): Colourful tints the title bar with the theme colour.
     property bool colorful: true
     property int themeColor: 0
-    readonly property var themeColors: ["#28633a", "#3f4a9a", "#16656b", "#6b3a6b", "#8a5a12", "#3c4148"]
-    readonly property var themeColorNames: ["green", "indigo", "teal", "plum", "amber", "graphite"]
+    readonly property var themeColors: ["#0b3d91", "#0a2f6e", "#0b4fae", "#155e75", "#6b3a6b", "#3c4148"]
+    readonly property var themeColorNames: ["blue", "midnight", "sky", "teal", "plum", "graphite"]
     // Extra height for scripts with tall line boxes (Urdu Nastaliq).
     property int scriptExtra: 0
 
@@ -32,9 +32,9 @@ QtObject {
     readonly property color spacing: dark ? "#242424" : "#e6e9f0"       // ribbon and menu separators
     readonly property color controlBorder: dark ? "#7a7a7a" : "#9197a8" // inputs, check and radio
     readonly property color buttonBorder: dark ? "#999999" : "#bcc1d1"
-    readonly property color accent: dark ? "#9fc8a7" : "#28633a"
+    readonly property color accent: dark ? "#6cc4ff" : "#0b4fae"          // Atlas Blue / Sky (logo)
     readonly property color accentText: dark ? "#131313" : "#ffffff"
-    readonly property color accentSoft: dark ? "#243d2c" : "#e3f0e5"
+    readonly property color accentSoft: dark ? "#123a66" : "#e3f1fb"
     readonly property color hover: dark ? "#515151" : "#d8dbe5"
     readonly property color pressed: dark ? "#424242" : "#e6e9f0"       // active / selected tool
     readonly property color danger: dark ? "#f04439" : "#b3261e"
@@ -50,6 +50,7 @@ QtObject {
     readonly property color titleBar: titleBarTinted ? themeColors[themeColor] : panel
     readonly property color titleBarText: titleBarTinted ? "#ffffff" : ink
     readonly property color titleBarHover: titleBarTinted ? Qt.rgba(1, 1, 1, 0.16) : hover
+    readonly property color highlight: "#00a0f8"   // logo cyan, decorative only
     readonly property color closeHover: "#c42b1c"   // Windows caption close colour
     readonly property color closeHoverText: "#ffffff"
     readonly property color brand: dark ? accent : themeColors[themeColor]

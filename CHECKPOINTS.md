@@ -33,7 +33,7 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | N10 | Speed, hardware + release candidate | `2.0.0-rc.1` | Not started |
 | N11 | Stable Windows 2.0 | `2.0.0` | Not started |
 
-After 2.0: formats, editing tools and platforms in [docs/AFTER_2_0.md](docs/AFTER_2_0.md). Versions after beta.1 were renumbered on 2026-11-01 (focused 2.0); nothing after beta.1 had been published. A corrective build uses `+N` build metadata or the next beta number, and a version is never reused for different bytes.
+After 2.0: every remaining Foxit feature, formats and platforms in tracks A–K of [docs/AFTER_2_0.md](docs/AFTER_2_0.md) (full map in [FOXIT_PARITY.md §3](docs/FOXIT_PARITY.md#3-complete-foxit-feature-catalogue-and-atlas-plan)). Versions after beta.1 were renumbered on 2026-11-01 (focused 2.0); nothing after beta.1 had been published. A corrective build uses `+N` build metadata or the next beta number, and a version is never reused for different bytes.
 
 ## How a stage runs
 
@@ -101,11 +101,12 @@ Moved forward on 2026-11-01 so every later reader feature lands in the final wor
 - Continuous and single-page; facing and cover spreads (View tab page-display buttons and status-bar layout buttons, as in Foxit); **Reverse View** = reading direction set separately from UI language (C03); **AutoScroll** (Ctrl+Shift+H, Esc stops).
 - Fit height and **Fit Visible** (Ctrl+3); **Zoom to** (Ctrl+M) and marquee zoom; page jump by label; academic offset; **Pages panel** (thumbnails) in the rail; default layout/zoom preferences; tiling for pages beyond 8192 px.
 - Back/Forward history across links, jumps and search results (Alt+Left/Right, status-bar buttons); per-book position and zoom remembered (C02).
+- **Foxit workspace items:** navigation rail with Show/Reset panels; full zoom list (1 %–6400 %, Zoom To); page-background context menu; document-tab context menu (Close, Close Others/Left/Right, Copy Path, Open Containing Folder); recent-file menu (Open, Open a Copy, Pin, Copy Path, Remove); Preferences → Page Display, Full Screen, History, Documents.
 - **Tests:** Fit/FitH/FitV normalization, bounds, labels, rotations, spread rules, LTR/RTL progression, focus at 100% and 200%.
 
 ### N4.5 — Outline, text, search and links
 
-- **Outline panel** (read-only) and **Search panel** (right panel, Ctrl+Shift+F) with **Find** (Ctrl+F, F3/Shift+F3); Home → **Select** (Alt+6) and **SnapShot** (Alt+7), Clipboard ▾; View → **Word Count**; single-key accelerators option; text selection and copy; caret browsing and system selection colour options; cancellable search with next/previous; internal and external links through Atlas-owned models.
+- **Outline panel** (read-only) and **Search panel** (right panel, Ctrl+Shift+F) with **Find** (Ctrl+F, F3/Shift+F3); Home → **Select** (Alt+6) and **SnapShot** (Alt+7), Clipboard ▾; View → **Word Count**; search options (whole words, case, include bookmarks/comments, highlight all); link menu (open after confirmation, copy link location); image menu (copy, save image as); destinations (go to); Preferences → Search, Reading; single-key accelerators option; text selection and copy; caret browsing and system selection colour options; cancellable search with next/previous; internal and external links through Atlas-owned models.
 - Semantic de-duplication of Qt PDF's duplicate link rows; destinations normalized with rotation and crop.
 - Document text and reading order exposed to assistive technology; tagged, untagged and image-only content are told apart (C04).
 - No document JavaScript, launches or remote fetches; external links show their destination and need a click to confirm (C05, C22). Honest unsupported states for forms, XFA, attachments and signatures (C15).
@@ -141,7 +142,7 @@ Owner records **`N4 PASS`** after required fixes, when the reader is comfortable
 
 - **N5.1 Capability check:** open vs edit permission; open password vs permissions password; read-only file system; signed/certified; locked; offline; external revision. Modern encryption fixtures; never a bypass.
 - **N5.2 Local overlay:** Embedded/Local/Pending/Override/Hidden/Conflict states persisted and recoverable after a crash. Versioned location envelope for durable destinations (C06).
-- **N5.3 Complete editor:** create, rename, delete, edit destination, move, reorder, nest; duplicate names; deep Unicode trees; keyboard tree semantics; undo. **Bookmarks panel** in the rail and **Bookmark** buttons where Foxit has them (Home, Edit; Ctrl+B); Auto Create Bookmarks from the outline (candidate); **Command Center** in the title-bar search box (Alt+Q) for commands, books and bookmarks; Quick Access Toolbar gains Save, Undo, Redo.
+- **N5.3 Complete editor:** create, rename, delete, edit destination, move, reorder, nest; duplicate names; deep Unicode trees; keyboard tree semantics; undo. **Bookmarks panel** in the rail and **Bookmark** buttons where Foxit has them (Home, Edit; Ctrl+B); Auto Create Bookmarks from the outline; Signatures panel (status only); Preferences → Security, Identity; **Command Center** in the title-bar search box (Alt+Q) for commands, books and bookmarks; Quick Access Toolbar gains Save, Undo, Redo.
 - **N5.4 Reconcile and safe save:** diff, merge, conflicts; temp → validate → backup → replace → reopen; never a blind overwrite.
 - **N5.5 Portability:** Atlas JSON import/export (versioned, rejects newer schemas), Markdown, CSV; all, subtree or local-only.
 
@@ -169,7 +170,7 @@ Run each fixture through edit → close → reopen → conflict → recovery: no
 
 - Live GPU stroke layer, never coupled to PDF saving; pen and highlighter presets; pressure where verified; eraser (whole and partial); lasso/rectangle selection; move, resize, copy, duplicate, delete; undo/redo (C07).
 - Text highlight, underline, strikeout, sticky and typed notes, line/arrow/rectangle/ellipse (C19); annotation list with search, filter and jump (C08); show/hide without deleting (C16).
-- **Comment ribbon tab** with Foxit's groups and keys for the tools above (Shift+H highlight, Ctrl+U underline, Shift+S strikeout, Ctrl+Shift+N note, Shift+T typewriter, Shift+P pencil); Comments panel in the rail; Keep Tool Selected; Show/Hide all comments (Ctrl+8 / Ctrl+Shift+8).
+- **Comment ribbon tab** with Foxit's groups and keys for the tools above (Shift+H highlight, Ctrl+U underline, Shift+S strikeout, Ctrl+Shift+N note, Shift+T typewriter, Shift+P pencil); Comments panel in the rail (sort by page, type, author, date, colour; filter; search); Keep Tool Selected; Show/Hide all comments (Ctrl+8 / Ctrl+Shift+8); open/close all pop-ups; Search & Highlight; Export Highlighted Text (Ctrl+I); comment context menu (reply, properties, set as default); Preferences → Commenting, Tablet.
 - Annotation JSON/Markdown export; explicit print/flatten-to-new-copy choices; reuses N5 safety for protected files.
 - Published table of annotation types and operations, including imported read-only types.
 
@@ -194,7 +195,7 @@ On real pen/touch hardware, draw short, long and fast strokes while scrolling, z
 **Goal:** the essential desktop utilities, without turning Atlas into an office suite.
 
 - Printing with preview, ranges, labels, layout and grayscale (File → Print, Ctrl+P); source hash unchanged.
-- Foxit File page and Preferences completed: Properties (Ctrl+D), Preferences categories for every shipped feature, Quick Access Toolbar customization (above/below ribbon), Help tab (offline User Guide F1, Command Line Help, Set as default PDF reader).
+- Foxit File page and Preferences completed: Properties (Ctrl+D), Preferences categories for every shipped feature, Quick Access Toolbar customization (above/below ribbon), Help tab (offline User Guide F1, Command Line Help, Set as default PDF reader, Report Error as a local diagnostic bundle); optional classic menu bar (File, Edit, View, Tools, Help); minimize to tray; print current/all tabs; Preferences → Print, File Associations.
 - Covers queue with invalidation; details panel; selected metadata/XMP editing with preview and preservation.
 - Sorting, filters, safe rename, collections and tags (C09, C10, C21).
 - Open With, drag and drop, clipboard, long and Unicode paths, session-end safety; settings; privacy-safe logs and diagnostic bundle.
@@ -242,7 +243,7 @@ Using a copy of real legacy data: preview matches, import twice, run old and new
 
 **Goal:** close the remaining gaps across everything built. This is qualification, not the first time these are done.
 
-Accessibility ribbon tab completed: Setup Assistant (first-run accessibility settings), Reading Order view. Run the full workflow matrix (Library, Reader, Bookmarks, protected/local, conflicts, import/export, ink, print, metadata, backup/migration) in the English, Arabic and Urdu interfaces with an any-script content corpus (Arabic, Urdu, Persian, English, Hebrew, Devanagari, CJK, mixed direction), keyboard-only, with Narrator, Accessibility Insights, 100%/200%, high contrast and reduced motion (C13).
+Accessibility ribbon tab completed: Reading Option (reading order, page/document reading), Setup Assistant (first-run accessibility settings), Reading Order view. Run the full workflow matrix (Library, Reader, Bookmarks, protected/local, conflicts, import/export, ink, print, metadata, backup/migration) in the English, Arabic and Urdu interfaces with an any-script content corpus (Arabic, Urdu, Persian, English, Hebrew, Devanagari, CJK, mixed direction), keyboard-only, with Narrator, Accessibility Insights, 100%/200%, high contrast and reduced motion (C13).
 
 ### Automated QA
 

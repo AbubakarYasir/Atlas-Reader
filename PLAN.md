@@ -38,7 +38,7 @@ What makes Atlas different is the combination:
 | **Replaceable engines** | PDF libraries sit behind Atlas-owned interfaces; vendor types never reach the core |
 | **Portable core** | Shared rules contain no Windows-only types, so Android/macOS/iOS stay possible |
 | **Evidence before claims** | Planned → Implemented → Verified → Accepted → Released are distinct states |
-| **Offline and private** | No accounts, telemetry, uploads or update checks in 2.0 |
+| **Offline by default, private always** | No accounts, telemetry, uploads or update checks in 2.0. After 2.0, connected features (cloud places, e-signature services, assistants, updates) are opt-in, explain what leaves the computer, and never need an Atlas account |
 | **Focus beats feature count** | A feature that threatens the four core steps carries a higher burden of proof |
 
 ## 3. When goals conflict
@@ -134,17 +134,23 @@ Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after
 
 ## 5. After 2.0 and never
 
-**Moved after 2.0 by the 2026-11-01 focus decision.** These are kept fully specified in [AFTER_2_0.md](docs/AFTER_2_0.md):
+**Owner direction (2026-11-01): Atlas will cover every feature of Foxit PDF Editor at some point.** What a reader and research tool needs is in 2.0 (sections 4.1–4.7); everything else is planned in eleven after-2.0 tracks, each a `2.x` release line with its own review ([AFTER_2_0.md](docs/AFTER_2_0.md)); the command-by-command map is [FOXIT_PARITY.md §3](docs/FOXIT_PARITY.md#3-complete-foxit-feature-catalogue-and-atlas-plan):
 
-- EPUB · CBZ/CBR comics · DRM-free AZW3/MOBI/PRC · KFX feasibility decision
-- Page organization (merge, split, reorder) · original text/image editing and equations · AcroForm filling and authoring · secure redaction · offline signatures
-- Side-by-side reading · simplified text (reflow) view · offline read-aloud
-- Further Foxit features mapped in [FOXIT_PARITY.md](docs/FOXIT_PARITY.md): offline OCR (Arabic/Urdu/English), export to images and plain text, stamps, watermark/header/footer, attachments and signatures panels, rulers, compare, loupe/magnifier
-- Android → Linux → macOS → iOS/iPadOS
+- **A Reading Plus:** tab groups and split view, reflow and Text Viewer, read aloud, rulers/guides, loupe/magnifier, compare, page transitions, multiple windows
+- **B More formats:** EPUB · CBZ/CBR · DRM-free AZW3/MOBI/PRC · KFX feasibility
+- **C Pages, Create, Convert:** all Organize commands, watermark/header/footer/Bates, create and combine, export to images, text, Office and HTML
+- **D Edit and rich annotations:** text/object/image editing, links, cross references, articles, stamps, measure, attachments, layers, 3D and multimedia
+- **E Forms:** filling, authoring, form data, sandboxed JavaScript
+- **F Protect and Sign:** redaction, sanitize, encryption, Fill & Sign, digital signatures and validation
+- **G OCR, accessibility authoring, standards:** offline OCR (English/Arabic/Urdu), autotag and checker, PDF/A, preflight, optimizer
+- **H Automate and customize:** Action Wizard, batch, ribbon/shortcut customization, portfolio, binder, Windows/Office integration, signed plug-ins
+- **I Review and share:** e-mail, shared-folder and e-mail reviews, Tracker, comment status
+- **J Connected (opt-in):** cloud places, document-management systems, e-signature services, rights management, on-device-first assistants, updates
+- **K Platforms:** Android → Linux → macOS → iOS/iPadOS
 
 Until those ship, 2.0 shows honest "not supported yet" states, for example for forms, XFA, attachments and signatures (detected but not validated).
 
-**Not planned for any release:** cloud accounts or sync, collaboration or shared/email reviews, AI document chat or assistant, telemetry or crash upload, Office conversion, notifications, document JavaScript, measuring/accounting tools, audio notebooks, multimedia/3D, executable plugins, password cracking, restriction removal or DRM bypass.
+**Never:** password cracking, removing restrictions without the owner password, DRM bypass, hidden telemetry or uploads without consent, unsigned or unsandboxed executable plug-ins.
 
 ## 6. What "excellent" means for 2.0
 
@@ -165,7 +171,7 @@ Until those ship, 2.0 shows honest "not supported yet" states, for example for f
 
 **Owner decision (2026-11-01, second): Atlas reproduces Foxit PDF Editor's workspace** ([ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md)): title bar with Quick Access Toolbar, ribbon tabs and grouped commands, fixed-width document tabs with the Library as the first tab, left navigation rail (F4), status bar, File page, Preferences window, skins and Touch mode, at Foxit's measured sizes and with Foxit's shortcuts. Atlas keeps its own icons (Fluent, MIT), colours and name, and never extracts anything from Foxit's program files.
 
-Every Foxit command is mapped to an Atlas stage in **[docs/FOXIT_PARITY.md](docs/FOXIT_PARITY.md)**: what lands now, what lands before 2.0 (reader, bookmarks, annotations, everyday tools, accessibility), what moves after 2.0 (page organization, editing, forms, OCR, conversion to images/text, signing, redaction) and what is not planned (cloud, accounts, AI assistant, email review, JavaScript, multimedia).
+Every Foxit command is mapped to an Atlas stage in **[docs/FOXIT_PARITY.md](docs/FOXIT_PARITY.md)**: what lands now, what lands before 2.0 (reader, bookmarks, annotations, everyday tools, accessibility), and **everything else in after-2.0 tracks A–K** (organize, create/convert, editing, forms, OCR and accessibility authoring, protect and sign, automation, review and share, opt-in connected features). Only bypasses, cracking and hidden data collection are never built.
 
 Where Atlas goes further: **Arabic and Urdu interface languages** (Foxit ships neither), the Library as a research home, deep local-fallback bookmarks, and honest storage states.
 
@@ -204,6 +210,7 @@ At the end of each stage we run the same tasks on the same files in a relevant m
 | 2026-09-27 | Qt PDF 6.10.3 for reading/rendering and qpdf 12.4.1 CLI for structure/security/writes ([ADR-0004](docs/decisions/ADR-0004-pdf-engine-responsibilities.md)); N2 and N3 accepted |
 | 2026-09-27 | Scope was expanded to multi-format and offline editing before 2.0 (now superseded) |
 | 2026-09-28 | `2.0.0-beta.1` released; N4 started |
+| **2026-11-01** | **All Foxit features, Atlas logo colours.** Owner: cover every Foxit PDF Editor feature at some point, using the owner's Foxit UI reference package (menus, dialogs, modules, plug-ins, skins, runtime screenshots). FOXIT_PARITY §3 now catalogues all of them; AFTER_2_0 is reorganized into tracks A–K; items previously "never planned" (Office conversion, OCR, measuring, 3D/multimedia, JavaScript, review/share, cloud, assistants) are planned, connected ones opt-in. **Atlas's main colour is built from its logo** (Atlas Blue, navy, cyan) instead of green; Foxit's neutral greys stay |
 | **2026-11-01** | **Foxit workspace parity** ([ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md)). Owner: copy Foxit's UI/UX as exactly as possible so Atlas never looks like a generic AI app. Layout, measurements, command placement and shortcuts follow Foxit; icons, colours and brand stay Atlas's. Foxit's features are staged in [FOXIT_PARITY.md](docs/FOXIT_PARITY.md): necessary ones before 2.0, others after. Offline OCR, image/text export and stamps move from "never" to after-2.0 candidates. Supersedes the "concepts only, slim command bar" decision of the same morning |
 | **2026-11-01** | **Trilingual interface and any-language content.** English (default), Arabic and Urdu UI ship complete in the first version; all user content accepts any language. **Foxit concepts adopted** (section 7) for familiarity and accessibility, with Atlas's own visual design. **UI revamp moved forward** to N4.3 so every later reader feature is built into the new workspace |
 | **2026-11-01** | **Focused 2.0.** EPUB/comics/Kindle, PDF editing tools (E1–E5), form filling, side-by-side, reflow view and read-aloud move after 2.0. **Batched owner reviews:** one review per stage instead of per sub-stage. **Docs consolidated:** 35 reference files in `docs/` became 9 plus an index, and `INFO.md` was merged into README/CHECKPOINTS; the previous set is kept unchanged in [docs/history](docs/history/README.md) |

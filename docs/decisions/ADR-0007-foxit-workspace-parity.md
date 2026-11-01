@@ -12,8 +12,8 @@ After seeing the first N4.3 revamp, the owner asked for Atlas to copy the UI and
 
 1. **Layout parity.** Atlas reproduces Foxit's ribbon-mode workspace: custom title bar with Quick Access Toolbar and file name, ribbon tab row (File + task tabs), 72 px command area with large and small buttons in groups, collapsible ribbon (Ctrl+F11), fixed-width document tabs with a first "start" tab (Atlas: **Library**), left navigation rail with panels (F4), document pane, status bar, File backstage page, Preferences window with a searchable category list, Skins (Light/Dark/System, Classic or Colourful light theme) and Mouse/Touch mode. Measurements, order and labels follow [FOXIT_PARITY.md](../FOXIT_PARITY.md).
 2. **Keyboard parity.** Foxit's default shortcuts are adopted for every command Atlas has, including where they replace earlier Atlas keys (Ctrl+K becomes Preferences).
-3. **Feature parity is staged.** Every Foxit command is classified in FOXIT_PARITY §3 as Now, a pre-2.0 stage, after 2.0, or not planned with a reason. Tabs and groups appear only when their commands work; there are no greyed-out promises.
-4. **Own assets, own brand.** Atlas does not extract, trace or reuse Foxit's icons, logos, skin images, manual text or any file from its installation, and does not use Foxit's purple as its brand. Icons come from Fluent UI System Icons (MIT) at Foxit's sizes (16/20/24 px); colours come from Atlas's palette with Foxit's *neutral structure* (surface, rail, gap, line, hover roles).
+3. **Feature parity is staged.** Every Foxit command is classified in FOXIT_PARITY §3 as done, a pre-2.0 stage, or an after-2.0 track (A–K); all are planned (amended 2026-11-01). Tabs and groups appear only when their commands work; there are no greyed-out promises.
+4. **Own assets, own brand.** Atlas does not ship, trace or reuse Foxit's icons, logos, skin images, manual text or any file from its installation, and does not use Foxit's purple. The owner's reference package is used for measurements, colour values of neutral roles, and the feature/menu/dialog inventory. Icons come from Fluent UI System Icons (MIT) at Foxit's sizes (16/20/24 px); the brand colour comes from the Atlas logo.
 5. **Languages.** The workspace is fully translated and mirrored for Arabic and Urdu ([ADR-0006](ADR-0006-interface-languages.md)); Foxit offers neither.
 6. **Custom title bar** keeps native Windows behaviour through the system move and resize loops (`startSystemMove`/`startSystemResize`: drag-to-edge snap, Win+arrow keys, resize edges), double-click to maximize and named buttons for Narrator. The Windows 11 Snap Layouts flyout on the maximize button needs a native hit-test and is tracked for N10; `--native-frame` keeps the system frame as a fallback.
 
@@ -27,7 +27,8 @@ After seeing the first N4.3 revamp, the owner asked for Atlas to copy the UI and
 
 - N4.3 grows: title bar, ribbon, backstage, Preferences window and skins become part of it. The library becomes the pinned first document tab.
 - Every later stage adds its commands to the ribbon tab Foxit uses for them, and its panel to the rail.
-- Some Foxit features previously listed as "never" (offline OCR, image export, plain-text export, stamps) become after-2.0 candidates; cloud, accounts, AI assistant, email review, JavaScript and multimedia stay not planned.
+- **Amended 2026-11-01 (owner):** every Foxit feature is planned (FOXIT_PARITY §3, AFTER_2_0 tracks A–K); connected features are opt-in. Only bypasses, cracking and hidden data collection are never built.
+- Atlas's own colour comes from its logo (Atlas Blue/navy/cyan); Foxit's neutral greys are used for the chrome.
 - Comparisons with Foxit at each stage review now include a side-by-side screenshot at the same window size.
 
 ## Revisit conditions

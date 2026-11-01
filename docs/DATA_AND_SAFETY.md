@@ -32,7 +32,7 @@ These are distinct: internal page index (implementation detail), the user-visibl
 
 ### Bookmark node
 
-Stable Atlas ID (independent of title) · document identity · parent and sibling order · title · destination, or grouping-only · description · tags · source fingerprint · storage state · local revision · observed source revision · conflict metadata. Duplicate titles are valid; breadcrumbs never rely on titles alone.
+Stable Atlas ID (independent of title) · document identity · parent and sibling order · title · destination, or grouping-only · description · tags · source fingerprint · storage state · local revision · observed source revision · conflict metadata. Duplicate titles are valid; breadcrumbs never rely on titles alone. Titles, notes and tags may be in **any language or script** and are stored as exact UTF-8; Atlas never transliterates, reorders, normalizes or trims user text when saving (normalization is applied only inside search indexes).
 
 **Storage states:** `Embedded` (in the current PDF) · `LocalOnly` · `PendingEmbed` (waiting for a writable source) · `LocalOverride` (embedded node with a local rename, move or destination change) · `LocallyHidden` (suppressed in Atlas, still in the PDF) · `Conflict`. Transitions are explicit and tested. Nothing becomes `Embedded` before save → validate → reopen → re-index succeeds. The default UI shows these quietly (an icon and text in details), not loudly.
 

@@ -1,24 +1,29 @@
 import QtQuick
 import QtQuick.Controls.Basic
 
+// Text field: accepts any language. Direction follows the content, not the UI.
 TextField {
     id: control
 
-    implicitHeight: 42
-    leftPadding: 13
-    rightPadding: 13
-    topPadding: 9
-    bottomPadding: 9
+    implicitHeight: Theme.controlHeight
+    leftPadding: Theme.md
+    rightPadding: Theme.md
+    topPadding: 0
+    bottomPadding: 0
+    verticalAlignment: TextInput.AlignVCenter
     hoverEnabled: true
+    color: Theme.ink
+    placeholderTextColor: Theme.muted
+    selectionColor: Theme.accent
+    selectedTextColor: Theme.onAccent
+    font.family: I18n.uiFamily
+    font.pixelSize: Math.round(14 * I18n.sizeScale)
 
     background: Rectangle {
-        radius: 8
-        color: control.palette.base
+        radius: Theme.radiusControl
+        color: Theme.raised
         border.width: control.activeFocus ? 2 : 1
-        border.color: control.activeFocus
-            ? control.palette.highlight
-            : control.hovered
-                ? Qt.alpha(control.palette.buttonText, 0.34)
-                : Qt.alpha(control.palette.buttonText, 0.20)
+        border.color: control.activeFocus ? Theme.focusRing
+            : control.hovered ? Theme.ink : Theme.controlBorder
     }
 }

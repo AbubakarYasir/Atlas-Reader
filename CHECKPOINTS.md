@@ -9,7 +9,7 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | | |
 |---|---|
 | Active stage | **N4: Reader**, planned `2.0.0-beta.2` |
-| Active sub-stage | **N4.3: Navigation** (next). N4.2 Virtual viewport is implemented and verified: pages display (CI `41242163280`, 45/45) |
+| Active sub-stage | **N4.3: Workspace revamp, design system and three languages** (English, Arabic, Urdu). N4.2 Virtual viewport is implemented and verified: pages display (CI `41242163280`, 45/45) |
 | Done in N4 | N4.1 Opening, tabs and passwords: implemented and automated-verified (43/43 CI tests, run `36690884159`) |
 | Branch | `native-v2-n4-reader-foundation`, from accepted `main` merge `739508e3` |
 | Released | `2.0.0-beta.1` (Library), 2026-09-28 |
@@ -29,7 +29,7 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | N6 | Ink + annotations | `2.0.0-beta.4` | Not started |
 | N7 | Everyday tools | `2.0.0-beta.5` | Not started |
 | N8 | Backup, restore + migration | `2.0.0-beta.6` | Not started |
-| N9 | Arabic/RTL + accessibility qualification | `2.0.0-beta.7` | Not started |
+| N9 | English/Arabic/Urdu + accessibility qualification | `2.0.0-beta.7` | Not started |
 | N10 | Speed, hardware + release candidate | `2.0.0-rc.1` | Not started |
 | N11 | Stable Windows 2.0 | `2.0.0` | Not started |
 
@@ -86,26 +86,33 @@ Background open from the Library or a direct path; one tab per file; tab switchi
 - While zooming or scrolling fast, show the existing texture and sharpen asynchronously; never block input.
 - **Tests:** mixed sizes, all rotations, crop/media boxes, fast jumps, resize and scale changes, cancellation, cache invalidation, a 2,000-page memory series (memory must not grow with page count).
 
-### N4.3 — Navigation ← **next**
+### N4.3 — Workspace revamp, design system and three languages ← **active**
+
+Moved forward on 2026-11-01 so every later reader feature lands in the final workspace ([PLAN.md §7](PLAN.md#7-competitive-references), [DESIGN.md](docs/DESIGN.md)).
+
+- **Design system:** `Theme` singleton (colours, type, spacing, radii, motion, sizes); shared components (button variants, icon button, text field, tab strip, command bar, status bar, banner, empty state, menu); one consistent outline icon set; no literal colours or sizes in views. `Main.qml` split into focused views.
+- **Three interface languages:** English (default), Arabic and Urdu, switchable live from the title bar and remembered between runs. Every string comes from the `I18n` tables ([ADR-0006](docs/decisions/ADR-0006-interface-languages.md)); a CI check fails on any key missing in any language. Arabic and Urdu mirror the layout; Urdu uses bundled Noto Nastaliq Urdu.
+- **Workspace (Foxit concepts, Atlas design):** title bar (app mark, location, language, theme, Open) · document tab bar · command bar (File · Navigate · Zoom · View groups) · left icon rail for panels (F4; panels arrive with their features) · document pane · status bar (first/previous/page box/next/last, zoom slider and percentage, fit buttons).
+- **Reading modes:** Read mode (Ctrl+H) hides chrome and shows a floating mini bar; Full screen (F11, Esc exits); view rotation (Ctrl+Shift+Plus/Minus).
+- **Appearance and accessibility:** Light / Dark / System; reading colours Paper, Sepia, Night and High contrast (rendering only, never changes the PDF); Touch mode (40 px targets); Foxit-compatible shortcuts (Ctrl+1 actual size, Ctrl+2 fit width, Ctrl+0 fit page).
+- **Library restyle:** same behaviour, new components, three languages.
+- **Tests:** string-table completeness (EN/AR/UR); offscreen rendered screenshots in English, Arabic and Urdu × light/dark; keyboard route and accessible names; existing viewport and controller suites.
+
+### N4.4 — Navigation
 
 - Continuous and single-page; facing and cover spreads; reading direction set separately from UI language (C03).
-- Zoom, actual size, fit page/width/height; page jump by number or label; academic offset; thumbnails.
-- Back/Forward history across links, jumps and search results; per-book position and zoom remembered; focus/full-screen mode with a discoverable exit (C02).
+- Fit height; page jump by label; academic offset; **Pages panel** (thumbnails) in the rail; default layout/zoom preferences; tiling for pages beyond 8192 px.
+- Back/Forward history across links, jumps and search results; per-book position and zoom remembered (C02).
 - **Tests:** Fit/FitH/FitV normalization, bounds, labels, rotations, spread rules, LTR/RTL progression, focus at 100% and 200%.
 
-### N4.4 — Outline, text, search and links
+### N4.5 — Outline, text, search and links
 
-- Read-only outline; text selection and copy; cancellable search with next/previous; internal and external links through Atlas-owned models.
+- **Outline panel** (read-only) and **Search panel**; text selection and copy; caret browsing and system selection colour options; cancellable search with next/previous; internal and external links through Atlas-owned models.
 - Semantic de-duplication of Qt PDF's duplicate link rows; destinations normalized with rotation and crop.
 - Document text and reading order exposed to assistive technology; tagged, untagged and image-only content are told apart (C04).
 - No document JavaScript, launches or remote fetches; external links show their destination and need a click to confirm (C05, C22). Honest unsupported states for forms, XFA, attachments and signatures (C15).
+- Search accepts any script; Arabic/Urdu normalization (letter variants, diacritics, tatweel) is documented and tested.
 - **Tests:** link-heavy fixtures, rotated destinations, Arabic/Urdu/English and mixed-direction search, p50/p95/p99 search latency on long books, image-only honesty, hostile-action fixtures with the network blocked.
-
-### N4.5 — Reading workspace and design system
-
-- **Design-system foundation** ([DESIGN.md](docs/DESIGN.md)): a `Theme` singleton with tokens; shared components (button, icon button, text field, tab strip, side panel, tree, banner, empty state, dialog). Replace hard-coded colors, sizes and inline `arabic ? … : …` strings with tokens and Qt Linguist translations (`qsTr` + `.ts` for English and Arabic). `Main.qml` gets split into focused views.
-- Compose the workspace: canvas with gutters, tab strip, collapsible navigation panel (Outline · Pages), search results, status and errors, and a final shortcut map (resolve `Ctrl+O` Library vs Reader).
-- **Tests:** rendered review in English/Arabic × light/dark/high contrast × wide/narrow × 100%/200%; long names and overflow; keyboard-only route; Narrator names and roles; no literal colors outside `Theme`.
 
 ### Engineering speed tasks in N4
 
@@ -122,11 +129,11 @@ Background open from the Library or a direct path; one tab per file; tab switchi
 
 ### Owner review
 
-Using the [N4 review guide](docs/N4_REVIEW.md): open an image-only, an Arabic/Urdu, a 1,000+ page, a mixed-size/rotated and a link-heavy PDF. Try tabs, zoom/fit, page labels, search, links, outline, thumbnails, spreads, reading direction, Back/Forward and restore, with mouse and keyboard. Check Narrator, 200%, Arabic and dark mode. Run the same tasks in Foxit or SumatraPDF and note what feels better or worse. Includes the N4.1 checks (passwords, file not locked).
+Using the [N4 review guide](docs/N4_REVIEW.md): open an image-only, an Arabic/Urdu, a 1,000+ page, a mixed-size/rotated and a link-heavy PDF. Try tabs, zoom/fit, page labels, search, links, outline, thumbnails, spreads, reading direction, Back/Forward and restore, with mouse and keyboard. Check the interface in English, Arabic and Urdu, plus Narrator, 200%, dark mode and reading colours. Run the same tasks in Foxit or SumatraPDF and note what feels better or worse. Includes the N4.1 checks (passwords, file not locked).
 
 ### Stop gate
 
-Owner records **`N4 PASS`** after required fixes, when the reader is comfortable for daily reading, all blocking QA is green and the reviewed build is the one that gets merged. Wrong navigation, broken Arabic shaping or direction, unbounded memory, repeated UI stalls or an inaccessible core path block it.
+Owner records **`N4 PASS`** after required fixes, when the reader is comfortable for daily reading, all blocking QA is green and the reviewed build is the one that gets merged. Wrong navigation, a missing or wrong translation, broken Arabic/Urdu shaping or direction, unbounded memory, repeated UI stalls or an inaccessible core path block it.
 
 ---
 
@@ -231,21 +238,21 @@ Using a copy of real legacy data: preview matches, import twice, run old and new
 
 ---
 
-## N9 — Arabic/RTL + accessibility qualification (`2.0.0-beta.7`)
+## N9 — Languages + accessibility qualification (`2.0.0-beta.7`)
 
 **Goal:** close the remaining gaps across everything built. This is qualification, not the first time these are done.
 
-Run the full workflow matrix (Library, Reader, Bookmarks, protected/local, conflicts, import/export, ink, print, metadata, backup/migration) in Arabic UI with mixed Arabic/English/Urdu data, keyboard-only, with Narrator, Accessibility Insights, 100%/200%, high contrast and reduced motion (C13).
+Run the full workflow matrix (Library, Reader, Bookmarks, protected/local, conflicts, import/export, ink, print, metadata, backup/migration) in the English, Arabic and Urdu interfaces with an any-script content corpus (Arabic, Urdu, Persian, English, Hebrew, Devanagari, CJK, mixed direction), keyboard-only, with Narrator, Accessibility Insights, 100%/200%, high contrast and reduced motion (C13).
 
 ### Automated QA
 
-- Translation completeness with no English fallback in core screens.
+- Translation completeness in all three languages with no English fallback in core screens; Urdu Nastaliq and Arabic Naskh rendering checks.
 - Bidi isolation, exact Unicode round trips, normalization, search and collation.
 - Keyboard traversal and UI Automation role/name/state assertions; scale and high-contrast checks; a coverage report with no blank core cell.
 
 ### Owner review
 
-Repeat the matrix above personally, focusing on Arabic reading comfort and Narrator flow.
+Repeat the matrix above personally in English, Arabic and Urdu, focusing on reading comfort, translation quality and Narrator flow.
 
 ### Stop gate
 
@@ -299,11 +306,11 @@ Install, upgrade, use and uninstall the exact candidate on a clean profile; conf
 
 | From N2 | Fixed in | Blocking evidence |
 |---|---|---|
-| Qt PDF returns duplicate raw link rows | N4.4 | De-duplication test plus link-heavy fixture |
-| Rotated explicit destinations need rotation metadata | N4.4 | Exact targets on normal, cropped, 90°, 180° and 270° pages |
-| Qt PDF search slower than PDFium on synthetic tests | N4.4 | Long-book p50/p95/p99, cancellation, no missed results |
+| Qt PDF returns duplicate raw link rows | N4.5 | De-duplication test plus link-heavy fixture |
+| Rotated explicit destinations need rotation metadata | N4.5 | Exact targets on normal, cropped, 90°, 180° and 270° pages |
+| Qt PDF search slower than PDFium on synthetic tests | N4.5 | Long-book p50/p95/p99, cancellation, no missed results |
 | Qt PDF memory trend needs real-reader proof | N4.2, N10 | 2,000-page and multi-tab memory series |
-| Fit/FitH/FitV handling | N4.3 | Destination-mode fixtures |
+| Fit/FitH/FitV handling | N4.4 | Destination-mode fixtures |
 | Broader graphics/annotation rendering corpus | N4, N6 | Image, gradient, transparency and annotation subtypes |
 | Security-handler breadth | N5.1 | Modern and unsupported encryption fixtures, no bypass |
 | Signature presence ≠ validity | N5.1 (detect only); validation after 2.0 | Signed originals preserved; never a "valid" claim |

@@ -47,6 +47,8 @@ class ReaderViewport : public QQuickItem {
     Q_PROPERTY(int pageCount READ pageCount NOTIFY layoutChanged)
     Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
     Q_PROPERTY(QString errorKey READ errorKey NOTIFY loadingChanged)
+    Q_PROPERTY(int readingColors READ readingColors WRITE setReadingColors NOTIFY readingColorsChanged)
+    Q_PROPERTY(int rotation READ rotation NOTIFY rotationChanged)
     Q_PROPERTY(QColor pageColor READ pageColor WRITE setPageColor NOTIFY pageColorChanged)
     Q_PROPERTY(QColor pageShadowColor READ pageShadowColor WRITE setPageShadowColor NOTIFY
                    pageColorChanged)
@@ -89,6 +91,17 @@ public:
     Q_INVOKABLE void resetZoom();
     Q_INVOKABLE void scrollByPages(qreal screens);
     Q_INVOKABLE void reload();
+    Q_INVOKABLE void nextPage();
+    Q_INVOKABLE void previousPage();
+    Q_INVOKABLE void firstPage();
+    Q_INVOKABLE void lastPage();
+    Q_INVOKABLE void actualSize();
+    Q_INVOKABLE void rotateView(int quarterTurns);
+
+    // 0 Paper, 1 Sepia, 2 Night, 3 High contrast. Rendering only; never written to the PDF.
+    [[nodiscard]] int readingColors() const { return readingColors_; }
+    void setReadingColors(int colors);
+    [[nodiscard]] int rotation() const { return static_cast<int>(layout_.settings().viewRotation) * 90; }
 
 signals:
     void controllerChanged();
@@ -101,6 +114,8 @@ signals:
     void currentPageChanged();
     void loadingChanged();
     void pageColorChanged();
+    void readingColorsChanged();
+    void rotationChanged();
 
 protected:
     QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) override;
@@ -137,6 +152,7 @@ private:
     bool loading_{};
     QString errorKey_;
     QColor pageColor_{Qt::white};
+    int readingColors_{};
     QColor pageShadowColor_{0, 0, 0, 38};
 
     atlas::reader::ViewportLayout layout_;

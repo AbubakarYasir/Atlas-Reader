@@ -17,7 +17,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent Gui Quick Qml QuickControls2 Pdf)
+find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent Gui Quick Qml QuickControls2 Pdf Svg)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 qt_standard_project_setup(REQUIRES 6.10)
 
@@ -133,6 +133,8 @@ add_library(atlas_app_support STATIC
     src/app/diagnostics/ShellMetrics.h
     src/app/logging/Logging.cpp
     src/app/logging/Logging.h
+    src/app/settings/AppPreferences.cpp
+    src/app/settings/AppPreferences.h
 )
 target_include_directories(atlas_app_support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(atlas_app_support PUBLIC Qt6::Core Qt6::Gui Qt6::Quick)
@@ -177,16 +179,40 @@ if(WIN32)
     set_target_properties(atlas_reader PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
+set(ATLAS_QML_FILES
+    qml/Main.qml qml/Theme.qml qml/I18n.qml qml/AppState.qml
+    qml/AtlasButton.qml qml/AtlasIconButton.qml qml/AtlasTextField.qml qml/SidebarItem.qml
+    qml/TitleBar.qml qml/LibraryView.qml qml/ReaderView.qml qml/ReaderTab.qml
+)
+# Place every QML file at the module root so the module's qmldir (and its
+# singletons) is the implicit import of each file.
+foreach(qml_file IN LISTS ATLAS_QML_FILES)
+    get_filename_component(qml_name ${qml_file} NAME)
+    set_source_files_properties(${qml_file} PROPERTIES QT_RESOURCE_ALIAS ${qml_name})
+endforeach()
+set_source_files_properties(qml/i18n/Strings.js PROPERTIES QT_RESOURCE_ALIAS i18n/Strings.js)
+set_source_files_properties(qml/Theme.qml qml/I18n.qml qml/AppState.qml
+    PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+file(GLOB ATLAS_ICON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS assets/icons/*.svg)
+
 qt_add_qml_module(atlas_reader
     URI AtlasReader
     VERSION 1.0
-    QML_FILES qml/AtlasButton.qml qml/AtlasTextField.qml qml/Main.qml
+    QML_FILES
+        ${ATLAS_QML_FILES}
+        qml/i18n/Strings.js
+    RESOURCES
+        ${ATLAS_ICON_FILES}
+        assets/fonts/NotoNastaliqUrdu-wght.ttf
+        assets/fonts/NotoNaskhArabic-Regular.ttf
+        assets/fonts/NotoNaskhArabic-SemiBold.ttf
+        assets/branding/atlas-reader-icon.png
 )
 
 target_compile_definitions(atlas_reader PRIVATE ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}")
 target_link_libraries(atlas_reader
     PRIVATE atlas_core atlas_app_support atlas_library_ui atlas_reader_ui
-    Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2
+    Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2 Qt6::Svg
 )
 atlas_enable_warnings(atlas_reader)
 if(MSVC)

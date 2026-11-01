@@ -9,6 +9,8 @@ Atlas reuses mature open-source work when it clearly improves reliability or spe
 | Qt (Core, Gui, Qml, Quick, QuickControls2, Pdf) | 6.10.3, dynamic | UI, platform, PDF reading | LGPLv3 (per module; verify each) | Presentation/infrastructure; Qt PDF only inside adapters |
 | qpdf CLI | 12.4.1, first-party build route | PDF structure/security/writes (used from N5) | Apache-2.0 | PDF infrastructure adapter |
 | SQLite + FTS5 | 3.53.4#1, vcpkg baseline `9e2895bf6afb246396d85232ba70fcfa1fa67ba1`, `x64-windows-static-md` | Index, search, local state | Public domain | Repository layer only |
+| Noto Nastaliq Urdu, Noto Naskh Arabic | pinned files, see `assets/fonts/README.md` | Urdu interface; Arabic/Urdu content | OFL-1.1 | Loaded at startup from bundled resources |
+| Fluent UI System Icons | commit `9eb184e9`, 40 SVGs, see `assets/icons/README.md` | Interface icons | MIT | Tinted at runtime; one family only |
 
 The production distribution route, notices and SBOM are recorded in [N2_PRODUCTION_DISTRIBUTION](baselines/N2_PRODUCTION_DISTRIBUTION.md) and [ADR-0004](decisions/ADR-0004-pdf-engine-responsibilities.md). **PDFium** (`156.0.8066.0`, community `bblanchon/pdfium-binaries` build, see [provenance](baselines/N2_PDFIUM_PROVENANCE.md)) is qualification and comparison evidence only. A standalone `pdfium.dll` must never ship; the review packager enforces this.
 
@@ -34,8 +36,7 @@ Then: pin the exact version and source, add it through vcpkg manifest mode (Qt s
 | Catch2 v3 | Portable unit/contract tests | BSL-1.0 | When Qt Test is awkward for pure core tests |
 | Google Benchmark | Microbenchmarks | Apache-2.0 | N4 reader benchmarks, if the fixture runner isn't enough |
 | xxHash | One fast identity/cache signal | BSD-2-Clause | Only if identity/cache work needs it |
-| Fluent UI System Icons | One consistent icon family (SVG) | MIT | N4.5 design system |
-| Noto Sans Arabic UI | Arabic UI font, if Segoe's Arabic loses the comparison | OFL-1.1 | N4.5 decision |
+| Noto Sans Arabic UI | Arabic UI font, if Segoe's Arabic loses the rendered comparison | OFL-1.1 | Only if needed |
 | spdlog | Structured logging | MIT | Only if Qt logging proves insufficient |
 | Syft (or similar) | SBOM generation | Apache-2.0 | N10 |
 

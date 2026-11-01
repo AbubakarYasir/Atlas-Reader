@@ -3,6 +3,7 @@
 #include "app/logging/Logging.h"
 #include "app/reader/ReaderController.h"
 #include "app/reader/ReaderViewport.h"
+#include "app/settings/AppPreferences.h"
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
@@ -18,24 +19,13 @@
 #include <QTimer>
 
 #include <chrono>
+#include <QFileInfo>
+#include <QSvgRenderer>
 #include <cstdlib>
 #include <filesystem>
 #include <algorithm>
 
 namespace {
-
-QString normalizedLanguage(const QString& value) {
-    const QString normalized = value.trimmed().toLower();
-    return normalized == QStringLiteral("ar") ? QStringLiteral("ar") : QStringLiteral("en");
-}
-
-QString normalizedTheme(const QString& value) {
-    const QString normalized = value.trimmed().toLower();
-    if (normalized == QStringLiteral("light") || normalized == QStringLiteral("dark")) {
-        return normalized;
-    }
-    return QStringLiteral("system");
-}
 
 std::filesystem::path filesystemPath(const QString& value) {
 #ifdef _WIN32
@@ -52,6 +42,9 @@ int main(int argc, char* argv[]) {
     const auto processStart = MetricsClock::now();
 
     QGuiApplication app(argc, argv);
+    // Interface icons are SVG. Referencing Qt Svg keeps its image plugin in
+    // the deployed package (windeployqt follows real module imports).
+    static_cast<void>(QSvgRenderer::staticMetaObject.className());
     const auto applicationReady = MetricsClock::now();
 
     QGuiApplication::setApplicationName(QStringLiteral("Atlas Reader Native"));
@@ -68,12 +61,12 @@ int main(int argc, char* argv[]) {
 
     const QCommandLineOption languageOption(
         {QStringLiteral("language"), QStringLiteral("lang")},
-        QStringLiteral("Initial shell language/direction: en or ar."),
+        QStringLiteral("Interface language for this session: en (default), ar or ur."),
         QStringLiteral("language"),
         QStringLiteral("en"));
     const QCommandLineOption themeOption(
         QStringLiteral("theme"),
-        QStringLiteral("Initial shell theme: system, light, or dark."),
+        QStringLiteral("Theme for this session: system, light, or dark."),
         QStringLiteral("theme"),
         QStringLiteral("system"));
     const QCommandLineOption quitAfterOption(
@@ -114,6 +107,8 @@ int main(int argc, char* argv[]) {
         QStringLiteral("Set the initial window height for visual QA."),
         QStringLiteral("pixels"));
 
+    parser.addPositionalArgument(
+        QStringLiteral("files"), QStringLiteral("PDF files to open in the reader."), QStringLiteral("[files...]"));
     parser.addOption(languageOption);
     parser.addOption(themeOption);
     parser.addOption(quitAfterOption);
@@ -128,24 +123,13 @@ int main(int argc, char* argv[]) {
     parser.process(app);
     const auto argumentsReady = MetricsClock::now();
 
-    const QString language = normalizedLanguage(parser.value(languageOption));
-    const QString theme = normalizedTheme(parser.value(themeOption));
-    const bool isArabic = language == QStringLiteral("ar");
-
-    QGuiApplication::setLayoutDirection(isArabic ? Qt::RightToLeft : Qt::LeftToRight);
-
-    bool initialDark = theme == QStringLiteral("dark");
-    if (theme == QStringLiteral("system")) {
-        initialDark = QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
-    }
-
     bool quitDelayValid = false;
     const int quitAfterMs = parser.value(quitAfterOption).toInt(&quitDelayValid);
     const int effectiveQuitAfterMs = quitDelayValid && quitAfterMs > 0 ? quitAfterMs : 0;
 
     qCInfo(atlas::logging::startup).noquote()
-        << QStringLiteral("Starting %1 with Qt %2; language=%3 theme=%4")
-               .arg(QGuiApplication::applicationVersion(), QString::fromLatin1(qVersion()), language, theme);
+        << QStringLiteral("Starting %1 with Qt %2")
+               .arg(QGuiApplication::applicationVersion(), QString::fromLatin1(qVersion()));
 
     atlas::diagnostics::ShellMetrics metrics(
         processStart,
@@ -160,15 +144,20 @@ int main(int argc, char* argv[]) {
     qmlRegisterUncreatableType<atlas::app::ReaderController>(
         "Atlas.Reader", 1, 0, "ReaderController", QStringLiteral("Provided by the application"));
 
-    QQmlApplicationEngine engine;
-    metrics.recordStage(QStringLiteral("startup.qml_engine_ready_ms"));
-
     const QString profileDirectory = parser.isSet(profileDirectoryOption)
         ? QDir::cleanPath(parser.value(profileDirectoryOption))
         : QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     atlas::app::LibraryController libraryController(
         filesystemPath(QDir{profileDirectory}.filePath(QStringLiteral("library.sqlite3"))));
     atlas::app::ReaderController readerController(filesystemPath(profileDirectory));
+    atlas::app::AppPreferences preferences(QDir{profileDirectory}.filePath(QStringLiteral("preferences.ini")));
+    if (parser.isSet(languageOption)) preferences.overrideLanguage(parser.value(languageOption));
+    if (parser.isSet(themeOption)) preferences.overrideThemeMode(parser.value(themeOption));
+
+    // Declared after the objects it exposes so it is destroyed first: QML
+    // bindings never see a destroyed context object during shutdown.
+    QQmlApplicationEngine engine;
+    metrics.recordStage(QStringLiteral("startup.qml_engine_ready_ms"));
     QObject::connect(
         &libraryController,
         &atlas::app::LibraryController::openDocumentRequested,
@@ -180,8 +169,7 @@ int main(int argc, char* argv[]) {
 
     engine.rootContext()->setContextProperty(
         QStringLiteral("atlasVersion"), QGuiApplication::applicationVersion());
-    engine.rootContext()->setContextProperty(QStringLiteral("atlasInitialArabic"), isArabic);
-    engine.rootContext()->setContextProperty(QStringLiteral("atlasInitialDark"), initialDark);
+    engine.rootContext()->setContextProperty(QStringLiteral("preferences"), &preferences);
     engine.rootContext()->setContextProperty(QStringLiteral("libraryController"), &libraryController);
     engine.rootContext()->setContextProperty(QStringLiteral("readerController"), &readerController);
 
@@ -199,6 +187,11 @@ int main(int argc, char* argv[]) {
     if (engine.rootObjects().isEmpty()) {
         qCCritical(atlas::logging::startup) << "QML root object was not created";
         return EXIT_FAILURE;
+    }
+
+    // Files passed on the command line (Open with…, drag onto the icon).
+    for (const auto& file : parser.positionalArguments()) {
+        readerController.openLocalFile(QUrl::fromLocalFile(QFileInfo{file}.absoluteFilePath()));
     }
 
     if (auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst())) {

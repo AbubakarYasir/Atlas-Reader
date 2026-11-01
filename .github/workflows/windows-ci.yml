@@ -46,6 +46,11 @@ jobs:
         shell: pwsh
         run: ./tools/docs/check-markdown.ps1
 
+      - name: Validate interface strings (English, Arabic, Urdu)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: python tools/i18n/check-strings.py
+
       - name: Validate inherited qualification scripts and N1 shell contract
         if: matrix.configuration == 'Release'
         shell: pwsh

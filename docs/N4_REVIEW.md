@@ -2,7 +2,7 @@
 
 <!-- atlas-status: N4|in-progress -->
 
-One short review at the end of N4 (about 45 minutes). Agents run the detailed tests first, so this review is about what only you can judge: is reading comfortable, clear, correct in Arabic, and trustworthy?
+One short review at the end of N4 (about 45 minutes). Agents run the detailed tests first, so this review is about what only you can judge: is reading comfortable, clear, correct in English, Arabic and Urdu, and trustworthy?
 
 > **Status:** N4 is still being built. Opening, tabs and passwords (N4.1) work today. Showing pages arrives in N4.2. A build made before N4.5 shows only some of the checks below; each check says which part it needs.
 
@@ -19,11 +19,11 @@ One short review at the end of N4 (about 45 minutes). Agents run the detailed te
 2. **Password** (N4.1). Open the protected sample, enter a wrong password, then the right one. The message should be clear and the text hidden. After restarting Atlas it must ask again; Atlas never remembers passwords.
 3. **Restore tabs** (N4.1). Turn on *Restore reader tabs when Atlas starts*, close and reopen Atlas, then turn it off and check again.
 4. **File safety** (N4.1). While a book is open, rename it in File Explorer; Atlas must not block it. At the end, your files' modified dates are unchanged.
-5. **Reading feel** (N4.2–N4.3). Scroll the long book quickly, jump to page 900, zoom in and out, and switch fit width/fit page. Pages appear quickly, scrolling is smooth, and nothing freezes.
-6. **Pages, labels and layout** (N4.3). Go to a page by its printed label (for example "xii" or "45"); try facing pages and cover page; check rotated and mixed-size pages; set an Arabic book to right-to-left page order.
-7. **Find your way** (N4.4). Use the outline and thumbnails, search for an Arabic word and an English word, follow a link, then use **Back** to return exactly where you were.
-8. **Honesty** (N4.4). The scanned book reads normally and says plainly that it has no searchable text. Clicking a web link asks before opening the browser.
-9. **Arabic, keyboard and accessibility** (all). Switch the app to Arabic: layout mirrors and names stay readable. Do one full task with the keyboard only. With Narrator on, buttons, tabs and the password field should have sensible names. Check at 200% Windows scale and in dark mode.
+5. **Reading feel** (N4.2–N4.4). Scroll the long book quickly, jump to page 900, zoom in and out, and switch fit width/fit page. Pages appear quickly, scrolling is smooth, and nothing freezes.
+6. **Pages, labels and layout** (N4.4). Go to a page by its printed label (for example "xii" or "45"); try facing pages and cover page; check rotated and mixed-size pages; set an Arabic book to right-to-left page order.
+7. **Find your way** (N4.4–N4.5). Use the outline and thumbnails, search for an Arabic word and an English word, follow a link, then use **Back** to return exactly where you were.
+8. **Honesty** (N4.5). The scanned book reads normally and says plainly that it has no searchable text. Clicking a web link asks before opening the browser.
+9. **Languages, keyboard and accessibility** (N4.3). Switch the app to العربية and then اردو from the title bar: the layout mirrors, every label is translated (no English left over), Urdu shows in Nastaliq, and it switches back to English. Type a bookmark-style note mixing Arabic and English to check it stays exactly as typed. Try Read mode (Ctrl+H), Full screen (F11) and the reading colours. Do one full task with the keyboard only. With Narrator on, buttons, tabs and the password field should have sensible names. Check at 200% Windows scale and in dark mode.
 10. **Compared with what you use now** (N4.5). Do checks 5–7 in Foxit or SumatraPDF on the same files. Is Atlas as comfortable? Note anything that felt better or worse.
 
 ## Your reply
@@ -38,7 +38,7 @@ N4 REVIEW · build commit: <from BUILD-INFO.json>
 6 Pages/labels/layout: …
 7 Find your way: …
 8 Honesty: …
-9 Arabic/keyboard/accessibility: …
+9 Languages/keyboard/accessibility: …
 10 Comparison notes: …
 Overall: N4 PASS / FAIL
 Notes and screenshots:

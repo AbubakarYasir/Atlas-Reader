@@ -68,12 +68,13 @@ Never compare Debug with Release, or different machines, without saying so. A fa
 
 **Benchmarks:** `atlas_n3_library_benchmark` (enumeration, metadata/FTS insert, warmed search; copied data only) exists. N4 adds a reader benchmark for first page, page jump, scroll pacing, search and the memory series.
 
-## 7. Accessibility and Arabic gates (every UI stage)
+## 7. Accessibility and language gates (every UI stage)
 
 - Complete keyboard route, logical focus order, visible focus.
 - UI Automation role, name and state for custom controls; Narrator by hand.
 - 100% and 200% (spot-check 125% and 150%), Windows high contrast, reduced motion, never color alone.
-- Arabic UI direction and announcements; error and recovery dialogs usable without a pointer.
+- **Interface languages:** every key present and reviewed in English, Arabic and Urdu (`tools/i18n/check-strings.py` in CI fails on any gap); rendered screenshots in all three; Arabic and Urdu mirrored with correct announcements; Urdu Nastaliq legible at every size used; no clipped translations (Urdu and Arabic run longer and taller); error and recovery dialogs usable without a pointer.
+- **Any-script content:** text fields, bookmarks, notes, tags and search accept input through Windows keyboards/IMEs and round-trip exactly: Arabic (with tashkeel), Urdu, Persian, English, Hebrew, Devanagari, Chinese/Japanese/Korean, emoji and mixed-direction strings.
 - Mixed fixtures: Arabic, English, Urdu, mixed titles, both digit systems, punctuation and brackets, diacritics, long Unicode/RTL+LTR paths. Round trips preserve Unicode exactly unless a documented normalization is intended.
 
 ## 8. Static and build gates

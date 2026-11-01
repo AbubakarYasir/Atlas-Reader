@@ -1,6 +1,8 @@
 # Atlas Reader — Design System, Accessibility and Arabic/RTL
 
-This is the design contract. A user-facing change is done only when it meets this document in its **rendered** form. Competitor products are studied for capability gaps, never copied: no Foxit/Acrobat ribbon, layout, colors, icons or artwork.
+This is the design contract. A user-facing change is done only when it meets this document in its **rendered** form, in **English, Arabic and Urdu**.
+
+**Foxit concepts, Atlas design (owner decision 2026-11-01).** Atlas adopts the main interaction and accessibility *concepts* of Foxit PDF Editor (studied from the installed app and its manual) so Foxit users feel at home: see the concept table in [PLAN.md §7](../PLAN.md#7-competitive-references). Atlas never copies Foxit's artwork, icons, branding, colours, wording or files; the look below is Atlas's own.
 
 ## 1. Character
 
@@ -34,21 +36,27 @@ The application mark in `assets/branding` is used for app and package identity o
 
 **Shell destinations:** Library · Recents · Favorites · Folders · Bookmarks (N5) · Settings (N7).
 
-**Reader workspace:**
+**Reader workspace** (Foxit concepts in Atlas styling; mirrored automatically in Arabic and Urdu):
 
 ```text
-┌ tab strip ────────────────────────────────────────────────┐
-│ ◧ panel │  page toolbar: page · zoom/fit · search · more  │
-│ Outline │                                                 │
-│ Pages   │          page canvas (dominant)                 │
-│ Bookmk  │     gutters 24–32 px · soft page shadow         │
-│ Annot.  │                                                 │
-└─────────┴─────────────── status (only when needed) ───────┘
+┌ title bar: mark · Library/location · ………… · Command Center (Ctrl+K) · language · theme · Open ┐
+├ tab bar: [book A ×] [book B ×] [+]                                                         ┤
+├ command bar: File | Navigate | Zoom | View   (one row; groups collapse into "More" when narrow) ┤
+│ rail │ panel (F4)  │                                                                   │
+│ ▤    │ Outline     │                  page canvas (dominant)                            │
+│ ▦    │ Pages       │          gutters 24 px · soft page shadow · reading colours        │
+│ 🔖   │ Bookmarks   │                                                                   │
+│ 🔍   │ Search      │                                                                   │
+├──────┴─────────────┴ status bar: |◀ ◀ [ 12 ] / 340 ▶ ▶| · layout · ──●── 125% · fit ──────┤
 ```
 
-- The navigation panel order is Outline → Pages → Bookmarks → Annotations. It keeps the current location in sync and has its own search. In narrow windows it becomes a drawer with the same order and keys.
-- The toolbar shows only frequent actions: navigation, zoom/fit, search, bookmark (N5), write mode (N6) and reader settings. Details, export/import, reconciliation, save copy, advanced print and diagnostics live in menus and sheets.
-- Status for dirty, pending or local-only work is visible but never dominates reading.
+- **Title bar:** app mark and current place (Library or book name); the Command Center box (Ctrl+K, Alt+Q also works) for books, bookmarks and commands; language menu (English · العربية · اردو); theme; Open.
+- **Tab bar:** filename-first titles, close on hover/focus, `+` to open, Ctrl+Tab cycling, middle-click closes.
+- **Command bar:** a single calm row of grouped commands, not a ribbon wall. *File* (Open, Close) · *Navigate* (first/previous/next/last) · *Zoom* (out, %, in, Fit width, Fit page, Actual size) · *View* (Rotate, Read mode, Full screen, Reading colours). Labels show beside icons when space allows; below about 900 px only icons with tooltips remain; overflow goes into **More (⋯)**. Later stages add *Bookmark* (N5) and *Annotate* (N6) groups.
+- **Left rail + panel:** icon rail always visible; clicking an icon opens its panel (Outline, Pages, Bookmarks, Annotations, Search); clicking again or F4 collapses. The panel is resizable (200–480 px) and remembers its width. In narrow windows it overlays the page as a drawer with the same order and keys. Icons appear only when their panel works.
+- **Status bar:** page navigation with a page box that accepts numbers and (from N4.4) labels, layout buttons (single/continuous/facing from N4.4), zoom slider with percentage, fit buttons. It can auto-hide in Read mode.
+- **Read mode (Ctrl+H):** hides title, command and status bars and the panel; a small floating bar (page, zoom, exit) appears near the bottom on mouse movement or focus. **Full screen (F11):** the page fills the screen; Esc exits; both restore focus where it was.
+- Progressive disclosure: details, export/import, reconciliation, save copy, advanced print and diagnostics live in menus and sheets, never in permanent toolbars.
 
 ## 4. Tokens
 
@@ -93,7 +101,9 @@ The storage states (Embedded, Local only, Pending, Conflict, Signed, Read-only, 
 
 - **Latin UI:** Segoe UI Variable (Windows system font, so nothing is bundled).
 - **Arabic UI:** Segoe UI's Arabic glyphs as the baseline. Noto Sans Arabic UI (OFL) is a candidate if the N4.5 rendered comparison shows better joining and diacritic clarity at 12–14 px. Bundling needs the [dependency gate](DEPENDENCIES.md).
-- **Arabic/Urdu content fixtures:** Noto Naskh Arabic and Noto Nastaliq Urdu, already pinned for N2 evidence.
+- **Urdu UI and Urdu content:** **Noto Nastaliq Urdu** (bundled, OFL, the same pinned file as the N2 evidence). Nastaliq needs room: Urdu body text uses 15 px on 30 px line height, controls grow to fit (never clip), and labels are kept short.
+- **Arabic content** (bookmark titles, notes, document titles): **Noto Naskh Arabic** (bundled, OFL) at +1 px; Arabic UI chrome uses Segoe UI.
+- **Any other script** in user content falls back to Windows system fonts automatically (Segoe UI, Nirmala UI for Devanagari, Microsoft YaHei/Yu Gothic/Malgun Gothic for CJK, Segoe UI Emoji), so nothing renders as empty boxes.
 - **Arabic rules:** line height +15–20% (body 14/24); no letter-spacing ever (it breaks joining); no faux italics; avoid semibold below 13 px; keep diacritics clear of underlines and focus rings.
 - Numbers in page labels and counts use tabular figures where available.
 
@@ -139,25 +149,33 @@ Write the way a helpful librarian speaks: short, specific and calm. Never "Error
 
 ## 7. Keyboard
 
+Foxit-compatible where a Foxit equivalent exists, so muscle memory carries over.
+
 | Action | Keys |
 |---|---|
-| Open PDF | `Ctrl+O` (final in N4.5; the Library's Add folder moves to `Ctrl+Shift+A`). `Ctrl+Shift+O` stays as an alias. |
-| Command Center | `Ctrl+K` (N5) |
-| Find in document | `Ctrl+F`, `F3` / `Shift+F3` |
-| Go to page | `Ctrl+G` |
-| Zoom in / out / fit width / fit page / actual size | `Ctrl+=` / `Ctrl+-` / `Ctrl+1` / `Ctrl+2` / `Ctrl+0` |
-| Back / Forward (history) | `Alt+←` / `Alt+→` (mirrored meaning in RTL is **not** applied: history is temporal) |
-| Toggle navigation panel | `Ctrl+Shift+L` |
-| Focus mode | `F11`; `Esc` exits and restores focus |
+| Open PDF | `Ctrl+O` (in the Library, *Add folder* is on its button and `Ctrl+Shift+A`) |
+| Close tab / all tabs | `Ctrl+W` or `Ctrl+F4` / `Ctrl+Shift+W` |
+| Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
+| Command Center | `Ctrl+K` or `Alt+Q` (N5) |
+| Find in document / next / previous | `Ctrl+F` / `F3` / `Shift+F3` (N4.5) |
+| Go to page | `Ctrl+G` (focuses the page box) |
+| Next / previous page | `Ctrl+Page Down` / `Ctrl+Page Up`, also `→` `←` when the page fits |
+| First / last page | `Ctrl+Home` / `Ctrl+End` |
+| Scroll a screen | `Page Down`/`Space`, `Page Up`/`Shift+Space` |
+| Zoom in / out | `Ctrl++` (`Ctrl+=`) / `Ctrl+-`, `Ctrl+wheel` at the pointer |
+| Actual size / Fit width / Fit page | `Ctrl+1` / `Ctrl+2` / `Ctrl+0` |
+| Rotate view clockwise / counter-clockwise | `Ctrl+Shift++` / `Ctrl+Shift+-` |
+| Show/hide navigation panel | `F4` |
+| Read mode / Full screen | `Ctrl+H` / `F11` (`Esc` exits either) |
+| Back / Forward (history) | `Alt+←` / `Alt+→` (N4.4; temporal, not mirrored in RTL) |
 | Add bookmark | `Ctrl+B` (N5) |
-| Save / commit portable changes | `Ctrl+S` (N5+) |
+| Save portable changes | `Ctrl+S` (N5+) |
 | Print | `Ctrl+P` (N7) |
-| Close tab / next / previous | `Ctrl+W` / `Ctrl+Tab` / `Ctrl+Shift+Tab` |
-| Undo / redo | `Ctrl+Z` / `Ctrl+Shift+Z` |
+| Undo / redo | `Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z` |
 | Rename / delete / activate | `F2` / `Delete` / `Enter` |
 | Context menu | `Shift+F10` or the Menu key |
 
-Shortcuts appear in tooltips and menus, and their labels are localized. The keys themselves don't change by language. Trees use standard arrow semantics.
+Shortcuts appear in tooltips and menus, and their labels are localized; the keys themselves are the same in every language. Trees use standard arrow semantics (mirrored in RTL).
 
 ## 8. Accessibility contract
 
@@ -168,11 +186,17 @@ Every interactive element has an accessible **role, name and state**; a logical 
 - UI text scaling and PDF zoom are independent.
 - Text wraps instead of clipping at 200%; check 125% and 150% as well.
 - Never use color alone; honor reduced motion; support Windows contrast themes.
+- **Reading colours** (Foxit's "replace document colours" concept, rendering only, never written to the PDF): Paper (default), Sepia, Night (light text on dark), High contrast (black/white or white/black) and *Follow Windows contrast theme*; a custom page/text colour pair arrives with Settings (N7).
+- **Touch mode:** one switch enlarges every target to 40 px and spacing to match.
+- **Caret browsing and system selection colour** options for keyboard and magnifier users (N4.5).
 - Tools: Accessibility Insights for diagnostics. **Narrator by hand is still required**, because automated checks don't prove a usable flow.
 
-## 9. Arabic, Urdu and RTL
+## 9. Languages: English, Arabic, Urdu and any-script content
 
-- Arabic UI mirrors the structure with `LayoutMirroring.enabled` and `childrenInherit` at the window root.
+- **Interface languages in 2.0: English (default), Arabic, Urdu.** Switched live from the title bar, remembered between runs, overridable with `--language en|ar|ur`. Every string exists in all three; no screen ships with an English leftover in Arabic or Urdu.
+- Translations are written for meaning and tone, not word-for-word: short, polite, plain reader language. Arabic uses Modern Standard Arabic; Urdu uses everyday standard Urdu with common technical loanwords where Urdu readers expect them (for example پی ڈی ایف).
+- Arabic and Urdu mirror the structure with `LayoutMirroring.enabled` and `childrenInherit` at the window root.
+- **User content is any language.** Every input accepts any script via Windows keyboards/IMEs; text direction of each field follows its content (first strong character), not the UI language.
 - User content is never force-reversed. Filenames, paths and mixed segments get bidi isolation.
 - Directional icons (back, forward, next page in an LTR book) mirror with UI direction. Universal icons (search, close, play) do not. Page progression follows the **book's** reading direction, not the UI language.
 - Tree indentation, breadcrumbs and chevrons read naturally in RTL.
@@ -209,11 +233,11 @@ Screenshots and answers go into the stage evidence ledger. Raw screenshots stay 
 
 ## 11. Implementation in Qt Quick
 
-- `qml/Atlas/Theme.qml` (`pragma Singleton`) holds every token in §4, switching on dark mode and `Qt.styleHints.colorScheme`; `qml/Atlas/qmldir` registers it and the components.
-- Components live in `qml/Atlas/` and screens in `qml/views/`. `Main.qml` only composes views.
-- Strings use `qsTr()`; `i18n/atlas_en.ts` and `i18n/atlas_ar.ts` are compiled by `qt_add_translations`. Remove inline `arabic ? … : …` strings.
-- Icons: one consistent outline set at 16/20 px. The candidate is Fluent UI System Icons (MIT), loaded as SVG through Qt SVG, subject to the dependency gate. Never mix icon families.
-- CI later fails on literal `#rrggbb` colors in `qml/views/` (allow-list: `Theme.qml`).
+- `qml/Theme.qml` (`pragma Singleton`) holds every token in §4 and switches on dark mode, Windows contrast and touch mode.
+- `qml/I18n.qml` (`pragma Singleton`) exposes `language`, `rtl`, `t(key, args…)` and font families per language; strings live in `qml/i18n/Strings.js` as one table per language. Bindings that call `I18n.t()` re-evaluate when the language changes, so switching is instant with no restart ([ADR-0006](decisions/ADR-0006-interface-languages.md)). `tools/i18n/check-strings.py` (CI) fails if any key is missing, empty or has mismatched `%1` placeholders in any language.
+- Fonts: Noto Nastaliq Urdu and Noto Naskh Arabic ship in `assets/fonts/` (OFL, pinned SHA-256) and load at startup.
+- Icons: one outline family (Fluent UI System Icons, MIT, pinned) in `assets/icons/`, tinted through the control's `icon.color`; directional icons mirror in RTL.
+- Components and views live in `qml/`; `Main.qml` only composes views. No literal colours, sizes or strings in views.
 - Respect `Qt.styleHints` for reduced motion and Windows accessibility settings.
 
 ## 12. Touch and pen

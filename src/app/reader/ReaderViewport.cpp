@@ -204,6 +204,44 @@ void ReaderViewport::scrollByPages(qreal screens) {
     setContentY(contentY_ + screens * std::max<qreal>(kLineStep, height() * 0.9));
 }
 
+void ReaderViewport::nextPage() {
+    if (layout_.pageCount() > 0) goToPage(currentPage_ + 1);
+}
+
+void ReaderViewport::previousPage() {
+    if (layout_.pageCount() > 0) goToPage(currentPage_ - 1);
+}
+
+void ReaderViewport::firstPage() { setContentY(0.0); }
+
+void ReaderViewport::lastPage() {
+    if (layout_.pageCount() > 0) goToPage(static_cast<int>(layout_.pageCount()));
+}
+
+void ReaderViewport::actualSize() { setZoom(1.0); }
+
+void ReaderViewport::rotateView(int quarterTurns) {
+    auto settings = layout_.settings();
+    const int turns = ((static_cast<int>(settings.viewRotation) + quarterTurns) % 4 + 4) % 4;
+    settings.viewRotation = static_cast<atlas::reader::PageRotation>(turns);
+    const int page = currentPage_;
+    layout_.setSettings(settings);
+    emit rotationChanged();
+    if (fitMode_ != FitMode::None) applyFit();
+    relayout();
+    if (page > 0) goToPage(page);
+}
+
+void ReaderViewport::setReadingColors(int colors) {
+    colors = std::clamp(colors, 0, 3);
+    if (colors == readingColors_) return;
+    readingColors_ = colors;
+    emit readingColorsChanged();
+    queueTextureRelease(cache_.clear()); // textures for the old colours are no longer useful
+    scheduleRender();
+    update();
+}
+
 void ReaderViewport::reload() {
     documentRevision_ = 0;
     openDocument();
@@ -338,6 +376,7 @@ void ReaderViewport::runSchedule() {
     state.devicePixelRatio = devicePixelRatio();
     state.prefetchScreens = 1.0;
     state.documentRevision = documentRevision_;
+    state.theme = static_cast<std::uint8_t>(readingColors_);
     const atlas::reader::RenderPlan plan = atlas::reader::planRenders(layout_, state);
 
     std::vector<TextureKey> visible;
@@ -366,7 +405,8 @@ void ReaderViewport::dispatch(const atlas::reader::SchedulerActions& actions) {
                                   Q_ARG(quint64, request.key.documentRevision),
                                   Q_ARG(int, static_cast<int>(request.key.page)),
                                   Q_ARG(QSize, pixels),
-                                  Q_ARG(int, static_cast<int>(layout_.settings().viewRotation)));
+                                  Q_ARG(int, static_cast<int>(layout_.settings().viewRotation)),
+                                  Q_ARG(int, static_cast<int>(request.key.theme)));
     }
 }
 
@@ -474,31 +514,52 @@ void ReaderViewport::keyPressEvent(QKeyEvent* event) {
     switch (event->key()) {
     case Qt::Key_Down: setContentY(contentY_ + kLineStep); break;
     case Qt::Key_Up: setContentY(contentY_ - kLineStep); break;
-    case Qt::Key_Right: setContentX(contentX_ + kLineStep); break;
-    case Qt::Key_Left: setContentX(contentX_ - kLineStep); break;
-    case Qt::Key_PageDown: scrollByPages(1.0); break;
-    case Qt::Key_PageUp: scrollByPages(-1.0); break;
+    case Qt::Key_Right:
+    case Qt::Key_Left: {
+        // Scroll sideways when the page is wider than the view; otherwise turn
+        // the page. Right-to-left book progression arrives with N4.4 spreads.
+        const bool forward = event->key() == Qt::Key_Right;
+        if (contentWidth() > width() + 1.0) {
+            setContentX(contentX_ + (event->key() == Qt::Key_Right ? kLineStep : -kLineStep));
+        } else if (forward) {
+            nextPage();
+        } else {
+            previousPage();
+        }
+        break;
+    }
+    case Qt::Key_PageDown:
+        if (ctrl) nextPage();
+        else scrollByPages(1.0);
+        break;
+    case Qt::Key_PageUp:
+        if (ctrl) previousPage();
+        else scrollByPages(-1.0);
+        break;
     case Qt::Key_Space: scrollByPages(shift ? -1.0 : 1.0); break;
     case Qt::Key_Home: setContentY(0.0); break;
     case Qt::Key_End: setContentY(contentHeight()); break;
     case Qt::Key_Plus:
     case Qt::Key_Equal:
         if (!ctrl) return QQuickItem::keyPressEvent(event);
-        zoomBy(1.25);
+        if (shift) rotateView(1);
+        else zoomBy(1.25);
         break;
     case Qt::Key_Minus:
+    case Qt::Key_Underscore:
         if (!ctrl) return QQuickItem::keyPressEvent(event);
-        zoomBy(0.8);
+        if (shift) rotateView(-1);
+        else zoomBy(0.8);
         break;
-    case Qt::Key_0:
+    case Qt::Key_1: // Foxit-compatible: Ctrl+1 actual size
         if (!ctrl) return QQuickItem::keyPressEvent(event);
-        resetZoom();
+        actualSize();
         break;
-    case Qt::Key_1:
+    case Qt::Key_2: // Ctrl+2 fit width
         if (!ctrl) return QQuickItem::keyPressEvent(event);
         setFitMode(FitMode::Width);
         break;
-    case Qt::Key_2:
+    case Qt::Key_0: // Ctrl+0 fit page
         if (!ctrl) return QQuickItem::keyPressEvent(event);
         setFitMode(FitMode::Page);
         break;
@@ -632,7 +693,8 @@ QSGNode* ReaderViewport::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*)
         root->appendChildNode(paper);
 
         const auto best = cache_.bestAvailable(documentRevision_, static_cast<std::uint32_t>(i),
-                                               layout_.effectiveRotation(i), 0, wanted);
+                                               layout_.effectiveRotation(i),
+                                               static_cast<std::uint8_t>(readingColors_), wanted);
         if (!best) continue;
         const auto texture = textures_.find(*best);
         if (texture == textures_.end()) continue;

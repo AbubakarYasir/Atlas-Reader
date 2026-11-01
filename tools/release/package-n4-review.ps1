@@ -30,6 +30,10 @@ $buildDirectory = Split-Path (Split-Path $sourceExe)
 $sqliteNotice = Join-Path $buildDirectory 'vcpkg_installed/x64-windows-static-md/share/sqlite3/copyright'
 if (-not (Test-Path -LiteralPath $sqliteNotice)) { throw 'Pinned SQLite notice is missing from this build.' }
 Copy-Item -LiteralPath $sqliteNotice -Destination (Join-Path $notices 'sqlite3-copyright.txt')
+# Bundled interface assets (compiled into the executable): fonts (OFL-1.1) and icons (MIT).
+Copy-Item -LiteralPath (Join-Path $repo 'assets/fonts/OFL.txt') -Destination (Join-Path $notices 'noto-fonts-OFL.txt')
+Copy-Item -LiteralPath (Join-Path $repo 'assets/fonts/README.md') -Destination (Join-Path $notices 'noto-fonts-README.md')
+Copy-Item -LiteralPath (Join-Path $repo 'assets/icons/LICENSE.txt') -Destination (Join-Path $notices 'fluentui-system-icons-LICENSE.txt')
 foreach ($doc in @('N4_REVIEW.md', 'DEPENDENCIES.md')) {
     Copy-Item -LiteralPath (Join-Path $repo "docs/$doc") -Destination $docs
 }
@@ -44,7 +48,7 @@ Copy-Item -LiteralPath (Join-Path $repo 'tests/fixtures/pdf/manifest.json') -Des
 if ($LASTEXITCODE -ne 0) { throw 'Qt deployment failed.' }
 # windeployqt may create qt.conf; restore the accepted font-backend setting last.
 Copy-Item -LiteralPath (Join-Path $repo 'qt.conf') -Destination (Join-Path $stage 'qt.conf') -Force
-foreach ($dll in @('Qt6Core.dll','Qt6Gui.dll','Qt6Quick.dll','Qt6Pdf.dll','platforms/qwindows.dll')) {
+foreach ($dll in @('Qt6Core.dll','Qt6Gui.dll','Qt6Quick.dll','Qt6Pdf.dll','Qt6Svg.dll','platforms/qwindows.dll','imageformats/qsvg.dll')) {
     if (-not (Test-Path -LiteralPath (Join-Path $stage $dll))) { throw "Missing packaged runtime: $dll" }
 }
 if (Test-Path -LiteralPath (Join-Path $stage 'pdfium.dll')) { throw 'Standalone PDFium is qualification-only.' }

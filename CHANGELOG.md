@@ -4,6 +4,15 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N4.3 workspace revamp and three languages — 2026-11-01
+
+- **Atlas speaks English, Arabic and Urdu.** Pick the language from the title bar; the whole interface switches instantly, mirrors for Arabic and Urdu, and is remembered. Urdu uses the bundled Noto Nastaliq Urdu font. Book titles, names and paths in any script display correctly in every language.
+- **New workspace design** (Foxit-style layout, Atlas look): title bar, document tabs, a command bar, and a status bar with page navigation, fit buttons and a zoom slider. New icons throughout.
+- **Read mode** (Ctrl+H), **Full screen** (F11), view **rotation**, **reading colours** (Paper, Sepia, Night, High contrast — the PDF itself never changes), **Light / Dark / System** appearance and **Touch mode**.
+- Library restyled with list and grid views.
+- PDFs passed on the command line open in the reader.
+- New CI check: every interface string must exist in all three languages.
+
 ## N4.2 page display — 2026-11-01
 
 - **Atlas now shows PDF pages.** Opening a book shows a smooth, virtualized page view fitted to the window width, with a page box, page count, zoom out/in, Fit width and Fit page, scroll bars, wheel and keyboard navigation, and Ctrl+wheel zoom at the pointer. Only visible and nearby pages render, on a background thread; texture memory is capped.

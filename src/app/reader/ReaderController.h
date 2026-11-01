@@ -51,6 +51,7 @@ public:
     Q_INVOKABLE void retryAt(int index);
     Q_INVOKABLE void submitPassword(int index, const QString& password);
     Q_INVOKABLE void closeActive();
+    Q_INVOKABLE void closeAll();
     Q_INVOKABLE void showLibrary();
 
     // For the in-process page renderer only; never exposed to QML. The password

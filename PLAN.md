@@ -4,7 +4,7 @@
 
 This is the single source of direction: what Atlas is, what Windows 2.0 must contain, what comes later, and how we judge quality. Order and status live in [CHECKPOINTS.md](CHECKPOINTS.md). The detailed contracts live in the [docs folder](docs/README.md).
 
-**Owner:** Abu Bakar (`AbubakarYasir`) · **Current version:** `2.0.0-beta.1` · **Active stage:** N4 Reader · **Target:** Windows 11, then other platforms after 2.0
+**Owner:** Abu Bakar (`AbubakarYasir`) · **Current version:** `2.0.0-beta.1` · **Active stage:** N4 Reader · **Target:** Windows 11, then other platforms after 2.0 · **Interface languages:** English (default), Arabic, Urdu · **Content:** any language
 
 ## 1. North star
 
@@ -17,7 +17,7 @@ What makes Atlas different is the combination:
 1. **Library and reader as one product.** It is not a "File → Open" viewer.
 2. **Deep bookmarks as the main research object.** They are not a narrow sidebar feature.
 3. **Portable when possible, local when necessary.** Protected, read-only, signed or offline PDFs stay fully usable for research.
-4. **Arabic, Urdu and RTL correctness**, proven by tests, not a translated skin.
+4. **A complete English, Arabic and Urdu interface** in the first version (English is the default), with right-to-left layouts that are designed rather than translated, and **any language accepted** in everything you write or read: bookmarks, notes, tags, annotations and search. Foxit and Acrobat offer no Arabic or Urdu interface; Atlas does.
 5. **Accessibility** built into custom reader and tree controls.
 6. **Speed you can measure**, even with large books and large libraries.
 7. **Honest states:** no silent overwrite and no false "saved".
@@ -32,7 +32,8 @@ What makes Atlas different is the combination:
 | **Portable when possible, local when necessary** | Research goes into the PDF only when safe and permitted; otherwise it is kept locally, clearly labeled and exportable |
 | **The interface never waits** | Parsing, rendering, scanning, hashing, saving and large queries never run on the UI thread |
 | **Measure, don't guess** | Speed claims need numbers on named hardware; profilers find bottlenecks, not intuition |
-| **Arabic and accessibility from day one** | Every user-facing stage ships English + Arabic, keyboard, Narrator, 200% scale and high contrast |
+| **Three languages and accessibility from day one** | Every user-facing stage ships complete English, Arabic and Urdu strings, RTL layouts, keyboard, Narrator, 200% scale and high contrast. No screen ships with a missing translation |
+| **Any language in your content** | Titles, bookmarks, notes, tags, annotations and search accept and preserve every Unicode script exactly (Arabic, Urdu, Persian, English, Hebrew, Devanagari, CJK and more), including mixed-direction text |
 | **Designed, not decorated** | A deliberate design system; no generic "AI app" look, no gradients or glow, no clutter |
 | **Replaceable engines** | PDF libraries sit behind Atlas-owned interfaces; vendor types never reach the core |
 | **Portable core** | Shared rules contain no Windows-only types, so Android/macOS/iOS stay possible |
@@ -123,7 +124,8 @@ Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after
 
 ### 4.7 Cross-cutting — P0 [every stage, qualified in N9–N10]
 
-- English + Arabic UI; mirrored layout; bidi isolation for paths and mixed text; Urdu content.
+- **Interface:** English (default), Arabic and Urdu, switchable live and remembered; every string translated in all three; mirrored right-to-left layout for Arabic and Urdu; Urdu shown in Nastaliq (Noto Nastaliq Urdu), Arabic content in Naskh; bidi isolation for paths, file names and mixed text; localized digits and dates where the language expects them, without ever changing stored data.
+- **Content in any language:** every text field, bookmark, note, tag, annotation and search box accepts any Unicode script through the Windows keyboard/IME, stores it byte-exact, renders it with system font fallback, and searches it with a documented per-script normalization (Arabic/Urdu letter variants, diacritics, tatweel; case folding for Latin).
 - Keyboard-only operation for every core task; Narrator/UI Automation names, roles and states; visible focus; 100% and 200% scale; high contrast; reduced motion; never color alone.
 - Performance budgets from [QUALITY.md](docs/QUALITY.md) met on named hardware.
 - Installer, upgrade and uninstall that never delete books or research; optional file association [N11].
@@ -150,7 +152,7 @@ Until those ship, 2.0 shows honest "not supported yet" states, for example for f
 3. Protected, signed, read-only, offline and conflicted PDFs have tested behavior.
 4. Speed budgets pass on named hardware: first page, scrolling, search, 10k bookmarks, ink latency, memory on 2,000-page books.
 5. Embedded bookmarks and annotations round-trip in an independent PDF reader.
-6. The Arabic/RTL + keyboard + Narrator + 200% + high-contrast matrix has no untested core workflow.
+6. The English/Arabic/Urdu × keyboard × Narrator × 200% × high-contrast matrix has no untested core workflow, and the any-script content corpus round-trips exactly.
 7. The design review in [DESIGN.md](docs/DESIGN.md) passes on every screen, in every state, in both languages and themes.
 8. Backup/restore and legacy migration are proven on clean profiles.
 9. Install, upgrade and uninstall preserve user data; licenses, notices and SBOM are complete.
@@ -158,7 +160,27 @@ Until those ship, 2.0 shows honest "not supported yet" states, for example for f
 
 ## 7. Competitive references
 
-We learn from mature products **without copying their design**:
+**Owner decision (2026-11-01): adopt Foxit's main interaction and accessibility concepts**, studied from the installed Foxit PDF Editor and its user manual, because they are familiar to Atlas's users. Atlas adopts the *concepts* below and builds its own visual design, icons, wording and code; it never copies Foxit's artwork, icons, branding, layouts pixel-for-pixel or files.
+
+| Foxit concept | Atlas version | Stage |
+|---|---|---|
+| Title bar with a command/search box (Alt+Q) | Title bar with the Command Center (Ctrl+K, Alt+Q also works) | N4.3 shell, N5 search |
+| Ribbon of task tabs with grouped commands | A slim **command bar** with a few task groups (File · Navigate · Zoom · View); collapses to a single row; never a toolbar wall | N4.3 |
+| Document tab bar | Tab bar with filename-first titles, close buttons, Ctrl+Tab | N4.1, restyled N4.3 |
+| Left navigation pane with an icon rail (Bookmarks, Pages…), F4 to show/hide, resizable | Icon rail: Outline · Pages · Bookmarks · Annotations · Search; F4; resizable and collapsible | Rail N4.3, panels N4.4–N6 |
+| Status bar: page box, first/previous/next/last, zoom slider, layout buttons | Same concept in Atlas styling | N4.3 |
+| Read Mode (Ctrl+H) and Full Screen (F11) | Read mode hides chrome with a floating mini bar; full screen with Esc to exit | N4.3 |
+| Light / Dark / Use system skin, light-theme colour choice | Light / Dark / System with Atlas accents | N4.3 |
+| Mouse / Touch mode | Touch mode enlarges targets to 40 px | N4.3 |
+| Accessibility: replace document colours (Windows scheme, high-contrast pairs, custom page/text colour, only black text) | Reading colours: Paper, Sepia, Night, High contrast and Custom, rendering-only | N4.3 |
+| Override page layout / zoom defaults | Default layout and zoom preferences | N4.4 |
+| Always show keyboard selection cursor; system selection colour | Caret browsing and system highlight colour options | N4.5 |
+| Familiar shortcuts (Ctrl+1 actual size, Ctrl+2 fit width, Ctrl+0 fit page, Ctrl+Shift+± rotate, F4, Ctrl+H, F11, Ctrl+B bookmark) | Same keys, so Foxit users feel at home | N4.3 |
+| Read Out Loud | Offline read-aloud stays after 2.0 ([AFTER_2_0](docs/AFTER_2_0.md)) | 2.x |
+
+Where Atlas goes further: **Arabic and Urdu interface languages** (Foxit ships neither), deep local-fallback bookmarks, and honest storage states.
+
+Other products we learn from:
 
 | Product | What it teaches | Atlas response |
 |---|---|---|
@@ -193,6 +215,7 @@ At the end of each stage we run the same tasks on the same files in a relevant m
 | 2026-09-27 | Qt PDF 6.10.3 for reading/rendering and qpdf 12.4.1 CLI for structure/security/writes ([ADR-0004](docs/decisions/ADR-0004-pdf-engine-responsibilities.md)); N2 and N3 accepted |
 | 2026-09-27 | Scope was expanded to multi-format and offline editing before 2.0 (now superseded) |
 | 2026-09-28 | `2.0.0-beta.1` released; N4 started |
+| **2026-11-01** | **Trilingual interface and any-language content.** English (default), Arabic and Urdu UI ship complete in the first version; all user content accepts any language. **Foxit concepts adopted** (section 7) for familiarity and accessibility, with Atlas's own visual design. **UI revamp moved forward** to N4.3 so every later reader feature is built into the new workspace |
 | **2026-11-01** | **Focused 2.0.** EPUB/comics/Kindle, PDF editing tools (E1–E5), form filling, side-by-side, reflow view and read-aloud move after 2.0. **Batched owner reviews:** one review per stage instead of per sub-stage. **Docs consolidated:** 35 reference files in `docs/` became 9 plus an index, and `INFO.md` was merged into README/CHECKPOINTS; the previous set is kept unchanged in [docs/history](docs/history/README.md) |
 
 Every change to scope, priority or release gates is added here with its reason.

@@ -6,7 +6,7 @@ Read this before changing anything. AI-written code gets no lower bar than human
 
 ## 1. Start every session
 
-1. Read [CHECKPOINTS.md](CHECKPOINTS.md) → **Status now**. Work only on the active sub-stage (currently **N4.2**), in order.
+1. Read [CHECKPOINTS.md](CHECKPOINTS.md) → **Status now**. Work only on the active sub-stage (currently **N4.3**), in order.
 2. Read the stage section, the [N4 evidence ledger](docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md), and only the docs relevant to your change:
    - UI → [DESIGN.md](docs/DESIGN.md) · threads/engines/layers → [ARCHITECTURE.md](docs/ARCHITECTURE.md)
    - identity, bookmarks, saving, import/export, passwords → [DATA_AND_SAFETY.md](docs/DATA_AND_SAFETY.md)
@@ -34,7 +34,7 @@ Read this before changing anything. AI-written code gets no lower bar than human
 
 ## 4. Design and accessibility (every UI change)
 
-- Use `Theme` tokens and shared components; no literal colors or sizes in screens. Strings go through `qsTr` with English and Arabic translations.
+- Use `Theme` tokens and shared components; no literal colors or sizes in views. Every visible or accessible string comes from `I18n.t("key")` with entries in **English, Arabic and Urdu** ([ADR-0006](docs/decisions/ADR-0006-interface-languages.md)); never hard-code text. User content must accept and preserve any script.
 - Every control is keyboard-operable, has an accessible name, role and state, shows visible focus, works at 200% and in RTL, and doesn't rely on color alone.
 - Look at the rendered result in all required states before saying it's done ([DESIGN.md §10](docs/DESIGN.md#10-design-review)). Code alone isn't evidence.
 

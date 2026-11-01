@@ -210,6 +210,10 @@ std::optional<ReaderController::RenderSource> ReaderController::renderSource(qul
 
 void ReaderController::closeActive() { closeAt(activeIndex()); }
 
+void ReaderController::closeAll() {
+    for (int index = rowCount() - 1; index >= 0; --index) closeAt(index);
+}
+
 void ReaderController::showLibrary() {
     if (!libraryVisible_) {
         libraryVisible_ = true;

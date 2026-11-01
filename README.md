@@ -2,7 +2,7 @@
 
 ### Less searching. More understanding.
 
-**A fast, local-first PDF reader and research library for people who study deeply, with Arabic, Urdu and right-to-left reading built in from the start.**
+**A fast, local-first PDF reader and research library for people who study deeply. Its interface speaks English, Arabic and Urdu, and everything you write in it can be in any language.**
 
 <!-- atlas-status: N4|in-progress -->
 
@@ -18,7 +18,8 @@ Your next idea might be buried in a thousand-page book or scattered across a hun
 | **Reading with room to think** | A quiet, fast reading workspace with tabs, search, outline and thumbnails. Long books stay smooth. |
 | **Bookmarks with depth** | Organize a book into nested research paths, find any bookmark across your whole library, and keep them even when the PDF itself can't be changed. |
 | **Your marks on the page** | Pen, highlighter, notes and comments that open in other PDF readers too. |
-| **Arabic and Urdu, done properly** | Joined letters, diacritics, mixed-language text and right-to-left layout are tested at every stage. |
+| **English, Arabic and Urdu interface** | Switch the whole app between English (default), العربية and اردو at any time, with proper right-to-left layouts and Nastaliq for Urdu. |
+| **Any language in your notes** | Bookmarks, notes, tags and search accept every script and keep it exactly as you typed it, including mixed Arabic and English. |
 | **Yours, offline** | No account, no cloud, no tracking. Your research stays on your computer and can be backed up. |
 
 > Portable when possible. Local when necessary. Never lost silently.
@@ -29,12 +30,12 @@ Your next idea might be buried in a thousand-page book or scattered across a hun
 |---|---|---|
 | Foundation (N0–N2) | Windows app shell, toolchain, PDF engine choice | ✅ Done |
 | Library (N3) | Folders, background indexing, search, Favorites, Recents | ✅ Released as [`2.0.0-beta.1`](https://github.com/AbubakarYasir/Atlas-Reader/releases/tag/v2.0.0-beta.1) |
-| **Reader (N4)** | **Reading PDFs inside Atlas** | 🟡 **In progress.** Opening, tabs and passwords are built. Showing pages is next. |
+| **Reader (N4)** | **Reading PDFs inside Atlas** | 🟡 **In progress.** Opening, tabs, passwords and page display work. Now: the redesigned workspace in three languages. |
 | Bookmarks (N5) | Full bookmark editor, local fallback, import/export | Next |
 | Pen and notes (N6) | Ink, highlights, comments | Planned |
 | Everyday tools (N7) | Printing, covers, sorting, collections | Planned |
 | Backup (N8) | Backup, restore and moving over from the old app | Planned |
-| Polish and release (N9–N11) | Arabic and accessibility, speed, installer, stable **2.0** | Planned |
+| Polish and release (N9–N11) | Language and accessibility qualification, speed, installer, stable **2.0** | Planned |
 
 The current beta is for early evaluation. It has the library, but you can't read inside it yet. No release date has been announced.
 

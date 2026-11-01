@@ -58,6 +58,11 @@ public:
     Q_INVOKABLE void closeLeft(int index);
     Q_INVOKABLE void closeRight(int index);
     Q_INVOKABLE void copyPathAt(int index) const;
+    // Copies plain text the user chose to copy (a link address, a word count).
+    Q_INVOKABLE void copyText(const QString& text) const;
+    Q_INVOKABLE void showPathInFolder(const QString& path) const;
+    // Opens a web or mail link the user confirmed; other schemes are refused.
+    Q_INVOKABLE bool openExternalLink(const QString& url) const;
     Q_INVOKABLE void showInFolderAt(int index) const;
     Q_INVOKABLE void showLibrary();
 

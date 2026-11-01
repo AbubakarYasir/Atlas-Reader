@@ -50,8 +50,8 @@ The full measured layout is in [FOXIT_PARITY.md §1](FOXIT_PARITY.md#1-window-an
 - **Title bar (custom, Windows snap kept):** app mark; Quick Access Toolbar (Open, Mouse/Touch mode; Save/Undo/Redo from N5, Print from N7; customize from N7); file name; title-bar search box from N5 (Alt+Q); minimize, maximize, close. Colourful skin tints it with the theme colour; Classic keeps it neutral.
 - **Ribbon:** *File* opens the File page (backstage). Task tabs follow Foxit's order and appear only with working commands: **Home · View · Accessibility · Help** in N4.3, **Comment** in N6, others after 2.0. Commands are grouped with 1 px separators; large buttons (24 px icon over a 12 px label, ▾ for menus) and small buttons (16 px icon, 2–3 per column). Ctrl+F11 or the ⌃ button collapses the ribbon to its tab row; clicking a tab then shows it as a temporary overlay.
 - **Document tabs:** the **Library** is the first, pinned tab (Foxit's *Start* tab). Book tabs are 124 px wide, filename-first with ellipsis, close ✕ on the active or hovered tab, Ctrl+Tab cycling, middle-click closes, overflow ▾ lists all tabs.
-- **Navigation rail:** 40 px, icon buttons for panels (Pages N4.4, Outline/Search N4.5, Bookmarks N5, Comments N6); a panel opens beside the rail, resizable (200–480 px), F4 toggles; icons appear only when their panel works.
-- **Status bar:** « ‹ page box "n / total" › » on the leading side; page-display buttons (N4.4), zoom −, slider, +, percentage menu and Full screen on the trailing side. View → View Setting can show, auto-hide or hide it.
+- **Navigation rail:** 40 px, icon buttons for panels (Bookmarks = document outline and Pages, done in N4; editable Atlas bookmarks N5, Comments N6; Search opens on the right); a panel opens beside the rail, resizable (200–480 px), F4 toggles; icons appear only when their panel works.
+- **Status bar:** « ‹ page box "n / total" › » on the leading side; page-display buttons, zoom −, slider, +, percentage menu and Full screen on the trailing side. View → View Setting can show, auto-hide or hide it.
 - **File page:** left list (Open, Close, Close All, Skins, Preferences, About, Exit; Save/Print/Properties as their stages land); Open shows *Recent Documents* (from the Library's history) and *Computer* (file dialog).
 - **Preferences (Ctrl+K):** window with a search box over a category list (General, Languages, Skins, Page Display, Accessibility in N4.3; more per stage) and OK / Cancel.
 - **Read mode (Ctrl+H):** hides title bar, ribbon, tabs, rail and status bar; a floating mini bar appears on mouse movement or focus. **Full screen (F11):** the page fills the screen; Esc exits.
@@ -175,7 +175,7 @@ Foxit's default keys for every command Atlas has ([FOXIT_PARITY §4](FOXIT_PARIT
 | Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
 | Title-bar search / Command Center | `Alt+Q` (N5) |
 | Find in the Library | `Ctrl+F` |
-| Find in document / next / previous | `Ctrl+F` / `F3` / `Shift+F3` (N4.5) |
+| Find in document / next / previous | `Ctrl+F` / `F3` / `Shift+F3`; Search panel `Ctrl+Shift+F` |
 | Go to page | `Ctrl+G` (focuses the page box) |
 | Next / previous page | `Ctrl+Page Down` / `Ctrl+Page Up`, also `→` `←` when the page fits |
 | First / last page | `Ctrl+Home` / `Ctrl+End` |
@@ -185,7 +185,7 @@ Foxit's default keys for every command Atlas has ([FOXIT_PARITY §4](FOXIT_PARIT
 | Rotate view clockwise / counter-clockwise | `Ctrl+Shift++` / `Ctrl+Shift+-` |
 | Show/hide navigation panel | `F4` |
 | Read mode / Full screen | `Ctrl+H` / `F11` (`Esc` exits either) |
-| Back / Forward (history) | `Alt+←` / `Alt+→` (N4.4; temporal, not mirrored in RTL) |
+| Back / Forward (history) | `Alt+←` / `Alt+→` (temporal, not mirrored in RTL) |
 | Add bookmark | `Ctrl+B` (N5) |
 | Save portable changes | `Ctrl+S` (N5+) |
 | Print | `Ctrl+P` (N7) |
@@ -199,14 +199,14 @@ Shortcuts appear in tooltips and menus, and their labels are localized; the keys
 
 Every interactive element has an accessible **role, name and state**; a logical focus order; a visible focus ring; keyboard activation; and no pointer-only action. In addition:
 
-- The reader canvas exposes page, position, zoom and actions, and from N4.4 the document's text and reading order (tagged versus untagged versus image-only is stated honestly).
+- The reader canvas exposes page, position, zoom and actions, and the current page's text (N4.5); image-only books say they have no text. Tagged reading order and the untagged-document prompt arrive in N10.
 - Announce, without stealing focus: save results, local-only fallback, search result counts, page jumps, import/export completion, and offline/reconnected states.
 - UI text scaling and PDF zoom are independent.
 - Text wraps instead of clipping at 200%; check 125% and 150% as well.
 - Never use color alone; honor reduced motion; support Windows contrast themes.
 - **Reading colours** (Foxit's "replace document colours" concept, rendering only, never written to the PDF): Paper (default), Sepia, Night (light text on dark), High contrast (black/white or white/black) and *Follow Windows contrast theme*; a custom page/text colour pair arrives with Settings (N7).
 - **Touch mode:** one switch enlarges every target to 40 px and spacing to match.
-- **Caret browsing and system selection colour** options for keyboard and magnifier users (N4.5).
+- **Caret browsing and system selection colour** options for keyboard and magnifier users (N7).
 - Tools: Accessibility Insights for diagnostics. **Narrator by hand is still required**, because automated checks don't prove a usable flow.
 
 ## 9. Languages: English, Arabic, Urdu and any-script content

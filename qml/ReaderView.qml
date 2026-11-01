@@ -7,6 +7,9 @@ Item {
 
     readonly property var currentTab: tabStack.currentTab
 
+    signal linkConfirmRequested(string url)
+    signal toastRequested(string text)
+
     function cycleTab(step) {
         const count = tabRepeater.count
         if (count === 0) return
@@ -31,6 +34,8 @@ Item {
                     if (ready) preferences.addRecentFile(sourcePath)
                 }
                 onReadyChanged: if (ready) preferences.addRecentFile(sourcePath)
+                onLinkConfirmRequested: (url) => reader.linkConfirmRequested(url)
+                onToastRequested: (text) => reader.toastRequested(text)
             }
         }
     }

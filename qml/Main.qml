@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Dialogs
 import QtQuick.Layouts
+import Atlas.Reader
 
 // Composes the application window. Views live in their own files; tokens in
 // Theme, strings in I18n (docs/DESIGN.md §11).
@@ -65,6 +66,17 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Shift+O"; onActivated: folderDialog.open() }
     Shortcut { sequence: "Ctrl+K"; onActivated: preferencesDialog.openPage("general") }
     Shortcut { sequence: "Ctrl+F"; enabled: !root.inReader; onActivated: libraryView.searchField.forceActiveFocus() }
+    // Reader text (N4.5, FOXIT_PARITY §4)
+    Shortcut { sequence: "Ctrl+F"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.openFind() }
+    Shortcut { sequence: "Ctrl+Shift+F"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.openSearch() }
+    Shortcut { sequence: "F3"; enabled: root.activeViewport !== null && root.activeViewport.searchHits.length > 0; onActivated: root.activeViewport.findNext() }
+    Shortcut { sequence: "Shift+F3"; enabled: root.activeViewport !== null && root.activeViewport.searchHits.length > 0; onActivated: root.activeViewport.findPrevious() }
+    Shortcut { sequence: "Alt+3"; enabled: root.activeViewport !== null; onActivated: root.activeViewport.tool = ReaderViewport.HandTool }
+    Shortcut { sequence: "Alt+6"; enabled: root.activeViewport !== null; onActivated: root.activeViewport.tool = ReaderViewport.SelectTool }
+    Shortcut { sequence: "Alt+7"; enabled: root.activeViewport !== null; onActivated: root.activeViewport.tool = ReaderViewport.SnapshotTool }
+    Shortcut { sequence: "Ctrl+Shift+A"; enabled: root.activeViewport !== null; onActivated: root.activeViewport.clearSelection() }
+    Shortcut { sequence: "Ctrl+M"; enabled: root.activeViewport !== null; onActivated: readerDialogs.openZoomTo(root.activeViewport) }
+    Shortcut { sequence: "Ctrl+Shift+H"; enabled: root.activeViewport !== null; onActivated: root.activeViewport.toggleAutoScroll() }
     Shortcut { sequences: ["Ctrl+W", "Ctrl+F4"]; enabled: root.inReader; onActivated: readerController.closeActive() }
     Shortcut { sequence: "Ctrl+Shift+W"; enabled: readerController.hasSessions; onActivated: readerController.closeAll() }
     Shortcut { sequence: "Ctrl+Q"; onActivated: root.close() }
@@ -74,7 +86,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+H"; enabled: root.inReader; onActivated: AppState.readMode = !AppState.readMode }
     Shortcut { sequence: "Ctrl+F11"; onActivated: { preferences.ribbonCollapsed = !preferences.ribbonCollapsed; ribbon.peek = false } }
     Shortcut { sequence: "F11"; onActivated: AppState.fullScreen = !AppState.fullScreen }
-    Shortcut { sequence: "F4"; enabled: root.inReader; onActivated: preferences.navPanel = preferences.navPanel === "" ? "pages" : "" }
+    Shortcut { sequence: "F4"; enabled: root.inReader; onActivated: preferences.navPanel = preferences.navPanel === "" ? "bookmarks" : "" }
     Shortcut {
         sequence: "Esc"
         enabled: AppState.chromeHidden || backstage.visible || ribbon.peek
@@ -123,10 +135,11 @@ ApplicationWindow {
     }
 
     PreferencesDialog { id: preferencesDialog }
+    ReaderDialogs { id: readerDialogs; z: 50 }
 
     // Visual QA (--show): open one surface after startup.
     Timer {
-        interval: 600
+        interval: 1500
         running: qaShow.length > 0
         onTriggered: {
             if (qaShow === "backstage") { backstage.page = "open"; backstage.visible = true }
@@ -139,6 +152,13 @@ ApplicationWindow {
                 root.activeViewport.rightToLeft = parts[2] === "rtl"
                 ribbon.currentTab = 2
             }
+            else if (qaShow.indexOf("find:") === 0 && reader.currentTab) { reader.currentTab.openFind(); reader.currentTab.findBarRun(qaShow.slice(5)) }
+            else if (qaShow.indexOf("search:") === 0 && reader.currentTab) { reader.currentTab.openSearch(); reader.currentTab.searchRun(qaShow.slice(7)) }
+            else if (qaShow === "bookmarks") preferences.navPanel = "bookmarks"
+            else if (qaShow === "wordcount" && root.activeViewport) readerDialogs.openWordCount(root.activeViewport)
+            else if (qaShow === "zoomto" && root.activeViewport) readerDialogs.openZoomTo(root.activeViewport)
+            else if (qaShow === "link") readerDialogs.confirmLink("https://example.org/atlas")
+            else if (qaShow === "selectall" && root.activeViewport) { root.activeViewport.goToPage(4); root.activeViewport.selectAllOnPage() }
             else if (qaShow.indexOf("ribbon-") === 0) ribbon.currentTab = ({ home: 1, view: 2, accessibility: 3, help: 4 })[qaShow.slice(7)] || 1
         }
     }
@@ -199,6 +219,10 @@ ApplicationWindow {
             onFileRequested: { backstage.page = "open"; backstage.visible = !backstage.visible; if (backstage.visible) backstage.forceActiveFocus() }
             onAboutRequested: aboutDialog.open()
             onPreferencesRequested: (page) => preferencesDialog.openPage(page)
+            onFindRequested: if (reader.currentTab) reader.currentTab.openFind()
+            onSearchRequested: if (reader.currentTab) reader.currentTab.openSearch()
+            onZoomToRequested: if (root.activeViewport) readerDialogs.openZoomTo(root.activeViewport)
+            onWordCountRequested: if (root.activeViewport) readerDialogs.openWordCount(root.activeViewport)
             onCurrentTabChanged: backstage.visible = false
         }
 
@@ -235,6 +259,8 @@ ApplicationWindow {
                         id: reader
                         anchors.fill: parent
                         visible: root.inReader
+                        onLinkConfirmRequested: (url) => readerDialogs.confirmLink(url)
+                        onToastRequested: (text) => readerDialogs.showToast(text)
                     }
                 }
             }

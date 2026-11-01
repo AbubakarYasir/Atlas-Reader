@@ -104,7 +104,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 | Foxit feature | Where in Foxit | Atlas |
 |---|---|---|
 | Custom title bar, file name, window buttons | Title bar | Done (N4.3) |
-| Quick Access Toolbar: Open, Save, Print, Create, Undo, Redo, Hand/Select, Mouse/Touch | Title bar | Done: Open, Mouse/Touch · N5: Save, Undo, Redo · N7: Print · N4.5: Hand/Select |
+| Quick Access Toolbar: Open, Save, Print, Create, Undo, Redo, Hand/Select, Mouse/Touch | Title bar | Done: Open, Mouse/Touch · N5: Save, Undo, Redo · N7: Print · Hand/Select on the Home tab Done (N4.5) |
 | Customize Quick Access Toolbar (add, remove, order, above/below ribbon) | ▾ on QAT, right-click ribbon | N7 |
 | Customize ribbon (new tabs/groups, rename, reorder, import/export, reset) and keyboard shortcuts | Right-click ribbon → Customize | Track H |
 | Title-bar search (commands, text, help; Alt+Q), collapsed search option | Title bar | N5 (Command Center) |
@@ -112,12 +112,12 @@ A command appears in Atlas only when it works; until then its group is absent, n
 | Ribbon collapse / pin (Ctrl+F11), double-click a tab | Ribbon | Done (N4.3) |
 | Classic menu bar (File, Edit, View, Tools, Help) as an option | View → Menu Bar | N7 (keyboard Alt menus) |
 | Document tabs: Ctrl+Tab, middle-click close, overflow list | Tab bar | Done (N4.3) |
-| Tab context menu: Close, Close Others, Close Left, Close Right, Close All, Copy Path, Open Containing Folder, Print Current/All Tabs | Right-click tab | N4.4 (Print items N7) |
+| Tab context menu: Close, Close Others, Close Left, Close Right, Close All, Copy Path, Open Containing Folder, Print Current/All Tabs | Right-click tab | Done (N4.4) · Print items N7 |
 | Tab groups: New Horizontal/Vertical Tab Group, move tabs between groups | Right-click tab | Track A (C17 side-by-side) |
 | Start page with recent files and tool wizard | Start tab | Done as the Library tab; tool wizard Track H |
-| Navigation rail and panels; F4; Reset All Panels; dock/float panels; resize | Left pane | Rail N4.4 · float/dock Track A |
-| Right panel (Search, Format) and Right Panel Switch | Right side | N4.5 (Search) · N6 (Format) |
-| Status bar: page navigation, previous/next view, page layouts, zoom slider, zoom menu (1%–6400%), full screen; show / auto-hide / hide | Bottom | Done: navigation, zoom, full screen, show/auto-hide/hide · N4.4: previous/next view, layouts, full zoom list |
+| Navigation rail and panels; F4; Reset All Panels; dock/float panels; resize | Left pane | Rail, Bookmarks and Pages panels, Reset All Panels Done (N4.4/N4.5) · float/dock Track A |
+| Right panel (Search, Format) and Right Panel Switch | Right side | Search Done (N4.5) · N6 (Format) |
+| Status bar: page navigation, previous/next view, page layouts, zoom slider, zoom menu (1%–6400%), full screen; show / auto-hide / hide | Bottom | Done: navigation, zoom, full screen, show/auto-hide/hide · previous/next view, layouts, full zoom list Done (N4.4) |
 | Mouse/Touch mode | QAT | Done (N4.3) |
 | Skins: Light / Dark / System; Colourful theme colour | File → Skins | Done (N4.3) |
 | Minimize to tray; tray menu | System tray | N7 |
@@ -127,7 +127,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 
 | Foxit feature | Atlas |
 |---|---|
-| Open → Recent Documents (pin, open a copy, copy path, remove), Computer, cloud places | Done: recent, Computer, remove · N4.4: pin, copy path, open a copy · cloud places Track J |
+| Open → Recent Documents (pin, open a copy, copy path, remove), Computer, cloud places | Done: recent, Computer, remove · pin, copy path, open containing folder Done (N4.4) · open a copy N7 · cloud places Track J |
 | Create (blank, from file, scanner, clipboard, web page, template, portfolio, binder) | Track C (portfolio/binder Track H) |
 | Properties (Ctrl+D): description, security, fonts, initial view, custom, advanced, XMP | N7 (view and permitted edits) |
 | Save (Ctrl+S), Save As (Ctrl+Shift+S), Revert | N5 safe save |
@@ -147,8 +147,8 @@ A command appears in Atlas only when it works; until then its group is absent, n
 | Atlas stage | Categories it adds |
 |---|---|
 | Done (N4.3) | General, Languages, Skins, Accessibility |
-| N4.4 | Page Display (default layout, zoom, rendering), Full Screen, History (restore position), Documents (tabs, restore, open behaviour) |
-| N4.5 | Search, Reading (reading order, caret) |
+| N4.4 | Done: Page Display (default layout, default zoom), History (clear; pinned files kept), Documents (restore tabs, restore last view per book) · N7: Full Screen options, rendering options |
+| N4.5 | Done: Search (whole words, case-sensitive, Arabic/Urdu note) · N7: Reading (reading order, caret browsing) |
 | N5 | Security (protected files, local research), Identity (author name for notes and bookmarks) |
 | N6 | Commenting, Tablet (pen and touch) |
 | N7 | Print, File Associations, Library (Atlas), Backup (N8) |
@@ -159,8 +159,8 @@ A command appears in Atlas only when it works; until then its group is absent, n
 
 | Group | Foxit commands | Atlas |
 |---|---|---|
-| Tools | Hand (Alt+3), Select Text and Image (Alt+6), Select Annotation, SnapShot (Alt+7), Clipboard ▾ (copy, paste, paste in place), Bookmark | Hand Done · Select text, SnapShot, Clipboard N4.5 · Select annotation N6 · Bookmark N5 |
-| View | Zoom ▾ (in, out, marquee, loupe, magnifier, Zoom To Ctrl+M), Page Fit Option ▾ (Actual Size Ctrl+1, Fit Page Ctrl+0, Fit Width Ctrl+2, Fit Visible Ctrl+3), Reflow (Ctrl+4), Rotate View ▾ | Zoom, Page Fit, Rotate View Done · Fit Visible, Zoom To, marquee N4.4 · loupe, magnifier, Reflow Track A |
+| Tools | Hand (Alt+3), Select Text and Image (Alt+6), Select Annotation, SnapShot (Alt+7), Clipboard ▾ (copy, paste, paste in place), Bookmark | Hand Done · Select Text, SnapShot, Clipboard (copy, select all, deselect) Done (N4.5) · paste N6 · Select annotation N6 · Bookmark N5 |
+| View | Zoom ▾ (in, out, marquee, loupe, magnifier, Zoom To Ctrl+M), Page Fit Option ▾ (Actual Size Ctrl+1, Fit Page Ctrl+0, Fit Width Ctrl+2, Fit Visible Ctrl+3), Reflow (Ctrl+4), Rotate View ▾ | Zoom, Page Fit, Rotate View Done · Fit Visible, Zoom To, marquee zoom, full zoom list Done (N4.4) · loupe, magnifier, Reflow Track A |
 | Edit | Edit Text, Edit Object ▾ | Track D |
 | Comment | Typewriter, Highlight | N6 |
 | Pages | Rotate Pages ▾, Insert ▾ | Track C |
@@ -182,7 +182,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 |---|---|---|
 | Content | Edit Text, Edit Object (text, image, shape, shading), Link & Join Text, Check Spelling, Search & Replace (Ctrl+T) | Track D |
 | Add | Add Text, Add Images, Add Shapes, Reflow Editing, Add Article Box, Articles panel | Track D |
-| Links | Web Links ▾ (create from URLs, remove all), Link, Bookmark (Ctrl+B), Auto Create Bookmarks, Cross Reference (Ctrl+Shift+C) | Following links N4.5 · Bookmark N5 · Auto Create Bookmarks from outline/headings N5 · creating links, web-link detection, cross reference Track D |
+| Links | Web Links ▾ (create from URLs, remove all), Link, Bookmark (Ctrl+B), Auto Create Bookmarks, Cross Reference (Ctrl+Shift+C) | Following links Done (N4.5) · Bookmark N5 · Auto Create Bookmarks from outline/headings N5 · creating links, web-link detection, cross reference Track D |
 | Insert | File Attachment, Image Annotation, Audio & Video, Add 3D | Attachments panel (read, save copy) Track D · image annotation Track D · audio/video and 3D playback Track D (sandboxed, off by default) |
 | Image editing | Page Editor tools: magic wand, lasso, polygonal lasso, filters (dodge, greyen, sharpen, binarize, soften…), add image | Track D |
 
@@ -192,7 +192,7 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 
 | Atlas |
 |---|
-| Reading page labels N4.4 · thumbnail size and Pages panel N4.4 · every other Organize command Track C (Page Transitions Track A for full-screen presentations) |
+| Reading page labels and Pages panel Done (N4.4) · thumbnail size N7 · every other Organize command Track C (Page Transitions Track A for full-screen presentations) |
 
 ### 3.8 Comment
 
@@ -214,17 +214,17 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 
 | Group | Foxit commands | Atlas |
 |---|---|---|
-| Modes | Read Mode (Ctrl+H), Full Screen (F11), Reflow, Reverse View, Night Mode, Visual Mode ▾, Text Viewer (Ctrl+6, colours, font, find) | Read Mode, Full Screen, Visual Mode (reading colours incl. Night) Done · Reverse View N4.4 · Reflow, Text Viewer Track A |
+| Modes | Read Mode (Ctrl+H), Full Screen (F11), Reflow, Reverse View, Night Mode, Visual Mode ▾, Text Viewer (Ctrl+6, colours, font, find) | Read Mode, Full Screen, Visual Mode (reading colours incl. Night) Done · Reverse View Done (N4.4) · Reflow, Text Viewer Track A |
 | Rotate | Rotate View ▾ | Done |
 | Ruler | Rulers (units: points, picas, mm, cm, inches), Guides, Line Weights (Ctrl+5), Layout Grid | Track A |
-| Page display | Single Page, Continuous, Facing, Continuous Facing, Show Cover Page, Split (vertical, horizontal, spreadsheet) | Layouts N4.4 · Split Track A |
-| AutoScroll | AutoScroll (Ctrl+Shift+H), speed, Esc stops | N4.4 |
+| Page display | Single Page, Continuous, Facing, Continuous Facing, Show Cover Page, Split (vertical, horizontal, spreadsheet) | Layouts Done (N4.4) · Split Track A |
+| AutoScroll | AutoScroll (Ctrl+Shift+H), speed, Esc stops | Done (N4.4) |
 | Page Transitions | Full-screen transitions | Track A |
 | Assistant | AI Assistant, Translate Assistant | Track J (local model first, opt-in) |
 | Read | Read aloud (current page, from page, pause, stop; Ctrl+Shift+V/B/P/E/Y) | Track A (C11) |
 | Compare | Compare documents (text and visual), results tab | Track A |
-| Word Count | Word Count | N4.5 |
-| View Setting | Navigation Panels, Status Bar, Start Page, Full Screen | Done (Status Bar, Full Screen, Library) · Navigation Panels N4.4 |
+| Word Count | Word Count | Done (N4.5) |
+| View Setting | Navigation Panels, Status Bar, Start Page, Full Screen | Done (Status Bar, Full Screen, Library) · Navigation Panels Done (N4.4) |
 
 ### 3.10 Form
 
@@ -264,7 +264,7 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 | Setup Assistant | N9 (first-run accessibility settings) |
 | Reading Order (Ctrl+Shift+U), Set Alternate Text, Set Area Reading Order, Change/Apply Area Order | View of reading order N9 · editing Track G |
 | Autotag Document, Autotag Form Field, Full Check, Accessibility Report, PDF/UA | Track G |
-| Untagged document read with assistive technology prompt | N4.5 (C04) |
+| Untagged document read with assistive technology prompt | Page text exposed to screen readers Done (N4.5, C04) · untagged-document prompt N10 |
 
 ### 3.14 Help
 
@@ -280,30 +280,30 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 
 | Panel | Atlas |
 |---|---|
-| Pages (thumbnails, page operations menu) | N4.4 (view) · Track C (operations) |
+| Pages (thumbnails, page operations menu) | Done (view, N4.4) · Track C (operations) |
 | Bookmarks (Atlas's signature editor) | N5 |
-| Outline / document bookmarks (read) | N4.5 |
+| Outline / document bookmarks (read) | Done (N4.5) |
 | Comments | N6 |
-| Search (right panel; whole words, case, include bookmarks/comments, highlight all, save results to PDF/CSV) | N4.5 (save results Track H) |
+| Search (right panel; whole words, case, include bookmarks/comments, highlight all, save results to PDF/CSV) | Done: whole words, case, highlight all (always on), results with context (N4.5) · include bookmarks/comments N6 · save results Track H |
 | Attachments | Track D (read and save copy first) |
 | Layers (show/hide, list for all/visible pages, reset, print/export overrides, import, merge, flatten) | Track D (view first) |
 | Signatures | N5 (status) · Track F (validation) |
-| Destinations (named positions; new, sort by name/page) | N4.5 (go to) · Track D (create) |
+| Destinations (named positions; new, sort by name/page) | Following named destinations Done (N4.5) · Destinations panel N7 · Track D (create) |
 | Content, Tags, Order, Fields, Links, Articles, Model Tree (3D) | Track G (Tags, Order, Content) · Track E (Fields) · Track D (Links, Articles, 3D) |
 
 ### 3.16 Context menus
 
 | Foxit menu | Atlas |
 |---|---|
-| Page background (paste, add bookmark, read mode, zoom, fit, rotate, reverse view, print, rulers, navigation panels, look up, preferences) | N4.4 (items appear as their features land) |
-| Document tab (close, others, left, right, copy path, open folder, print, tab groups) | N4.4 / N7 / Track A |
-| Text selection (copy, highlight, underline, strikeout, add bookmark, search) | N4.5, N5, N6 |
-| Link (open in browser after confirmation, copy link location; open in tab/new document for PDFs) | N4.5 |
-| Image (copy, save image as, bookmark, extract text, edit image) | N4.5 (copy, save as) · Track D/G |
-| Recent file (open, open a copy, pin, copy path, remove) | N4.4 |
-| Zoom list (1%–6400%, fit options, Zoom To) | N4.4 |
+| Page background (paste, add bookmark, read mode, zoom, fit, rotate, reverse view, print, rulers, navigation panels, look up, preferences) | Done for current features (N4.4/N4.5); more items appear as their features land |
+| Document tab (close, others, left, right, copy path, open folder, print, tab groups) | Done (N4.4) · print N7 · tab groups Track A |
+| Text selection (copy, highlight, underline, strikeout, add bookmark, search) | copy and search Done (N4.5) · bookmark N5 · markup N6 |
+| Link (open in browser after confirmation, copy link location; open in tab/new document for PDFs) | Done (N4.5) · open PDF links in a tab N7 |
+| Image (copy, save image as, bookmark, extract text, edit image) | N7 (copy, save as; SnapShot copies any area now) · Track D/G |
+| Recent file (open, open a copy, pin, copy path, remove) | Done (N4.4) · open a copy N7 |
+| Zoom list (1%–6400%, fit options, Zoom To) | Done (N4.4) |
 | Ribbon (customize QAT, customize ribbon, minimize the ribbon) | N7 / Track H |
-| Navigation pane (show panels, reset all panels) | N4.4 |
+| Navigation pane (show panels, reset all panels) | Done (N4.4/N4.5) |
 
 ### 3.17 Modules with no single ribbon home
 
@@ -331,17 +331,22 @@ Atlas adopts Foxit's default shortcuts for every command it has. Changes to Atla
 | Key | Before | Now (Foxit) |
 |---|---|---|
 | Ctrl+K | Library search | **Preferences** |
-| Ctrl+F | — | Find in the current view: Library search box, or document find (N4.5) |
+| Ctrl+F | — | Find in the current view: Library search box, or document Find bar (done) |
 | Alt+Q | — | Title-bar search (N5 Command Center) |
-| Ctrl+Shift+F | — | Search panel (N4.5) |
-| Ctrl+Shift+A | Add library folder | Deselect all (N4.5); Add folder moves to **Ctrl+Shift+O** |
+| Ctrl+Shift+F | — | Search panel (done) |
+| Ctrl+Shift+A | Add library folder | Deselect all in the reader (done); Add folder moves to **Ctrl+Shift+O** |
 | Ctrl+Q | — | Exit |
 | Ctrl+F11 | — | Collapse / pin the ribbon |
 | F4 | — | Show / hide navigation panels |
-| Alt+3 / Alt+6 / Alt+7 | — | Hand / Select / SnapShot (when they exist) |
-| Ctrl+3 | — | Fit Visible (N4.4) |
+| Alt+3 / Alt+6 / Alt+7 | — | Hand / Select Text / SnapShot (done) |
+| Ctrl+3 | — | Fit Visible (done) |
+| Ctrl+M | — | Zoom To (done) |
+| F3 / Shift+F3 | — | Next / previous result (done) |
+| Ctrl+C / Ctrl+A | — | Copy selection / select all on the page (done) |
+| Ctrl+Shift+H | — | AutoScroll; Up/Down change speed, Esc or a click stops (done) |
+| Alt+Left / Alt+Right | — | Previous / Next View (done) |
 
-Single-key accelerators (H hand, V select, Z zoom, …) are off by default and enabled in Preferences → General, as in Foxit (N4.5 with the tools they select).
+Single-key accelerators (H hand, V select, Z zoom, …) are off by default and enabled in Preferences → General, as in Foxit (N7).
 
 ## 5. Translation of the layout to Arabic and Urdu
 

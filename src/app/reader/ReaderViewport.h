@@ -18,7 +18,12 @@
 #include <QQuickItem>
 #include <QSizeF>
 #include <QThread>
+#include <QTimer>
+#include <QVariantList>
+#include <QVariantMap>
+#include <QStringList>
 
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -29,6 +34,7 @@ class QSGTexture;
 
 namespace atlas::app {
 
+class DocumentTextWorker;
 class PdfRenderWorker;
 class ReaderController;
 class RenderCancellation;
@@ -54,6 +60,22 @@ class ReaderViewport : public QQuickItem {
     Q_PROPERTY(int pageDisplay READ pageDisplay WRITE setPageDisplay NOTIFY pageDisplayChanged)
     Q_PROPERTY(bool coverPage READ coverPage WRITE setCoverPage NOTIFY pageDisplayChanged)
     Q_PROPERTY(bool rightToLeft READ rightToLeft WRITE setRightToLeft NOTIFY pageDisplayChanged)
+    // N4.5: text, outline, search, selection, links and tools.
+    Q_PROPERTY(QVariantList outline READ outline NOTIFY textInfoChanged)
+    Q_PROPERTY(QStringList pageLabels READ pageLabels NOTIFY textInfoChanged)
+    Q_PROPERTY(bool hasText READ hasText NOTIFY textInfoChanged)
+    Q_PROPERTY(bool textReady READ textReady NOTIFY textInfoChanged)
+    Q_PROPERTY(QVariantList searchHits READ searchHits NOTIFY searchChanged)
+    Q_PROPERTY(int searchIndex READ searchIndex NOTIFY searchChanged)
+    Q_PROPERTY(bool searching READ searching NOTIFY searchChanged)
+    Q_PROPERTY(qreal searchProgress READ searchProgress NOTIFY searchChanged)
+    Q_PROPERTY(QString searchQuery READ searchQuery NOTIFY searchChanged)
+    Q_PROPERTY(QString selectedText READ selectedText NOTIFY selectionChanged)
+    Q_PROPERTY(int tool READ tool WRITE setTool NOTIFY toolChanged)
+    Q_PROPERTY(bool autoScrolling READ autoScrolling NOTIFY autoScrollChanged)
+    Q_PROPERTY(QString hoveredLink READ hoveredLink NOTIFY hoveredLinkChanged)
+    // Text of the current page for screen readers (C04); empty for image-only pages.
+    Q_PROPERTY(QString pageText READ pageText NOTIFY pageTextChanged)
     Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY historyChanged)
     Q_PROPERTY(bool canGoForward READ canGoForward NOTIFY historyChanged)
     Q_PROPERTY(QColor pageColor READ pageColor WRITE setPageColor NOTIFY pageColorChanged)
@@ -113,6 +135,40 @@ public:
     // Reverse View: spreads read right to left (independent of the interface language).
     [[nodiscard]] bool rightToLeft() const { return layout_.settings().rightToLeft; }
     void setRightToLeft(bool rightToLeft);
+    enum Tool { HandTool = 0, SelectTool = 1, SnapshotTool = 2, MarqueeTool = 3 };
+    Q_ENUM(Tool)
+
+    [[nodiscard]] QVariantList outline() const { return outline_; }
+    [[nodiscard]] QStringList pageLabels() const { return pageLabels_; }
+    [[nodiscard]] bool hasText() const { return hasText_; }
+    [[nodiscard]] bool textReady() const { return textReady_; }
+    [[nodiscard]] QVariantList searchHits() const { return searchHits_; }
+    [[nodiscard]] int searchIndex() const { return searchIndex_; }
+    [[nodiscard]] bool searching() const { return searching_; }
+    [[nodiscard]] qreal searchProgress() const { return searchProgress_; }
+    [[nodiscard]] QString searchQuery() const { return searchQuery_; }
+    [[nodiscard]] QString selectedText() const { return selectedText_; }
+    [[nodiscard]] int tool() const { return tool_; }
+    void setTool(int tool);
+    [[nodiscard]] bool autoScrolling() const { return autoScrollTimer_.isActive(); }
+    [[nodiscard]] QString hoveredLink() const { return hoveredLink_; }
+    [[nodiscard]] QString pageText() const { return pageText_; }
+
+    Q_INVOKABLE void find(const QString& query, bool matchCase, bool wholeWords);
+    Q_INVOKABLE void findNext();
+    Q_INVOKABLE void findPrevious();
+    Q_INVOKABLE void showSearchHit(int index);
+    Q_INVOKABLE void clearSearch();
+    Q_INVOKABLE void copySelection();
+    Q_INVOKABLE void selectAllOnPage();
+    Q_INVOKABLE void clearSelection();
+    Q_INVOKABLE void requestWordCount();
+    Q_INVOKABLE void fitVisible();
+    Q_INVOKABLE bool goToLabel(const QString& label);
+    Q_INVOKABLE void goToDestination(int zeroBasedPage, QPointF location);
+    Q_INVOKABLE void toggleAutoScroll();
+    Q_INVOKABLE void changeAutoScrollSpeed(int steps);
+    Q_INVOKABLE void stopAutoScroll();
     Q_INVOKABLE void goBack();
     Q_INVOKABLE void goForward();
     // Page size in points with /Rotate and the view rotation applied; for thumbnails.
@@ -140,6 +196,18 @@ signals:
     void rotationChanged();
     void historyChanged();
     void pageDisplayChanged();
+    void textInfoChanged();
+    void searchChanged();
+    void selectionChanged();
+    void toolChanged();
+    void autoScrollChanged();
+    void hoveredLinkChanged();
+    void pageTextChanged();
+    // An external link was clicked; QML asks the reader before anything opens.
+    void externalLinkRequested(const QString& url);
+    void wordCountReady(int words, int characters, int pages);
+    void snapshotCopied();
+    void contextMenuRequested(qreal x, qreal y);
 
 protected:
     QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) override;
@@ -147,6 +215,10 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void hoverMoveEvent(QHoverEvent* event) override;
     void releaseResources() override;
     void itemChange(ItemChange change, const ItemChangeData& value) override;
 
@@ -169,6 +241,22 @@ private:
     [[nodiscard]] atlas::reader::ViewPosition currentPosition() const;
     void showPosition(const atlas::reader::ViewPosition& position);
     void recordJump();
+    void ensureTextWorker();
+    void stopTextWorker();
+    void onTextInfo(quint64 revision, const QVariantList& outline, const QStringList& labels, bool hasText);
+    void onSearchBatch(quint64 searchId, const QVariantList& hits, int pagesDone, int pageCount, bool finished);
+    void onSelected(quint64 requestId, int page, const QString& text, const QVariantList& rects);
+    void onPageLinks(quint64 revision, int page, const QVariantList& links);
+    void requestVisibleLinks();
+    void requestPageText();
+    // Mapping between page points (with /Rotate) and content coordinates.
+    [[nodiscard]] QRectF pointsToContent(std::size_t page, const QRectF& points) const;
+    [[nodiscard]] QPointF contentToPoints(std::size_t page, QPointF content) const;
+    [[nodiscard]] std::optional<std::size_t> pageAtContent(QPointF content) const;
+    [[nodiscard]] QPointF toContent(QPointF itemPos) const;
+    [[nodiscard]] std::optional<QVariantMap> linkAt(QPointF itemPos) const;
+    void finishSnapshot(const QRectF& itemRect);
+    void finishMarquee(const QRectF& itemRect);
     void changeLayout(const std::function<void(atlas::reader::LayoutSettings&)>& edit);
     void scrollBy(qreal delta);  // user scrolling; turns the page in single-page modes
     [[nodiscard]] bool singlePageMode() const;
@@ -190,6 +278,41 @@ private:
     atlas::reader::ViewportLayout layout_;
     atlas::reader::ViewHistory history_;
     std::size_t singleRow_{}; // current row in single-page modes
+
+    QThread textThread_;
+    DocumentTextWorker* textWorker_{};
+    std::shared_ptr<std::atomic<quint64>> latestSearch_;
+    QVariantList outline_;
+    QStringList pageLabels_;
+    bool hasText_{true};
+    bool textReady_{};
+    QString searchQuery_;
+    QVariantList searchHits_;
+    int searchIndex_{-1};
+    bool searching_{};
+    qreal searchProgress_{};
+    bool searchWantsFirstHit_{};
+    quint64 selectionRequest_{};
+    int selectionPage_{-1};
+    QVariantList selectionRects_;
+    QString selectedText_;
+    std::unordered_map<int, QVariantList> links_;
+    std::unordered_map<int, bool> linksRequested_;
+    QString hoveredLink_;
+    int tool_{HandTool};
+    bool pressed_{};
+    bool dragged_{};
+    QPointF pressPos_;
+    QPointF pressScroll_;
+    std::optional<std::size_t> pressPage_;
+    QRectF rubberBand_; // item coordinates, snapshot/marquee
+    QTimer autoScrollTimer_;
+    QTimer pageTextTimer_;
+    quint64 pageTextRequest_{};
+    QString pageText_;
+    qreal autoScrollSpeed_{1.5}; // logical px per tick (16 ms)
+    quint64 wordCountRequest_{};
+    quint64 contentBoxRequest_{};
     FitMode fitMode_{FitMode::Width};
     qreal contentX_{};
     qreal contentY_{};

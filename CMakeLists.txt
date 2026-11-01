@@ -55,6 +55,8 @@ add_library(atlas_reader_viewport STATIC
     src/core/reader/ViewportLayout.cpp
     src/core/reader/ViewHistory.cpp
     src/core/reader/ViewHistory.h
+    src/core/reader/TextSearch.cpp
+    src/core/reader/TextSearch.h
     src/core/reader/ViewportLayout.h
     src/core/reader/RenderPlanner.cpp
     src/core/reader/RenderPlanner.h
@@ -158,6 +160,9 @@ add_library(atlas_reader_ui STATIC
     src/app/reader/ReaderController.h
     src/app/reader/PdfRenderWorker.cpp
     src/app/reader/PageThumbnailProvider.cpp
+    src/app/reader/DocumentTextWorker.cpp
+    src/app/reader/DocumentTextWorker.h
+    src/app/reader/ReaderViewportText.cpp
     src/app/reader/PageThumbnailProvider.h
     src/app/reader/PdfRenderWorker.h
     src/app/reader/ReaderViewport.cpp
@@ -188,7 +193,7 @@ set(ATLAS_QML_FILES
     qml/AtlasButton.qml qml/AtlasIconButton.qml qml/AtlasTextField.qml qml/SidebarItem.qml
     qml/TitleBar.qml qml/LibraryView.qml qml/ReaderView.qml qml/ReaderTab.qml
     qml/RibbonButton.qml qml/RibbonBar.qml qml/DocumentTabBar.qml qml/Backstage.qml
-    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/RibbonSmallButton.qml
+    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/AtlasCheckBox.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
 )
 # Place every QML file at the module root so the module's qmldir (and its
 # singletons) is the implicit import of each file.
@@ -345,6 +350,12 @@ add_test(NAME atlas_reader_viewport_render COMMAND atlas_reader_viewport_render_
 add_executable(atlas_reader_controller_tests tests/reader/reader_controller_tests.cpp)
 target_link_libraries(atlas_reader_controller_tests PRIVATE atlas_reader_ui)
 atlas_enable_warnings(atlas_reader_controller_tests)
+
+add_executable(atlas_app_preferences_tests tests/app/app_preferences_tests.cpp)
+target_link_libraries(atlas_app_preferences_tests PRIVATE atlas_app_support)
+atlas_enable_warnings(atlas_app_preferences_tests)
+add_test(NAME atlas_app_preferences COMMAND atlas_app_preferences_tests)
+set_tests_properties(atlas_app_preferences PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
 add_executable(atlas_document_identity_tests tests/index/document_identity_reconciler_tests.cpp)
 target_link_libraries(atlas_document_identity_tests PRIVATE atlas_document_identity)

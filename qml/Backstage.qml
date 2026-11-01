@@ -152,12 +152,15 @@ Rectangle {
                     Layout.leftMargin: 28
                     Layout.rightMargin: 28
                     clip: true
-                    model: preferences.recentFiles
+                    // Pinned files first (Foxit: pin to the Recent list).
+                    model: preferences.recentFiles.filter(f => preferences.pinnedFiles.indexOf(f) >= 0)
+                        .concat(preferences.recentFiles.filter(f => preferences.pinnedFiles.indexOf(f) < 0))
                     ScrollBar.vertical: ScrollBar {}
                     delegate: AbstractButton {
                         id: row
                         required property string modelData
                         readonly property string fileName: modelData.replace(/\\/g, "/").split("/").pop()
+                        readonly property bool pinned: preferences.pinnedFiles.indexOf(modelData) >= 0
                         width: ListView.view.width
                         height: 54 + Theme.scriptExtra
                         hoverEnabled: true
@@ -165,6 +168,24 @@ Rectangle {
                         Accessible.role: Accessible.ListItem
                         Accessible.name: fileName
                         onClicked: { readerController.openLocalPath(modelData); stage.closeRequested() }
+                        TapHandler {
+                            acceptedButtons: Qt.RightButton
+                            onTapped: (point) => recentMenu.popup(row, point.position.x, point.position.y)
+                        }
+                        Keys.onMenuPressed: recentMenu.popup(row, 0, row.height)
+                        Menu {
+                            id: recentMenu
+                            MenuItem { text: I18n.t("action.open"); onTriggered: { readerController.openLocalPath(row.modelData); stage.closeRequested() } }
+                            MenuItem {
+                                text: row.pinned ? I18n.t("backstage.unpin") : I18n.t("backstage.pin")
+                                onTriggered: preferences.setPinned(row.modelData, !row.pinned)
+                            }
+                            MenuSeparator {}
+                            MenuItem { text: I18n.t("tab.copyPath"); onTriggered: readerController.copyText(row.modelData) }
+                            MenuItem { text: I18n.t("tab.showInFolder"); onTriggered: readerController.showPathInFolder(row.modelData) }
+                            MenuSeparator {}
+                            MenuItem { text: I18n.t("backstage.removeRecent"); onTriggered: preferences.removeRecentFile(row.modelData) }
+                        }
                         background: Rectangle {
                             color: row.hovered ? Theme.hover : "transparent"
                             border.width: row.visualFocus ? 2 : 0
@@ -201,6 +222,18 @@ Rectangle {
                                     font.family: ""
                                     font.pixelSize: 12
                                 }
+                            }
+                            AtlasIconButton {
+                                visible: row.pinned || row.hovered || activeFocus
+                                implicitWidth: 26
+                                implicitHeight: 26
+                                iconSize: 14
+                                iconName: "pin"
+                                iconColor: row.pinned ? Theme.accent : Theme.muted
+                                checkable: true
+                                checked: row.pinned
+                                text: row.pinned ? I18n.t("backstage.unpin") : I18n.t("backstage.pin")
+                                onClicked: preferences.setPinned(row.modelData, !row.pinned)
                             }
                             AtlasIconButton {
                                 visible: row.hovered || activeFocus

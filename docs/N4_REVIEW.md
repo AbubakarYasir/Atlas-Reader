@@ -4,7 +4,7 @@
 
 One short review at the end of N4 (about 45 minutes). Agents run the detailed tests first, so this review is about what only you can judge: is reading comfortable, clear, correct in English, Arabic and Urdu, and trustworthy?
 
-> **Status:** N4 is still being built. Opening, tabs and passwords (N4.1) work today. Showing pages arrives in N4.2. A build made before N4.5 shows only some of the checks below; each check says which part it needs.
+> **Status:** every part of N4 (N4.1–N4.5) is built. This guide is the end-of-N4 review.
 
 ## Before you start
 
@@ -21,7 +21,7 @@ One short review at the end of N4 (about 45 minutes). Agents run the detailed te
 4. **File safety** (N4.1). While a book is open, rename it in File Explorer; Atlas must not block it. At the end, your files' modified dates are unchanged.
 5. **Reading feel** (N4.2–N4.4). Scroll the long book quickly, jump to page 900, zoom in and out, and switch fit width/fit page. Pages appear quickly, scrolling is smooth, and nothing freezes.
 6. **Pages, labels and layout** (N4.4). Go to a page by its printed label (for example "xii" or "45"); try facing pages and cover page; check rotated and mixed-size pages; set an Arabic book to right-to-left page order.
-7. **Find your way** (N4.4–N4.5). Use the outline and thumbnails, search for an Arabic word and an English word, follow a link, then use **Back** to return exactly where you were.
+7. **Find your way** (N4.4–N4.5). Use the Bookmarks panel and the Pages panel (left strip, F4). Press **Ctrl+F** and find an English word (F3 for the next one); press **Ctrl+Shift+F** and search for an Arabic word with and without harakat — both should find it. Follow a link, then use **Alt+Left** to return exactly where you were. Select some text (Alt+6), copy it with Ctrl+C and paste it in Notepad. Close and reopen a book: it should come back at the same page and zoom.
 8. **Honesty** (N4.5). The scanned book reads normally and says plainly that it has no searchable text. Clicking a web link asks before opening the browser.
 9. **Languages, keyboard and accessibility** (N4.3). Switch the app to العربية and then اردو in **File → Preferences → Languages** (Ctrl+K): the layout mirrors, every label is translated (no English left over), Urdu shows in Nastaliq, and it switches back to English. Type a bookmark-style note mixing Arabic and English to check it stays exactly as typed. Try Read mode (Ctrl+H), Full screen (F11) and the reading colours. Do one full task with the keyboard only. With Narrator on, buttons, tabs and the password field should have sensible names. Check at 200% Windows scale and in dark mode.
 10. **Looks and works like Foxit** (N4.3). Put Atlas and Foxit side by side at the same window size. Title bar, ribbon tabs, button sizes, document tabs, left rail, status bar, File page and Preferences window should sit in the same places, and Foxit's shortcuts should do the same thing. Try File → Skins (Light, Dark, System, Classic or Colourful) and the Touch mode button. Note anything that looks different.

@@ -4,6 +4,19 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N4.4 and N4.5 complete: find, search, bookmarks, links — 2026-11-02
+
+- **Find and Search:** Ctrl+F opens a Find bar over the page (Enter or F3 for the next match, Shift+F3 for the previous one); Ctrl+Shift+F opens the Search panel on the right with every result and the words around it. Arabic and Urdu search ignores harakat, tatweel and letter shapes, so العلم finds العِلْمُ.
+- **Bookmarks panel:** the book's own table of contents in the left strip; the current chapter is highlighted.
+- **Select Text, SnapShot and Copy:** select text with Alt+6 and copy with Ctrl+C; SnapShot (Alt+7) copies any area as a picture; Word Count on the View tab.
+- **Links:** links inside the book jump there (Alt+Left comes back); web links show their address and open only when you confirm.
+- **More zoom:** Fit Visible (Ctrl+3), Zoom To (Ctrl+M), Marquee Zoom and Foxit's full zoom list; AutoScroll (Ctrl+Shift+H).
+- **Atlas remembers each book:** page, zoom and layout come back when you reopen it. New Preferences pages: Documents, History, Page Display, Search.
+- **Recent files:** pin, copy path, open the folder, remove; pinned files stay at the top.
+- Printed page numbers ("iv", "xii") work in the page box. Books without searchable text say so plainly.
+- Screen readers now hear the text of the current page.
+- Icons added from the same pinned Fluent UI commit for the new commands: cursor, screenshot, copy, clipboard, text_word_count, open, arrow_up, arrow_down, arrow_autofit_down, search_square.
+
 ## N4.4 navigation, slices 1–2 — 2026-11-02
 
 - **Page display like Foxit:** Single Page, Continuous, Facing (two pages side by side), Continuous Facing, and Show Cover Page — from the View tab or the status bar.

@@ -5,6 +5,7 @@
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
+#include <QUrl>
 #include <QGuiApplication>
 #include <QProcess>
 #include <QFileInfo>
@@ -191,9 +192,27 @@ void ReaderController::copyPathAt(int index) const {
     if (auto* clipboard = QGuiApplication::clipboard()) clipboard->setText(QDir::toNativeSeparators(path));
 }
 
+void ReaderController::copyText(const QString& text) const {
+    if (auto* clipboard = QGuiApplication::clipboard()) clipboard->setText(text);
+}
+
+bool ReaderController::openExternalLink(const QString& url) const {
+    const QUrl target{url, QUrl::StrictMode};
+    const QString scheme = target.scheme().toLower();
+    if (!target.isValid() || (scheme != QStringLiteral("https") && scheme != QStringLiteral("http") &&
+                              scheme != QStringLiteral("mailto"))) {
+        return false;
+    }
+    return QDesktopServices::openUrl(target);
+}
+
 void ReaderController::showInFolderAt(int index) const {
     if (index < 0 || index >= rowCount()) return;
-    const QString path = pathToQString(model_.sessions().at(static_cast<std::size_t>(index)).source);
+    showPathInFolder(pathToQString(model_.sessions().at(static_cast<std::size_t>(index)).source));
+}
+
+void ReaderController::showPathInFolder(const QString& path) const {
+    if (path.isEmpty() || !QFileInfo::exists(path)) return;
 #ifdef Q_OS_WIN
     // Explorer opens the folder with the file selected; nothing is executed.
     QProcess::startDetached(QStringLiteral("explorer.exe"),

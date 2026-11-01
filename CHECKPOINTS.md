@@ -9,7 +9,7 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | | |
 |---|---|
 | Active stage | **N4: Reader**, planned `2.0.0-beta.2` |
-| Active sub-stage | **N4.4: Navigation** — first slice landed: Pages panel and navigation rail (F4), Previous/Next View (Alt+Left/Right), tab context menu. N4.3 Foxit workspace is implemented and automated-verified (CI `41281081373`, signed head `2a5ab85`); owner checks in the end-of-N4 review |
+| Active sub-stage | **End-of-N4 owner review.** N4.4 Navigation and N4.5 Outline/text/search/links are implemented (2026-11-02); every N4 sub-stage is now built and waits for the [N4 review](docs/N4_REVIEW.md) with one review build |
 | Done in N4 | N4.1 Opening, tabs and passwords: implemented and automated-verified (43/43 CI tests, run `36690884159`) |
 | Branch | `native-v2-n4-reader-foundation`, from accepted `main` merge `739508e3` |
 | Released | `2.0.0-beta.1` (Library), 2026-09-28 |
@@ -96,7 +96,10 @@ Moved forward on 2026-11-01 so every later reader feature lands in the final wor
 - **Keyboard:** Foxit defaults (Ctrl+K Preferences, Ctrl+Q exit, Ctrl+Shift+W close all, Ctrl+F11 ribbon, F4 panels, Ctrl+H, F11, Ctrl+1/2/0, Ctrl+Shift+±, Ctrl+Home/End, Ctrl+G); Add folder moves to Ctrl+Shift+O; Ctrl+F finds in the Library.
 - **Tests:** string-table completeness (EN/AR/UR); rendered screenshots in English, Arabic and Urdu × Light/Dark compared side by side with Foxit at 1280 × 800 and 1920 × 1040; keyboard route and accessible names for every ribbon control; existing viewport and controller suites.
 
-### N4.4 — Navigation ← **active**
+### N4.4 — Navigation ✅ Implemented (automated checks; owner review at end of N4)
+
+- **Done (slice 3):** Fit Visible (Ctrl+3), Zoom To (Ctrl+M), Marquee Zoom, Foxit's full zoom list (8.33 %–6400 %); AutoScroll (Ctrl+Shift+H; Up/Down speed, Esc or a click stops); page box accepts printed page labels ("iv", "A-3") and shows "label (n / total)"; **per-book view memory** (page, zoom/fit, layout) with Preferences → Documents; default layout and zoom (Preferences → Page Display); Preferences → History (Clear History keeps pinned files); recent-file menu (Open, Pin/Unpin, Copy Path, Open Containing Folder, Remove; pinned files listed first and kept past the 20-file limit); Reset All Panels; page-background context menu.
+- **Moved, with owners:** Open a Copy (writes a file) and Preferences → Full Screen and rendering options → N7; tiling for pages wider or taller than 8,192 px → N10 (today such pages render at a capped, softer resolution, never crash); Fit Height is covered by Fit Page and Fit Visible, as in Foxit; an "academic offset" is replaced by printed page labels.
 
 - **Done (slice 2):** **Page Display** — Single Page, Continuous, Facing, Continuous Facing, Show Cover Page During Facing (View tab small buttons and status-bar buttons, as in Foxit); **Reverse View** (spreads read right to left; Left arrow turns forward); next/previous page turn a whole spread; Single Page shows one page or spread and turns at its end.
 - **Done (slice 1):** navigation rail with the **Pages panel** (background thumbnails, current page outlined, click or Enter to jump, resizable splitter, double-click hides, F4, View → View Setting → Navigation Panels); **Previous/Next View** (Alt+Left/Right and status-bar buttons; page-box, first/last, Home/End and thumbnail jumps are recorded, next/previous page is not); **document-tab context menu** (Close, Close Others, Close Left/Right, Close All, Copy Path, Open Containing Folder).
@@ -107,7 +110,10 @@ Moved forward on 2026-11-01 so every later reader feature lands in the final wor
 - **Foxit workspace items:** navigation rail with Show/Reset panels; full zoom list (1 %–6400 %, Zoom To); page-background context menu; document-tab context menu (Close, Close Others/Left/Right, Copy Path, Open Containing Folder); recent-file menu (Open, Open a Copy, Pin, Copy Path, Remove); Preferences → Page Display, Full Screen, History, Documents.
 - **Tests:** Fit/FitH/FitV normalization, bounds, labels, rotations, spread rules, LTR/RTL progression, focus at 100% and 200%.
 
-### N4.5 — Outline, text, search and links
+### N4.5 — Outline, text, search and links ✅ Implemented (automated checks; owner review at end of N4)
+
+- **Done:** **Bookmarks panel** (document outline, read-only; expand/collapse, current section highlighted, keyboard); **Find bar** (Ctrl+F, Enter/F3 next, Shift+Enter/Shift+F3 previous, live count) and **Search panel** (Ctrl+Shift+F, right side; results stream page by page with context; options shared and remembered); search runs on a background thread, starts at the current page, is cancelled by a newer search and highlights every hit; Arabic/Urdu matching ignores harakat, tatweel and joiners, folds letter variants **and shaped presentation forms** (FB50–FDFF, FE70–FEFF, lam-alef ligatures); **Select Text** (Alt+6), **SnapShot** (Alt+7, copies an area as an image), Hand (Alt+3), Clipboard ▾ (Copy Ctrl+C, Select All Ctrl+A, Deselect Ctrl+Shift+A); copy gives plain letters (NFKC); **Word Count** (View tab); **links** — internal links jump (and Back returns), web/mail links show their address and open only after confirmation (other schemes refused), right-click copies the link; garbage or /Fit destinations fall back to the top of the page; de-duplicated link rows (Qt 6.6+); "no searchable text" banner for image-only books; Preferences → Search; the current page's text is exposed to screen readers (C04).
+- **Moved, with owners:** include bookmarks/comments in search → N6 (comments arrive there); image context menu (copy, save image as), Destinations panel, open PDF links in a new tab, single-key accelerators, Preferences → Reading (reading order, caret browsing) → N7; untagged-document prompt and tagged reading order → N10; search latency p50/p95/p99 on long books → measured on Windows in the N4 review build (Release), budget in [QUALITY.md](docs/QUALITY.md).
 
 - **Outline panel** (read-only) and **Search panel** (right panel, Ctrl+Shift+F) with **Find** (Ctrl+F, F3/Shift+F3); Home → **Select** (Alt+6) and **SnapShot** (Alt+7), Clipboard ▾; View → **Word Count**; search options (whole words, case, include bookmarks/comments, highlight all); link menu (open after confirmation, copy link location); image menu (copy, save image as); destinations (go to); Preferences → Search, Reading; single-key accelerators option; text selection and copy; caret browsing and system selection colour options; cancellable search with next/previous; internal and external links through Atlas-owned models.
 - Semantic de-duplication of Qt PDF's duplicate link rows; destinations normalized with rotation and crop.
@@ -198,6 +204,7 @@ On real pen/touch hardware, draw short, long and fast strokes while scrolling, z
 **Goal:** the essential desktop utilities, without turning Atlas into an office suite.
 
 - Printing with preview, ranges, labels, layout and grayscale (File → Print, Ctrl+P); source hash unchanged.
+- Moved from N4.4/N4.5: Open a Copy; image context menu (copy, save image as); Destinations panel; open PDF links in a new tab; thumbnail size; single-key accelerators (off by default); Preferences → Full Screen, Reading (reading order, caret browsing) and rendering options.
 - Foxit File page and Preferences completed: Properties (Ctrl+D), Preferences categories for every shipped feature, Quick Access Toolbar customization (above/below ribbon), Help tab (offline User Guide F1, Command Line Help, Set as default PDF reader, Report Error as a local diagnostic bundle); optional classic menu bar (File, Edit, View, Tools, Help); minimize to tray; print current/all tabs; Preferences → Print, File Associations.
 - Covers queue with invalidation; details panel; selected metadata/XMP editing with preview and preservation.
 - Sorting, filters, safe rename, collections and tags (C09, C10, C21).
@@ -270,6 +277,8 @@ Repeat the matrix above personally in English, Arabic and Urdu, focusing on read
 
 Large libraries; long PDFs; 10k+ bookmark trees; SSD and HDD/external drives; pen and touch; multiple DPIs and monitors; a physical printer; interrupted saves, conflicts and offline folders; long sessions; install/upgrade candidate; SBOM, notices and security review; network-observed offline run (C05, C14, C22).
 
+Moved from N4: tiled rendering for pages beyond 8,192 px (clip renders); untagged-document prompt and tagged reading order for screen readers; one shared in-memory copy of each PDF for pages, thumbnails and text (today up to three).
+
 ### Automated QA
 
 - Full Debug/Release regression; benchmark thresholds; long memory/handle soak.
@@ -310,7 +319,7 @@ Install, upgrade, use and uninstall the exact candidate on a clean profile; conf
 
 | From N2 | Fixed in | Blocking evidence |
 |---|---|---|
-| Qt PDF returns duplicate raw link rows | N4.5 | De-duplication test plus link-heavy fixture |
+| Qt PDF returns duplicate raw link rows | N4.5 (implemented; Qt 6.6+ link model) | De-duplication test plus link-heavy fixture (Windows CI) |
 | Rotated explicit destinations need rotation metadata | N4.5 | Exact targets on normal, cropped, 90°, 180° and 270° pages |
 | Qt PDF search slower than PDFium on synthetic tests | N4.5 | Long-book p50/p95/p99, cancellation, no missed results |
 | Qt PDF memory trend needs real-reader proof | N4.2, N10 | 2,000-page and multi-tab memory series |

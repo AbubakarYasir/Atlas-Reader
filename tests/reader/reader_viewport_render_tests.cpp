@@ -19,6 +19,7 @@
 #include <QTemporaryDir>
 #include <QUrl>
 
+#include <cmath>
 #include <functional>
 #include <iostream>
 #include <stdexcept>
@@ -183,6 +184,37 @@ int main(int argc, char** argv) {
         require(viewport->currentPage() == 2, "With a cover page the first spread starts at page 2.");
         viewport->setPageDisplay(1);
         viewport->setCoverPage(false);
+
+        // N4.5 text: info, search (incl. whole words), selection, word count.
+        require(waitFor([&] { return viewport->textReady(); }), "Document text information must arrive.");
+        require(viewport->hasText() && viewport->pageLabels().size() == kPages, "Text and page labels must be read.");
+        viewport->find(QStringLiteral("page 42"), false, true);
+        require(waitFor([&] { return !viewport->searching(); }), "Search must finish.");
+        require(viewport->searchHits().size() == 1 && viewport->currentPage() == 42,
+                "Search must find the single match and show its page.");
+        viewport->find(QStringLiteral("PAGE"), false, false);
+        require(waitFor([&] { return !viewport->searching(); }), "Search must finish.");
+        require(viewport->searchHits().size() == kPages, "Case-insensitive search must find every page.");
+        viewport->find(QStringLiteral("PAGE"), true, false);
+        require(waitFor([&] { return !viewport->searching(); }) && viewport->searchHits().isEmpty(),
+                "Match Case must not match different case.");
+        viewport->clearSearch();
+        viewport->goToPage(7);
+        viewport->selectAllOnPage();
+        require(waitFor([&] { return viewport->selectedText().contains(QStringLiteral("Page 7")); }),
+                "Selecting a page must return its text.");
+        int words = -1;
+        QObject::connect(viewport, &atlas::app::ReaderViewport::wordCountReady, viewport,
+                         [&words](int w, int, int) { words = w; });
+        viewport->requestWordCount();
+        require(waitFor([&] { return words >= 0; }) && words == kPages * 2, "Word Count must count every word.");
+        require(viewport->goToLabel(QStringLiteral("33")) && viewport->currentPage() == 33,
+                "Going to a page by label or number must work.");
+        require(waitFor([&] { return viewport->pageText().contains(QStringLiteral("Page 33")); }),
+                "Screen readers must get the current page's text.");
+        // Garbage destinations (NaN, off-page) fall back to the top of the target page.
+        viewport->goToDestination(4, QPointF{std::nan(""), 1e30});
+        require(viewport->currentPage() == 5, "An unusable destination must still reach its page.");
 
         // The renderer holds the document in memory, not the file.
         const QString moved = dir.filePath(QStringLiteral("moved book.pdf"));

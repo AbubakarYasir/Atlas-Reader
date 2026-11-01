@@ -13,7 +13,11 @@ Popup {
 
     readonly property var categories: [
         { id: "general", key: "prefs.general", words: "startup restore tabs touch mouse" },
+        { id: "documents", key: "prefs.documents", words: "open restore position page last view" },
+        { id: "history", key: "prefs.history", words: "recent history clear" },
         { id: "languages", key: "prefs.languages", words: "language english arabic urdu العربية اردو" },
+        { id: "pageDisplay", key: "prefs.pageDisplay", words: "page layout zoom facing continuous single fit" },
+        { id: "search", key: "prefs.search.title", words: "search find case whole words arabic" },
         { id: "skins", key: "prefs.skins", words: "skin theme dark light colour color" },
         { id: "accessibility", key: "prefs.accessibility", words: "reading colours colors contrast sepia night" }
     ]
@@ -26,7 +30,10 @@ Popup {
         snapshot = {
             language: preferences.language, themeMode: preferences.themeMode, skin: preferences.skin,
             themeColor: preferences.themeColor, touchMode: preferences.touchMode,
-            readingColors: preferences.readingColors, restore: readerController.restoreEnabled
+            readingColors: preferences.readingColors, restore: readerController.restoreEnabled,
+            defaultPageDisplay: preferences.defaultPageDisplay, defaultZoom: preferences.defaultZoom,
+            rememberPosition: preferences.rememberPosition, matchCase: preferences.searchMatchCase,
+            wholeWords: preferences.searchWholeWords
         }
     }
     function restore() {
@@ -37,6 +44,11 @@ Popup {
         preferences.touchMode = snapshot.touchMode
         preferences.readingColors = snapshot.readingColors
         readerController.restoreEnabled = snapshot.restore
+        preferences.defaultPageDisplay = snapshot.defaultPageDisplay
+        preferences.defaultZoom = snapshot.defaultZoom
+        preferences.rememberPosition = snapshot.rememberPosition
+        preferences.searchMatchCase = snapshot.matchCase
+        preferences.searchWholeWords = snapshot.wholeWords
     }
 
     modal: true
@@ -174,7 +186,7 @@ Popup {
                         GroupBox {
                             Layout.fillWidth: true
                             title: I18n.t("prefs.startup")
-                            CheckBox {
+                            AtlasCheckBox {
                                 text: I18n.t("reader.restoreTabs")
                                 checked: readerController.restoreEnabled
                                 onToggled: readerController.restoreEnabled = checked
@@ -183,10 +195,144 @@ Popup {
                         GroupBox {
                             Layout.fillWidth: true
                             title: I18n.t("prefs.basicTools")
-                            CheckBox {
+                            AtlasCheckBox {
                                 text: I18n.t("appearance.touch")
                                 checked: preferences.touchMode
                                 onToggled: preferences.touchMode = checked
+                            }
+                        }
+                    }
+
+                    // Documents
+                    ColumnLayout {
+                        visible: dialog.page === "documents"
+                        width: pageScroll.availableWidth
+                        spacing: Theme.md
+                        GroupBox {
+                            Layout.fillWidth: true
+                            title: I18n.t("prefs.openSetting")
+                            ColumnLayout {
+                                anchors.fill: parent
+                                AtlasCheckBox {
+                                    text: I18n.t("prefs.rememberPosition")
+                                    checked: preferences.rememberPosition
+                                    onToggled: preferences.rememberPosition = checked
+                                }
+                                AtlasCheckBox {
+                                    text: I18n.t("reader.restoreTabs")
+                                    checked: readerController.restoreEnabled
+                                    onToggled: readerController.restoreEnabled = checked
+                                }
+                            }
+                        }
+                    }
+
+                    // History
+                    ColumnLayout {
+                        visible: dialog.page === "history"
+                        width: pageScroll.availableWidth
+                        spacing: Theme.md
+                        GroupBox {
+                            Layout.fillWidth: true
+                            title: I18n.t("prefs.history")
+                            ColumnLayout {
+                                anchors.fill: parent
+                                Label {
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: I18n.t("prefs.historyHint", preferences.recentFiles.length)
+                                    color: Theme.ink
+                                    wrapMode: Text.WordWrap
+                                }
+                                AtlasButton {
+                                    iconName: "history"
+                                    text: I18n.t("prefs.clearHistory")
+                                    enabled: preferences.recentFiles.length > 0
+                                    onClicked: preferences.clearHistory()
+                                }
+                            }
+                        }
+                    }
+
+                    // Page Display
+                    ColumnLayout {
+                        visible: dialog.page === "pageDisplay"
+                        width: pageScroll.availableWidth
+                        spacing: Theme.md
+                        GroupBox {
+                            Layout.fillWidth: true
+                            title: I18n.t("prefs.defaultLayout")
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: 2
+                                Repeater {
+                                    model: ["cmd.singlePage", "cmd.continuous", "cmd.facing", "cmd.continuousFacing"]
+                                    delegate: RadioButton {
+                                        required property int index
+                                        required property var modelData
+                                        text: I18n.t(modelData)
+                                        checked: preferences.defaultPageDisplay === index
+                                        onClicked: preferences.defaultPageDisplay = index
+                                    }
+                                }
+                            }
+                        }
+                        GroupBox {
+                            Layout.fillWidth: true
+                            title: I18n.t("prefs.defaultZoom")
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: 2
+                                Repeater {
+                                    model: ["zoom.fitWidth", "zoom.fitPage", "zoom.actualSize"]
+                                    delegate: RadioButton {
+                                        required property int index
+                                        required property var modelData
+                                        text: I18n.t(modelData)
+                                        checked: preferences.defaultZoom === index
+                                        onClicked: preferences.defaultZoom = index
+                                    }
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    Layout.topMargin: Theme.sm
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: I18n.t("prefs.defaultsHint")
+                                    color: Theme.muted
+                                    wrapMode: Text.WordWrap
+                                }
+                            }
+                        }
+                    }
+
+                    // Search
+                    ColumnLayout {
+                        visible: dialog.page === "search"
+                        width: pageScroll.availableWidth
+                        spacing: Theme.md
+                        GroupBox {
+                            Layout.fillWidth: true
+                            title: I18n.t("prefs.search.title")
+                            ColumnLayout {
+                                anchors.fill: parent
+                                AtlasCheckBox {
+                                    text: I18n.t("find.wholeWords")
+                                    checked: preferences.searchWholeWords
+                                    onToggled: preferences.searchWholeWords = checked
+                                }
+                                AtlasCheckBox {
+                                    text: I18n.t("find.matchCase")
+                                    checked: preferences.searchMatchCase
+                                    onToggled: preferences.searchMatchCase = checked
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    Layout.topMargin: Theme.sm
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: I18n.t("prefs.search.arabicHint")
+                                    color: Theme.muted
+                                    wrapMode: Text.WordWrap
+                                }
                             }
                         }
                     }

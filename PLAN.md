@@ -82,7 +82,7 @@ Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after
 - Navigation panel: Outline · Pages (thumbnails) · Bookmarks · Annotations (from N6).
 - Text selection and copy, cancellable document search, internal and external links, Back/Forward history.
 - Focus/full-screen reading with a discoverable exit; per-book position and zoom remembered.
-- Foxit's ribbon tools for reading: Hand, Select text, SnapShot, Zoom (marquee, zoom to), Fit Visible, AutoScroll, Reverse View (right-to-left page order), page display buttons, Word Count [N4.4–N4.5].
+- Foxit's ribbon tools for reading: Hand, Select text, SnapShot, Zoom (marquee, zoom to), Fit Visible, AutoScroll, Reverse View (right-to-left page order), page display buttons, Word Count [N4.4–N4.5, implemented 2026-11-02].
 - Image-only PDFs read normally, with an honest "no text layer" state. There is no OCR.
 - Offline safety: no document JavaScript, launches or remote fetches; external links need explicit confirmation.
 
@@ -214,6 +214,7 @@ At the end of each stage we run the same tasks on the same files in a relevant m
 | **2026-11-01** | **Foxit workspace parity** ([ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md)). Owner: copy Foxit's UI/UX as exactly as possible so Atlas never looks like a generic AI app. Layout, measurements, command placement and shortcuts follow Foxit; icons, colours and brand stay Atlas's. Foxit's features are staged in [FOXIT_PARITY.md](docs/FOXIT_PARITY.md): necessary ones before 2.0, others after. Offline OCR, image/text export and stamps move from "never" to after-2.0 candidates. Supersedes the "concepts only, slim command bar" decision of the same morning |
 | **2026-11-01** | **Trilingual interface and any-language content.** English (default), Arabic and Urdu UI ship complete in the first version; all user content accepts any language. **Foxit concepts adopted** (section 7) for familiarity and accessibility, with Atlas's own visual design. **UI revamp moved forward** to N4.3 so every later reader feature is built into the new workspace |
 | **2026-11-01** | **Focused 2.0.** EPUB/comics/Kindle, PDF editing tools (E1–E5), form filling, side-by-side, reflow view and read-aloud move after 2.0. **Batched owner reviews:** one review per stage instead of per sub-stage. **Docs consolidated:** 35 reference files in `docs/` became 9 plus an index, and `INFO.md` was merged into README/CHECKPOINTS; the previous set is kept unchanged in [docs/history](docs/history/README.md) |
+| **2026-11-02** | **N4 build complete; small items moved.** N4.4 and N4.5 are implemented. Items that write files or need later features moved with named owners: Open a Copy, image menu, Destinations panel, single-key accelerators, Preferences → Full Screen/Reading → N7; search in comments → N6; >8,192 px tiling, tagged reading order, one shared PDF copy → N10. Reason: keep N4 read-only and reviewable now ([CHECKPOINTS.md](CHECKPOINTS.md)). |
 
 Every change to scope, priority or release gates is added here with its reason.
 

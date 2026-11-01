@@ -22,6 +22,12 @@ Rectangle {
     signal fileRequested()
     signal aboutRequested()
     signal preferencesRequested(string page)
+    signal findRequested()
+    signal searchRequested()
+    signal zoomToRequested()
+    signal wordCountRequested()
+
+    function setTool(tool) { if (viewport) viewport.tool = tool }
 
     implicitHeight: Theme.ribbonTabHeight + (showCommands && !backstageOpen ? Theme.ribbonHeight + 5 : 1)
     color: Theme.chrome
@@ -121,8 +127,33 @@ Rectangle {
                 text: I18n.t("cmd.hand")
                 shortcutHint: "Alt+3"
                 checkable: true
-                checked: true
+                checked: !ribbon.hasDocument || ribbon.viewport.tool === ReaderViewport.HandTool
                 enabled: ribbon.hasDocument
+                onClicked: ribbon.setTool(ReaderViewport.HandTool)
+            }
+            RibbonButton {
+                iconName: "cursor"
+                text: I18n.t("cmd.selectText")
+                shortcutHint: "Alt+6"
+                checkable: true
+                checked: ribbon.hasDocument && ribbon.viewport.tool === ReaderViewport.SelectTool
+                enabled: ribbon.hasDocument
+                onClicked: ribbon.setTool(ReaderViewport.SelectTool)
+            }
+            RibbonButton {
+                iconName: "screenshot"
+                text: I18n.t("cmd.snapshot")
+                shortcutHint: "Alt+7"
+                checkable: true
+                checked: ribbon.hasDocument && ribbon.viewport.tool === ReaderViewport.SnapshotTool
+                enabled: ribbon.hasDocument
+                onClicked: ribbon.setTool(ReaderViewport.SnapshotTool)
+            }
+            RibbonButton {
+                iconName: "clipboard"
+                text: I18n.t("cmd.clipboard")
+                enabled: ribbon.hasDocument
+                menu: clipboardMenu
             }
             Separator {}
             RibbonButton {
@@ -142,6 +173,21 @@ Rectangle {
                 text: I18n.t("cmd.rotateView")
                 enabled: ribbon.hasDocument
                 menu: rotateMenu
+            }
+            Separator {}
+            RibbonButton {
+                iconName: "search"
+                text: I18n.t("find.title")
+                shortcutHint: "Ctrl+F"
+                enabled: ribbon.hasDocument
+                onClicked: ribbon.findRequested()
+            }
+            RibbonButton {
+                iconName: "search_square"
+                text: I18n.t("panel.search")
+                shortcutHint: "Ctrl+Shift+F"
+                enabled: ribbon.hasDocument
+                onClicked: ribbon.searchRequested()
             }
         }
 
@@ -224,6 +270,22 @@ Rectangle {
             }
             Separator {}
             RibbonButton {
+                iconName: "arrow_autofit_down"
+                text: I18n.t("cmd.autoScroll")
+                shortcutHint: "Ctrl+Shift+H"
+                enabled: ribbon.hasDocument
+                checkable: true
+                checked: ribbon.hasDocument && ribbon.viewport.autoScrolling
+                onClicked: ribbon.viewport.toggleAutoScroll()
+            }
+            RibbonButton {
+                iconName: "text_word_count"
+                text: I18n.t("wordCount.title")
+                enabled: ribbon.hasDocument
+                onClicked: ribbon.wordCountRequested()
+            }
+            Separator {}
+            RibbonButton {
                 iconName: "settings"
                 text: I18n.t("cmd.viewSetting")
                 menu: viewSettingMenu
@@ -284,15 +346,41 @@ Rectangle {
 
     // ---- menus
     Menu {
+        id: clipboardMenu
+        MenuItem {
+            text: I18n.t("action.copy") + "\tCtrl+C"
+            enabled: ribbon.hasDocument && ribbon.viewport.selectedText.length > 0
+            onTriggered: ribbon.viewport.copySelection()
+        }
+        MenuItem {
+            text: I18n.t("action.selectAll") + "\tCtrl+A"
+            enabled: ribbon.hasDocument && ribbon.viewport.hasText
+            onTriggered: ribbon.viewport.selectAllOnPage()
+        }
+        MenuItem {
+            text: I18n.t("action.deselectAll")
+            enabled: ribbon.hasDocument && ribbon.viewport.selectedText.length > 0
+            onTriggered: ribbon.viewport.clearSelection()
+        }
+    }
+    Menu {
         id: zoomMenu
-        MenuItem { text: I18n.t("zoom.in"); onTriggered: ribbon.viewport.zoomBy(1.25) }
-        MenuItem { text: I18n.t("zoom.out"); onTriggered: ribbon.viewport.zoomBy(0.8) }
+        MenuItem { text: I18n.t("zoom.in") + "\tCtrl+="; onTriggered: ribbon.viewport.zoomBy(1.25) }
+        MenuItem { text: I18n.t("zoom.out") + "\tCtrl+-"; onTriggered: ribbon.viewport.zoomBy(0.8) }
+        MenuItem {
+            text: I18n.t("cmd.marqueeZoom")
+            checkable: true
+            checked: ribbon.hasDocument && ribbon.viewport.tool === ReaderViewport.MarqueeTool
+            onTriggered: ribbon.setTool(ReaderViewport.MarqueeTool)
+        }
+        MenuItem { text: I18n.t("zoom.zoomTo") + "\tCtrl+M"; onTriggered: ribbon.zoomToRequested() }
         MenuSeparator {}
         Repeater {
-            model: [0.5, 0.75, 1, 1.25, 1.5, 2, 4]
+            // Foxit's zoom list, 1 % to 6400 %
+            model: [0.0833, 0.125, 0.25, 0.3333, 0.5, 0.6667, 0.75, 1, 1.25, 1.5, 2, 3, 4, 6, 8, 12, 16, 24, 32, 64]
             delegate: MenuItem {
                 required property var modelData
-                text: I18n.t("cmd.zoomTo", I18n.isolate(Math.round(modelData * 100) + "%"))
+                text: I18n.t("cmd.zoomTo", I18n.isolate((Math.round(modelData * 10000) / 100) + "%"))
                 onTriggered: ribbon.zoomTo(modelData)
             }
         }
@@ -316,6 +404,10 @@ Rectangle {
             checkable: true
             checked: ribbon.viewport !== null && ribbon.viewport.fitMode === ReaderViewport.Width
             onTriggered: ribbon.viewport.fitMode = ReaderViewport.Width
+        }
+        MenuItem {
+            text: I18n.t("zoom.fitVisible") + "\tCtrl+3"
+            onTriggered: ribbon.viewport.fitVisible()
         }
     }
     Menu {
@@ -346,7 +438,15 @@ Rectangle {
         }
         Menu {
             title: I18n.t("panel.navigation")
-            MenuItem { text: I18n.t("panel.show") + "\tF4"; enabled: preferences.navPanel === ""; onTriggered: preferences.navPanel = "pages" }
+            MenuItem { text: I18n.t("panel.show") + "\tF4"; enabled: preferences.navPanel === ""; onTriggered: preferences.navPanel = "bookmarks" }
+            MenuSeparator {}
+            MenuItem { text: I18n.t("panel.bookmarks"); checkable: true; checked: preferences.navPanel === "bookmarks"; onTriggered: preferences.navPanel = checked ? "bookmarks" : "" }
+            MenuItem { text: I18n.t("panel.pages"); checkable: true; checked: preferences.navPanel === "pages"; onTriggered: preferences.navPanel = checked ? "pages" : "" }
+            MenuSeparator {}
+            MenuItem {
+                text: I18n.t("panel.reset")
+                onTriggered: { preferences.navPanel = "bookmarks"; preferences.navPanelWidth = 240; preferences.rightPanel = "" }
+            }
             MenuItem { text: I18n.t("panel.hide") + "\tF4"; enabled: preferences.navPanel !== ""; onTriggered: preferences.navPanel = "" }
         }
         MenuItem { text: I18n.t("nav.library"); onTriggered: readerController.showLibrary() }

@@ -2,6 +2,7 @@
 // Pure C++: no Qt, no PDF engine, no GUI.
 
 #include "core/reader/RenderPlanner.h"
+#include "core/reader/TextSearch.h"
 #include "core/reader/ViewHistory.h"
 #include "core/reader/ViewportLayout.h"
 
@@ -309,6 +310,34 @@ void testTwoThousandPageMemorySeries() {
 
 } // namespace
 
+void testTextSearch() {
+    SearchOptions any;
+    // Shaped Arabic (presentation forms, as many PDFs store it) matches plain letters.
+    // "العلم" stored as isolated alef, initial lam, medial ain, medial lam, final meem; a lam-alef ligature too.
+    const std::u16string shaped = u"\uFE8D\uFEDF\uFECC\uFEE0\uFEE2 \uFEFB";
+    const auto shapedHits = findMatches(shaped, u"العلم", any);
+    require(shapedHits.size() == 1 && shapedHits[0].start == 0 && shapedHits[0].length == 5,
+            "Search must fold Arabic presentation forms to base letters.");
+    require(findMatches(shaped, u"لا", any).size() == 1, "Lam-alef ligatures must match lam + alef.");
+    require(findMatches(u"\uFB8E\uFBFE", u"کی", any).size() == 1, "Urdu presentation forms must match.");
+    auto m = findMatches(u"The Quick brown fox, the end", u"the", any);
+    require(m.size() == 2 && m[0].start == 0 && m[1].start == 21, "Search must ignore Latin case by default.");
+    SearchOptions exact{true, false};
+    require(findMatches(u"The the", u"the", exact).size() == 1, "Match Case must respect case.");
+    SearchOptions whole{false, true};
+    require(findMatches(u"other the theme", u"the", whole).size() == 1, "Whole words must skip partial words.");
+    // Arabic: diacritics, tatweel and alef/yeh/teh-marbuta variants are ignored.
+    const std::u16string arabic = u"\u0642\u064e\u0627\u0644\u064e \u0627\u0644\u0644\u0651\u0647\u064f \u0625\u0650\u0644\u0640\u064e\u0649";
+    auto a = findMatches(arabic, u"\u0642\u0627\u0644", any);
+    require(a.size() == 1 && a[0].start == 0 && a[0].length == 5, "Arabic search must ignore harakat and keep them in the hit.");
+    require(findMatches(arabic, u"\u0627\u0644\u064a", any).size() == 1, "Alef forms, tatweel and alef maqsura must match.");
+    require(findMatches(u"\u0645\u062f\u0631\u0633\u0629", u"\u0645\u062f\u0631\u0633\u0647", any).size() == 1, "Teh marbuta must match heh.");
+    // Urdu: keheh/kaf and Farsi yeh/Arabic yeh.
+    require(findMatches(u"\u06a9\u062a\u0627\u0628 \u06cc\u06c1", u"\u0643\u062a\u0627\u0628", any).size() == 1, "Kaf and keheh must match.");
+    require(countWords(u"\u0628\u0633\u0645 \u0627\u0644\u0644\u0647, the end.") == 4, "Word Count must count mixed-script words.");
+    require(findMatches(u"abc", u"", any).empty(), "An empty query finds nothing.");
+}
+
 void testSpreads() {
     LayoutSettings settings;
     settings.display = PageDisplay::continuousFacing;
@@ -381,6 +410,7 @@ int main() {
         testTwoThousandPageMemorySeries();
         testViewHistory();
         testSpreads();
+        testTextSearch();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: " << error.what() << '\n';
         return 1;

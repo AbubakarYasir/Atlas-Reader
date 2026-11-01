@@ -137,6 +137,7 @@ void PdfRenderWorker::open(const QString& sourcePath, const QString& password,
         close();
     }
     emit opened(documentRevision, static_cast<int>(error), sizes);
+    if (error == OpenError::none) emit documentBytes(documentRevision, bytes_, password);
 }
 
 void PdfRenderWorker::render(quint64 ticket, quint64 documentRevision, int page, QSize pixelSize,

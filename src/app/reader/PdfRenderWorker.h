@@ -74,6 +74,8 @@ public slots:
 signals:
     // Page sizes are in points with each page's /Rotate already applied.
     void opened(quint64 documentRevision, int error, const QList<QSizeF>& pageSizes);
+    // The in-memory bytes (implicitly shared, read-only) for the text worker.
+    void documentBytes(quint64 documentRevision, const QByteArray& bytes, const QString& password);
     void rendered(quint64 ticket, quint64 documentRevision, int page, const QImage& image);
     void renderFailed(quint64 ticket, quint64 documentRevision, int page);
 

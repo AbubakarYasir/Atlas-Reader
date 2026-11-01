@@ -20,10 +20,76 @@ Rectangle {
 
     readonly property bool ready: status === "ready"
     readonly property alias viewport: view
+    // The book prints its own page numbers (roman front matter, etc.).
+    readonly property bool hasLabels: {
+        const labels = view.pageLabels
+        for (let i = 0; i < labels.length; ++i) if (labels[i] !== String(i + 1)) return true
+        return false
+    }
+    function pageLabel(page) {
+        const labels = view.pageLabels
+        return hasLabels && page >= 1 && page <= labels.length ? labels[page - 1] : String(page)
+    }
 
     color: ready ? Theme.readerBackdrop : Theme.canvas
 
+    signal linkConfirmRequested(string url)
+    signal toastRequested(string text)
+
     function focusPageBox() { pageBox.forceActiveFocus() }
+    function openFind() {
+        if (preferences.rightPanel === "search") { searchPanel.focusField(view.selectedText); return }
+        findBar.open(view.selectedText.length < 80 ? view.selectedText : "")
+    }
+    function openSearch() {
+        findBar.visible = false
+        preferences.rightPanel = "search"
+        searchPanel.focusField(view.selectedText.length < 80 ? view.selectedText : (view.searchQuery || ""))
+    }
+    // Visual QA (--show find:/search:)
+    function findBarRun(text) { findBar.open(text); findBar.run() }
+    function searchRun(text) { searchPanel.focusField(text); searchPanel.run() }
+    function closeSearch() { preferences.rightPanel = ""; view.forceActiveFocus() }
+
+    // ---- per-book reading position (Preferences → Documents / History)
+    property bool restored: false
+    function restorePosition() {
+        if (restored || view.pageCount <= 0) return
+        restored = true
+        const saved = preferences.positionFor(tab.sourcePath)
+        if (saved.page !== undefined) {
+            view.pageDisplay = saved.display
+            if (saved.fit === 1) view.fitMode = ReaderViewport.Width
+            else if (saved.fit === 2) view.fitMode = ReaderViewport.Page
+            else view.zoom = saved.zoom
+            view.goToPage(saved.page)
+        } else {
+            view.pageDisplay = preferences.defaultPageDisplay
+            if (preferences.defaultZoom === 1) view.fitMode = ReaderViewport.Page
+            else if (preferences.defaultZoom === 2) view.actualSize()
+            else view.fitMode = ReaderViewport.Width
+        }
+    }
+    function savePosition() {
+        if (!restored || view.pageCount <= 0) return
+        const fit = view.fitMode === ReaderViewport.Width ? 1 : view.fitMode === ReaderViewport.Page ? 2 : 0
+        preferences.savePosition(tab.sourcePath, view.currentPage, view.zoom, fit, view.pageDisplay)
+    }
+    Timer { id: saveTimer; interval: 1200; onTriggered: tab.savePosition() }
+    Connections {
+        target: view
+        function onLayoutChanged() { tab.restorePosition() }
+        function onCurrentPageChanged() { if (tab.restored) saveTimer.restart() }
+        function onZoomChanged() { if (tab.restored) saveTimer.restart() }
+        function onPageDisplayChanged() { if (tab.restored) saveTimer.restart() }
+        function onExternalLinkRequested(url) { tab.linkConfirmRequested(url) }
+        function onSnapshotCopied() { tab.toastRequested(I18n.t("toast.snapshotCopied")) }
+        function onContextMenuRequested(x, y) {
+            pageMenu.link = view.hoveredLink
+            pageMenu.popup(view, x, y)
+        }
+    }
+    Component.onDestruction: savePosition()
 
     ColumnLayout {
         anchors.fill: parent
@@ -46,16 +112,23 @@ Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     y: 18
                     spacing: 8
-                    AtlasIconButton {
-                        implicitWidth: Theme.railWidth - 6
-                        implicitHeight: Theme.railWidth - 6
-                        iconSize: 20
-                        cornerRadius: 2
-                        iconName: "document_copy"
-                        text: I18n.t("panel.pages")
-                        checkable: true
-                        checked: preferences.navPanel === "pages"
-                        onClicked: preferences.navPanel = preferences.navPanel === "pages" ? "" : "pages"
+                    Repeater {
+                        model: [
+                            { panel: "bookmarks", icon: "bookmark", key: "panel.bookmarks" },
+                            { panel: "pages", icon: "document_copy", key: "panel.pages" }
+                        ]
+                        delegate: AtlasIconButton {
+                            required property var modelData
+                            implicitWidth: Theme.railWidth - 6
+                            implicitHeight: Theme.railWidth - 6
+                            iconSize: 20
+                            cornerRadius: 2
+                            iconName: modelData.icon
+                            text: I18n.t(modelData.key)
+                            checkable: true
+                            checked: preferences.navPanel === modelData.panel
+                            onClicked: preferences.navPanel = preferences.navPanel === modelData.panel ? "" : modelData.panel
+                        }
                     }
                 }
             }
@@ -68,10 +141,17 @@ Rectangle {
                 view: view
                 sessionId: tab.sessionId
             }
+            BookmarksPanel {
+                id: bookmarksPanel
+                Layout.preferredWidth: preferences.navPanelWidth
+                Layout.fillHeight: true
+                visible: preferences.navPanel === "bookmarks" && !AppState.chromeHidden
+                view: view
+            }
             Rectangle { // splitter: drag to resize, double-click to hide (Foxit)
                 Layout.preferredWidth: 6
                 Layout.fillHeight: true
-                visible: pagesPanel.visible
+                visible: pagesPanel.visible || bookmarksPanel.visible
                 color: splitterHover.hovered || splitterDrag.active ? Theme.hover : Theme.pressed
                 Accessible.role: Accessible.Separator
                 Accessible.name: I18n.t("panel.resize")
@@ -104,8 +184,10 @@ Rectangle {
                     pageColor: Theme.readingPaper[preferences.readingColors]
                     pageShadowColor: Theme.pageShadow
                     focus: tab.visible
-                    Accessible.role: Accessible.Pane
+                    // Screen readers hear the page position, then the page's text (C04).
+                    Accessible.role: Accessible.Document
                     Accessible.name: I18n.t("reader.pagesA11y", view.currentPage, view.pageCount)
+                    Accessible.description: view.textReady && !view.hasText ? I18n.t("find.noText") : view.pageText
                 }
 
                 ScrollBar {
@@ -143,6 +225,69 @@ Rectangle {
                     color: Theme.ink
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
+                }
+
+                // ---- banner: the document has no text layer (scanned pages)
+                Rectangle {
+                    id: noTextBanner
+                    property bool dismissed: false
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: vbar.left
+                    height: visible ? 32 : 0
+                    visible: view.textReady && !view.hasText && !dismissed && !AppState.chromeHidden
+                    color: Theme.warningSoft
+                    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line }
+                    Accessible.role: Accessible.AlertMessage
+                    Accessible.name: I18n.t("find.noText")
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.md
+                        anchors.rightMargin: Theme.xs
+                        Label {
+                            Layout.fillWidth: true
+                            text: I18n.t("find.noText")
+                            color: Theme.ink
+                            elide: Text.ElideRight
+                            font.pixelSize: Math.round(12 * I18n.sizeScale)
+                        }
+                        AtlasIconButton {
+                            implicitWidth: 24; implicitHeight: 24; iconSize: 12; cornerRadius: 2
+                            iconName: "dismiss"
+                            text: I18n.t("action.close")
+                            onClicked: noTextBanner.dismissed = true
+                        }
+                    }
+                }
+
+                FindBar {
+                    id: findBar
+                    view: view
+                    anchors.top: noTextBanner.bottom
+                    anchors.topMargin: Theme.sm
+                    anchors.right: vbar.left
+                    anchors.rightMargin: Theme.sm
+                    onAdvancedRequested: tab.openSearch()
+                }
+
+                // AutoScroll indicator
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: Theme.sm
+                    visible: view.autoScrolling
+                    width: autoLabel.implicitWidth + Theme.lg
+                    height: 26
+                    radius: 13
+                    color: Theme.inkStrong
+                    opacity: 0.85
+                    Label {
+                        id: autoLabel
+                        anchors.centerIn: parent
+                        text: I18n.t("autoScroll.active")
+                        color: Theme.raised
+                        font.pixelSize: 12
+                    }
                 }
 
                 // ---- read mode / full screen mini bar
@@ -193,6 +338,15 @@ Rectangle {
                         }
                     }
                 }
+            }
+
+            SearchPanel {
+                id: searchPanel
+                Layout.preferredWidth: 300
+                Layout.fillHeight: true
+                visible: preferences.rightPanel === "search" && !AppState.chromeHidden
+                view: view
+                onCloseRequested: tab.closeSearch()
             }
         }
 
@@ -255,22 +409,28 @@ Rectangle {
                             selectedTextColor: Theme.accentText
                             font.pixelSize: 12
                             selectByMouse: true
-                            inputMethodHints: Qt.ImhDigitsOnly
-                            validator: IntValidator { bottom: 1; top: Math.max(1, view.pageCount) }
                             Accessible.role: Accessible.EditableText
                             Accessible.name: I18n.t("nav.goToPage")
                             Accessible.description: "Ctrl+G"
                             Binding on text {
                                 when: !pageBox.activeFocus
-                                value: String(view.currentPage)
+                                value: tab.pageLabel(view.currentPage)
                             }
-                            onAccepted: { view.goToPage(parseInt(text)); view.forceActiveFocus() }
+                            // Page labels first (Foxit: "iv", "A-3"), then plain page numbers.
+                            onAccepted: {
+                                const typed = text.trim()
+                                if (!view.goToLabel(typed)) {
+                                    const n = parseInt(typed)
+                                    if (n >= 1 && n <= view.pageCount) view.goToPage(n)
+                                }
+                                view.forceActiveFocus()
+                            }
                             onActiveFocusChanged: if (activeFocus) selectAll()
                             Keys.onEscapePressed: view.forceActiveFocus()
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "/ " + view.pageCount
+                            text: tab.hasLabels ? "(" + view.currentPage + " / " + view.pageCount + ")" : "/ " + view.pageCount
                             color: Theme.muted
                             font.pixelSize: 12
                         }
@@ -478,5 +638,45 @@ Rectangle {
                 onClicked: readerController.closeAt(tab.index)
             }
         }
+    }
+
+    // ---- page context menu (Foxit: right-click on the page)
+    Menu {
+        id: pageMenu
+        property string link: ""
+        MenuItem {
+            visible: pageMenu.link.length > 0
+            height: visible ? implicitHeight : 0
+            text: I18n.t("link.copy")
+            onTriggered: readerController.copyText(pageMenu.link)
+        }
+        MenuItem {
+            visible: pageMenu.link.length > 0
+            height: visible ? implicitHeight : 0
+            text: I18n.t("link.open")
+            onTriggered: tab.linkConfirmRequested(pageMenu.link)
+        }
+        MenuSeparator { visible: pageMenu.link.length > 0; height: visible ? implicitHeight : 0 }
+        MenuItem {
+            text: I18n.t("action.copy") + "\tCtrl+C"
+            enabled: view.selectedText.length > 0
+            onTriggered: view.copySelection()
+        }
+        MenuItem { text: I18n.t("action.selectAll") + "\tCtrl+A"; enabled: view.hasText; onTriggered: view.selectAllOnPage() }
+        MenuSeparator {}
+        MenuItem { text: I18n.t("cmd.hand") + "\tAlt+3"; checkable: true; checked: view.tool === ReaderViewport.HandTool; onTriggered: view.tool = ReaderViewport.HandTool }
+        MenuItem { text: I18n.t("cmd.selectText") + "\tAlt+6"; checkable: true; checked: view.tool === ReaderViewport.SelectTool; onTriggered: view.tool = ReaderViewport.SelectTool }
+        MenuItem { text: I18n.t("cmd.marqueeZoom"); checkable: true; checked: view.tool === ReaderViewport.MarqueeTool; onTriggered: view.tool = ReaderViewport.MarqueeTool }
+        MenuItem { text: I18n.t("cmd.snapshot") + "\tAlt+7"; checkable: true; checked: view.tool === ReaderViewport.SnapshotTool; onTriggered: view.tool = ReaderViewport.SnapshotTool }
+        MenuSeparator {}
+        MenuItem { text: I18n.t("nav.previousPage"); enabled: view.currentPage > 1; onTriggered: view.previousPage() }
+        MenuItem { text: I18n.t("nav.nextPage"); enabled: view.currentPage < view.pageCount; onTriggered: view.nextPage() }
+        MenuItem { text: I18n.t("nav.previousView") + "\tAlt+Left"; enabled: view.canGoBack; onTriggered: view.goBack() }
+        MenuSeparator {}
+        MenuItem { text: I18n.t("find.title") + "\tCtrl+F"; onTriggered: tab.openFind() }
+        MenuItem { text: I18n.t("panel.search") + "\tCtrl+Shift+F"; onTriggered: tab.openSearch() }
+        MenuSeparator {}
+        MenuItem { text: I18n.t("cmd.rotateClockwise"); onTriggered: view.rotateView(1) }
+        MenuItem { text: I18n.t("cmd.rotateCounterclockwise"); onTriggered: view.rotateView(-1) }
     }
 }

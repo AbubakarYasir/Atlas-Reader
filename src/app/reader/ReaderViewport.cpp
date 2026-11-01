@@ -1,5 +1,6 @@
 #include "app/reader/ReaderViewport.h"
 
+#include "app/reader/DocumentTextWorker.h"
 #include "app/reader/PdfRenderWorker.h"
 #include "app/reader/ReaderController.h"
 
@@ -49,11 +50,24 @@ ReaderViewport::ReaderViewport(QQuickItem* parent)
     setFlag(ItemHasContents, true);
     setFlag(ItemIsFocusScope, true);
     setActiveFocusOnTab(true);
-    setAcceptedMouseButtons(Qt::LeftButton);
+    setAcceptedMouseButtons(Qt::LeftButton | Qt::RightButton);
+    setAcceptHoverEvents(true);
+    setCursor(Qt::OpenHandCursor);
     setClip(true);
+    connect(&autoScrollTimer_, &QTimer::timeout, this, [this] {
+        const qreal before = contentY_;
+        scrollBy(autoScrollSpeed_);
+        if (qFuzzyCompare(1.0 + before, 1.0 + contentY_)) stopAutoScroll(); // reached the end
+    });
+    // Screen readers get the current page's text once the reader settles on a page.
+    pageTextTimer_.setSingleShot(true);
+    pageTextTimer_.setInterval(300);
+    connect(&pageTextTimer_, &QTimer::timeout, this, &ReaderViewport::requestPageText);
+    connect(this, &ReaderViewport::currentPageChanged, this, [this] { pageTextTimer_.start(); });
 }
 
 ReaderViewport::~ReaderViewport() {
+    stopTextWorker();
     stopWorker();
     if (!textures_.empty()) {
         std::vector<QSGTexture*> textures;
@@ -129,6 +143,7 @@ void ReaderViewport::setContentY(qreal value) {
     emit scrollChanged();
     updateCurrentPage();
     scheduleRender();
+    requestVisibleLinks();
     update();
 }
 
@@ -374,6 +389,14 @@ void ReaderViewport::ensureWorker() {
     connect(worker_, &PdfRenderWorker::opened, this, &ReaderViewport::onOpened);
     connect(worker_, &PdfRenderWorker::rendered, this, &ReaderViewport::onRendered);
     connect(worker_, &PdfRenderWorker::renderFailed, this, &ReaderViewport::onRenderFailed);
+    connect(worker_, &PdfRenderWorker::documentBytes, this,
+            [this](quint64 revision, const QByteArray& bytes, const QString& password) {
+                if (revision != documentRevision_) return;
+                ensureTextWorker();
+                QMetaObject::invokeMethod(textWorker_, [worker = textWorker_, bytes, password, revision] {
+                    worker->open(bytes, password, revision);
+                }, Qt::QueuedConnection);
+            });
     workerThread_.setObjectName(QStringLiteral("AtlasPageRenderer"));
     workerThread_.start(QThread::LowPriority);
 }
@@ -394,6 +417,15 @@ void ReaderViewport::openDocument() {
     if (documentRevision_ == source->revision && (documentReady_ || loading_)) return;
 
     ensureWorker();
+    outline_.clear();
+    pageLabels_.clear();
+    hasText_ = true;
+    textReady_ = false;
+    links_.clear();
+    linksRequested_.clear();
+    emit textInfoChanged();
+    clearSearch();
+    clearSelection();
     history_.clear();
     emit historyChanged();
     documentRevision_ = source->revision;
@@ -629,9 +661,30 @@ void ReaderViewport::keyPressEvent(QKeyEvent* event) {
     }
     const bool ctrl = event->modifiers().testFlag(Qt::ControlModifier);
     const bool shift = event->modifiers().testFlag(Qt::ShiftModifier);
+    // AutoScroll (Foxit): Up/Down change the speed, Esc or any click stops it.
+    if (autoScrolling()) {
+        switch (event->key()) {
+        case Qt::Key_Down: changeAutoScrollSpeed(1); event->accept(); return;
+        case Qt::Key_Up: changeAutoScrollSpeed(-1); event->accept(); return;
+        case Qt::Key_Escape: stopAutoScroll(); event->accept(); return;
+        default: break;
+        }
+    }
     switch (event->key()) {
     case Qt::Key_Down: scrollBy(kLineStep); break;
     case Qt::Key_Up: scrollBy(-kLineStep); break;
+    case Qt::Key_C:
+        if (!ctrl || selectedText().isEmpty()) return QQuickItem::keyPressEvent(event);
+        copySelection();
+        break;
+    case Qt::Key_A:
+        if (!ctrl) return QQuickItem::keyPressEvent(event);
+        selectAllOnPage();
+        break;
+    case Qt::Key_Escape:
+        if (selectedText().isEmpty()) return QQuickItem::keyPressEvent(event);
+        clearSelection();
+        break;
     case Qt::Key_Right:
     case Qt::Key_Left: {
         if (event->modifiers().testFlag(Qt::AltModifier)) { // Foxit Previous/Next View
@@ -693,15 +746,15 @@ void ReaderViewport::keyPressEvent(QKeyEvent* event) {
         if (!ctrl) return QQuickItem::keyPressEvent(event);
         setFitMode(FitMode::Page);
         break;
+    case Qt::Key_3: // Ctrl+3 fit visible
+        if (!ctrl) return QQuickItem::keyPressEvent(event);
+        fitVisible();
+        break;
     default: QQuickItem::keyPressEvent(event); return;
     }
     event->accept();
 }
 
-void ReaderViewport::mousePressEvent(QMouseEvent* event) {
-    forceActiveFocus(Qt::MouseFocusReason);
-    event->accept();
-}
 
 // ----------------------------------------------------------------- textures
 
@@ -840,6 +893,36 @@ QSGNode* ReaderViewport::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*)
         node->setFiltering(QSGTexture::Linear);
         node->setRect(rect);
         root->appendChildNode(node);
+    }
+
+    // Overlays: search hits (current hit stronger), text selection, rubber band.
+    const QPointF shift{dx, dy};
+    const auto addRect = [root](const QRectF& r, const QColor& color) {
+        root->appendChildNode(new QSGSimpleRectNode(r, color));
+    };
+    for (int h = 0; h < searchHits_.size(); ++h) {
+        const QVariantMap hit = searchHits_.at(h).toMap();
+        const int page = hit.value(QStringLiteral("page")).toInt();
+        if (page < static_cast<int>(band->first) || page > static_cast<int>(band->last)) continue;
+        const QColor color = h == searchIndex_ ? QColor{255, 140, 0, 130} : QColor{255, 214, 0, 90};
+        for (const QVariant& r : hit.value(QStringLiteral("rects")).toList()) {
+            addRect(pointsToContent(static_cast<std::size_t>(page), r.toRectF()).translated(shift), color);
+        }
+    }
+    if (selectionPage_ >= static_cast<int>(band->first) && selectionPage_ <= static_cast<int>(band->last)) {
+        for (const QVariant& r : selectionRects_) {
+            addRect(pointsToContent(static_cast<std::size_t>(selectionPage_), r.toRectF()).translated(shift),
+                    QColor{11, 79, 174, 80}); // Atlas Blue at 30 %
+        }
+    }
+    if (!rubberBand_.isEmpty()) {
+        addRect(rubberBand_, QColor{11, 79, 174, 40});
+        const QRectF b = rubberBand_;
+        const QColor edge{11, 79, 174, 220};
+        addRect({b.left(), b.top(), b.width(), 1}, edge);
+        addRect({b.left(), b.bottom() - 1, b.width(), 1}, edge);
+        addRect({b.left(), b.top(), 1, b.height()}, edge);
+        addRect({b.right() - 1, b.top(), 1, b.height()}, edge);
     }
     return root;
 }

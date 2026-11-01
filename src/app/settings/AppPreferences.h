@@ -21,6 +21,8 @@ class AppPreferences final : public QObject {
     Q_PROPERTY(int themeColor READ themeColor WRITE setThemeColor NOTIFY skinChanged)
     Q_PROPERTY(bool ribbonCollapsed READ ribbonCollapsed WRITE setRibbonCollapsed NOTIFY ribbonCollapsedChanged)
     Q_PROPERTY(int statusBarMode READ statusBarMode WRITE setStatusBarMode NOTIFY statusBarModeChanged)
+    Q_PROPERTY(QString navPanel READ navPanel WRITE setNavPanel NOTIFY navPanelChanged)
+    Q_PROPERTY(int navPanelWidth READ navPanelWidth WRITE setNavPanelWidth NOTIFY navPanelChanged)
     Q_PROPERTY(QStringList recentFiles READ recentFiles NOTIFY recentFilesChanged)
 
 public:
@@ -46,6 +48,11 @@ public:
     // 0 show, 1 auto-hide, 2 hide (View > View Setting > Status Bar).
     [[nodiscard]] int statusBarMode() const { return statusBarMode_; }
     void setStatusBarMode(int mode);
+    // Navigation pane: open panel ("" = hidden, "pages", …) and its width.
+    [[nodiscard]] QString navPanel() const { return navPanel_; }
+    void setNavPanel(const QString& panel);
+    [[nodiscard]] int navPanelWidth() const { return navPanelWidth_; }
+    void setNavPanelWidth(int width);
     // Most recent first, at most kMaxRecentFiles local paths.
     [[nodiscard]] QStringList recentFiles() const { return recentFiles_; }
     Q_INVOKABLE void addRecentFile(const QString& path);
@@ -70,6 +77,7 @@ signals:
     void ribbonCollapsedChanged();
     void statusBarModeChanged();
     void recentFilesChanged();
+    void navPanelChanged();
 
 private:
     void save() const;
@@ -85,6 +93,8 @@ private:
     bool ribbonCollapsed_{};
     int statusBarMode_{};
     QStringList recentFiles_;
+    QString navPanel_;
+    int navPanelWidth_{240};
     bool persist_{true};
 };
 

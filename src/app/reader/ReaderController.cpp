@@ -2,7 +2,11 @@
 
 #include "app/index/LibraryMetadataPolicy.h"
 
+#include <QClipboard>
+#include <QDesktopServices>
 #include <QDir>
+#include <QGuiApplication>
+#include <QProcess>
 #include <QFileInfo>
 #include <QPdfDocument>
 #include <QSettings>
@@ -163,6 +167,40 @@ void ReaderController::closeAt(int index) {
     if (model_.sessions().empty()) libraryVisible_ = true;
     refreshModel(previousActive, previousCount);
     saveSessions();
+}
+
+void ReaderController::closeOthers(int index) {
+    if (index < 0 || index >= rowCount()) return;
+    closeRight(index);
+    closeLeft(index);
+}
+
+void ReaderController::closeLeft(int index) {
+    if (index <= 0 || index >= rowCount()) return;
+    for (int i = index - 1; i >= 0; --i) closeAt(i);
+}
+
+void ReaderController::closeRight(int index) {
+    if (index < 0 || index >= rowCount()) return;
+    for (int i = rowCount() - 1; i > index; --i) closeAt(i);
+}
+
+void ReaderController::copyPathAt(int index) const {
+    if (index < 0 || index >= rowCount()) return;
+    const QString path = pathToQString(model_.sessions().at(static_cast<std::size_t>(index)).source);
+    if (auto* clipboard = QGuiApplication::clipboard()) clipboard->setText(QDir::toNativeSeparators(path));
+}
+
+void ReaderController::showInFolderAt(int index) const {
+    if (index < 0 || index >= rowCount()) return;
+    const QString path = pathToQString(model_.sessions().at(static_cast<std::size_t>(index)).source);
+#ifdef Q_OS_WIN
+    // Explorer opens the folder with the file selected; nothing is executed.
+    QProcess::startDetached(QStringLiteral("explorer.exe"),
+                            {QStringLiteral("/select,"), QDir::toNativeSeparators(path)});
+#else
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo{path}.absolutePath()));
+#endif
 }
 
 void ReaderController::retryAt(int index) {

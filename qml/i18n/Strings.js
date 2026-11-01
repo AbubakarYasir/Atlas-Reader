@@ -204,7 +204,20 @@ var tables = {
         "about.body": "A local-first reading and research library for books in any language. Your files never leave this computer.",
         "about.notices": "Built with Qt (LGPL). Fonts: Noto Nastaliq Urdu and Noto Naskh Arabic (SIL Open Font License). Icons: Fluent UI System Icons (MIT). Full notices are in the notices folder.",
         "status.pageNumber": "Page number",
-        "status.zoomMenu": "Zoom levels"
+        "status.zoomMenu": "Zoom levels",
+        "panel.pages": "Pages",
+        "panel.show": "Show Navigation Panels",
+        "panel.hide": "Hide Navigation Panels",
+        "panel.navigation": "Navigation Panels",
+        "panel.resize": "Resize panel",
+        "panel.pageA11y": "Page %1",
+        "nav.previousView": "Previous View",
+        "nav.nextView": "Next View",
+        "tab.closeOthers": "Close Others",
+        "tab.closeLeft": "Close Tabs to the Left",
+        "tab.closeRight": "Close Tabs to the Right",
+        "tab.copyPath": "Copy Path to Clipboard",
+        "tab.showInFolder": "Open Containing Folder"
     },
 
     ar: {
@@ -404,7 +417,20 @@ var tables = {
         "about.body": "مكتبة للقراءة والبحث تعمل محليًا لكتب بأي لغة. لا تغادر ملفاتك هذا الكمبيوتر أبدًا.",
         "about.notices": "مبني باستخدام Qt (رخصة LGPL). الخطوط: Noto Nastaliq Urdu وNoto Naskh Arabic (رخصة SIL للخطوط المفتوحة). الأيقونات: Fluent UI System Icons (رخصة MIT). الإشعارات الكاملة في مجلد notices.",
         "status.pageNumber": "رقم الصفحة",
-        "status.zoomMenu": "مستويات التكبير"
+        "status.zoomMenu": "مستويات التكبير",
+        "panel.pages": "الصفحات",
+        "panel.show": "إظهار أجزاء التنقل",
+        "panel.hide": "إخفاء أجزاء التنقل",
+        "panel.navigation": "أجزاء التنقل",
+        "panel.resize": "تغيير حجم الجزء",
+        "panel.pageA11y": "الصفحة %1",
+        "nav.previousView": "العرض السابق",
+        "nav.nextView": "العرض التالي",
+        "tab.closeOthers": "إغلاق الأخرى",
+        "tab.closeLeft": "إغلاق علامات التبويب على اليسار",
+        "tab.closeRight": "إغلاق علامات التبويب على اليمين",
+        "tab.copyPath": "نسخ المسار إلى الحافظة",
+        "tab.showInFolder": "فتح المجلد الحاوي"
     },
 
     ur: {
@@ -604,6 +630,19 @@ var tables = {
         "about.body": "کسی بھی زبان کی کتابوں کے لیے مقامی مطالعہ و تحقیق لائبریری۔ آپ کی فائلیں کبھی اس کمپیوٹر سے باہر نہیں جاتیں۔",
         "about.notices": "Qt (LGPL) سے تیار کردہ۔ فونٹس: Noto Nastaliq Urdu اور Noto Naskh Arabic (SIL اوپن فونٹ لائسنس)۔ آئیکنز: Fluent UI System Icons (MIT)۔ مکمل نوٹس notices فولڈر میں ہیں۔",
         "status.pageNumber": "صفحہ نمبر",
-        "status.zoomMenu": "زوم کی سطحیں"
+        "status.zoomMenu": "زوم کی سطحیں",
+        "panel.pages": "صفحات",
+        "panel.show": "نیویگیشن پینل دکھائیں",
+        "panel.hide": "نیویگیشن پینل چھپائیں",
+        "panel.navigation": "نیویگیشن پینل",
+        "panel.resize": "پینل کا سائز بدلیں",
+        "panel.pageA11y": "صفحہ %1",
+        "nav.previousView": "پچھلا منظر",
+        "nav.nextView": "اگلا منظر",
+        "tab.closeOthers": "باقی بند کریں",
+        "tab.closeLeft": "بائیں جانب کے ٹیب بند کریں",
+        "tab.closeRight": "دائیں جانب کے ٹیب بند کریں",
+        "tab.copyPath": "راستہ کلپ بورڈ پر کاپی کریں",
+        "tab.showInFolder": "متعلقہ فولڈر کھولیں"
     }
 }

@@ -21,6 +21,8 @@ AppPreferences::AppPreferences(QString settingsFile, QObject* parent)
     ribbonCollapsed_ = settings.value(QStringLiteral("ribbonCollapsed"), false).toBool();
     statusBarMode_ = std::clamp(settings.value(QStringLiteral("statusBarMode"), 0).toInt(), 0, 2);
     recentFiles_ = settings.value(QStringLiteral("recentFiles")).toStringList();
+    navPanel_ = settings.value(QStringLiteral("navPanel")).toString() == QStringLiteral("pages") ? QStringLiteral("pages") : QString{};
+    navPanelWidth_ = std::clamp(settings.value(QStringLiteral("navPanelWidth"), 240).toInt(), 160, 480);
     if (recentFiles_.size() > kMaxRecentFiles) recentFiles_.resize(kMaxRecentFiles);
     applyLayoutDirection();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
@@ -115,6 +117,22 @@ void AppPreferences::setStatusBarMode(int mode) {
     emit statusBarModeChanged();
 }
 
+void AppPreferences::setNavPanel(const QString& panel) {
+    const QString normalized = panel == QStringLiteral("pages") ? panel : QString{};
+    if (normalized == navPanel_) return;
+    navPanel_ = normalized;
+    save();
+    emit navPanelChanged();
+}
+
+void AppPreferences::setNavPanelWidth(int width) {
+    width = std::clamp(width, 160, 480);
+    if (width == navPanelWidth_) return;
+    navPanelWidth_ = width;
+    save();
+    emit navPanelChanged();
+}
+
 void AppPreferences::addRecentFile(const QString& path) {
     if (path.isEmpty()) return;
     QStringList next = recentFiles_;
@@ -158,6 +176,8 @@ void AppPreferences::save() const {
     settings.setValue(QStringLiteral("ribbonCollapsed"), ribbonCollapsed_);
     settings.setValue(QStringLiteral("statusBarMode"), statusBarMode_);
     settings.setValue(QStringLiteral("recentFiles"), recentFiles_);
+    settings.setValue(QStringLiteral("navPanel"), navPanel_);
+    settings.setValue(QStringLiteral("navPanelWidth"), navPanelWidth_);
 }
 
 void AppPreferences::applyLayoutDirection() const {

@@ -303,6 +303,11 @@ Rectangle {
             MenuItem { text: I18n.t("cmd.statusAuto"); checkable: true; checked: preferences.statusBarMode === 1; onTriggered: preferences.statusBarMode = 1 }
             MenuItem { text: I18n.t("cmd.statusHide"); checkable: true; checked: preferences.statusBarMode === 2; onTriggered: preferences.statusBarMode = 2 }
         }
+        Menu {
+            title: I18n.t("panel.navigation")
+            MenuItem { text: I18n.t("panel.show") + "\tF4"; enabled: preferences.navPanel === ""; onTriggered: preferences.navPanel = "pages" }
+            MenuItem { text: I18n.t("panel.hide") + "\tF4"; enabled: preferences.navPanel !== ""; onTriggered: preferences.navPanel = "" }
+        }
         MenuItem { text: I18n.t("nav.library"); onTriggered: readerController.showLibrary() }
         MenuItem {
             text: I18n.t("cmd.fullScreen") + "\tF11"

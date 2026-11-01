@@ -74,6 +74,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+H"; enabled: root.inReader; onActivated: AppState.readMode = !AppState.readMode }
     Shortcut { sequence: "Ctrl+F11"; onActivated: { preferences.ribbonCollapsed = !preferences.ribbonCollapsed; ribbon.peek = false } }
     Shortcut { sequence: "F11"; onActivated: AppState.fullScreen = !AppState.fullScreen }
+    Shortcut { sequence: "F4"; enabled: root.inReader; onActivated: preferences.navPanel = preferences.navPanel === "" ? "pages" : "" }
     Shortcut {
         sequence: "Esc"
         enabled: AppState.chromeHidden || backstage.visible || ribbon.peek

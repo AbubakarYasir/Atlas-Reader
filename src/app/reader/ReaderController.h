@@ -53,6 +53,12 @@ public:
     Q_INVOKABLE void submitPassword(int index, const QString& password);
     Q_INVOKABLE void closeActive();
     Q_INVOKABLE void closeAll();
+    // Foxit tab context menu.
+    Q_INVOKABLE void closeOthers(int index);
+    Q_INVOKABLE void closeLeft(int index);
+    Q_INVOKABLE void closeRight(int index);
+    Q_INVOKABLE void copyPathAt(int index) const;
+    Q_INVOKABLE void showInFolderAt(int index) const;
     Q_INVOKABLE void showLibrary();
 
     // For the in-process page renderer only; never exposed to QML. The password

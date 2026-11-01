@@ -32,7 +32,10 @@ Rectangle {
         Accessible.selected: active
         Keys.onReturnPressed: clicked()
         Keys.onSpacePressed: clicked()
+        signal contextMenuRequested()
         TapHandler { acceptedButtons: Qt.MiddleButton; onTapped: if (tabItem.closable) tabItem.closeRequested() }
+        TapHandler { acceptedButtons: Qt.RightButton; onTapped: tabItem.contextMenuRequested() }
+        Keys.onMenuPressed: contextMenuRequested()
         ToolTip.visible: hovered && tabLabel.truncated
         ToolTip.delay: 600
         ToolTip.text: contentText
@@ -114,6 +117,19 @@ Rectangle {
                 contentText: status === "loading" ? title + "…" : title
                 onClicked: readerController.activeIndex = index
                 onCloseRequested: readerController.closeAt(index)
+                onContextMenuRequested: { tabMenu.tabIndex = index; tabMenu.popup() }
+            }
+            Menu { // Foxit tab context menu
+                id: tabMenu
+                property int tabIndex: -1
+                MenuItem { text: I18n.t("tab.closeThis"); onTriggered: readerController.closeAt(tabMenu.tabIndex) }
+                MenuItem { text: I18n.t("tab.closeOthers"); enabled: tabList.count > 1; onTriggered: readerController.closeOthers(tabMenu.tabIndex) }
+                MenuItem { text: I18n.t("tab.closeLeft"); enabled: tabMenu.tabIndex > 0; onTriggered: readerController.closeLeft(tabMenu.tabIndex) }
+                MenuItem { text: I18n.t("tab.closeRight"); enabled: tabMenu.tabIndex < tabList.count - 1; onTriggered: readerController.closeRight(tabMenu.tabIndex) }
+                MenuItem { text: I18n.t("tab.closeAll"); onTriggered: readerController.closeAll() }
+                MenuSeparator {}
+                MenuItem { text: I18n.t("tab.copyPath"); onTriggered: readerController.copyPathAt(tabMenu.tabIndex) }
+                MenuItem { text: I18n.t("tab.showInFolder"); onTriggered: readerController.showInFolderAt(tabMenu.tabIndex) }
             }
             WheelHandler {
                 onWheel: (event) => tabList.contentX = Math.max(0, Math.min(tabList.contentWidth - tabList.width,

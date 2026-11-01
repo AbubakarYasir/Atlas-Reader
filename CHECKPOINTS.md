@@ -9,7 +9,7 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | | |
 |---|---|
 | Active stage | **N4: Reader**, planned `2.0.0-beta.2` |
-| Active sub-stage | **N4.3: Foxit workspace, design system and three languages** (English, Arabic, Urdu; [ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md)). First pass verified (CI `41277932148`). N4.2 Virtual viewport is implemented and verified: pages display (CI `41242163280`, 45/45) |
+| Active sub-stage | **N4.4: Navigation** — first slice landed: Pages panel and navigation rail (F4), Previous/Next View (Alt+Left/Right), tab context menu. N4.3 Foxit workspace is implemented and automated-verified (CI `41281081373`, signed head `2a5ab85`); owner checks in the end-of-N4 review |
 | Done in N4 | N4.1 Opening, tabs and passwords: implemented and automated-verified (43/43 CI tests, run `36690884159`) |
 | Branch | `native-v2-n4-reader-foundation`, from accepted `main` merge `739508e3` |
 | Released | `2.0.0-beta.1` (Library), 2026-09-28 |
@@ -86,7 +86,7 @@ Background open from the Library or a direct path; one tab per file; tab switchi
 - While zooming or scrolling fast, show the existing texture and sharpen asynchronously; never block input.
 - **Tests:** mixed sizes, all rotations, crop/media boxes, fast jumps, resize and scale changes, cancellation, cache invalidation, a 2,000-page memory series (memory must not grow with page count).
 
-### N4.3 — Foxit workspace, design system and three languages ← **active**
+### N4.3 — Foxit workspace, design system and three languages ✅ Implemented and verified (CI `41281081373`)
 
 Moved forward on 2026-11-01 so every later reader feature lands in the final workspace. **Layout, measurements and shortcuts follow Foxit PDF Editor** ([ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md), measured spec in [FOXIT_PARITY.md](docs/FOXIT_PARITY.md)); icons, colours and name are Atlas's.
 
@@ -96,7 +96,9 @@ Moved forward on 2026-11-01 so every later reader feature lands in the final wor
 - **Keyboard:** Foxit defaults (Ctrl+K Preferences, Ctrl+Q exit, Ctrl+Shift+W close all, Ctrl+F11 ribbon, F4 panels, Ctrl+H, F11, Ctrl+1/2/0, Ctrl+Shift+±, Ctrl+Home/End, Ctrl+G); Add folder moves to Ctrl+Shift+O; Ctrl+F finds in the Library.
 - **Tests:** string-table completeness (EN/AR/UR); rendered screenshots in English, Arabic and Urdu × Light/Dark compared side by side with Foxit at 1280 × 800 and 1920 × 1040; keyboard route and accessible names for every ribbon control; existing viewport and controller suites.
 
-### N4.4 — Navigation
+### N4.4 — Navigation ← **active**
+
+- **Done (slice 1):** navigation rail with the **Pages panel** (background thumbnails, current page outlined, click or Enter to jump, resizable splitter, double-click hides, F4, View → View Setting → Navigation Panels); **Previous/Next View** (Alt+Left/Right and status-bar buttons; page-box, first/last, Home/End and thumbnail jumps are recorded, next/previous page is not); **document-tab context menu** (Close, Close Others, Close Left/Right, Close All, Copy Path, Open Containing Folder).
 
 - Continuous and single-page; facing and cover spreads (View tab page-display buttons and status-bar layout buttons, as in Foxit); **Reverse View** = reading direction set separately from UI language (C03); **AutoScroll** (Ctrl+Shift+H, Esc stops).
 - Fit height and **Fit Visible** (Ctrl+3); **Zoom to** (Ctrl+M) and marquee zoom; page jump by label; academic offset; **Pages panel** (thumbnails) in the rail; default layout/zoom preferences; tiling for pages beyond 8192 px.

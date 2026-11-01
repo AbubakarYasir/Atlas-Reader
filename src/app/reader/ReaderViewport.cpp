@@ -190,7 +190,51 @@ void ReaderViewport::goToPage(int oneBasedPage) {
     if (layout_.pageCount() == 0) return;
     const auto index = static_cast<std::size_t>(
         std::clamp(oneBasedPage, 1, static_cast<int>(layout_.pageCount())) - 1);
+    recordJump();
+    jumpToIndex(index);
+}
+
+void ReaderViewport::jumpToIndex(std::size_t index) {
     setContentY(layout_.scrollOffsetForPage(index));
+}
+
+atlas::reader::ViewPosition ReaderViewport::currentPosition() const {
+    if (layout_.pageCount() == 0) return {};
+    const auto index = layout_.pageAt(contentY_).value_or(0);
+    const auto rect = layout_.pageRect(index);
+    const double fraction = rect.height > 0.0 ? std::clamp((contentY_ - rect.y) / rect.height, 0.0, 1.0) : 0.0;
+    return {index, fraction};
+}
+
+void ReaderViewport::showPosition(const atlas::reader::ViewPosition& position) {
+    if (layout_.pageCount() == 0) return;
+    const auto index = std::min(position.page, layout_.pageCount() - 1);
+    const auto rect = layout_.pageRect(index);
+    setContentY(std::max(layout_.scrollOffsetForPage(index), rect.y + position.fraction * rect.height));
+}
+
+void ReaderViewport::recordJump() {
+    if (layout_.pageCount() == 0) return;
+    history_.recordJump(currentPosition());
+    emit historyChanged();
+}
+
+void ReaderViewport::goBack() {
+    if (const auto target = history_.back(currentPosition())) showPosition(*target);
+    emit historyChanged();
+}
+
+void ReaderViewport::goForward() {
+    if (const auto target = history_.forward(currentPosition())) showPosition(*target);
+    emit historyChanged();
+}
+
+QSizeF ReaderViewport::pageSizePoints(int oneBasedPage) const {
+    if (oneBasedPage < 1 || static_cast<std::size_t>(oneBasedPage) > layout_.pageCount()) return {};
+    const auto index = static_cast<std::size_t>(oneBasedPage - 1);
+    const auto rect = layout_.pageRect(index);
+    const double scale = layout_.settings().zoom * atlas::reader::kPointsToLogicalPixels;
+    return scale > 0.0 ? QSizeF{rect.width / scale, rect.height / scale} : QSizeF{};
 }
 
 void ReaderViewport::zoomBy(qreal factor) {
@@ -205,14 +249,19 @@ void ReaderViewport::scrollByPages(qreal screens) {
 }
 
 void ReaderViewport::nextPage() {
-    if (layout_.pageCount() > 0) goToPage(currentPage_ + 1);
+    if (layout_.pageCount() == 0) return;
+    jumpToIndex(static_cast<std::size_t>(std::clamp(currentPage_ + 1, 1, pageCount()) - 1));
 }
 
 void ReaderViewport::previousPage() {
-    if (layout_.pageCount() > 0) goToPage(currentPage_ - 1);
+    if (layout_.pageCount() == 0) return;
+    jumpToIndex(static_cast<std::size_t>(std::clamp(currentPage_ - 1, 1, pageCount()) - 1));
 }
 
-void ReaderViewport::firstPage() { setContentY(0.0); }
+void ReaderViewport::firstPage() {
+    recordJump();
+    setContentY(0.0);
+}
 
 void ReaderViewport::lastPage() {
     if (layout_.pageCount() > 0) goToPage(static_cast<int>(layout_.pageCount()));
@@ -278,6 +327,8 @@ void ReaderViewport::openDocument() {
     if (documentRevision_ == source->revision && (documentReady_ || loading_)) return;
 
     ensureWorker();
+    history_.clear();
+    emit historyChanged();
     documentRevision_ = source->revision;
     documentReady_ = false;
     loading_ = true;
@@ -516,6 +567,11 @@ void ReaderViewport::keyPressEvent(QKeyEvent* event) {
     case Qt::Key_Up: setContentY(contentY_ - kLineStep); break;
     case Qt::Key_Right:
     case Qt::Key_Left: {
+        if (event->modifiers().testFlag(Qt::AltModifier)) { // Foxit Previous/Next View
+            if (event->key() == Qt::Key_Left) goBack();
+            else goForward();
+            break;
+        }
         // Scroll sideways when the page is wider than the view; otherwise turn
         // the page. Right-to-left book progression arrives with N4.4 spreads.
         const bool forward = event->key() == Qt::Key_Right;
@@ -537,8 +593,14 @@ void ReaderViewport::keyPressEvent(QKeyEvent* event) {
         else scrollByPages(-1.0);
         break;
     case Qt::Key_Space: scrollByPages(shift ? -1.0 : 1.0); break;
-    case Qt::Key_Home: setContentY(0.0); break;
-    case Qt::Key_End: setContentY(contentHeight()); break;
+    case Qt::Key_Home:
+        recordJump();
+        setContentY(0.0);
+        break;
+    case Qt::Key_End:
+        recordJump();
+        setContentY(contentHeight());
+        break;
     case Qt::Key_Plus:
     case Qt::Key_Equal:
         if (!ctrl) return QQuickItem::keyPressEvent(event);

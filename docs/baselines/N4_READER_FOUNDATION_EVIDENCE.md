@@ -20,8 +20,8 @@ The owner chose **batched reviews** and a **focused 2.0** ([PLAN.md decision log
 |---|---|---|---|---|---|
 | N4.1 Session/open model | **Implemented; automated Verified** | `5ac63df7da45d711380cfaac0e83f0b96deda7f4` | Windows CI run `36690884159`: Debug + Release build/test PASS, 43/43 tests; `atlas_reader_controller` PASS; inherited Fidelity `36690884055`, Stress `36690884080`, Coordinates `36690883965`, Selected Production Route `36690883948` PASS | owner checks folded into the end-of-N4 review ([guide](../N4_REVIEW.md), checks 1–4 and 9) | Narrator naming of the password field and Windows 200% scale remain unverified until that review |
 | N4.2 Virtual viewport | **Implemented; automated Verified** | `da5e512` | Windows CI run `41242163280` (MSVC 2022, Qt 6.10.3, `/WX`): Debug + Release **45/45** including `atlas_reader_viewport` and `atlas_reader_viewport_render`; N2 regression workflows pass; also PASS locally on Linux/Qt 6.4 with ASan/UBSan for the core | Rendered self-review: English light and Arabic dark at 1260 × 800 (Qt 6.4 / Xvfb) | Tiling for pages beyond 8192 px; whole-file-in-memory session (memory = file size) |
-| N4.3 Foxit workspace, design system, three languages | First pass **Implemented; automated Verified** (`2cc4a97`, CI `41277932148`); Foxit workspace pass **Implemented**, CI pending | `2cc4a97` + this pass | String-table check PASS (185 keys × EN/AR/UR); Linux/Qt 6.4 build + viewport suites PASS | Rendered self-review: library list/grid and reader, English/Arabic/Urdu, light/dark, 1280 × 800 (Qt 6.4 / Xvfb) | Icon rail arrives with its first panel (N4.4 Pages); 200% scale and Narrator on Windows at the end-of-N4 review |
-| N4.4 Navigation | Not started | — | — | — | depends on viewport geometry |
+| N4.3 Foxit workspace, design system, three languages | **Implemented; automated Verified** | `2a5ab85` (signed) | Windows CI `41281081373` green (MSVC 2022, Qt 6.10.3, `/WX`); string check PASS (185 keys × EN/AR/UR) | Rendered self-review EN/AR/UR × light/dark (Qt 6.4 / Xvfb); review build delivered to `review-builds/N4.3-cc197f0` | Window move/snap/resize on Windows and Narrator/200% in the end-of-N4 review |
+| N4.4 Navigation | **In progress** (slice 1 implemented) | this commit | `atlas_reader_viewport` (ViewHistory), `atlas_reader_viewport_render` (Previous/Next View) PASS on Linux/Qt 6.4; Windows CI pending | Pages panel EN/AR rendered (Qt 6.4 / Xvfb) | Layouts, Fit Visible/Zoom To, page labels, Reverse View, AutoScroll, tiling |
 | N4.5 Outline/text/search/links | Not started | — | — | — | normalized reader adapters not implemented |
 
 ## Required final evidence
@@ -169,3 +169,12 @@ Owner request (2026-11-01, second): copy Foxit's UI/UX as exactly as possible, w
 - Owner: use the reference package fully and plan every Foxit feature; main colour from the logo. Inventory extracted on the owner's PC (read-only) from `data/pe-resources.json` (English menus and dialog titles), `data/modules.json` and the skin XML; nothing from the package is shipped.
 - Logo palette measured from `assets/branding/atlas-reader-icon.png` (navy `#002058`–`#003880`, royal blue `#0050b0`, cyan `#00a0f8`, ice `#e0f0f8`); contrast checked (accent 7.7:1 on white, Sky 6.6:1 on `#333333`).
 - Rendered check (Qt 6.4 / Xvfb): Library English light and reader Urdu dark with the new palette.
+
+## N4.4 log
+
+### Slice 1: Pages panel, view history, tab menu — 2026-11-02
+
+- `core/reader/ViewHistory` (pure C++): page-relative positions that survive zoom/rotation, nearby positions collapse (2 % of a page), 100-entry cap, Forward cleared by a new jump. `ReaderViewport` records jumps (page box, first/last, Home/End, thumbnails) and exposes `goBack`/`goForward`, `canGoBack`/`canGoForward`, Alt+Left/Right, and `pageSizePoints()` for thumbnails.
+- `PageThumbnailProvider` (`image://atlasthumb/…`): one background thread; each open tab's PDF is read once into memory (file never locked) and rendered at thumbnail size with the current reading colours; closing a tab frees its copy. Session sources are copied on the GUI thread whenever the reader model changes; passwords stay in memory only.
+- QML: navigation rail (40 px) and `PagesPanel` (Foxit Pages panel) with resizable splitter; panel and width remembered in `preferences.ini`; F4 and View → View Setting → Navigation Panels. Status bar gains Previous/Next View. Document-tab context menu (close variants, copy path, open containing folder via Explorer `/select`).
+- Known limits: each open tab holds a second in-memory copy of its PDF while the Pages panel is used (one for the page view, one for thumbnails); to be merged into one shared buffer with the N4.5 memory work.

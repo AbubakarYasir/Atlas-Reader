@@ -4,6 +4,13 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N4.4 navigation, slice 1 — 2026-11-02
+
+- **Pages panel:** page thumbnails in a side panel opened from the new left icon strip (or F4); click a page to jump; drag the edge to resize, double-click it to hide. Arabic and Urdu mirror it to the right.
+- **Previous View / Next View** (Alt+Left / Alt+Right, and two new status-bar buttons) take you back to where you were before a jump.
+- **Right-click a document tab:** Close, Close Others, Close Tabs to the Left/Right, Close All, Copy Path, Open Containing Folder.
+- Commits are now signed with the owner's key and show Verified on GitHub; earlier commits were re-signed.
+
 ## Complete Foxit feature plan and logo colours — 2026-11-01
 
 - **Every Foxit PDF Editor feature is now planned** (owner direction). [FOXIT_PARITY.md §3](docs/FOXIT_PARITY.md#3-complete-foxit-feature-catalogue-and-atlas-plan) catalogues all of them from the owner's reference package — 11 ribbon tabs, the classic menu bar, 114 menus, 159 core dialogs, 34 Preferences categories, every navigation panel and context menu, 107 modules and 62 plug-ins — and gives each a stage before 2.0 or an after-2.0 track.

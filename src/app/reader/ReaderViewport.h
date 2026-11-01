@@ -9,6 +9,7 @@
 // the GUI or render thread.
 
 #include "core/reader/RenderPlanner.h"
+#include "core/reader/ViewHistory.h"
 #include "core/reader/ViewportLayout.h"
 
 #include <QColor>
@@ -49,6 +50,8 @@ class ReaderViewport : public QQuickItem {
     Q_PROPERTY(QString errorKey READ errorKey NOTIFY loadingChanged)
     Q_PROPERTY(int readingColors READ readingColors WRITE setReadingColors NOTIFY readingColorsChanged)
     Q_PROPERTY(int rotation READ rotation NOTIFY rotationChanged)
+    Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY historyChanged)
+    Q_PROPERTY(bool canGoForward READ canGoForward NOTIFY historyChanged)
     Q_PROPERTY(QColor pageColor READ pageColor WRITE setPageColor NOTIFY pageColorChanged)
     Q_PROPERTY(QColor pageShadowColor READ pageShadowColor WRITE setPageShadowColor NOTIFY
                    pageColorChanged)
@@ -97,6 +100,13 @@ public:
     Q_INVOKABLE void lastPage();
     Q_INVOKABLE void actualSize();
     Q_INVOKABLE void rotateView(int quarterTurns);
+    // Foxit Previous View / Next View (Alt+Left / Alt+Right).
+    Q_INVOKABLE void goBack();
+    Q_INVOKABLE void goForward();
+    // Page size in points with /Rotate and the view rotation applied; for thumbnails.
+    Q_INVOKABLE QSizeF pageSizePoints(int oneBasedPage) const;
+    [[nodiscard]] bool canGoBack() const { return history_.canGoBack(); }
+    [[nodiscard]] bool canGoForward() const { return history_.canGoForward(); }
 
     // 0 Paper, 1 Sepia, 2 Night, 3 High contrast. Rendering only; never written to the PDF.
     [[nodiscard]] int readingColors() const { return readingColors_; }
@@ -116,6 +126,7 @@ signals:
     void pageColorChanged();
     void readingColorsChanged();
     void rotationChanged();
+    void historyChanged();
 
 protected:
     QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) override;
@@ -141,6 +152,10 @@ private:
     void zoomAround(double zoom, QPointF anchor);
     void clampScroll();
     void updateCurrentPage();
+    void jumpToIndex(std::size_t index);
+    [[nodiscard]] atlas::reader::ViewPosition currentPosition() const;
+    void showPosition(const atlas::reader::ViewPosition& position);
+    void recordJump();
     void dropAllTextures();
     void queueTextureRelease(const std::vector<atlas::reader::TextureKey>& keys);
     [[nodiscard]] double devicePixelRatio() const;
@@ -156,6 +171,7 @@ private:
     QColor pageShadowColor_{0, 0, 0, 38};
 
     atlas::reader::ViewportLayout layout_;
+    atlas::reader::ViewHistory history_;
     FitMode fitMode_{FitMode::Width};
     qreal contentX_{};
     qreal contentY_{};

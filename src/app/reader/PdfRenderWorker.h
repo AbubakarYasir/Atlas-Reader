@@ -45,6 +45,10 @@ private:
     std::unordered_set<quint64> cancelled_;
 };
 
+// Reading colours (0 Paper … 3 High contrast) applied to a rendered page
+// image (ARGB32 premultiplied). Rendering only; the PDF is never changed.
+void applyReadingColors(QImage& image, int readingColors);
+
 class PdfRenderWorker final : public QObject {
     Q_OBJECT
 

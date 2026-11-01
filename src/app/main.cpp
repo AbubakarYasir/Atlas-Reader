@@ -1,6 +1,7 @@
 #include "app/diagnostics/ShellMetrics.h"
 #include "app/library/LibraryController.h"
 #include "app/logging/Logging.h"
+#include "app/reader/PageThumbnailProvider.h"
 #include "app/reader/ReaderController.h"
 #include "app/reader/ReaderViewport.h"
 #include "app/settings/AppPreferences.h"
@@ -9,6 +10,7 @@
 #include <QCommandLineParser>
 #include <QGuiApplication>
 #include <QDir>
+#include <QFileInfo>
 #include <QImage>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -16,14 +18,13 @@
 #include <QQuickWindow>
 #include <QStyleHints>
 #include <QStandardPaths>
+#include <QSvgRenderer>
 #include <QTimer>
 
+#include <algorithm>
 #include <chrono>
-#include <QFileInfo>
-#include <QSvgRenderer>
 #include <cstdlib>
 #include <filesystem>
-#include <algorithm>
 
 namespace {
 
@@ -183,6 +184,15 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty(QStringLiteral("qaShow"), parser.value(showOption));
     engine.rootContext()->setContextProperty(QStringLiteral("libraryController"), &libraryController);
     engine.rootContext()->setContextProperty(QStringLiteral("readerController"), &readerController);
+    // Pages panel thumbnails (engine owns the provider).
+    auto* thumbnails = new atlas::app::PageThumbnailProvider;
+    QObject thumbnailConnections; // destroyed before the engine deletes the provider
+    engine.addImageProvider(QStringLiteral("atlasthumb"), thumbnails);
+    const auto refreshThumbnails = [thumbnails, &readerController] { thumbnails->refresh(readerController); };
+    QObject::connect(&readerController, &QAbstractItemModel::modelReset, &thumbnailConnections, refreshThumbnails);
+    QObject::connect(&readerController, &QAbstractItemModel::dataChanged, &thumbnailConnections, refreshThumbnails);
+    QObject::connect(&readerController, &QAbstractItemModel::rowsInserted, &thumbnailConnections, refreshThumbnails);
+    QObject::connect(&readerController, &QAbstractItemModel::rowsRemoved, &thumbnailConnections, refreshThumbnails);
 
     QObject::connect(
         &engine,

@@ -30,107 +30,167 @@ Rectangle {
         spacing: 0
         visible: tab.ready
 
-        // ---- document pane
-        Item {
+        // ---- navigation rail and panel (Foxit navigation pane, F4)
+        RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            spacing: 0
 
-            ReaderViewport {
-                id: view
-                anchors.fill: parent
-                controller: readerController
-                sessionId: tab.sessionId
-                active: tab.visible && tab.ready
-                readingColors: preferences.readingColors
-                pageColor: Theme.readingPaper[preferences.readingColors]
-                pageShadowColor: Theme.pageShadow
-                focus: tab.visible
-                Accessible.role: Accessible.Pane
-                Accessible.name: I18n.t("reader.pagesA11y", view.currentPage, view.pageCount)
-            }
-
-            ScrollBar {
-                id: vbar
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                orientation: Qt.Vertical
-                policy: view.contentHeight > view.height ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
-                size: view.contentHeight > 0 ? view.height / view.contentHeight : 1
-                position: view.contentHeight > 0 ? view.contentY / view.contentHeight : 0
-                onPositionChanged: if (pressed) view.contentY = position * view.contentHeight
-            }
-            ScrollBar {
-                anchors.left: parent.left
-                anchors.right: vbar.left
-                anchors.bottom: parent.bottom
-                orientation: Qt.Horizontal
-                policy: view.contentWidth > view.width ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
-                size: view.contentWidth > 0 ? view.width / view.contentWidth : 1
-                position: view.contentWidth > 0 ? view.contentX / view.contentWidth : 0
-                onPositionChanged: if (pressed) view.contentX = position * view.contentWidth
-            }
-
-            BusyIndicator {
-                anchors.centerIn: parent
-                running: view.loading
-                visible: running
-            }
-            Label {
-                anchors.centerIn: parent
-                width: Math.min(520, parent.width - 48)
-                visible: view.errorKey.length > 0
-                text: I18n.t("reader.renderError")
-                color: Theme.ink
-                wrapMode: Text.WordWrap
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            // ---- read mode / full screen mini bar
             Rectangle {
-                id: miniBar
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Theme.lg
-                visible: AppState.chromeHidden
-                opacity: miniHover.hovered || miniTimer.running || miniRow.activeFocus ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: Theme.normal } }
-                width: miniRow.implicitWidth + Theme.lg
-                height: Theme.commandBarHeight
-                radius: Theme.radiusSurface
-                color: Theme.panel
-                border.color: Theme.line
-                HoverHandler { id: miniHover }
-                Timer { id: miniTimer; interval: 2200 }
-                Connections {
-                    target: view
-                    function onCurrentPageChanged() { if (AppState.chromeHidden) miniTimer.restart() }
-                }
-                Connections {
-                    target: AppState
-                    function onChromeHiddenChanged() { if (AppState.chromeHidden) miniTimer.restart() }
-                }
-                RowLayout {
-                    id: miniRow
-                    anchors.centerIn: parent
-                    spacing: 2
-                    AtlasIconButton { iconName: "chevron_left"; mirrorIcon: true; text: I18n.t("nav.previousPage"); onClicked: view.previousPage() }
-                    Label {
-                        text: I18n.t("status.pageOf", view.currentPage, view.pageCount)
-                        color: Theme.ink
-                        font.pixelSize: 13
-                        Layout.leftMargin: Theme.xs
-                        Layout.rightMargin: Theme.xs
+                Layout.preferredWidth: Theme.railWidth
+                Layout.fillHeight: true
+                visible: !AppState.chromeHidden
+                color: Theme.rail
+                Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.chromeLine }
+                Column {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: 18
+                    spacing: 8
+                    AtlasIconButton {
+                        implicitWidth: Theme.railWidth - 6
+                        implicitHeight: Theme.railWidth - 6
+                        iconSize: 20
+                        cornerRadius: 2
+                        iconName: "document_copy"
+                        text: I18n.t("panel.pages")
+                        checkable: true
+                        checked: preferences.navPanel === "pages"
+                        onClicked: preferences.navPanel = preferences.navPanel === "pages" ? "" : "pages"
                     }
-                    AtlasIconButton { iconName: "chevron_right"; mirrorIcon: true; text: I18n.t("nav.nextPage"); onClicked: view.nextPage() }
-                    AtlasIconButton { iconName: "zoom_out"; text: I18n.t("zoom.out"); onClicked: view.zoomBy(0.8) }
-                    AtlasIconButton { iconName: "zoom_in"; text: I18n.t("zoom.in"); onClicked: view.zoomBy(1.25) }
-                    AtlasButton {
-                        kind: "quiet"
-                        iconName: "full_screen_minimize"
-                        text: AppState.fullScreen ? I18n.t("view.exitFullScreen") : I18n.t("view.exitReadMode")
-                        Accessible.description: "Esc"
-                        onClicked: { AppState.readMode = false; AppState.fullScreen = false }
+                }
+            }
+
+            PagesPanel {
+                id: pagesPanel
+                Layout.preferredWidth: preferences.navPanelWidth
+                Layout.fillHeight: true
+                visible: preferences.navPanel === "pages" && !AppState.chromeHidden
+                view: view
+                sessionId: tab.sessionId
+            }
+            Rectangle { // splitter: drag to resize, double-click to hide (Foxit)
+                Layout.preferredWidth: 6
+                Layout.fillHeight: true
+                visible: pagesPanel.visible
+                color: splitterHover.hovered || splitterDrag.active ? Theme.hover : Theme.pressed
+                Accessible.role: Accessible.Separator
+                Accessible.name: I18n.t("panel.resize")
+                HoverHandler { id: splitterHover; cursorShape: Qt.SizeHorCursor }
+                DragHandler {
+                    id: splitterDrag
+                    target: null
+                    xAxis.enabled: true
+                    yAxis.enabled: false
+                    property int startWidth: 0
+                    onActiveChanged: if (active) startWidth = preferences.navPanelWidth
+                    onTranslationChanged: preferences.navPanelWidth = startWidth + (tab.LayoutMirroring.enabled ? -translation.x : translation.x)
+                }
+                TapHandler { onDoubleTapped: preferences.navPanel = "" }
+            }
+
+
+            // ---- document pane
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                ReaderViewport {
+                    id: view
+                    anchors.fill: parent
+                    controller: readerController
+                    sessionId: tab.sessionId
+                    active: tab.visible && tab.ready
+                    readingColors: preferences.readingColors
+                    pageColor: Theme.readingPaper[preferences.readingColors]
+                    pageShadowColor: Theme.pageShadow
+                    focus: tab.visible
+                    Accessible.role: Accessible.Pane
+                    Accessible.name: I18n.t("reader.pagesA11y", view.currentPage, view.pageCount)
+                }
+
+                ScrollBar {
+                    id: vbar
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    anchors.right: parent.right
+                    orientation: Qt.Vertical
+                    policy: view.contentHeight > view.height ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                    size: view.contentHeight > 0 ? view.height / view.contentHeight : 1
+                    position: view.contentHeight > 0 ? view.contentY / view.contentHeight : 0
+                    onPositionChanged: if (pressed) view.contentY = position * view.contentHeight
+                }
+                ScrollBar {
+                    anchors.left: parent.left
+                    anchors.right: vbar.left
+                    anchors.bottom: parent.bottom
+                    orientation: Qt.Horizontal
+                    policy: view.contentWidth > view.width ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                    size: view.contentWidth > 0 ? view.width / view.contentWidth : 1
+                    position: view.contentWidth > 0 ? view.contentX / view.contentWidth : 0
+                    onPositionChanged: if (pressed) view.contentX = position * view.contentWidth
+                }
+
+                BusyIndicator {
+                    anchors.centerIn: parent
+                    running: view.loading
+                    visible: running
+                }
+                Label {
+                    anchors.centerIn: parent
+                    width: Math.min(520, parent.width - 48)
+                    visible: view.errorKey.length > 0
+                    text: I18n.t("reader.renderError")
+                    color: Theme.ink
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                // ---- read mode / full screen mini bar
+                Rectangle {
+                    id: miniBar
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: Theme.lg
+                    visible: AppState.chromeHidden
+                    opacity: miniHover.hovered || miniTimer.running || miniRow.activeFocus ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: Theme.normal } }
+                    width: miniRow.implicitWidth + Theme.lg
+                    height: Theme.commandBarHeight
+                    radius: Theme.radiusSurface
+                    color: Theme.panel
+                    border.color: Theme.line
+                    HoverHandler { id: miniHover }
+                    Timer { id: miniTimer; interval: 2200 }
+                    Connections {
+                        target: view
+                        function onCurrentPageChanged() { if (AppState.chromeHidden) miniTimer.restart() }
+                    }
+                    Connections {
+                        target: AppState
+                        function onChromeHiddenChanged() { if (AppState.chromeHidden) miniTimer.restart() }
+                    }
+                    RowLayout {
+                        id: miniRow
+                        anchors.centerIn: parent
+                        spacing: 2
+                        AtlasIconButton { iconName: "chevron_left"; mirrorIcon: true; text: I18n.t("nav.previousPage"); onClicked: view.previousPage() }
+                        Label {
+                            text: I18n.t("status.pageOf", view.currentPage, view.pageCount)
+                            color: Theme.ink
+                            font.pixelSize: 13
+                            Layout.leftMargin: Theme.xs
+                            Layout.rightMargin: Theme.xs
+                        }
+                        AtlasIconButton { iconName: "chevron_right"; mirrorIcon: true; text: I18n.t("nav.nextPage"); onClicked: view.nextPage() }
+                        AtlasIconButton { iconName: "zoom_out"; text: I18n.t("zoom.out"); onClicked: view.zoomBy(0.8) }
+                        AtlasIconButton { iconName: "zoom_in"; text: I18n.t("zoom.in"); onClicked: view.zoomBy(1.25) }
+                        AtlasButton {
+                            kind: "quiet"
+                            iconName: "full_screen_minimize"
+                            text: AppState.fullScreen ? I18n.t("view.exitFullScreen") : I18n.t("view.exitReadMode")
+                            Accessible.description: "Esc"
+                            onClicked: { AppState.readMode = false; AppState.fullScreen = false }
+                        }
                     }
                 }
             }
@@ -218,6 +278,10 @@ Rectangle {
                 }
                 StatusButton { iconName: "chevron_right"; text: I18n.t("nav.nextPage"); shortcutHint: "Ctrl+Page Down"; enabled: view.currentPage < view.pageCount; onClicked: view.nextPage() }
                 StatusButton { iconName: "arrow_next"; text: I18n.t("nav.lastPage"); shortcutHint: "End"; enabled: view.currentPage < view.pageCount; onClicked: view.lastPage() }
+                Rectangle { width: 1; Layout.preferredHeight: 16; color: Theme.chromeLine; Layout.leftMargin: 4; Layout.rightMargin: 4 }
+                // Previous/next view are temporal (Alt+Left/Right), so they never mirror.
+                StatusButton { iconName: "arrow_left"; mirrorIcon: false; text: I18n.t("nav.previousView"); shortcutHint: "Alt+Left"; enabled: view.canGoBack; onClicked: view.goBack() }
+                StatusButton { iconName: "arrow_right"; mirrorIcon: false; text: I18n.t("nav.nextView"); shortcutHint: "Alt+Right"; enabled: view.canGoForward; onClicked: view.goForward() }
 
                 Item { Layout.fillWidth: true }
 

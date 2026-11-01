@@ -2,6 +2,7 @@
 // Pure C++: no Qt, no PDF engine, no GUI.
 
 #include "core/reader/RenderPlanner.h"
+#include "core/reader/ViewHistory.h"
 #include "core/reader/ViewportLayout.h"
 
 #include <cmath>
@@ -308,6 +309,32 @@ void testTwoThousandPageMemorySeries() {
 
 } // namespace
 
+void testViewHistory() {
+    ViewHistory history;
+    require(!history.canGoBack() && !history.canGoForward(), "New history must be empty.");
+    history.recordJump({0, 0.0});
+    history.recordJump({9, 0.5});
+    const ViewPosition at{40, 0.0};
+    auto back = history.back(at);
+    require(back && back->page == 9 && history.canGoForward(), "Back must return the last place before a jump.");
+    auto again = history.back(*back);
+    require(again && again->page == 0, "Back twice must reach the first place.");
+    auto forward = history.forward(*again);
+    require(forward && forward->page == 9, "Forward must undo Back.");
+    history.recordJump(*forward);
+    require(!history.canGoForward(), "A new jump must clear Forward.");
+    ViewHistory dedupe;
+    dedupe.recordJump({3, 0.10});
+    dedupe.recordJump({3, 0.11});
+    require(dedupe.back({50, 0.0}) && !dedupe.canGoBack(), "Nearby positions must collapse into one entry.");
+    ViewHistory capped;
+    for (std::size_t i = 0; i < ViewHistory::kMaxEntries + 20; ++i) capped.recordJump({i, 0.0});
+    std::size_t steps = 0;
+    ViewPosition cursor{100000, 0.0};
+    while (auto p = capped.back(cursor)) { cursor = *p; ++steps; }
+    require(steps == ViewHistory::kMaxEntries, "History must be capped.");
+}
+
 int main() {
     try {
         testRotationAndSizes();
@@ -319,6 +346,7 @@ int main() {
         testSchedulerSupersedesStaleWork();
         testCacheBudget();
         testTwoThousandPageMemorySeries();
+        testViewHistory();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: " << error.what() << '\n';
         return 1;

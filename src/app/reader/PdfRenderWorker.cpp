@@ -22,6 +22,8 @@ QPdfDocumentRenderOptions::Rotation toQtRotation(int quarterTurns) {
     }
 }
 
+} // namespace
+
 // Reading colours remap luminance between a background and a text colour so
 // text, line art and images stay legible (Foxit's "replace document colours"
 // concept). Rendering only.
@@ -55,7 +57,6 @@ void applyReadingColors(QImage& image, int readingColors) {
     }
 }
 
-} // namespace
 
 PdfRenderWorker::PdfRenderWorker(std::shared_ptr<RenderCancellation> cancellation)
     : cancellation_{std::move(cancellation)} {}

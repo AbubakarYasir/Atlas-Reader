@@ -158,6 +158,16 @@ int main(int argc, char** argv) {
 
         viewport->goToPage(kPages + 10);
         require(viewport->currentPage() == kPages, "Jumping past the end clamps to the last page.");
+        require(viewport->canGoBack(), "Page jumps must be recorded for Previous View.");
+        viewport->goBack();
+        require(viewport->currentPage() == 45, "Previous View must return to the page before the jump.");
+        require(viewport->canGoForward(), "Previous View must enable Next View.");
+        viewport->goForward();
+        require(viewport->currentPage() == kPages, "Next View must return to the jump target.");
+        viewport->nextPage();
+        viewport->previousPage();
+        viewport->goBack();
+        require(viewport->currentPage() == 45, "Next/previous page must not be recorded as jumps.");
 
         // The renderer holds the document in memory, not the file.
         const QString moved = dir.filePath(QStringLiteral("moved book.pdf"));

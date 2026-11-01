@@ -53,6 +53,8 @@ atlas_enable_warnings(atlas_reader_session)
 
 add_library(atlas_reader_viewport STATIC
     src/core/reader/ViewportLayout.cpp
+    src/core/reader/ViewHistory.cpp
+    src/core/reader/ViewHistory.h
     src/core/reader/ViewportLayout.h
     src/core/reader/RenderPlanner.cpp
     src/core/reader/RenderPlanner.h
@@ -155,6 +157,8 @@ add_library(atlas_reader_ui STATIC
     src/app/reader/ReaderController.cpp
     src/app/reader/ReaderController.h
     src/app/reader/PdfRenderWorker.cpp
+    src/app/reader/PageThumbnailProvider.cpp
+    src/app/reader/PageThumbnailProvider.h
     src/app/reader/PdfRenderWorker.h
     src/app/reader/ReaderViewport.cpp
     src/app/reader/ReaderViewport.h
@@ -184,7 +188,7 @@ set(ATLAS_QML_FILES
     qml/AtlasButton.qml qml/AtlasIconButton.qml qml/AtlasTextField.qml qml/SidebarItem.qml
     qml/TitleBar.qml qml/LibraryView.qml qml/ReaderView.qml qml/ReaderTab.qml
     qml/RibbonButton.qml qml/RibbonBar.qml qml/DocumentTabBar.qml qml/Backstage.qml
-    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml
+    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml
 )
 # Place every QML file at the module root so the module's qmldir (and its
 # singletons) is the implicit import of each file.

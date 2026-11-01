@@ -309,6 +309,39 @@ void testTwoThousandPageMemorySeries() {
 
 } // namespace
 
+void testSpreads() {
+    LayoutSettings settings;
+    settings.display = PageDisplay::continuousFacing;
+    ViewportLayout layout{uniform(5), settings};
+    require(layout.rows().size() == 3, "Five pages in facing mode make three rows.");
+    const auto a = layout.pageRect(0);
+    const auto b = layout.pageRect(1);
+    require(approx(a.y, b.y) && b.x > a.x + a.width, "A spread shows its two pages side by side, left to right.");
+    require(layout.pageAt(b.y + 5.0) == 0u, "The current page of a spread is its first page.");
+    require(layout.rowOf(1) == 0 && layout.rowOf(2) == 1, "Pages map to their spread.");
+    const auto band = layout.pagesInBand(a.y, 10.0);
+    require(band && band->first == 0 && band->last == 1, "A band through a spread covers both pages.");
+
+    settings.coverPage = true;
+    layout.setSettings(settings);
+    require(layout.rows().size() == 3 && layout.rows()[0].first == 0 && layout.rows()[0].last == 0,
+            "With a cover page, page 1 stands alone.");
+    require(layout.rows()[1].first == 1 && layout.rows()[1].last == 2, "Then pages 2-3 form a spread.");
+
+    settings.coverPage = false;
+    settings.rightToLeft = true;
+    layout.setSettings(settings);
+    require(layout.pageRect(0).x > layout.pageRect(1).x, "Reverse View puts the first page of a spread on the right.");
+
+    settings.rightToLeft = false;
+    settings.display = PageDisplay::continuous;
+    layout.setSettings(settings);
+    const double single = layout.fitWidthZoom(1000.0);
+    settings.display = PageDisplay::facing;
+    layout.setSettings(settings);
+    require(layout.fitWidthZoom(1000.0) < single * 0.6, "Fit width in facing mode fits the whole spread.");
+}
+
 void testViewHistory() {
     ViewHistory history;
     require(!history.canGoBack() && !history.canGoForward(), "New history must be empty.");
@@ -347,6 +380,7 @@ int main() {
         testCacheBudget();
         testTwoThousandPageMemorySeries();
         testViewHistory();
+        testSpreads();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: " << error.what() << '\n';
         return 1;

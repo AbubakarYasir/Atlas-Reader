@@ -217,7 +217,14 @@ var tables = {
         "tab.closeLeft": "Close Tabs to the Left",
         "tab.closeRight": "Close Tabs to the Right",
         "tab.copyPath": "Copy Path to Clipboard",
-        "tab.showInFolder": "Open Containing Folder"
+        "tab.showInFolder": "Open Containing Folder",
+        "cmd.pageDisplay": "Page Display",
+        "cmd.singlePage": "Single Page",
+        "cmd.continuous": "Continuous",
+        "cmd.facing": "Facing",
+        "cmd.continuousFacing": "Continuous Facing",
+        "cmd.coverPage": "Show Cover Page During Facing",
+        "cmd.reverseView": "Reverse View"
     },
 
     ar: {
@@ -430,7 +437,14 @@ var tables = {
         "tab.closeLeft": "إغلاق علامات التبويب على اليسار",
         "tab.closeRight": "إغلاق علامات التبويب على اليمين",
         "tab.copyPath": "نسخ المسار إلى الحافظة",
-        "tab.showInFolder": "فتح المجلد الحاوي"
+        "tab.showInFolder": "فتح المجلد الحاوي",
+        "cmd.pageDisplay": "عرض الصفحة",
+        "cmd.singlePage": "صفحة واحدة",
+        "cmd.continuous": "مستمر",
+        "cmd.facing": "متقابلة",
+        "cmd.continuousFacing": "متقابلة مستمرة",
+        "cmd.coverPage": "إظهار صفحة الغلاف في العرض المتقابل",
+        "cmd.reverseView": "عرض معكوس"
     },
 
     ur: {
@@ -643,6 +657,13 @@ var tables = {
         "tab.closeLeft": "بائیں جانب کے ٹیب بند کریں",
         "tab.closeRight": "دائیں جانب کے ٹیب بند کریں",
         "tab.copyPath": "راستہ کلپ بورڈ پر کاپی کریں",
-        "tab.showInFolder": "متعلقہ فولڈر کھولیں"
+        "tab.showInFolder": "متعلقہ فولڈر کھولیں",
+        "cmd.pageDisplay": "صفحہ ڈسپلے",
+        "cmd.singlePage": "ایک صفحہ",
+        "cmd.continuous": "مسلسل",
+        "cmd.facing": "آمنے سامنے",
+        "cmd.continuousFacing": "مسلسل آمنے سامنے",
+        "cmd.coverPage": "آمنے سامنے میں سرورق الگ دکھائیں",
+        "cmd.reverseView": "الٹا منظر"
     }
 }

@@ -133,6 +133,12 @@ ApplicationWindow {
             else if (qaShow === "skins") { backstage.page = "skins"; backstage.visible = true }
             else if (qaShow.indexOf("preferences") === 0) preferencesDialog.openPage(qaShow.split(":")[1] || "general")
             else if (qaShow === "about") aboutDialog.open()
+            else if (qaShow.indexOf("display:") === 0 && root.activeViewport) {
+                const parts = qaShow.split(":")
+                root.activeViewport.pageDisplay = parseInt(parts[1])
+                root.activeViewport.rightToLeft = parts[2] === "rtl"
+                ribbon.currentTab = 2
+            }
             else if (qaShow.indexOf("ribbon-") === 0) ribbon.currentTab = ({ home: 1, view: 2, accessibility: 3, help: 4 })[qaShow.slice(7)] || 1
         }
     }

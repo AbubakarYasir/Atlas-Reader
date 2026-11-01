@@ -188,7 +188,7 @@ set(ATLAS_QML_FILES
     qml/AtlasButton.qml qml/AtlasIconButton.qml qml/AtlasTextField.qml qml/SidebarItem.qml
     qml/TitleBar.qml qml/LibraryView.qml qml/ReaderView.qml qml/ReaderTab.qml
     qml/RibbonButton.qml qml/RibbonBar.qml qml/DocumentTabBar.qml qml/Backstage.qml
-    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml
+    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/RibbonSmallButton.qml
 )
 # Place every QML file at the module root so the module's qmldir (and its
 # singletons) is the implicit import of each file.

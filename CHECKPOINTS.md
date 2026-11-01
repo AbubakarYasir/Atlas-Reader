@@ -98,6 +98,7 @@ Moved forward on 2026-11-01 so every later reader feature lands in the final wor
 
 ### N4.4 — Navigation ← **active**
 
+- **Done (slice 2):** **Page Display** — Single Page, Continuous, Facing, Continuous Facing, Show Cover Page During Facing (View tab small buttons and status-bar buttons, as in Foxit); **Reverse View** (spreads read right to left; Left arrow turns forward); next/previous page turn a whole spread; Single Page shows one page or spread and turns at its end.
 - **Done (slice 1):** navigation rail with the **Pages panel** (background thumbnails, current page outlined, click or Enter to jump, resizable splitter, double-click hides, F4, View → View Setting → Navigation Panels); **Previous/Next View** (Alt+Left/Right and status-bar buttons; page-box, first/last, Home/End and thumbnail jumps are recorded, next/previous page is not); **document-tab context menu** (Close, Close Others, Close Left/Right, Close All, Copy Path, Open Containing Folder).
 
 - Continuous and single-page; facing and cover spreads (View tab page-display buttons and status-bar layout buttons, as in Foxit); **Reverse View** = reading direction set separately from UI language (C03); **AutoScroll** (Ctrl+Shift+H, Esc stops).

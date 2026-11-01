@@ -117,6 +117,13 @@ void ReaderViewport::setContentX(qreal value) {
 void ReaderViewport::setContentY(qreal value) {
     const qreal maxY = std::max<qreal>(0.0, contentHeight() - height());
     value = std::clamp<qreal>(std::isfinite(value) ? value : 0.0, 0.0, maxY);
+    if (singlePageMode() && !layout_.rows().empty()) {
+        // One page (or spread) at a time: a jump selects the row, scrolling stays inside it.
+        const auto row = layout_.pageAt(value + layout_.settings().pageGap).value_or(0);
+        singleRow_ = layout_.rowOf(row);
+        const auto [low, high] = rowScrollRange(singleRow_);
+        value = std::clamp(value, low, high);
+    }
     if (qFuzzyCompare(1.0 + contentY_, 1.0 + value)) return;
     contentY_ = value;
     emit scrollChanged();
@@ -245,17 +252,77 @@ void ReaderViewport::zoomBy(qreal factor) {
 void ReaderViewport::resetZoom() { setZoom(1.0); }
 
 void ReaderViewport::scrollByPages(qreal screens) {
-    setContentY(contentY_ + screens * std::max<qreal>(kLineStep, height() * 0.9));
+    scrollBy(screens * std::max<qreal>(kLineStep, height() * 0.9));
+}
+
+bool ReaderViewport::singlePageMode() const {
+    return !atlas::reader::isContinuous(layout_.settings().display);
+}
+
+std::pair<qreal, qreal> ReaderViewport::rowScrollRange(std::size_t row) const {
+    const auto& r = layout_.rows().at(row);
+    const qreal gap = layout_.settings().pageGap;
+    const qreal low = std::max<qreal>(0.0, r.top - gap / 2.0);
+    const qreal bottom = r.top + r.height + (row + 1 == layout_.rows().size() ? layout_.settings().margin : gap / 2.0);
+    return {low, std::max(low, bottom - height())};
+}
+
+void ReaderViewport::scrollBy(qreal delta) {
+    if (!singlePageMode() || layout_.rows().empty()) {
+        setContentY(contentY_ + delta);
+        return;
+    }
+    const auto [low, high] = rowScrollRange(singleRow_);
+    const qreal target = contentY_ + delta;
+    if (delta > 0 && contentY_ >= high - 0.5 && singleRow_ + 1 < layout_.rows().size()) {
+        setContentY(rowScrollRange(singleRow_ + 1).first); // turn to the next page
+    } else if (delta < 0 && contentY_ <= low + 0.5 && singleRow_ > 0) {
+        setContentY(rowScrollRange(singleRow_ - 1).second); // back to the end of the previous page
+    } else {
+        setContentY(std::clamp(target, low, high));
+    }
+}
+
+void ReaderViewport::changeLayout(const std::function<void(atlas::reader::LayoutSettings&)>& edit) {
+    auto settings = layout_.settings();
+    edit(settings);
+    const int page = currentPage_;
+    layout_.setSettings(settings);
+    emit pageDisplayChanged();
+    if (fitMode_ != FitMode::None) applyFit();
+    relayout();
+    if (page > 0) jumpToIndex(static_cast<std::size_t>(page - 1));
+    update();
+}
+
+void ReaderViewport::setPageDisplay(int display) {
+    display = std::clamp(display, 0, 3);
+    if (display == pageDisplay()) return;
+    changeLayout([display](auto& s) { s.display = static_cast<atlas::reader::PageDisplay>(display); });
+}
+
+void ReaderViewport::setCoverPage(bool cover) {
+    if (cover == coverPage()) return;
+    changeLayout([cover](auto& s) { s.coverPage = cover; });
+}
+
+void ReaderViewport::setRightToLeft(bool rightToLeft) {
+    if (rightToLeft == this->rightToLeft()) return;
+    changeLayout([rightToLeft](auto& s) { s.rightToLeft = rightToLeft; });
 }
 
 void ReaderViewport::nextPage() {
-    if (layout_.pageCount() == 0) return;
-    jumpToIndex(static_cast<std::size_t>(std::clamp(currentPage_ + 1, 1, pageCount()) - 1));
+    if (layout_.pageCount() == 0 || currentPage_ < 1) return;
+    // Move by row so facing spreads turn two pages at a time.
+    const auto row = layout_.rowOf(static_cast<std::size_t>(currentPage_ - 1));
+    if (row + 1 < layout_.rows().size()) jumpToIndex(layout_.rows()[row + 1].first);
 }
 
 void ReaderViewport::previousPage() {
-    if (layout_.pageCount() == 0) return;
-    jumpToIndex(static_cast<std::size_t>(std::clamp(currentPage_ - 1, 1, pageCount()) - 1));
+    if (layout_.pageCount() == 0 || currentPage_ < 1) return;
+    const auto row = layout_.rowOf(static_cast<std::size_t>(currentPage_ - 1));
+    if (row > 0) jumpToIndex(layout_.rows()[row - 1].first);
+    else jumpToIndex(0);
 }
 
 void ReaderViewport::firstPage() {
@@ -550,7 +617,7 @@ void ReaderViewport::wheelEvent(QWheelEvent* event) {
     }
     const qreal dy = !pixels.isNull() ? pixels.y() : degrees.y() / 120.0 * kLineStep * 1.5;
     const qreal dx = !pixels.isNull() ? pixels.x() : degrees.x() / 120.0 * kLineStep * 1.5;
-    setContentY(contentY_ - dy);
+    scrollBy(-dy);
     setContentX(contentX_ - dx);
     event->accept();
 }
@@ -563,8 +630,8 @@ void ReaderViewport::keyPressEvent(QKeyEvent* event) {
     const bool ctrl = event->modifiers().testFlag(Qt::ControlModifier);
     const bool shift = event->modifiers().testFlag(Qt::ShiftModifier);
     switch (event->key()) {
-    case Qt::Key_Down: setContentY(contentY_ + kLineStep); break;
-    case Qt::Key_Up: setContentY(contentY_ - kLineStep); break;
+    case Qt::Key_Down: scrollBy(kLineStep); break;
+    case Qt::Key_Up: scrollBy(-kLineStep); break;
     case Qt::Key_Right:
     case Qt::Key_Left: {
         if (event->modifiers().testFlag(Qt::AltModifier)) { // Foxit Previous/Next View
@@ -574,7 +641,8 @@ void ReaderViewport::keyPressEvent(QKeyEvent* event) {
         }
         // Scroll sideways when the page is wider than the view; otherwise turn
         // the page. Right-to-left book progression arrives with N4.4 spreads.
-        const bool forward = event->key() == Qt::Key_Right;
+        // Reverse View (right-to-left books): Left turns forward.
+        const bool forward = (event->key() == Qt::Key_Right) != rightToLeft();
         if (contentWidth() > width() + 1.0) {
             setContentX(contentX_ + (event->key() == Qt::Key_Right ? kLineStep : -kLineStep));
         } else if (forward) {
@@ -735,8 +803,13 @@ QSGNode* ReaderViewport::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*)
     }
 
     if (!documentReady_ || !active_ || layout_.pageCount() == 0) return root;
-    const auto band = layout_.pagesInBand(contentY_, height());
+    auto band = layout_.pagesInBand(contentY_, height());
     if (!band) return root;
+    if (singlePageMode() && singleRow_ < layout_.rows().size()) {
+        // Single-page modes show only the current page or spread.
+        const auto& row = layout_.rows()[singleRow_];
+        band = atlas::reader::PageRange{row.first, row.last};
+    }
 
     const double dpr = devicePixelRatio();
     const int wanted = atlas::reader::scaleBucketFor(layout_.settings().zoom *

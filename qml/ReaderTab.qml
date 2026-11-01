@@ -285,6 +285,24 @@ Rectangle {
 
                 Item { Layout.fillWidth: true }
 
+                Repeater { // page display (Foxit status bar)
+                    model: [
+                        { icon: "document_one_page", key: "cmd.singlePage", mode: 0 },
+                        { icon: "document_page_break", key: "cmd.continuous", mode: 1 },
+                        { icon: "book", key: "cmd.facing", mode: 2 },
+                        { icon: "document_landscape_split", key: "cmd.continuousFacing", mode: 3 }
+                    ]
+                    delegate: StatusButton {
+                        required property var modelData
+                        mirrorIcon: false
+                        iconName: modelData.icon
+                        text: I18n.t(modelData.key)
+                        checkable: true
+                        checked: view.pageDisplay === modelData.mode
+                        onClicked: view.pageDisplay = modelData.mode
+                    }
+                }
+                Rectangle { width: 1; Layout.preferredHeight: 16; color: Theme.chromeLine; Layout.leftMargin: 4; Layout.rightMargin: 4 }
                 StatusButton { iconName: "zoom_out"; mirrorIcon: false; text: I18n.t("zoom.out"); shortcutHint: "Ctrl+-"; onClicked: view.zoomBy(0.8) }
                 Slider {
                     id: zoomSlider

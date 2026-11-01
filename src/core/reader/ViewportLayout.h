@@ -62,11 +62,37 @@ struct PageRange final {
     }
 };
 
+// Foxit Page Display modes (View tab, status bar).
+enum class PageDisplay {
+    singlePage,     // one page (or spread) at a time
+    continuous,     // pages one after another (default)
+    facing,         // two pages side by side, one spread at a time
+    continuousFacing,
+};
+
 struct LayoutSettings final {
     double zoom{1.0};        // 1.0 == actual size
-    double pageGap{12.0};    // logical px between pages
+    double pageGap{12.0};    // logical px between pages and between spread pages
     double margin{24.0};     // logical px around the document
     PageRotation viewRotation{PageRotation::r0};
+    PageDisplay display{PageDisplay::continuous};
+    bool coverPage{};        // facing modes: first page alone, like a book cover
+    bool rightToLeft{};      // Reverse View: spreads read right to left (Arabic/Urdu books)
+};
+
+[[nodiscard]] constexpr bool isFacing(PageDisplay display) noexcept {
+    return display == PageDisplay::facing || display == PageDisplay::continuousFacing;
+}
+[[nodiscard]] constexpr bool isContinuous(PageDisplay display) noexcept {
+    return display == PageDisplay::continuous || display == PageDisplay::continuousFacing;
+}
+
+// Pages that are shown together on one row (1 page, or 2 in a spread).
+struct PageRow final {
+    std::size_t first{};
+    std::size_t last{}; // inclusive
+    double top{};
+    double height{};
 };
 
 inline constexpr double kPointsToLogicalPixels = 96.0 / 72.0;
@@ -75,8 +101,9 @@ inline constexpr double kMaxZoom = 64.0;
 
 [[nodiscard]] double clampZoom(double zoom) noexcept;
 
-// Continuous single-column layout. Spreads, cover pages and RTL progression
-// arrive in N4.3 as additional layout strategies over the same queries.
+// Page layout in rows: one page per row, or two-page spreads (facing), with an
+// optional cover page and right-to-left spread order. Single-page modes use the
+// same geometry; the viewport limits scrolling to one row at a time.
 class ViewportLayout final {
 public:
     ViewportLayout() = default;
@@ -109,6 +136,10 @@ public:
     [[nodiscard]] double fitWidthZoom(double viewportWidth) const;
     [[nodiscard]] double fitPageZoom(SizeF viewport, std::size_t referencePage) const;
 
+    // Rows (pages shown together) and the row holding a page.
+    [[nodiscard]] const std::vector<PageRow>& rows() const noexcept { return rows_; }
+    [[nodiscard]] std::size_t rowOf(std::size_t pageIndex) const;
+
 private:
     void rebuild();
 
@@ -117,7 +148,10 @@ private:
     std::vector<double> tops_;    // page top, logical px
     std::vector<double> heights_; // page height, logical px
     std::vector<double> widths_;  // page width, logical px
-    double widestPage_{};
+    std::vector<double> lefts_;   // page left edge, logical px
+    std::vector<std::size_t> rowOfPage_;
+    std::vector<PageRow> rows_;
+    double widestPage_{};         // widest row, logical px
     SizeF content_{};
 };
 

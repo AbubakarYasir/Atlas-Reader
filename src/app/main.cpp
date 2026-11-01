@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
         QStringLiteral("path"));
     const QCommandLineOption showOption(
         QStringLiteral("show"),
-        QStringLiteral("Open one surface at startup for visual QA: backstage, skins, preferences, about, ribbon-view."),
+        QStringLiteral("Open one surface at startup for visual QA: backstage, skins, preferences[:page], about, ribbon-<tab>, display:<0-3>[:rtl]."),
         QStringLiteral("surface"));
     const QCommandLineOption nativeFrameOption(
         QStringLiteral("native-frame"),

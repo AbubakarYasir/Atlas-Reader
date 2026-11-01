@@ -19,6 +19,7 @@
 #include <QSizeF>
 #include <QThread>
 
+#include <functional>
 #include <memory>
 #include <optional>
 #include <unordered_map>
@@ -50,6 +51,9 @@ class ReaderViewport : public QQuickItem {
     Q_PROPERTY(QString errorKey READ errorKey NOTIFY loadingChanged)
     Q_PROPERTY(int readingColors READ readingColors WRITE setReadingColors NOTIFY readingColorsChanged)
     Q_PROPERTY(int rotation READ rotation NOTIFY rotationChanged)
+    Q_PROPERTY(int pageDisplay READ pageDisplay WRITE setPageDisplay NOTIFY pageDisplayChanged)
+    Q_PROPERTY(bool coverPage READ coverPage WRITE setCoverPage NOTIFY pageDisplayChanged)
+    Q_PROPERTY(bool rightToLeft READ rightToLeft WRITE setRightToLeft NOTIFY pageDisplayChanged)
     Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY historyChanged)
     Q_PROPERTY(bool canGoForward READ canGoForward NOTIFY historyChanged)
     Q_PROPERTY(QColor pageColor READ pageColor WRITE setPageColor NOTIFY pageColorChanged)
@@ -101,6 +105,14 @@ public:
     Q_INVOKABLE void actualSize();
     Q_INVOKABLE void rotateView(int quarterTurns);
     // Foxit Previous View / Next View (Alt+Left / Alt+Right).
+    // Foxit Page Display: 0 Single Page, 1 Continuous, 2 Facing, 3 Continuous Facing.
+    [[nodiscard]] int pageDisplay() const { return static_cast<int>(layout_.settings().display); }
+    void setPageDisplay(int display);
+    [[nodiscard]] bool coverPage() const { return layout_.settings().coverPage; }
+    void setCoverPage(bool cover);
+    // Reverse View: spreads read right to left (independent of the interface language).
+    [[nodiscard]] bool rightToLeft() const { return layout_.settings().rightToLeft; }
+    void setRightToLeft(bool rightToLeft);
     Q_INVOKABLE void goBack();
     Q_INVOKABLE void goForward();
     // Page size in points with /Rotate and the view rotation applied; for thumbnails.
@@ -127,6 +139,7 @@ signals:
     void readingColorsChanged();
     void rotationChanged();
     void historyChanged();
+    void pageDisplayChanged();
 
 protected:
     QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) override;
@@ -156,6 +169,10 @@ private:
     [[nodiscard]] atlas::reader::ViewPosition currentPosition() const;
     void showPosition(const atlas::reader::ViewPosition& position);
     void recordJump();
+    void changeLayout(const std::function<void(atlas::reader::LayoutSettings&)>& edit);
+    void scrollBy(qreal delta);  // user scrolling; turns the page in single-page modes
+    [[nodiscard]] bool singlePageMode() const;
+    [[nodiscard]] std::pair<qreal, qreal> rowScrollRange(std::size_t row) const;
     void dropAllTextures();
     void queueTextureRelease(const std::vector<atlas::reader::TextureKey>& keys);
     [[nodiscard]] double devicePixelRatio() const;
@@ -172,6 +189,7 @@ private:
 
     atlas::reader::ViewportLayout layout_;
     atlas::reader::ViewHistory history_;
+    std::size_t singleRow_{}; // current row in single-page modes
     FitMode fitMode_{FitMode::Width};
     qreal contentX_{};
     qreal contentY_{};

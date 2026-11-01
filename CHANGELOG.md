@@ -4,7 +4,10 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
-## N4.4 navigation, slice 1 — 2026-11-02
+## N4.4 navigation, slices 1–2 — 2026-11-02
+
+- **Page display like Foxit:** Single Page, Continuous, Facing (two pages side by side), Continuous Facing, and Show Cover Page — from the View tab or the status bar.
+- **Reverse View** for Arabic and Urdu books: two-page spreads read right to left, and the Left arrow turns forward.
 
 - **Pages panel:** page thumbnails in a side panel opened from the new left icon strip (or F4); click a page to jump; drag the edge to resize, double-click it to hide. Arabic and Urdu mirror it to the right.
 - **Previous View / Next View** (Alt+Left / Alt+Right, and two new status-bar buttons) take you back to where you were before a jump.

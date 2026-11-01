@@ -169,6 +169,21 @@ int main(int argc, char** argv) {
         viewport->goBack();
         require(viewport->currentPage() == 45, "Next/previous page must not be recorded as jumps.");
 
+        viewport->setPageDisplay(0); // Single Page
+        viewport->goToPage(10);
+        for (int i = 0; i < 40 && viewport->currentPage() == 10; ++i) viewport->scrollByPages(1.0);
+        require(viewport->currentPage() == 11, "Single Page mode must turn to the next page at the end of a page.");
+        viewport->setPageDisplay(2); // Facing
+        viewport->goToPage(1);
+        viewport->nextPage();
+        require(viewport->currentPage() == 3, "Facing mode must turn a whole spread.");
+        viewport->setCoverPage(true);
+        viewport->goToPage(1);
+        viewport->nextPage();
+        require(viewport->currentPage() == 2, "With a cover page the first spread starts at page 2.");
+        viewport->setPageDisplay(1);
+        viewport->setCoverPage(false);
+
         // The renderer holds the document in memory, not the file.
         const QString moved = dir.filePath(QStringLiteral("moved book.pdf"));
         require(QFile::rename(source, moved), "Atlas must not block renaming an open PDF.");

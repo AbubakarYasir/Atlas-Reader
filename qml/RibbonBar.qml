@@ -170,9 +170,50 @@ Rectangle {
                 onClicked: AppState.fullScreen = !AppState.fullScreen
             }
             RibbonButton {
+                iconName: "arrow_bidirectional_left_right"
+                text: I18n.t("cmd.reverseView")
+                enabled: ribbon.hasDocument
+                checkable: true
+                checked: ribbon.hasDocument && ribbon.viewport.rightToLeft
+                onClicked: ribbon.viewport.rightToLeft = !ribbon.viewport.rightToLeft
+            }
+            RibbonButton {
                 iconName: "color"
                 text: I18n.t("cmd.visualMode")
                 menu: colorsMenu
+            }
+            Separator {}
+            // Page Display (Foxit: small buttons, two rows)
+            Grid {
+                Layout.alignment: Qt.AlignVCenter
+                rows: 2
+                flow: Grid.TopToBottom
+                spacing: 4
+                Repeater {
+                    model: [
+                        { icon: "document_one_page", key: "cmd.singlePage", mode: 0 },
+                        { icon: "document_page_break", key: "cmd.continuous", mode: 1 },
+                        { icon: "book", key: "cmd.facing", mode: 2 },
+                        { icon: "document_landscape_split", key: "cmd.continuousFacing", mode: 3 }
+                    ]
+                    delegate: RibbonSmallButton {
+                        required property var modelData
+                        iconName: modelData.icon
+                        text: I18n.t(modelData.key)
+                        enabled: ribbon.hasDocument
+                        checkable: true
+                        checked: ribbon.hasDocument && ribbon.viewport.pageDisplay === modelData.mode
+                        onClicked: ribbon.viewport.pageDisplay = modelData.mode
+                    }
+                }
+                RibbonSmallButton {
+                    iconName: "book_open"
+                    text: I18n.t("cmd.coverPage")
+                    enabled: ribbon.hasDocument && ribbon.viewport.pageDisplay >= 2
+                    checkable: true
+                    checked: ribbon.hasDocument && ribbon.viewport.coverPage
+                    onClicked: ribbon.viewport.coverPage = !ribbon.viewport.coverPage
+                }
             }
             Separator {}
             RibbonButton {

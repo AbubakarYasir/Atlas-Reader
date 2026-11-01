@@ -25,6 +25,11 @@ if(ATLAS_ENABLE_PDFIUM_PROBE)
     find_package(PDFium REQUIRED)
 endif()
 
+# Sources are UTF-8 (Arabic/Urdu test strings); MSVC otherwise reads the ANSI code page.
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 function(atlas_enable_warnings target)
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /permissive- /Zc:__cplusplus)

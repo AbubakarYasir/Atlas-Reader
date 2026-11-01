@@ -121,7 +121,11 @@ void DocumentTextWorker::open(const QByteArray& bytes, const QString& password, 
     const int count = document_->pageCount();
     QStringList labels;
     labels.reserve(count);
-    for (int page = 0; page < count; ++page) labels.push_back(document_->pageLabel(page));
+    // Newer Qt returns an empty label when the PDF defines none; use the page number then.
+    for (int page = 0; page < count; ++page) {
+        const QString label = document_->pageLabel(page).trimmed();
+        labels.push_back(label.isEmpty() ? QString::number(page + 1) : label);
+    }
     // A book is "image-only" when none of the first pages carries text.
     bool hasText = false;
     for (int page = 0; page < std::min(count, 12) && !hasText; ++page) {

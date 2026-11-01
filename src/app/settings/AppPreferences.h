@@ -6,6 +6,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
 namespace atlas::app {
 
@@ -16,6 +17,11 @@ class AppPreferences final : public QObject {
     Q_PROPERTY(bool dark READ dark NOTIFY themeChanged)
     Q_PROPERTY(bool touchMode READ touchMode WRITE setTouchMode NOTIFY touchModeChanged)
     Q_PROPERTY(int readingColors READ readingColors WRITE setReadingColors NOTIFY readingColorsChanged)
+    Q_PROPERTY(QString skin READ skin WRITE setSkin NOTIFY skinChanged)
+    Q_PROPERTY(int themeColor READ themeColor WRITE setThemeColor NOTIFY skinChanged)
+    Q_PROPERTY(bool ribbonCollapsed READ ribbonCollapsed WRITE setRibbonCollapsed NOTIFY ribbonCollapsedChanged)
+    Q_PROPERTY(int statusBarMode READ statusBarMode WRITE setStatusBarMode NOTIFY statusBarModeChanged)
+    Q_PROPERTY(QStringList recentFiles READ recentFiles NOTIFY recentFilesChanged)
 
 public:
     explicit AppPreferences(QString settingsFile, QObject* parent = nullptr);
@@ -30,6 +36,24 @@ public:
     [[nodiscard]] int readingColors() const { return readingColors_; }
     void setReadingColors(int colors);
 
+    // Skins (Foxit model): "classic" neutral title bar or "colorful" in the theme colour.
+    [[nodiscard]] QString skin() const { return skin_; }
+    void setSkin(const QString& skin);
+    [[nodiscard]] int themeColor() const { return themeColor_; }
+    void setThemeColor(int index);
+    [[nodiscard]] bool ribbonCollapsed() const { return ribbonCollapsed_; }
+    void setRibbonCollapsed(bool collapsed);
+    // 0 show, 1 auto-hide, 2 hide (View > View Setting > Status Bar).
+    [[nodiscard]] int statusBarMode() const { return statusBarMode_; }
+    void setStatusBarMode(int mode);
+    // Most recent first, at most kMaxRecentFiles local paths.
+    [[nodiscard]] QStringList recentFiles() const { return recentFiles_; }
+    Q_INVOKABLE void addRecentFile(const QString& path);
+    Q_INVOKABLE void removeRecentFile(const QString& path);
+
+    static constexpr int kThemeColorCount = 6;
+    static constexpr int kMaxRecentFiles = 20;
+
     // Session-only overrides from the command line (QA and support).
     void overrideLanguage(const QString& language);
     void overrideThemeMode(const QString& mode);
@@ -42,6 +66,10 @@ signals:
     void themeChanged();
     void touchModeChanged();
     void readingColorsChanged();
+    void skinChanged();
+    void ribbonCollapsedChanged();
+    void statusBarModeChanged();
+    void recentFilesChanged();
 
 private:
     void save() const;
@@ -52,6 +80,11 @@ private:
     QString themeMode_{QStringLiteral("system")};
     bool touchMode_{};
     int readingColors_{};
+    QString skin_{QStringLiteral("colorful")};
+    int themeColor_{};
+    bool ribbonCollapsed_{};
+    int statusBarMode_{};
+    QStringList recentFiles_;
     bool persist_{true};
 };
 

@@ -15,7 +15,7 @@ TextField {
     color: Theme.ink
     placeholderTextColor: Theme.muted
     selectionColor: Theme.accent
-    selectedTextColor: Theme.onAccent
+    selectedTextColor: Theme.accentText
     font.family: I18n.uiFamily
     font.pixelSize: Math.round(14 * I18n.sizeScale)
 

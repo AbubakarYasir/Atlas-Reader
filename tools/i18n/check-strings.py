@@ -20,6 +20,7 @@ DYNAMIC = {
     "availability.": ["available", "locked", "offline", "missing", "unreadable",
                       "unsupported", "readOnly", "unavailable"],
     "view.colors.": ["0", "1", "2", "3"],
+    "skins.color.": ["green", "indigo", "teal", "plum", "amber", "graphite"],
 }
 # Literal text allowed in QML views (symbols, language names shown in their own script).
 ALLOWED_LITERALS = {"·", "English", "العربية", "اردو", "%", "/", "…"}

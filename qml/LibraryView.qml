@@ -83,7 +83,7 @@ Item {
                     AtlasIconButton {
                         iconName: "folder_add"
                         text: I18n.t("library.addFolder")
-                        shortcutHint: "Ctrl+Shift+A"
+                        shortcutHint: "Ctrl+Shift+O"
                         onClicked: library.addFolderRequested()
                     }
                 }
@@ -164,7 +164,7 @@ Item {
                     kind: "primary"
                     iconName: "folder_add"
                     text: I18n.t("library.addFolder")
-                    Accessible.description: "Ctrl+Shift+A"
+                    Accessible.description: "Ctrl+Shift+O"
                     onClicked: library.addFolderRequested()
                 }
             }

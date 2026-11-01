@@ -141,6 +141,10 @@ void ReaderController::setRestoreEnabled(bool enabled) {
     saveSessions();
 }
 
+void ReaderController::openLocalPath(const QString& path) {
+    openLocalFile(QUrl::fromLocalFile(path));
+}
+
 void ReaderController::openLocalFile(const QUrl& file) {
     if (file.isLocalFile()) beginOpen(QDir::cleanPath(file.toLocalFile()));
 }

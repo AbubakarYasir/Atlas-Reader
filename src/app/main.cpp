@@ -98,6 +98,13 @@ int main(int argc, char* argv[]) {
         QStringLiteral("add-library-root"),
         QStringLiteral("Add and scan one library root for QA."),
         QStringLiteral("path"));
+    const QCommandLineOption showOption(
+        QStringLiteral("show"),
+        QStringLiteral("Open one surface at startup for visual QA: backstage, skins, preferences, about, ribbon-view."),
+        QStringLiteral("surface"));
+    const QCommandLineOption nativeFrameOption(
+        QStringLiteral("native-frame"),
+        QStringLiteral("Use the system window frame instead of Atlas's title bar."));
     const QCommandLineOption windowWidthOption(
         QStringLiteral("window-width"),
         QStringLiteral("Set the initial window width for visual QA."),
@@ -110,6 +117,8 @@ int main(int argc, char* argv[]) {
     parser.addPositionalArgument(
         QStringLiteral("files"), QStringLiteral("PDF files to open in the reader."), QStringLiteral("[files...]"));
     parser.addOption(languageOption);
+    parser.addOption(nativeFrameOption);
+    parser.addOption(showOption);
     parser.addOption(themeOption);
     parser.addOption(quitAfterOption);
     parser.addOption(metricsFileOption);
@@ -170,6 +179,8 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty(
         QStringLiteral("atlasVersion"), QGuiApplication::applicationVersion());
     engine.rootContext()->setContextProperty(QStringLiteral("preferences"), &preferences);
+    engine.rootContext()->setContextProperty(QStringLiteral("nativeFrame"), parser.isSet(nativeFrameOption));
+    engine.rootContext()->setContextProperty(QStringLiteral("qaShow"), parser.value(showOption));
     engine.rootContext()->setContextProperty(QStringLiteral("libraryController"), &libraryController);
     engine.rootContext()->setContextProperty(QStringLiteral("readerController"), &readerController);
 

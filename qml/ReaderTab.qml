@@ -4,8 +4,8 @@ import QtQuick.Controls.impl
 import QtQuick.Layouts
 import Atlas.Reader
 
-// One open document: command bar, page viewport, status bar, and the status
-// view used while loading, for passwords and for errors (DESIGN.md §3).
+// One open document: page viewport and Foxit-style status bar, plus the
+// status view used while loading, for passwords and for errors (DESIGN.md §3).
 Rectangle {
     id: tab
 
@@ -29,106 +29,6 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
         visible: tab.ready
-
-        // ---- command bar
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: Theme.commandBarHeight
-            visible: !AppState.chromeHidden
-            color: Theme.panel
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line }
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: Theme.sm
-                anchors.rightMargin: Theme.sm
-                spacing: 2
-
-                AtlasIconButton {
-                    iconName: "arrow_rotate_counterclockwise"
-                    text: I18n.t("view.rotateLeft")
-                    shortcutHint: "Ctrl+Shift+-"
-                    onClicked: view.rotateView(-1)
-                }
-                AtlasIconButton {
-                    iconName: "arrow_rotate_clockwise"
-                    text: I18n.t("view.rotateRight")
-                    shortcutHint: "Ctrl+Shift++"
-                    onClicked: view.rotateView(1)
-                }
-                Rectangle { width: 1; Layout.preferredHeight: Theme.commandBarHeight - 16; color: Theme.line; Layout.leftMargin: Theme.xs; Layout.rightMargin: Theme.xs }
-                AtlasButton {
-                    kind: "quiet"
-                    iconName: "book_open"
-                    text: tab.width > 900 ? I18n.t("view.readMode") : ""
-                    Accessible.name: I18n.t("view.readMode")
-                    Accessible.description: "Ctrl+H"
-                    ToolTip.visible: hovered && text.length === 0
-                    ToolTip.text: I18n.t("view.readMode") + "  (Ctrl+H)"
-                    onClicked: AppState.readMode = true
-                }
-                AtlasButton {
-                    kind: "quiet"
-                    iconName: "full_screen_maximize"
-                    text: tab.width > 900 ? I18n.t("view.fullScreen") : ""
-                    Accessible.name: I18n.t("view.fullScreen")
-                    Accessible.description: "F11"
-                    ToolTip.visible: hovered && text.length === 0
-                    ToolTip.text: I18n.t("view.fullScreen") + "  (F11)"
-                    onClicked: AppState.fullScreen = true
-                }
-                AtlasButton {
-                    kind: "quiet"
-                    iconName: "color"
-                    text: tab.width > 900 ? I18n.t("view.colors." + preferences.readingColors) : ""
-                    Accessible.name: I18n.t("view.readingColors")
-                    ToolTip.visible: hovered
-                    ToolTip.text: I18n.t("view.readingColors")
-                    onClicked: colorsMenu.open()
-                    Menu {
-                        id: colorsMenu
-                        y: parent.height
-                        Repeater {
-                            model: 4
-                            delegate: MenuItem {
-                                required property int index
-                                text: I18n.t("view.colors." + index)
-                                checkable: true
-                                checked: preferences.readingColors === index
-                                onTriggered: preferences.readingColors = index
-                            }
-                        }
-                    }
-                }
-                Item { Layout.fillWidth: true }
-                Label {
-                    Layout.maximumWidth: tab.width * 0.35
-                    visible: tab.documentTitle.length > 0 && tab.documentTitle !== tab.title && tab.width > 1000
-                    text: tab.documentTitle
-                    color: Theme.muted
-                    font.pixelSize: 13
-                    elide: Text.ElideRight
-                }
-                AtlasIconButton {
-                    iconName: "more_horizontal"
-                    text: I18n.t("action.more")
-                    onClicked: moreMenu.open()
-                    Menu {
-                        id: moreMenu
-                        y: parent.height
-                        MenuItem {
-                            text: I18n.t("reader.restoreTabs")
-                            checkable: true
-                            checked: readerController.restoreEnabled
-                            onToggled: readerController.restoreEnabled = checked
-                        }
-                        MenuSeparator {}
-                        MenuItem { text: I18n.t("tab.closeThis"); onTriggered: readerController.closeAt(tab.index) }
-                        MenuItem { text: I18n.t("tab.closeAll"); onTriggered: readerController.closeAll() }
-                    }
-                }
-            }
-        }
 
         // ---- document pane
         Item {
@@ -236,80 +136,95 @@ Rectangle {
             }
         }
 
-        // ---- status bar
-        Rectangle {
+        // ---- status bar (Foxit layout: navigation leading, zoom trailing)
+        Item {
+            id: statusArea
             Layout.fillWidth: true
-            Layout.preferredHeight: Theme.statusBarHeight
-            visible: !AppState.chromeHidden
-            color: Theme.panel
-            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.line }
+            readonly property bool autoHide: preferences.statusBarMode === 1
+            readonly property bool shown: !AppState.chromeHidden && preferences.statusBarMode !== 2
+                && (!autoHide || statusHover.hovered || pageBox.activeFocus)
+            Layout.preferredHeight: AppState.chromeHidden || preferences.statusBarMode === 2 ? 0
+                : autoHide ? (shown ? Theme.statusBarHeight : 6) : Theme.statusBarHeight
+            visible: Layout.preferredHeight > 0
+            HoverHandler { id: statusHover }
+
+        Rectangle {
+            anchors.fill: parent
+            visible: statusArea.shown
+            color: Theme.chrome
+            Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.chromeLine }
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: Theme.sm
-                anchors.rightMargin: Theme.sm
-                spacing: 2
+                anchors.topMargin: 1
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
+                spacing: 0
 
-                AtlasIconButton { iconName: "arrow_previous"; mirrorIcon: true; text: I18n.t("nav.firstPage"); shortcutHint: "Ctrl+Home"; enabled: view.currentPage > 1; onClicked: view.firstPage() }
-                AtlasIconButton { iconName: "chevron_left"; mirrorIcon: true; text: I18n.t("nav.previousPage"); shortcutHint: "Ctrl+Page Up"; enabled: view.currentPage > 1; onClicked: view.previousPage() }
-                AtlasTextField {
-                    id: pageBox
-                    Layout.preferredWidth: 56
-                    implicitHeight: Theme.controlHeight - 4
-                    horizontalAlignment: Text.AlignHCenter
-                    inputMethodHints: Qt.ImhDigitsOnly
-                    validator: IntValidator { bottom: 1; top: Math.max(1, view.pageCount) }
-                    Accessible.name: I18n.t("nav.goToPage")
-                    Accessible.description: "Ctrl+G"
-                    Binding on text {
-                        when: !pageBox.activeFocus
-                        value: String(view.currentPage)
+                component StatusButton: AtlasIconButton {
+                    implicitWidth: 26
+                    implicitHeight: 26
+                    iconSize: 16
+                    cornerRadius: 2
+                    mirrorIcon: true
+                }
+
+                StatusButton { iconName: "arrow_previous"; text: I18n.t("nav.firstPage"); shortcutHint: "Ctrl+Home"; enabled: view.currentPage > 1; onClicked: view.firstPage() }
+                StatusButton { iconName: "chevron_left"; text: I18n.t("nav.previousPage"); shortcutHint: "Ctrl+Page Up"; enabled: view.currentPage > 1; onClicked: view.previousPage() }
+                Rectangle { // page box: "n / total" in one field, as in Foxit
+                    Layout.leftMargin: 4
+                    Layout.rightMargin: 4
+                    implicitWidth: pageRow.implicitWidth + 12
+                    implicitHeight: Math.min(24 + Theme.scriptExtra, statusArea.height - 6)
+                    radius: 2
+                    color: Theme.raised
+                    border.width: pageBox.activeFocus ? 2 : 1
+                    border.color: pageBox.activeFocus ? Theme.focusRing : Theme.controlBorder
+                    Row {
+                        id: pageRow
+                        anchors.centerIn: parent
+                        LayoutMirroring.enabled: false   // "12 / 340" reads left to right in every language
+                        spacing: 4
+                        TextInput {
+                            id: pageBox
+                            width: Math.max(18, contentWidth)
+                            anchors.verticalCenter: parent.verticalCenter
+                            horizontalAlignment: Text.AlignRight
+                            color: Theme.ink
+                            selectionColor: Theme.accent
+                            selectedTextColor: Theme.accentText
+                            font.pixelSize: 12
+                            selectByMouse: true
+                            inputMethodHints: Qt.ImhDigitsOnly
+                            validator: IntValidator { bottom: 1; top: Math.max(1, view.pageCount) }
+                            Accessible.role: Accessible.EditableText
+                            Accessible.name: I18n.t("nav.goToPage")
+                            Accessible.description: "Ctrl+G"
+                            Binding on text {
+                                when: !pageBox.activeFocus
+                                value: String(view.currentPage)
+                            }
+                            onAccepted: { view.goToPage(parseInt(text)); view.forceActiveFocus() }
+                            onActiveFocusChanged: if (activeFocus) selectAll()
+                            Keys.onEscapePressed: view.forceActiveFocus()
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "/ " + view.pageCount
+                            color: Theme.muted
+                            font.pixelSize: 12
+                        }
                     }
-                    onAccepted: { view.goToPage(parseInt(text)); view.forceActiveFocus() }
-                    onActiveFocusChanged: if (activeFocus) selectAll()
-                    Keys.onEscapePressed: view.forceActiveFocus()
                 }
-                Label {
-                    text: I18n.t("status.ofPages", view.pageCount)
-                    color: Theme.muted
-                    font.pixelSize: 13
-                    Layout.leftMargin: Theme.xs
-                    Layout.rightMargin: Theme.xs
-                }
-                AtlasIconButton { iconName: "chevron_right"; mirrorIcon: true; text: I18n.t("nav.nextPage"); shortcutHint: "Ctrl+Page Down"; enabled: view.currentPage < view.pageCount; onClicked: view.nextPage() }
-                AtlasIconButton { iconName: "arrow_next"; mirrorIcon: true; text: I18n.t("nav.lastPage"); shortcutHint: "Ctrl+End"; enabled: view.currentPage < view.pageCount; onClicked: view.lastPage() }
+                StatusButton { iconName: "chevron_right"; text: I18n.t("nav.nextPage"); shortcutHint: "Ctrl+Page Down"; enabled: view.currentPage < view.pageCount; onClicked: view.nextPage() }
+                StatusButton { iconName: "arrow_next"; text: I18n.t("nav.lastPage"); shortcutHint: "End"; enabled: view.currentPage < view.pageCount; onClicked: view.lastPage() }
 
                 Item { Layout.fillWidth: true }
 
-                AtlasIconButton {
-                    iconName: "ratio_one_to_one"
-                    text: I18n.t("zoom.actualSize")
-                    shortcutHint: "Ctrl+1"
-                    checkable: true
-                    checked: view.fitMode === ReaderViewport.None && Math.abs(view.zoom - 1) < 0.001
-                    onClicked: view.actualSize()
-                }
-                AtlasIconButton {
-                    iconName: "arrow_autofit_width"
-                    text: I18n.t("zoom.fitWidth")
-                    shortcutHint: "Ctrl+2"
-                    checkable: true
-                    checked: view.fitMode === ReaderViewport.Width
-                    onClicked: view.fitMode = ReaderViewport.Width
-                }
-                AtlasIconButton {
-                    iconName: "page_fit"
-                    text: I18n.t("zoom.fitPage")
-                    shortcutHint: "Ctrl+0"
-                    checkable: true
-                    checked: view.fitMode === ReaderViewport.Page
-                    onClicked: view.fitMode = ReaderViewport.Page
-                }
-                Rectangle { width: 1; Layout.preferredHeight: Theme.statusBarHeight - 16; color: Theme.line; Layout.leftMargin: Theme.xs; Layout.rightMargin: Theme.xs }
-                AtlasIconButton { iconName: "zoom_out"; text: I18n.t("zoom.out"); shortcutHint: "Ctrl+-"; onClicked: view.zoomBy(0.8) }
+                StatusButton { iconName: "zoom_out"; mirrorIcon: false; text: I18n.t("zoom.out"); shortcutHint: "Ctrl+-"; onClicked: view.zoomBy(0.8) }
                 Slider {
                     id: zoomSlider
-                    Layout.preferredWidth: tab.width > 900 ? 140 : 90
+                    Layout.preferredWidth: tab.width > 900 ? 120 : 80
                     from: Math.log(0.1)
                     to: Math.log(8)
                     value: Math.log(Math.max(0.1, view.zoom))
@@ -319,38 +234,57 @@ Rectangle {
                         x: zoomSlider.leftPadding
                         y: zoomSlider.topPadding + zoomSlider.availableHeight / 2 - height / 2
                         width: zoomSlider.availableWidth
-                        height: 4
-                        radius: 2
-                        color: Theme.line
-                        Rectangle {
-                            x: zoomSlider.mirrored ? parent.width - width : 0
-                            width: zoomSlider.position * parent.width
-                            height: parent.height
-                            radius: 2
-                            color: Theme.accent
-                        }
+                        height: 2
+                        color: Theme.controlBorder
                     }
                     handle: Rectangle {
                         x: zoomSlider.leftPadding + zoomSlider.visualPosition * (zoomSlider.availableWidth - width)
                         y: zoomSlider.topPadding + zoomSlider.availableHeight / 2 - height / 2
-                        implicitWidth: 16
-                        implicitHeight: 16
-                        radius: 8
-                        color: zoomSlider.pressed ? Theme.pressed : Theme.raised
-                        border.width: zoomSlider.visualFocus ? 3 : 2
-                        border.color: zoomSlider.visualFocus ? Theme.focusRing : Theme.accent
+                        implicitWidth: 8
+                        implicitHeight: 14
+                        radius: 2
+                        color: zoomSlider.pressed ? Theme.accent : Theme.raised
+                        border.width: zoomSlider.visualFocus ? 2 : 1
+                        border.color: zoomSlider.visualFocus ? Theme.focusRing : Theme.ink
                     }
                 }
-                AtlasIconButton { iconName: "zoom_in"; text: I18n.t("zoom.in"); shortcutHint: "Ctrl+="; onClicked: view.zoomBy(1.25) }
-                Label {
-                    Layout.preferredWidth: 48
-                    horizontalAlignment: Text.AlignHCenter
-                    text: I18n.isolate(Math.round(view.zoom * 100) + "%")
-                    color: Theme.ink
-                    font.pixelSize: 13
+                StatusButton { iconName: "zoom_in"; mirrorIcon: false; text: I18n.t("zoom.in"); shortcutHint: "Ctrl+="; onClicked: view.zoomBy(1.25) }
+                AbstractButton {
+                    id: percentButton
+                    implicitWidth: 52
+                    implicitHeight: 26
+                    hoverEnabled: true
+                    Accessible.role: Accessible.ButtonMenu
                     Accessible.name: I18n.t("zoom.percent", Math.round(view.zoom * 100))
+                    onClicked: percentMenu.popup(percentButton, 0, -percentMenu.implicitHeight)
+                    background: Rectangle { radius: 2; color: percentButton.hovered ? Theme.hover : "transparent" }
+                    contentItem: Text {
+                        text: I18n.isolate(Math.round(view.zoom * 100) + "%")
+                        color: Theme.ink
+                        font.pixelSize: 12
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    Menu {
+                        id: percentMenu
+                        Repeater {
+                            model: [0.5, 0.75, 1, 1.25, 1.5, 2, 4]
+                            delegate: MenuItem {
+                                required property var modelData
+                                text: I18n.isolate(Math.round(modelData * 100) + "%")
+                                onTriggered: view.zoom = modelData
+                            }
+                        }
+                        MenuSeparator {}
+                        MenuItem { text: I18n.t("zoom.actualSize"); onTriggered: view.actualSize() }
+                        MenuItem { text: I18n.t("zoom.fitPage"); onTriggered: view.fitMode = ReaderViewport.Page }
+                        MenuItem { text: I18n.t("zoom.fitWidth"); onTriggered: view.fitMode = ReaderViewport.Width }
+                    }
                 }
+                Rectangle { width: 1; Layout.preferredHeight: 16; color: Theme.chromeLine; Layout.leftMargin: 4; Layout.rightMargin: 4 }
+                StatusButton { iconName: "full_screen_maximize"; mirrorIcon: false; text: I18n.t("cmd.fullScreen"); shortcutHint: "F11"; onClicked: AppState.fullScreen = true }
             }
+        }
         }
     }
 

@@ -15,7 +15,7 @@ After seeing the first N4.3 revamp, the owner asked for Atlas to copy the UI and
 3. **Feature parity is staged.** Every Foxit command is classified in FOXIT_PARITY §3 as Now, a pre-2.0 stage, after 2.0, or not planned with a reason. Tabs and groups appear only when their commands work; there are no greyed-out promises.
 4. **Own assets, own brand.** Atlas does not extract, trace or reuse Foxit's icons, logos, skin images, manual text or any file from its installation, and does not use Foxit's purple as its brand. Icons come from Fluent UI System Icons (MIT) at Foxit's sizes (16/20/24 px); colours come from Atlas's palette with Foxit's *neutral structure* (surface, rail, gap, line, hover roles).
 5. **Languages.** The workspace is fully translated and mirrored for Arabic and Urdu ([ADR-0006](ADR-0006-interface-languages.md)); Foxit offers neither.
-6. **Custom title bar** keeps native Windows behaviour (snap layouts, resize edges, double-click maximize, system menu, Narrator names) through a native hit-test filter; `--native-frame` keeps the system frame as a fallback.
+6. **Custom title bar** keeps native Windows behaviour through the system move and resize loops (`startSystemMove`/`startSystemResize`: drag-to-edge snap, Win+arrow keys, resize edges), double-click to maximize and named buttons for Narrator. The Windows 11 Snap Layouts flyout on the maximize button needs a native hit-test and is tracked for N10; `--native-frame` keeps the system frame as a fallback.
 
 ## Alternatives considered
 

@@ -85,7 +85,7 @@ Theme colours for the Colourful skin: Atlas Green `#28633a` (default), Indigo `#
 | `line` | `#d9ddd4` | `#3a414b` | Decorative dividers only | 1.2 / 1.7 (not for controls) |
 | `controlBorder` | `#7d867a` | `#757e8a` | Field and control outlines | ≥ 3.4 / 3.8 (WCAG 1.4.11) |
 | `accent` | `#28633a` | `#9fc8a7` | Primary action, selection, focus | 6.45 / 9.5 on canvas |
-| `onAccent` | `#ffffff` | `#17191d` | Text on accent | 7.2 / 9.5 |
+| `accentText` | `#ffffff` | `#17191d` | Text on accent | 7.2 / 9.5 |
 | `accentSoft` | `#e3f0e5` | `#243d2c` | Selected rows, info banners | accent text 6.1 / 6.4 |
 | `danger` / `dangerSoft` | `#7a201c` / `#fff0ee` | `#ffd7d3` / `#4a2525` | Errors | 9.2 / 10.1 |
 | `warning` | `#87550b` | `#efc27e` | Caution text and icons | 6.3 / 8.3 |

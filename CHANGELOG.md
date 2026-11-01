@@ -4,6 +4,16 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N4.3 Foxit workspace — 2026-11-01
+
+- **Atlas now looks and works like Foxit PDF Editor** (owner decision, [ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md)): Atlas's own 48 px title bar with Quick Access Toolbar (Open, Mouse/Touch mode) and window buttons; ribbon tabs **File · Home · View · Accessibility · Help** with Foxit-sized buttons and menus (Hand, Zoom, Page Fit Option, Rotate View, Read Mode, Full Screen, Visual Mode, View Setting, Reading Option, Touch Mode, About); collapsible ribbon (Ctrl+F11); Foxit-style document tabs with the **Library as the first tab**; Foxit-style status bar (« ‹ 12 / 340 › », zoom slider and percentage menu, full screen).
+- **File page** like Foxit's: Open (Recent Documents, Computer), Close, Close All, Skins, Preferences, Exit. Recent documents are remembered.
+- **Preferences window** (Ctrl+K) with a searchable category list: General, Languages, Skins, Accessibility; Cancel undoes changes.
+- **Skins:** Light / Dark / Use system setting, and Classic or Colourful title bar with six Atlas theme colours.
+- Foxit shortcuts: Ctrl+K Preferences, Ctrl+Q exit, Ctrl+F11 ribbon, Ctrl+Shift+Page Up/Down tabs; Add folder moves to Ctrl+Shift+O; Ctrl+F searches the Library.
+- Fixed: text on green buttons and the title bar was drawn black because two colour names started with "on" (QML reads those as signal handlers).
+- New study [docs/FOXIT_PARITY.md](docs/FOXIT_PARITY.md): measured layout and every Foxit command mapped to before or after 2.0. Plans updated everywhere.
+
 ## N4.3 workspace revamp and three languages — 2026-11-01
 
 - **Atlas speaks English, Arabic and Urdu.** Pick the language from the title bar; the whole interface switches instantly, mirrors for Arabic and Urdu, and is remembered. Urdu uses the bundled Noto Nastaliq Urdu font. Book titles, names and paths in any script display correctly in every language.

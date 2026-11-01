@@ -47,6 +47,7 @@ public:
     void setRestoreEnabled(bool enabled);
 
     Q_INVOKABLE void openLocalFile(const QUrl& file);
+    Q_INVOKABLE void openLocalPath(const QString& path);
     Q_INVOKABLE void closeAt(int index);
     Q_INVOKABLE void retryAt(int index);
     Q_INVOKABLE void submitPassword(int index, const QString& password);

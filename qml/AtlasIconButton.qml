@@ -10,6 +10,10 @@ Button {
     property string iconName: ""
     property bool mirrorIcon: false
     property string shortcutHint: ""
+    property int iconSize: Theme.iconSize
+    property color iconColor: Theme.ink
+    property color hoverColor: Theme.hover
+    property int cornerRadius: Theme.radiusControl
 
     implicitWidth: Theme.iconButton
     implicitHeight: Theme.iconButton
@@ -26,19 +30,19 @@ Button {
 
     contentItem: IconImage {
         source: control.iconName.length > 0 ? Theme.icon(control.iconName) : ""
-        sourceSize.width: Theme.iconSize
-        sourceSize.height: Theme.iconSize
+        sourceSize.width: control.iconSize
+        sourceSize.height: control.iconSize
         fillMode: Image.Pad
         color: !control.enabled ? Qt.alpha(Theme.ink, 0.38)
-            : control.checked ? Theme.accent : Theme.ink
+            : control.checked ? Theme.accent : control.iconColor
         mirror: control.mirrorIcon && control.mirrored
     }
 
     background: Rectangle {
-        radius: Theme.radiusControl
-        color: control.down ? Theme.pressed
+        radius: control.cornerRadius
+        color: control.down ? Qt.darker(control.hoverColor, 1.08)
             : control.checked ? Theme.accentSoft
-            : control.hovered ? Theme.hover : "transparent"
+            : control.hovered ? control.hoverColor : "transparent"
         border.width: control.visualFocus ? 2 : 0
         border.color: Theme.focusRing
         Behavior on color { ColorAnimation { duration: Theme.fast } }

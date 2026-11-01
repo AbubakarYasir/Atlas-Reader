@@ -32,7 +32,7 @@ Button {
 
     readonly property color contentColor: !enabled
         ? Qt.alpha(Theme.ink, 0.38)
-        : kind === "primary" ? Theme.onAccent
+        : kind === "primary" ? Theme.accentText
         : kind === "danger" ? Theme.danger
         : Theme.ink
 

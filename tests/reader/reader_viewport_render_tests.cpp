@@ -10,6 +10,7 @@
 #include <QCryptographicHash>
 #include <QElapsedTimer>
 #include <QFile>
+#include <QFontDatabase>
 #include <QGuiApplication>
 #include <QPageSize>
 #include <QPainter>
@@ -55,6 +56,16 @@ QByteArray sha256(const QString& path) {
 
 constexpr int kPages = 60;
 
+// The offscreen platform on Windows may see no system fonts, which would
+// leave the generated book without text; load Arial explicitly when present.
+QFont bookFont() {
+    static const QString family = [] {
+        const int id = QFontDatabase::addApplicationFont(QStringLiteral("C:/Windows/Fonts/arial.ttf"));
+        return id >= 0 ? QFontDatabase::applicationFontFamilies(id).value(0) : QString{};
+    }();
+    return family.isEmpty() ? QFont{} : QFont{family};
+}
+
 void writeBook(const QString& path) {
     QPdfWriter writer{path};
     writer.setPageSize(QPageSize{QPageSize::A4});
@@ -64,7 +75,7 @@ void writeBook(const QString& path) {
         if (page > 1) writer.newPage();
         // A solid red block near the top-left of every page is easy to detect.
         painter.fillRect(QRect{40, 40, 160, 160}, QColor{220, 20, 20});
-        QFont font = painter.font();
+        QFont font = bookFont();
         font.setPixelSize(48);
         painter.setFont(font);
         painter.drawText(QRect{0, 300, 595, 80}, Qt::AlignCenter, QStringLiteral("Page %1").arg(page));

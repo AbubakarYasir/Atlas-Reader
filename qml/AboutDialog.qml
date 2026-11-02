@@ -50,6 +50,53 @@ Popup {
             color: Theme.ink
             wrapMode: Text.WordWrap
         }
+        // Publisher (DerekSol) and its offer of custom software.
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: dereksolColumn.implicitHeight + Theme.md * 2
+            radius: Theme.radiusControl
+            color: Theme.accentSoft
+            ColumnLayout {
+                id: dereksolColumn
+                anchors.fill: parent
+                anchors.margins: Theme.md
+                spacing: Theme.xs
+                Label {
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignLeft
+                    text: I18n.t("about.publisher")
+                    color: Theme.ink
+                    font.weight: Font.DemiBold
+                    wrapMode: Text.WordWrap
+                }
+                Label {
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignLeft
+                    text: I18n.t("about.dereksolPitch")
+                    color: Theme.ink
+                    wrapMode: Text.WordWrap
+                }
+                RowLayout {
+                    spacing: Theme.sm
+                    AtlasButton {
+                        kind: "primary"
+                        iconName: "open"
+                        text: I18n.t("about.visitDereksol")
+                        onClicked: readerController.openExternalLink("https://dereksol.com")
+                    }
+                    AtlasButton {
+                        iconName: "copy"
+                        text: I18n.t("about.copyEmail")
+                        onClicked: readerController.copyText("info@dereksol.com")
+                    }
+                }
+                Label {
+                    text: I18n.ltr("dereksol.com · info@dereksol.com")
+                    color: Theme.muted
+                    font.pixelSize: 12
+                }
+            }
+        }
         Label {
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignLeft

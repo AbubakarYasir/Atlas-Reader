@@ -11,7 +11,7 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | Active stage | **N4: Reader**, planned `2.0.0-beta.2` |
 | Active sub-stage | **End-of-N4 owner review.** N4.4 Navigation and N4.5 Outline/text/search/links are implemented (2026-11-02); every N4 sub-stage is now built and waits for the [N4 review](docs/N4_REVIEW.md) with one review build |
 | Done in N4 | N4.1 Opening, tabs and passwords: implemented and automated-verified (43/43 CI tests, run `36690884159`) |
-| Branch | `native-v2-n4-reader-foundation`, from accepted `main` merge `739508e3` |
+| Branch | N4 merged into `main` on owner direction once its build was complete (2026-11-02); the stage branch was deleted. The N4 review runs on `main`; `2.0.0-beta.2` is tagged only after `N4 PASS` |
 | Released | `2.0.0-beta.1` (Library), 2026-09-28 |
 | Next owner review | End of N4, with one review build and one short guide ([N4 review](docs/N4_REVIEW.md)) |
 | Evidence | [N4 evidence ledger](docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md) |
@@ -299,7 +299,7 @@ Run the hardware matrix on named machines and compare core tasks against mature 
 
 **Goal:** promote the accepted release candidate without changing it.
 
-Installer technology chosen and qualified here; clean install/upgrade/uninstall; optional, user-controlled `.pdf` association; uninstall never deletes books, research or backups; release notes with known limitations; source, tag, artifact, checksum, SBOM and notices archived.
+Installer technology chosen and qualified here; installer and executable signed with DerekSol's code-signing certificate so Windows names the publisher ([WORKFLOW.md](docs/WORKFLOW.md#5-versions-and-releases)); clean install/upgrade/uninstall; optional, user-controlled `.pdf` association; uninstall never deletes books, research or backups; release notes with known limitations; source, tag, artifact, checksum, SBOM and notices archived.
 
 ### Automated QA
 

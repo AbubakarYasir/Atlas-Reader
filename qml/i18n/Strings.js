@@ -286,7 +286,12 @@ var tables = {
         "wordCount.words": "Words",
         "zoom.fitVisible": "Fit Visible",
         "zoom.magnification": "Magnification",
-        "zoom.zoomTo": "Zoom To"
+        "zoom.zoomTo": "Zoom To",
+        "about.publisher": "Atlas Reader is built and published by DerekSol.",
+        "about.dereksolPitch": "Need software, a website or branding for your organisation? DerekSol builds custom solutions for clients worldwide.",
+        "about.visitDereksol": "Visit dereksol.com",
+        "about.copyEmail": "Copy email address",
+        "cmd.dereksol": "Custom Software"
     },
 
     ar: {
@@ -568,7 +573,12 @@ var tables = {
         "wordCount.words": "الكلمات",
         "zoom.fitVisible": "ملاءمة المحتوى المرئي",
         "zoom.magnification": "التكبير",
-        "zoom.zoomTo": "تكبير إلى"
+        "zoom.zoomTo": "تكبير إلى",
+        "about.publisher": "أطلس ريدر من تطوير ونشر DerekSol.",
+        "about.dereksolPitch": "هل تحتاج إلى برنامج أو موقع إلكتروني أو هوية بصرية لمؤسستك؟ تبني DerekSol حلولًا مخصصة للعملاء حول العالم.",
+        "about.visitDereksol": "زيارة dereksol.com",
+        "about.copyEmail": "نسخ البريد الإلكتروني",
+        "cmd.dereksol": "برامج مخصصة"
     },
 
     ur: {
@@ -850,6 +860,11 @@ var tables = {
         "wordCount.words": "الفاظ",
         "zoom.fitVisible": "نظر آنے والے حصے کے مطابق",
         "zoom.magnification": "بڑائی",
-        "zoom.zoomTo": "زوم کریں"
+        "zoom.zoomTo": "زوم کریں",
+        "about.publisher": "اٹلس ریڈر DerekSol نے بنایا اور شائع کیا ہے۔",
+        "about.dereksolPitch": "کیا آپ کے ادارے کو سافٹ ویئر، ویب سائٹ یا برانڈنگ چاہیے؟ DerekSol دنیا بھر کے کلائنٹس کے لیے حسبِ ضرورت حل بناتا ہے۔",
+        "about.visitDereksol": "dereksol.com دیکھیں",
+        "about.copyEmail": "ای میل پتا کاپی کریں",
+        "cmd.dereksol": "حسبِ ضرورت سافٹ ویئر"
     }
 }

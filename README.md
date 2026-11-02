@@ -8,6 +8,8 @@
 
 Your next idea might be buried in a thousand-page book or scattered across a hundred PDFs. Atlas brings your books together, gives you a calm place to read, and helps you build a lasting path back to what matters.
 
+Atlas Reader is built and published by **[DerekSol](https://dereksol.com)**. Need custom software, a website or branding? Contact DerekSol at [dereksol.com](https://dereksol.com) or info@dereksol.com.
+
 [The plan](PLAN.md) · [Progress](CHECKPOINTS.md) · [Design](docs/DESIGN.md) · [For developers](docs/README.md)
 
 ## What Atlas 2.0 will be

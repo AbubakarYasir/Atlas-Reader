@@ -4,6 +4,13 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## DerekSol as publisher; N4 merged to main — 2026-11-02
+
+- Atlas Reader is published by **DerekSol** ([dereksol.com](https://dereksol.com)). The Windows program now carries DerekSol as company, copyright and description (Properties → Details); About shows DerekSol and how to reach them for custom software; Help has a **Custom Software** button.
+- Windows will still say "Unknown publisher" until the program is signed with a code-signing certificate issued to DerekSol; how and when is in [WORKFLOW.md](docs/WORKFLOW.md#5-versions-and-releases) (planned with the installer, N11).
+- Windows build: sources are compiled as UTF-8, and printed page labels fall back to page numbers on Qt 6.10.
+- N4 is merged into `main` on the owner's direction; the end-of-N4 review continues there.
+
 ## N4.4 and N4.5 complete: find, search, bookmarks, links — 2026-11-02
 
 - **Find and Search:** Ctrl+F opens a Find bar over the page (Enter or F3 for the next match, Shift+F3 for the previous one); Ctrl+Shift+F opens the Search panel on the right with every result and the words around it. Arabic and Urdu search ignores harakat, tatweel and letter shapes, so العلم finds العِلْمُ.

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.28)
 project(
     AtlasReaderNative
     VERSION 2.0.0
-    DESCRIPTION "Native successor to Atlas Reader"
+    DESCRIPTION "Atlas Reader by DerekSol (dereksol.com)"
     LANGUAGES CXX
 )
 
@@ -182,7 +182,9 @@ atlas_enable_warnings(atlas_reader_ui)
 
 set(ATLAS_READER_PLATFORM_SOURCES)
 if(WIN32)
-    list(APPEND ATLAS_READER_PLATFORM_SOURCES assets/windows/atlas_reader.rc)
+    set(ATLAS_WINDOWS_ASSETS "${CMAKE_CURRENT_SOURCE_DIR}/assets/windows")
+    configure_file(assets/windows/atlas_reader.rc.in "${CMAKE_CURRENT_BINARY_DIR}/atlas_reader.rc" @ONLY)
+    list(APPEND ATLAS_READER_PLATFORM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/atlas_reader.rc")
 endif()
 
 qt_add_executable(atlas_reader

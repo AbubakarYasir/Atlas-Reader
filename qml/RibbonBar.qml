@@ -325,6 +325,11 @@ Rectangle {
                 text: I18n.t("cmd.about")
                 onClicked: ribbon.aboutRequested()
             }
+            RibbonButton {
+                iconName: "open"
+                text: I18n.t("cmd.dereksol")
+                onClicked: readerController.openExternalLink("https://dereksol.com")
+            }
         }
 
         AtlasIconButton {

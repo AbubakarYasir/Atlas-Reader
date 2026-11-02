@@ -45,7 +45,7 @@ Documentation-only changes don't bump the product version, but they still need t
 1. Push the branch. It is not "on GitHub" until `git rev-parse HEAD` equals `git rev-parse origin/<branch>`.
 2. The stage PR stays **Draft** until the stage's owner review passes. It is currently PR #6 for N4.
 3. CI must pass on the **exact** head; an older green run doesn't count.
-4. After **`N# PASS`**: update the ADR and status files, merge stage → `main`, verify ancestry, tag the release, delete the stage branch, then open the next stage branch from the merge commit.
+4. After **`N# PASS`**: update the ADR and status files, merge stage → `main`, verify ancestry, tag the release, delete the stage branch, then open the next stage branch from the merge commit. The owner may direct an earlier merge when a stage's build is complete (N4, 2026-11-02); the review then runs on `main`, and the release tag still waits for `N# PASS`.
 5. Never force-push a published branch without explicit owner permission; prefer corrective commits.
 
 **PR description:** stage and requirement · what changed · boundaries touched · dependencies · tests run (with run IDs) · performance evidence for hot paths · schema/format changes · accessibility/RTL impact and screenshots · known limitations with their owning stage.
@@ -63,6 +63,10 @@ Semantic Versioning, all on the `2.0.0` line until stable:
 - After 2.0: feature releases `2.x` and platform releases, ordered in [AFTER_2_0.md](AFTER_2_0.md).
 
 Every distributable records: commit, source version, compiler and Windows SDK, Qt, PDF engine and dependency versions with the vcpkg baseline, build configuration, test totals, a relevant benchmark summary, known limitations, SHA-256, third-party notices and SBOM, and owner status.
+
+**Publisher:** DerekSol ([dereksol.com](https://dereksol.com)). The Windows executable carries DerekSol as company, copyright and description (`assets/windows/atlas_reader.rc.in`), and About shows DerekSol's contact.
+
+**Code signing:** Windows shows "Unknown publisher" for any program that is not signed with an Authenticode code-signing certificate, whatever its file details say. Removing it needs a certificate issued to DerekSol (an OV/EV certificate from a certificate authority, or Microsoft Trusted Signing / Azure Artifact Signing, which verifies the business). Once DerekSol has one, release builds are signed with `signtool sign /fd SHA256 /tr <timestamp URL> /td SHA256` in CI with the certificate kept in GitHub secrets, never in the repository. Planned for N11 (installer); earlier if the certificate is ready.
 
 **Status words** are used exactly: Planned · Implemented · Verified · Accepted · Released. The README advertises only Released features or clearly labeled beta behavior.
 

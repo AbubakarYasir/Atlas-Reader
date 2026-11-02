@@ -1,0 +1,36 @@
+#include <windows.h>
+
+IDI_ICON1 ICON DISCARDABLE "@ATLAS_WINDOWS_ASSETS@/atlas-reader.ico"
+
+// File details shown in Windows (Properties > Details, Task Manager).
+// The "Unknown publisher" prompt only goes away with an Authenticode code-signing
+// certificate issued to DerekSol; see docs/WORKFLOW.md "Code signing".
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+PRODUCTVERSION  @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       0x0L
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName",      "DerekSol\0"
+            VALUE "FileDescription",  "Atlas Reader by DerekSol\0"
+            VALUE "FileVersion",      "@ATLAS_VERSION_STRING@\0"
+            VALUE "InternalName",     "atlas_reader\0"
+            VALUE "LegalCopyright",   "Copyright (c) 2026 DerekSol (dereksol.com)\0"
+            VALUE "OriginalFilename", "atlas_reader.exe\0"
+            VALUE "ProductName",      "Atlas Reader\0"
+            VALUE "ProductVersion",   "@ATLAS_VERSION_STRING@\0"
+            VALUE "Comments",         "Built by DerekSol - custom software, websites and branding: https://dereksol.com\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

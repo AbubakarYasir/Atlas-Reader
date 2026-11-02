@@ -17,6 +17,7 @@ Rectangle {
     required property string detail
     required property string documentTitle
     required property var sessionId
+    required property var capability     // N5.1 capability check (ReaderController)
 
     readonly property bool ready: status === "ready"
     readonly property alias viewport: view
@@ -37,6 +38,9 @@ Rectangle {
     signal toastRequested(string text)
 
     function focusPageBox() { pageBox.forceActiveFocus() }
+    function showCapability() { if (capabilityChip.visible) capabilityPopup.open() }
+    // Coming back to a tab re-checks the file (it may have changed outside Atlas).
+    onVisibleChanged: if (visible && ready && capability && capability.checked) readerController.recheckCapabilities(index)
     function openFind() {
         if (preferences.rightPanel === "search") { searchPanel.focusField(view.selectedText); return }
         findBar.open(view.selectedText.length < 80 ? view.selectedText : "")
@@ -444,6 +448,96 @@ Rectangle {
                 StatusButton { iconName: "arrow_right"; mirrorIcon: false; text: I18n.t("nav.nextView"); shortcutHint: "Alt+Right"; enabled: view.canGoForward; onClicked: view.goForward() }
 
                 Item { Layout.fillWidth: true }
+
+                // N5.1: shown only when Atlas may not change this PDF; explains why on click.
+                AbstractButton {
+                    id: capabilityChip
+                    readonly property string state: tab.capability && tab.capability.checked ? tab.capability.state : ""
+                    visible: state.length > 0 && state !== "writable"
+                    Layout.rightMargin: Theme.sm
+                    implicitHeight: 22
+                    implicitWidth: chipRow.implicitWidth + 14
+                    hoverEnabled: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: I18n.t("capability.title") + ": " + chipLabel.text
+                    onClicked: capabilityPopup.open()
+                    background: Rectangle {
+                        radius: 11
+                        color: capabilityChip.hovered ? Theme.hover : Theme.warningSoft
+                        border.width: capabilityChip.visualFocus ? 2 : 1
+                        border.color: capabilityChip.visualFocus ? Theme.focusRing : Theme.line
+                    }
+                    contentItem: Row {
+                        id: chipRow
+                        anchors.centerIn: parent
+                        spacing: 4
+                        IconImage {
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: Theme.icon("lock_closed")
+                            sourceSize.width: 12
+                            sourceSize.height: 12
+                            color: Theme.ink
+                        }
+                        Text {
+                            id: chipLabel
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: capabilityChip.state.length > 0 ? I18n.t("capability.state." + capabilityChip.state) : ""
+                            color: Theme.ink
+                            font.family: I18n.uiFamily
+                            font.pixelSize: Math.round(11 * I18n.sizeScale)
+                        }
+                    }
+                    Popup {
+                        id: capabilityPopup
+                        y: -implicitHeight - 6
+                        x: capabilityChip.mirrored ? 0 : capabilityChip.width - width
+                        width: 340
+                        padding: Theme.md
+                        focus: true
+                        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+                        background: Rectangle { color: Theme.raised; radius: Theme.radiusSurface; border.color: Theme.chromeLine }
+                        contentItem: ColumnLayout {
+                            spacing: Theme.sm
+                            Accessible.role: Accessible.Dialog
+                            Accessible.name: I18n.t("capability.title")
+                            Label {
+                                Layout.fillWidth: true
+                                horizontalAlignment: Text.AlignLeft
+                                text: I18n.t("capability.title")
+                                color: Theme.ink
+                                font.family: I18n.uiFamily
+                                font.weight: Font.DemiBold
+                            }
+                            Repeater {
+                                model: tab.capability && tab.capability.reasons ? tab.capability.reasons : []
+                                delegate: Label {
+                                    required property string modelData
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: "• " + I18n.t("capability.reason." + modelData)
+                                    color: Theme.ink
+                                    wrapMode: Text.WordWrap
+                                    font.pixelSize: Math.round(12 * I18n.sizeScale)
+                                }
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                horizontalAlignment: Text.AlignLeft
+                                visible: tab.capability && tab.capability.canKeepLocalResearch
+                                text: I18n.t("capability.local")
+                                color: Theme.muted
+                                wrapMode: Text.WordWrap
+                                font.pixelSize: Math.round(12 * I18n.sizeScale)
+                            }
+                            AtlasButton {
+                                Layout.alignment: Qt.AlignRight
+                                iconName: "arrow_sync"
+                                text: I18n.t("capability.recheck")
+                                onClicked: { readerController.recheckCapabilities(tab.index); capabilityPopup.close() }
+                            }
+                        }
+                    }
+                }
 
                 Repeater { // page display (Foxit status bar)
                     model: [

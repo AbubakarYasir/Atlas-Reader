@@ -4,6 +4,11 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N5.1: what Atlas may change — 2026-11-02
+
+- Atlas now checks every PDF you open: password-protected, restricted by its owner, signed or certified, read-only, in use by another program, or changed outside Atlas. When Atlas may not change a book, a small label in the status bar says so; click it to see why in plain words. Your bookmarks and notes stay in Atlas either way.
+- The Windows build includes qpdf 12.4.1 (Apache-2.0) for these checks.
+
 ## 2.0.0-beta.2: Reader accepted — 2026-11-02
 
 - Owner wrote **N4 PASS**. Atlas Reader `2.0.0-beta.2` is the first beta that reads PDFs inside Atlas ([acceptance](docs/baselines/N4_ACCEPTANCE.md)).

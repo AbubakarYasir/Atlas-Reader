@@ -154,6 +154,7 @@ ApplicationWindow {
             }
             else if (qaShow.indexOf("find:") === 0 && reader.currentTab) { reader.currentTab.openFind(); reader.currentTab.findBarRun(qaShow.slice(5)) }
             else if (qaShow.indexOf("search:") === 0 && reader.currentTab) { reader.currentTab.openSearch(); reader.currentTab.searchRun(qaShow.slice(7)) }
+            else if (qaShow === "capability" && reader.currentTab) reader.currentTab.showCapability()
             else if (qaShow === "bookmarks") preferences.navPanel = "bookmarks"
             else if (qaShow === "wordcount" && root.activeViewport) readerDialogs.openWordCount(root.activeViewport)
             else if (qaShow === "zoomto" && root.activeViewport) readerDialogs.openZoomTo(root.activeViewport)

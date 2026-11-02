@@ -6,6 +6,8 @@ param(
     [string]$ImplementationSha = '',
     [string]$CheckoutSha = '',
     [string]$PackageName = 'atlas-reader-review-windows-x64',
+    [string]$QpdfBin = '',
+    [string]$QpdfCompliance = '',
     [string]$Version = '2.0.0-beta.2',
     [string]$Checkpoint = 'N4',
     [string]$Purpose = 'Owner review build'
@@ -56,6 +58,20 @@ foreach ($dll in @('Qt6Core.dll','Qt6Gui.dll','Qt6Quick.dll','Qt6Pdf.dll','Qt6Sv
     if (-not (Test-Path -LiteralPath (Join-Path $stage $dll))) { throw "Missing packaged runtime: $dll" }
 }
 if (Test-Path -LiteralPath (Join-Path $stage 'pdfium.dll')) { throw 'Standalone PDFium is qualification-only.' }
+
+# First-party qpdf 12.4.1 CLI (structure and security checks, N5), in its own folder.
+if ($QpdfBin) {
+    $qpdfStage = Join-Path $stage 'qpdf'
+    New-Item -ItemType Directory -Force -Path $qpdfStage | Out-Null
+    foreach ($name in @('qpdf.exe', 'qpdf30.dll', 'concrt140.dll', 'msvcp140.dll', 'msvcp140_1.dll', 'msvcp140_2.dll',
+                        'msvcp140_atomic_wait.dll', 'msvcp140_codecvt_ids.dll', 'vcruntime140.dll', 'vcruntime140_1.dll')) {
+        $source = Join-Path $QpdfBin $name
+        if (-not (Test-Path -LiteralPath $source)) { throw "qpdf runtime file missing: $source" }
+        Copy-Item -LiteralPath $source -Destination $qpdfStage
+    }
+    Copy-Item -LiteralPath (Join-Path $QpdfCompliance 'LICENSE.txt') -Destination (Join-Path $notices 'qpdf-LICENSE.txt')
+    Copy-Item -LiteralPath (Join-Path $QpdfCompliance 'NOTICE.md') -Destination (Join-Path $notices 'qpdf-NOTICE.md')
+}
 
 # Preserve the same pinned Qt source-license route used by the accepted N2 lane.
 $licenseSources = @(

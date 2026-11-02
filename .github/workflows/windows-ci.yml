@@ -15,6 +15,8 @@ jobs:
     env:
       ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       ATLAS_CHECKOUT_SHA: ${{ github.sha }}
+      QPDF_ASSET: 'qpdf-12.4.1-msvc64.zip'
+      QPDF_ASSET_SHA256: '3cd016cd433ef7232e42f4c13348a49cc14907a3c7278ef4f99120593126f7a6'
 
     strategy:
       fail-fast: false
@@ -220,6 +222,32 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "Independent N2 fixture validation failed with exit code $LASTEXITCODE"
           }
+
+      - name: Acquire pinned qpdf 12.4.1 runtime (N5 capability check)
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP $env:QPDF_ASSET
+          $root = Join-Path $env:RUNNER_TEMP 'qpdf-12.4.1-msvc64'
+          Invoke-WebRequest -Uri 'https://github.com/qpdf/qpdf/releases/download/v12.4.1/qpdf-12.4.1-msvc64.zip' -OutFile $archive
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:QPDF_ASSET_SHA256) { throw "qpdf archive SHA-256 mismatch: $actual" }
+          Expand-Archive -LiteralPath $archive -DestinationPath $root -Force
+          $qpdf = @(Get-ChildItem -Path $root -Recurse -Filter qpdf.exe -File)
+          if ($qpdf.Count -ne 1) { throw "Expected one qpdf.exe; found $($qpdf.Count)" }
+          $version = (& $qpdf[0].FullName --version 2>&1 | Out-String).Trim()
+          if ($version -notmatch '(?<![0-9])12\.4\.1(?![0-9])') { throw "Unexpected qpdf version: $version" }
+          $compliance = Join-Path $env:RUNNER_TEMP 'qpdf-compliance'
+          New-Item -ItemType Directory -Force $compliance | Out-Null
+          foreach ($file in @(
+            @{ Name = 'LICENSE.txt'; Url = 'https://raw.githubusercontent.com/qpdf/qpdf/v12.4.1/LICENSE.txt'; Sha = 'cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30' },
+            @{ Name = 'NOTICE.md'; Url = 'https://raw.githubusercontent.com/qpdf/qpdf/v12.4.1/NOTICE.md'; Sha = 'b207f65a9e5491195ded63b2941199b19a4d30148871f2742c88eae7bfc513a6' })) {
+            $path = Join-Path $compliance $file.Name
+            Invoke-WebRequest -Uri $file.Url -OutFile $path
+            if ((Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $file.Sha) { throw "$($file.Name) SHA-256 mismatch" }
+          }
+          "ATLAS_QPDF=$($qpdf[0].FullName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "QPDF_BIN=$($qpdf[0].DirectoryName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "QPDF_COMPLIANCE=$compliance" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Configure
         shell: pwsh
@@ -477,6 +505,8 @@ jobs:
             -OutputDirectory artifacts/beta `
             -ImplementationSha $env:ATLAS_IMPLEMENTATION_SHA `
             -CheckoutSha $env:ATLAS_CHECKOUT_SHA `
+            -QpdfBin $env:QPDF_BIN `
+            -QpdfCompliance $env:QPDF_COMPLIANCE `
             -PackageName 'atlas-reader-2.0.0-beta.2-windows-x64' `
             -Checkpoint 'N4' `
             -Purpose 'Accepted beta: N4 PASS recorded by the owner on 2026-11-02'
@@ -502,6 +532,8 @@ jobs:
             -OutputDirectory artifacts/review `
             -ImplementationSha $env:ATLAS_IMPLEMENTATION_SHA `
             -CheckoutSha $env:ATLAS_CHECKOUT_SHA `
+            -QpdfBin $env:QPDF_BIN `
+            -QpdfCompliance $env:QPDF_COMPLIANCE `
             -PackageName 'atlas-reader-review-windows-x64' `
             -Checkpoint 'N5' `
             -Purpose 'Owner review build; the stage is in progress'

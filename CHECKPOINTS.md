@@ -9,7 +9,7 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | | |
 |---|---|
 | Active stage | **N5: Bookmarks + document safety**, planned `2.0.0-beta.3` |
-| Active sub-stage | **N5.1: Capability check** |
+| Active sub-stage | **N5.2: Local overlay** (N5.1 capability check implemented) |
 | Done | N4 Reader **Accepted** (`N4 PASS`, 2026-11-02; [acceptance](docs/baselines/N4_ACCEPTANCE.md)) |
 | Branch | `native-v2-n5-bookmarks-safety`, from `main` after the `2.0.0-beta.2` release |
 | Released | `2.0.0-beta.2` (Reader), 2026-11-02 · `2.0.0-beta.1` (Library), 2026-09-28 |
@@ -151,6 +151,7 @@ Owner records **`N4 PASS`** after required fixes, when the reader is comfortable
 
 **Goal:** make deep research navigation Atlas's signature, safe on every kind of PDF. Contract: [DATA_AND_SAFETY.md](docs/DATA_AND_SAFETY.md).
 
+- **N5.1 done (2026-11-02, automated checks):** core `CapabilityPolicy` turns file, PDF-security and revision facts into what Atlas may change and why (every row of the [capability table](docs/DATA_AND_SAFETY.md#document-capabilities), tested); qpdf adapter (bundled 12.4.1 CLI, password through standard input) reads encryption, user/owner password, permission flags, signed fields and DocMDP certification; file probe reads read-only file/folder, sharing locks and cloud placeholders without writing anything; size and time recorded at open detect changes made outside Atlas. Reader status bar shows a quiet chip (Protected, Read-only, In use, Signed, Changed outside Atlas) with the reasons in plain words and *Check again*; re-checked when you return to a tab. Real-fixture tests: A001 plain, A009 wrong/user/owner password, A010 certification, Unicode-named copy, external change; sources byte-identical.
 - **N5.1 Capability check:** open vs edit permission; open password vs permissions password; read-only file system; signed/certified; locked; offline; external revision. Modern encryption fixtures; never a bypass.
 - **N5.2 Local overlay:** Embedded/Local/Pending/Override/Hidden/Conflict states persisted and recoverable after a crash. Versioned location envelope for durable destinations (C06).
 - **N5.3 Complete editor:** create, rename, delete, edit destination, move, reorder, nest; duplicate names; deep Unicode trees; keyboard tree semantics; undo. **Bookmarks panel** in the rail and **Bookmark** buttons where Foxit has them (Home, Edit; Ctrl+B); Auto Create Bookmarks from the outline; Signatures panel (status only); Preferences → Security, Identity; **Command Center** in the title-bar search box (Alt+Q) for commands, books and bookmarks; Quick Access Toolbar gains Save, Undo, Redo.

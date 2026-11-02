@@ -48,6 +48,15 @@ add_library(atlas_core INTERFACE)
 target_include_directories(atlas_core INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_features(atlas_core INTERFACE cxx_std_23)
 
+add_library(atlas_document_policy STATIC
+    src/core/document/CapabilityPolicy.cpp
+    src/core/document/CapabilityPolicy.h
+    src/core/document/DocumentCapabilities.h
+)
+target_include_directories(atlas_document_policy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_document_policy PUBLIC atlas_core)
+atlas_enable_warnings(atlas_document_policy)
+
 add_library(atlas_reader_session STATIC
     src/core/reader/ReaderSessionModel.cpp
     src/core/reader/ReaderSessionModel.h
@@ -161,6 +170,8 @@ target_link_libraries(atlas_library_ui PUBLIC
 atlas_enable_warnings(atlas_library_ui)
 
 add_library(atlas_reader_ui STATIC
+    src/app/document/DocumentCapabilityCheck.cpp
+    src/app/document/DocumentCapabilityCheck.h
     src/app/reader/ReaderController.cpp
     src/app/reader/ReaderController.h
     src/app/reader/PdfRenderWorker.cpp
@@ -174,7 +185,7 @@ add_library(atlas_reader_ui STATIC
     src/app/reader/ReaderViewport.h
 )
 target_include_directories(atlas_reader_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(atlas_reader_ui PUBLIC
+target_link_libraries(atlas_reader_ui PUBLIC atlas_document_policy
     atlas_reader_session atlas_reader_viewport atlas_library_document_inspector
     Qt6::Core Qt6::Concurrent Qt6::Gui Qt6::Quick Qt6::Pdf
 )
@@ -357,6 +368,18 @@ add_test(NAME atlas_reader_viewport_render COMMAND atlas_reader_viewport_render_
 add_executable(atlas_reader_controller_tests tests/reader/reader_controller_tests.cpp)
 target_link_libraries(atlas_reader_controller_tests PRIVATE atlas_reader_ui)
 atlas_enable_warnings(atlas_reader_controller_tests)
+
+add_executable(atlas_capability_policy_tests tests/document/capability_policy_tests.cpp)
+target_link_libraries(atlas_capability_policy_tests PRIVATE atlas_document_policy)
+atlas_enable_warnings(atlas_capability_policy_tests)
+add_test(NAME atlas_capability_policy COMMAND atlas_capability_policy_tests)
+
+add_executable(atlas_qpdf_inspector_tests tests/document/qpdf_inspector_tests.cpp)
+target_link_libraries(atlas_qpdf_inspector_tests PRIVATE atlas_reader_ui)
+target_compile_definitions(atlas_qpdf_inspector_tests PRIVATE
+    ATLAS_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
+atlas_enable_warnings(atlas_qpdf_inspector_tests)
+add_test(NAME atlas_qpdf_inspector COMMAND atlas_qpdf_inspector_tests)
 
 add_executable(atlas_app_preferences_tests tests/app/app_preferences_tests.cpp)
 target_link_libraries(atlas_app_preferences_tests PRIVATE atlas_app_support)

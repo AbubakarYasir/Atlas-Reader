@@ -21,6 +21,11 @@ DYNAMIC = {
                       "unsupported", "readOnly", "unavailable"],
     "view.colors.": ["0", "1", "2", "3"],
     "skins.color.": ["blue", "midnight", "sky", "teal", "plum", "graphite"],
+    "capability.state.": ["restricted", "readOnly", "locked", "signed", "changed", "unknown", "writable"],
+    "capability.reason.": ["missing", "offline", "cloudPlaceholder", "passwordRequired", "unsupportedSecurity",
+                           "unreadable", "malformed", "notInspected", "outlineNotPermitted",
+                           "annotationsNotPermitted", "fileReadOnly", "folderReadOnly", "sharingLocked",
+                           "signatures", "certified", "changedExternally"],
 }
 # Literal text allowed in QML views (symbols, language names shown in their own script).
 ALLOWED_LITERALS = {"·", "English", "العربية", "اردو", "%", "/", "…"}

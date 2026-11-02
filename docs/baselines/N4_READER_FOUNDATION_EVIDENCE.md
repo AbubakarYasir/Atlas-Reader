@@ -1,6 +1,6 @@
 # N4 Native Reader Foundation Evidence
 
-<!-- atlas-status: N4|in-progress -->
+<!-- atlas-status: N4|accepted -->
 
 ## Process change — 2026-11-01
 

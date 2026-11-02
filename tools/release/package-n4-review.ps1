@@ -4,7 +4,11 @@ param(
     [Parameter(Mandatory)][string]$QtRoot,
     [Parameter(Mandatory)][string]$OutputDirectory,
     [string]$ImplementationSha = '',
-    [string]$CheckoutSha = ''
+    [string]$CheckoutSha = '',
+    [string]$PackageName = 'atlas-reader-review-windows-x64',
+    [string]$Version = '2.0.0-beta.2',
+    [string]$Checkpoint = 'N4',
+    [string]$Purpose = 'Owner review build'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -19,7 +23,7 @@ if ($ImplementationSha -notmatch '^[a-f0-9]{40}$' -or $CheckoutSha -notmatch '^[
     throw 'Full implementation and checkout commit IDs are required.'
 }
 
-$stage = Join-Path $output 'atlas-reader-n4.1-review'
+$stage = Join-Path $output $PackageName
 $docs = Join-Path $stage 'docs'
 $samples = Join-Path $stage 'samples'
 $notices = Join-Path $stage 'notices'
@@ -84,11 +88,11 @@ $licenseManifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path
 Copy-Item -LiteralPath (Join-Path $qtPath 'sbom') -Destination (Join-Path $notices 'qt-sbom') -Recurse
 
 $buildInfo = [ordered]@{
-    schemaVersion = 1; checkpoint = 'N4.1'; purpose = 'Owner review; N4 remains in progress'
-    version = '2.0.0-beta.1'; implementationSha = $ImplementationSha; checkoutSha = $CheckoutSha
+    schemaVersion = 1; checkpoint = $Checkpoint; purpose = $Purpose; publisher = 'DerekSol (https://dereksol.com)'
+    version = $Version; implementationSha = $ImplementationSha; checkoutSha = $CheckoutSha
     configuration = 'Release'; qt = '6.10.3'; sqlite = '3.53.4#1'
     sourceExeSha256 = (Get-FileHash -LiteralPath $sourceExe -Algorithm SHA256).Hash.ToLowerInvariant()
-    builtUtc = [DateTime]::UtcNow.ToString('o'); pageRendering = $false; pdfWrites = $false
+    builtUtc = [DateTime]::UtcNow.ToString('o'); pageRendering = $true; pdfWrites = $false
 }
 $buildInfo | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $stage 'BUILD-INFO.json') -Encoding utf8
 
@@ -120,9 +124,9 @@ Get-ChildItem -LiteralPath $stage -Recurse -File | Sort-Object FullName | ForEac
     $relative = [IO.Path]::GetRelativePath($stage, $_.FullName).Replace('\','/')
     "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $relative"
 } | Set-Content -LiteralPath (Join-Path $stage 'SHA256SUMS.txt') -Encoding utf8
-$archive = Join-Path $output 'atlas-reader-n4.1-review-windows-x64.zip'
+$archive = Join-Path $output "$PackageName.zip"
 Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $archive -CompressionLevel Optimal
 $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
-"$hash  atlas-reader-n4.1-review-windows-x64.zip" | Set-Content -LiteralPath "$archive.sha256" -Encoding utf8
+"$hash  $PackageName.zip" | Set-Content -LiteralPath "$archive.sha256" -Encoding utf8
 Write-Host "Review package: $archive"
 Write-Host "SHA-256: $hash"

@@ -1,13 +1,13 @@
 # Atlas Reader — Rules for Coding Agents and Contributors
 
-<!-- atlas-status: N4|in-progress -->
+<!-- atlas-status: N5|in-progress -->
 
 Read this before changing anything. AI-written code gets no lower bar than human code.
 
 ## 1. Start every session
 
-1. Read [CHECKPOINTS.md](CHECKPOINTS.md) → **Status now**. Work only on the active sub-stage (currently the **end-of-N4 review**: fixes from the review only), in order.
-2. Read the stage section, the [N4 evidence ledger](docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md), and only the docs relevant to your change:
+1. Read [CHECKPOINTS.md](CHECKPOINTS.md) → **Status now**. Work only on the active sub-stage (currently **N5.1**), in order.
+2. Read the stage section, the [N5 evidence ledger](docs/baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md), and only the docs relevant to your change:
    - UI → [DESIGN.md](docs/DESIGN.md) and [FOXIT_PARITY.md](docs/FOXIT_PARITY.md) (layout, sizes, shortcuts; never Foxit's files or icons) · threads/engines/layers → [ARCHITECTURE.md](docs/ARCHITECTURE.md)
    - identity, bookmarks, saving, import/export, passwords → [DATA_AND_SAFETY.md](docs/DATA_AND_SAFETY.md)
    - tests and speed → [QUALITY.md](docs/QUALITY.md) · new library or tool → [DEPENDENCIES.md](docs/DEPENDENCIES.md)
@@ -29,7 +29,7 @@ Read this before changing anything. AI-written code gets no lower bar than human
 - Never silently modify a signed or certified original. Never overwrite a file that changed outside Atlas.
 - Never report local work as "Embedded" before a validated write and reopen.
 - An unavailable folder is not proof that its books were deleted. Ambiguous identity never moves research to another copy.
-- N4 is read-only: source PDF hashes must not change.
+- Until N5.4's safe save lands, nothing writes a PDF: source PDF hashes must not change.
 - Mutation tests use copied fixtures only. Private PDFs, titles, paths and text never enter Git or CI logs.
 
 ## 4. Design and accessibility (every UI change)

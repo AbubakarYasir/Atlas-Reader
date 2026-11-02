@@ -1,6 +1,6 @@
 # Atlas Reader — Plan to 2.0
 
-<!-- atlas-status: N4|in-progress -->
+<!-- atlas-status: N5|in-progress -->
 
 This is the single source of direction: what Atlas is, what Windows 2.0 must contain, what comes later, and how we judge quality. Order and status live in [CHECKPOINTS.md](CHECKPOINTS.md). The detailed contracts live in the [docs folder](docs/README.md).
 
@@ -216,6 +216,7 @@ At the end of each stage we run the same tasks on the same files in a relevant m
 | **2026-11-01** | **Focused 2.0.** EPUB/comics/Kindle, PDF editing tools (E1–E5), form filling, side-by-side, reflow view and read-aloud move after 2.0. **Batched owner reviews:** one review per stage instead of per sub-stage. **Docs consolidated:** 35 reference files in `docs/` became 9 plus an index, and `INFO.md` was merged into README/CHECKPOINTS; the previous set is kept unchanged in [docs/history](docs/history/README.md) |
 | **2026-11-02** | **N4 build complete; small items moved.** N4.4 and N4.5 are implemented. Items that write files or need later features moved with named owners: Open a Copy, image menu, Destinations panel, single-key accelerators, Preferences → Full Screen/Reading → N7; search in comments → N6; >8,192 px tiling, tagged reading order, one shared PDF copy → N10. Reason: keep N4 read-only and reviewable now ([CHECKPOINTS.md](CHECKPOINTS.md)). |
 | **2026-11-02** | **DerekSol is the publisher; N4 merged before review.** Owner: the software is built by DerekSol and should say so (executable details, About, repository); the repository becomes private; merge N4 into `main` now that its build is complete and delete the stage branch. The review gate stays: `2.0.0-beta.2` is tagged only after `N4 PASS`. Code signing (to remove "Unknown publisher") needs a DerekSol certificate, planned with N11. |
+| **2026-11-02** | **N4 Accepted; `2.0.0-beta.2` released.** Owner `N4 PASS`, accepting the open items listed in [N4 acceptance](docs/baselines/N4_ACCEPTANCE.md) as carried forward. N5 starts. |
 
 Every change to scope, priority or release gates is added here with its reason.
 

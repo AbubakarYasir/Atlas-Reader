@@ -1,6 +1,6 @@
 # N4 Reader: Owner Review Guide
 
-<!-- atlas-status: N4|in-progress -->
+<!-- atlas-status: N4|accepted -->
 
 One short review at the end of N4 (about 45 minutes). Agents run the detailed tests first, so this review is about what only you can judge: is reading comfortable, clear, correct in English, Arabic and Urdu, and trustworthy?
 

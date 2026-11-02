@@ -1,8 +1,14 @@
 # Changelog
 
-<!-- atlas-status: N4|in-progress -->
+<!-- atlas-status: N5|in-progress -->
 
 All notable changes to Atlas Reader Native are documented here.
+
+## 2.0.0-beta.2: Reader accepted — 2026-11-02
+
+- Owner wrote **N4 PASS**. Atlas Reader `2.0.0-beta.2` is the first beta that reads PDFs inside Atlas ([acceptance](docs/baselines/N4_ACCEPTANCE.md)).
+- `main` now builds the accepted beta package; stage branches build an owner review package.
+- N5 (bookmarks and document safety) has started.
 
 ## DerekSol as publisher; N4 merged to main — 2026-11-02
 

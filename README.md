@@ -4,7 +4,7 @@
 
 **A fast, local-first PDF reader and research library for people who study deeply. Its interface speaks English, Arabic and Urdu, and everything you write in it can be in any language.**
 
-<!-- atlas-status: N4|in-progress -->
+<!-- atlas-status: N5|in-progress -->
 
 Your next idea might be buried in a thousand-page book or scattered across a hundred PDFs. Atlas brings your books together, gives you a calm place to read, and helps you build a lasting path back to what matters.
 
@@ -32,14 +32,14 @@ Atlas Reader is built and published by **[DerekSol](https://dereksol.com)**. Nee
 |---|---|---|
 | Foundation (N0–N2) | Windows app shell, toolchain, PDF engine choice | ✅ Done |
 | Library (N3) | Folders, background indexing, search, Favorites, Recents | ✅ Released as [`2.0.0-beta.1`](https://github.com/AbubakarYasir/Atlas-Reader/releases/tag/v2.0.0-beta.1) |
-| **Reader (N4)** | **Reading PDFs inside Atlas** | 🟡 **In progress.** Opening, tabs, passwords and page display work. Now: the redesigned workspace in three languages. |
-| Bookmarks (N5) | Full bookmark editor, local fallback, import/export | Next |
+| Reader (N4) | Reading PDFs inside Atlas: Foxit-style workspace, find and search (Arabic/Urdu aware), bookmarks and pages panels, links | ✅ Released as [`2.0.0-beta.2`](https://github.com/AbubakarYasir/Atlas-Reader/releases/tag/v2.0.0-beta.2) |
+| **Bookmarks (N5)** | **Full bookmark editor, local fallback, import/export** | 🟡 **In progress** |
 | Pen and notes (N6) | Ink, highlights, comments | Planned |
 | Everyday tools (N7) | Printing, covers, sorting, collections | Planned |
 | Backup (N8) | Backup, restore and moving over from the old app | Planned |
 | Polish and release (N9–N11) | Language and accessibility qualification, speed, installer, stable **2.0** | Planned |
 
-The current beta is for early evaluation. It has the library, but you can't read inside it yet. No release date has been announced.
+The current beta is for early evaluation: it has the library and the reader, but no bookmark editing, notes or saving yet. No release date has been announced.
 
 **After 2.0:** EPUB, comics (CBZ/CBR), DRM-free Kindle files, PDF editing tools, and later Android, Linux, macOS and iOS. See [what comes after 2.0](docs/AFTER_2_0.md).
 

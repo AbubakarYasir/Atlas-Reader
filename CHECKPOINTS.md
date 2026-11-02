@@ -1,6 +1,6 @@
 # Atlas Reader — Checkpoints to Windows 2.0
 
-<!-- atlas-status: N4|in-progress -->
+<!-- atlas-status: N5|in-progress -->
 
 This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.md); test methods and speed budgets are in [docs/QUALITY.md](docs/QUALITY.md).
 
@@ -8,13 +8,13 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 
 | | |
 |---|---|
-| Active stage | **N4: Reader**, planned `2.0.0-beta.2` |
-| Active sub-stage | **End-of-N4 owner review.** N4.4 Navigation and N4.5 Outline/text/search/links are implemented (2026-11-02); every N4 sub-stage is now built and waits for the [N4 review](docs/N4_REVIEW.md) with one review build |
-| Done in N4 | N4.1 Opening, tabs and passwords: implemented and automated-verified (43/43 CI tests, run `36690884159`) |
-| Branch | N4 merged into `main` on owner direction once its build was complete (2026-11-02); the stage branch was deleted. The N4 review runs on `main`; `2.0.0-beta.2` is tagged only after `N4 PASS` |
-| Released | `2.0.0-beta.1` (Library), 2026-09-28 |
-| Next owner review | End of N4, with one review build and one short guide ([N4 review](docs/N4_REVIEW.md)) |
-| Evidence | [N4 evidence ledger](docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md) |
+| Active stage | **N5: Bookmarks + document safety**, planned `2.0.0-beta.3` |
+| Active sub-stage | **N5.1: Capability check** |
+| Done | N4 Reader **Accepted** (`N4 PASS`, 2026-11-02; [acceptance](docs/baselines/N4_ACCEPTANCE.md)) |
+| Branch | `native-v2-n5-bookmarks-safety`, from `main` after the `2.0.0-beta.2` release |
+| Released | `2.0.0-beta.2` (Reader), 2026-11-02 · `2.0.0-beta.1` (Library), 2026-09-28 |
+| Next owner review | End of N5, with one review build and one short guide |
+| Evidence | [N5 evidence ledger](docs/baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md) |
 
 ## Roadmap
 
@@ -24,8 +24,8 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | N1 | Windows toolchain + app shell | `2.0.0-alpha.1` | **Accepted** 2026-09-22 |
 | N2 | PDF engine qualification | `2.0.0-alpha.2` | **Accepted** 2026-09-27 |
 | N3 | Library and index | `2.0.0-beta.1` | **Accepted; Released** 2026-09-28 |
-| N4 | Reader | `2.0.0-beta.2` | **In progress** |
-| N5 | Bookmarks + document safety | `2.0.0-beta.3` | Not started |
+| N4 | Reader | `2.0.0-beta.2` | **Accepted; Released** 2026-11-02 |
+| N5 | Bookmarks + document safety | `2.0.0-beta.3` | **In progress** |
 | N6 | Ink + annotations | `2.0.0-beta.4` | Not started |
 | N7 | Everyday tools | `2.0.0-beta.5` | Not started |
 | N8 | Backup, restore + migration | `2.0.0-beta.6` | Not started |
@@ -69,7 +69,9 @@ A passed stage is not reopened without new evidence of a user-facing regression.
 
 ---
 
-## N4 — Reader (`2.0.0-beta.2`)
+## N4 — Reader (`2.0.0-beta.2`) ✅ Accepted 2026-11-02 · Released
+
+Owner `N4 PASS` on 2026-11-02 ([acceptance](docs/baselines/N4_ACCEPTANCE.md)); open items carried forward are listed there.
 
 **Goal:** comfortable daily PDF reading inside Atlas: accurate, fast, bounded in memory and beautiful. N4 is **read-only**: source PDFs must stay byte-identical.
 
@@ -145,7 +147,7 @@ Owner records **`N4 PASS`** after required fixes, when the reader is comfortable
 
 ---
 
-## N5 — Bookmarks + document safety (`2.0.0-beta.3`)
+## N5 — Bookmarks + document safety (`2.0.0-beta.3`) ← **active**
 
 **Goal:** make deep research navigation Atlas's signature, safe on every kind of PDF. Contract: [DATA_AND_SAFETY.md](docs/DATA_AND_SAFETY.md).
 

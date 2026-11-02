@@ -1,6 +1,6 @@
 # Atlas Reader — Documentation
 
-<!-- atlas-status: N4|in-progress -->
+<!-- atlas-status: N5|in-progress -->
 
 Each topic has exactly one home. If two documents seem to disagree, fix the wrong one; don't follow it.
 
@@ -11,7 +11,7 @@ Each topic has exactly one home. If two documents seem to disagree, fix the wron
 | Understand the product and 2.0 scope | [PLAN.md](../PLAN.md) |
 | See status and what's next | [CHECKPOINTS.md](../CHECKPOINTS.md) |
 | Contribute code (people or agents) | [AGENTS.md](../AGENTS.md) → [WORKFLOW.md](WORKFLOW.md) → [BUILDING.md](BUILDING.md) |
-| Review the current stage | [N4_REVIEW.md](N4_REVIEW.md) |
+| Review the last accepted stage | [N4_REVIEW.md](N4_REVIEW.md) (N5's guide arrives with its review build) |
 
 ## Reference
 
@@ -30,7 +30,7 @@ Each topic has exactly one home. If two documents seem to disagree, fix the wron
 ## Records
 
 - [decisions/](decisions/README.md): architecture decision records (ADR-0001 to ADR-0005).
-- [baselines/](baselines/): measured evidence per stage. The active ledger is [N4_READER_FOUNDATION_EVIDENCE.md](baselines/N4_READER_FOUNDATION_EVIDENCE.md).
+- [baselines/](baselines/): measured evidence per stage. The active ledger is [N5_BOOKMARKS_SAFETY_EVIDENCE.md](baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md); N4 is closed ([acceptance](baselines/N4_ACCEPTANCE.md)).
 - [tests/fixtures/pdf](../tests/fixtures/pdf/README.md): PDF fixture provenance, privacy and checksum contract.
 - [history/](history/README.md): frozen earlier plans, unchanged and not maintained.
 - [CHANGELOG.md](../CHANGELOG.md) · [SECURITY.md](../SECURITY.md) · [CONTRIBUTING.md](../CONTRIBUTING.md).

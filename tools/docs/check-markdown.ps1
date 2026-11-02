@@ -50,8 +50,7 @@ $liveStatusFiles = @(
     'AGENTS.md',
     'CHANGELOG.md',
     'docs/README.md',
-    'docs/N4_REVIEW.md',
-    'docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md'
+    'docs/baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md'
 )
 
 $expectedStatus = $null
@@ -81,6 +80,8 @@ foreach ($relativePath in $liveStatusFiles) {
 # Closed evidence records keep their historical status when the active stage advances.
 $acceptedHistoryFiles = @{
     'docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md' = 'N3|accepted'
+    'docs/baselines/N4_READER_FOUNDATION_EVIDENCE.md' = 'N4|accepted'
+    'docs/N4_REVIEW.md' = 'N4|accepted'
 }
 foreach ($acceptedHistory in $acceptedHistoryFiles.GetEnumerator()) {
     $acceptedHistoryText = Get-Content -LiteralPath (Join-Path $repoRoot $acceptedHistory.Key) -Raw

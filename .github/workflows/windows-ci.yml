@@ -232,7 +232,7 @@ jobs:
           -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
           -DPDFium_DIR="$env:PDFium_DIR"
           -DATLAS_ENABLE_PDFIUM_PROBE=ON
-          "-DATLAS_PRERELEASE:STRING=beta.1"
+          "-DATLAS_PRERELEASE:STRING=beta.2"
           -DATLAS_WARNINGS_AS_ERRORS=ON
 
       - name: Build
@@ -428,7 +428,7 @@ jobs:
 
           @(
             'Atlas Reader Native inherited N2 PDF qualification probes'
-            'Version: 2.0.0-beta.1'
+            'Version: 2.0.0-beta.2'
             'Checkpoint evidence origin: N2 PDF engine qualification spike'
             "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
             "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
@@ -467,82 +467,52 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Stage accepted N3 Library beta package
+      - name: Stage accepted beta package (main)
         if: matrix.configuration == 'Release' && (github.head_ref || github.ref_name) == 'main'
-        shell: pwsh
-        run: |
-          $stage = Join-Path $PWD 'artifact/n3-windows-x64'
-          $docs = Join-Path $stage 'docs'
-          New-Item -ItemType Directory -Force -Path $stage, $docs | Out-Null
-
-          $source = Join-Path $PWD 'build/ci-Release/Release/atlas_reader.exe'
-          Copy-Item $source (Join-Path $stage 'atlas_reader.exe')
-          Copy-Item 'qt.conf' (Join-Path $stage 'qt.conf')
-          Copy-Item 'docs/history/plan-v1/docs/N3_LIBRARY_INDEX_PLAN.md' $docs
-          Copy-Item 'docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md' $docs
-          Copy-Item 'docs/baselines/N3_ACCEPTANCE.md' $docs
-          Copy-Item 'docs/history/plan-v1/docs/CHECKPOINT_QA_MATRIX.md' $docs
-
-          $deploy = Join-Path $env:QT_ROOT_DIR 'bin/windeployqt.exe'
-          & $deploy --release --no-translations --compiler-runtime --qmldir (Join-Path $PWD 'qml') (Join-Path $stage 'atlas_reader.exe')
-          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed for the N3 package with exit code $LASTEXITCODE" }
-
-          @(
-            'Atlas Reader Native N3 Windows accepted beta package'
-            'Version: 2.0.0-beta.1 (N3 Accepted by owner on 2026-09-27)'
-            "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
-            "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
-            'Configuration: Release'
-            'Qt baseline: 6.10.3 MSVC 2022 64-bit'
-            'SQLite: 3.53.4#1 via pinned x64-windows-static-md triplet'
-            'Scope: native Library/index/search; the built-in Reader begins at N4'
-          ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N3_BUILD_INFO.txt')
-
-          $profile = Join-Path $env:RUNNER_TEMP 'atlas-n3-package-smoke'
-          New-Item -ItemType Directory -Force -Path $profile | Out-Null
-          & (Join-Path $stage 'atlas_reader.exe') --profile-directory $profile --language en --theme light --quit-after-ms 800
-          if ($LASTEXITCODE -ne 0) { throw "Packaged Atlas Reader smoke failed with exit code $LASTEXITCODE" }
-
-          Get-ChildItem $stage -File -Recurse | Sort-Object FullName | ForEach-Object {
-            $relative = [IO.Path]::GetRelativePath($stage, $_.FullName).Replace('\', '/')
-            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $relative"
-          } | Set-Content -Encoding UTF8 (Join-Path $stage 'SHA256SUMS.txt')
-
-          $archive = Join-Path $PWD 'artifact/atlas-reader-n3-windows-x64.zip'
-          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $archive -CompressionLevel Optimal
-          $archiveHash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$archiveHash  atlas-reader-n3-windows-x64.zip" | Set-Content -Encoding UTF8 "$archive.sha256"
-
-      - name: Upload accepted N3 Library beta package
-        if: matrix.configuration == 'Release' && (github.head_ref || github.ref_name) == 'main'
-        uses: actions/upload-artifact@v4
-        with:
-          name: atlas-reader-n3-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
-          path: |
-            artifact/n3-windows-x64
-            artifact/atlas-reader-n3-windows-x64.zip
-            artifact/atlas-reader-n3-windows-x64.zip.sha256
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Stage N4.1 owner review package
-        if: matrix.configuration == 'Release' && (github.head_ref || github.ref_name) == 'native-v2-n4-reader-foundation'
         shell: pwsh
         run: |
           ./tools/release/package-n4-review.ps1 `
             -Executable build/ci-Release/Release/atlas_reader.exe `
             -QtRoot $env:QT_ROOT_DIR `
-            -OutputDirectory artifacts/n4-review `
+            -OutputDirectory artifacts/beta `
             -ImplementationSha $env:ATLAS_IMPLEMENTATION_SHA `
-            -CheckoutSha $env:ATLAS_CHECKOUT_SHA
+            -CheckoutSha $env:ATLAS_CHECKOUT_SHA `
+            -PackageName 'atlas-reader-2.0.0-beta.2-windows-x64' `
+            -Checkpoint 'N4' `
+            -Purpose 'Accepted beta: N4 PASS recorded by the owner on 2026-11-02'
 
-      - name: Upload N4.1 owner review package
-        if: matrix.configuration == 'Release' && (github.head_ref || github.ref_name) == 'native-v2-n4-reader-foundation'
+      - name: Upload accepted beta package (main)
+        if: matrix.configuration == 'Release' && (github.head_ref || github.ref_name) == 'main'
         uses: actions/upload-artifact@v4
         with:
-          name: atlas-reader-n4.1-review-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
+          name: atlas-reader-2.0.0-beta.2-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
-            artifacts/n4-review/atlas-reader-n4.1-review-windows-x64.zip
-            artifacts/n4-review/atlas-reader-n4.1-review-windows-x64.zip.sha256
+            artifacts/beta/atlas-reader-2.0.0-beta.2-windows-x64.zip
+            artifacts/beta/atlas-reader-2.0.0-beta.2-windows-x64.zip.sha256
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Stage owner review package (stage branch)
+        if: matrix.configuration == 'Release' && startsWith(github.head_ref || github.ref_name, 'native-v2-')
+        shell: pwsh
+        run: |
+          ./tools/release/package-n4-review.ps1 `
+            -Executable build/ci-Release/Release/atlas_reader.exe `
+            -QtRoot $env:QT_ROOT_DIR `
+            -OutputDirectory artifacts/review `
+            -ImplementationSha $env:ATLAS_IMPLEMENTATION_SHA `
+            -CheckoutSha $env:ATLAS_CHECKOUT_SHA `
+            -PackageName 'atlas-reader-review-windows-x64' `
+            -Checkpoint 'N5' `
+            -Purpose 'Owner review build; the stage is in progress'
+
+      - name: Upload owner review package (stage branch)
+        if: matrix.configuration == 'Release' && startsWith(github.head_ref || github.ref_name, 'native-v2-')
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-reader-review-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            artifacts/review/atlas-reader-review-windows-x64.zip
+            artifacts/review/atlas-reader-review-windows-x64.zip.sha256
           if-no-files-found: error
           retention-days: 30

@@ -79,6 +79,17 @@ target_include_directories(atlas_reader_viewport PUBLIC ${CMAKE_CURRENT_SOURCE_D
 target_link_libraries(atlas_reader_viewport PUBLIC atlas_core)
 atlas_enable_warnings(atlas_reader_viewport)
 
+add_library(atlas_bookmark_overlay STATIC
+    src/core/bookmarks/BookmarkOverlay.cpp
+    src/core/bookmarks/BookmarkOverlay.h
+    src/core/bookmarks/LocationEnvelope.cpp
+    src/core/bookmarks/LocationEnvelope.h
+    src/core/bookmarks/Utf8.h
+)
+target_include_directories(atlas_bookmark_overlay PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_bookmark_overlay PUBLIC atlas_core)
+atlas_enable_warnings(atlas_bookmark_overlay)
+
 add_library(atlas_document_identity STATIC
     src/core/index/DocumentIdentityReconciler.cpp
     src/core/index/DocumentIdentityReconciler.h
@@ -103,6 +114,14 @@ add_library(atlas_library_index STATIC
 target_include_directories(atlas_library_index PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(atlas_library_index PUBLIC atlas_core atlas_document_identity unofficial::sqlite3::sqlite3)
 atlas_enable_warnings(atlas_library_index)
+
+add_library(atlas_bookmark_store STATIC
+    src/app/bookmarks/SqliteBookmarkOverlay.cpp
+    src/app/bookmarks/SqliteBookmarkOverlay.h
+)
+target_include_directories(atlas_bookmark_store PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_bookmark_store PUBLIC atlas_core atlas_bookmark_overlay unofficial::sqlite3::sqlite3)
+atlas_enable_warnings(atlas_bookmark_store)
 
 add_library(atlas_library_scanner STATIC
     src/app/index/LibraryScanner.cpp
@@ -373,6 +392,16 @@ add_executable(atlas_capability_policy_tests tests/document/capability_policy_te
 target_link_libraries(atlas_capability_policy_tests PRIVATE atlas_document_policy)
 atlas_enable_warnings(atlas_capability_policy_tests)
 add_test(NAME atlas_capability_policy COMMAND atlas_capability_policy_tests)
+
+add_executable(atlas_bookmark_overlay_tests tests/bookmarks/bookmark_overlay_tests.cpp)
+target_link_libraries(atlas_bookmark_overlay_tests PRIVATE atlas_bookmark_overlay)
+atlas_enable_warnings(atlas_bookmark_overlay_tests)
+add_test(NAME atlas_bookmark_overlay COMMAND atlas_bookmark_overlay_tests)
+
+add_executable(atlas_bookmark_store_tests tests/bookmarks/bookmark_overlay_store_tests.cpp)
+target_link_libraries(atlas_bookmark_store_tests PRIVATE atlas_bookmark_store atlas_library_index)
+atlas_enable_warnings(atlas_bookmark_store_tests)
+add_test(NAME atlas_bookmark_store COMMAND atlas_bookmark_store_tests)
 
 add_executable(atlas_qpdf_inspector_tests tests/document/qpdf_inspector_tests.cpp)
 target_link_libraries(atlas_qpdf_inspector_tests PRIVATE atlas_reader_ui)

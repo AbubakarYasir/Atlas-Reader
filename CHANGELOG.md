@@ -4,6 +4,12 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N5.2: bookmarks kept safely in Atlas — 2026-11-03
+
+- Groundwork for the bookmark editor: Atlas can now keep your bookmarks in its own profile, next to the book's own table of contents, and remembers for each one whether it is in the PDF, only in Atlas, waiting to be saved into the PDF, changed in Atlas, hidden in Atlas, or in conflict. Nothing is ever shown as saved into the PDF until it really is.
+- Bookmark titles, notes and tags are kept exactly as typed in any language. Bookmarks point at a precise place on a page, not just a page number, and survive a crash or power cut.
+- You will see this in N5.3, when the Bookmarks panel becomes editable. The profile is upgraded automatically (schema 5).
+
 ## N5.1: what Atlas may change — 2026-11-02
 
 - Atlas now checks every PDF you open: password-protected, restricted by its owner, signed or certified, read-only, in use by another program, or changed outside Atlas. When Atlas may not change a book, a small label in the status bar says so; click it to see why in plain words. Your bookmarks and notes stay in Atlas either way.

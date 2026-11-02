@@ -29,7 +29,7 @@ Each topic has exactly one home. If two documents seem to disagree, fix the wron
 
 ## Records
 
-- [decisions/](decisions/README.md): architecture decision records (ADR-0001 to ADR-0005).
+- [decisions/](decisions/README.md): architecture decision records (ADR-0001 to ADR-0008).
 - [baselines/](baselines/): measured evidence per stage. The active ledger is [N5_BOOKMARKS_SAFETY_EVIDENCE.md](baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md); N4 is closed ([acceptance](baselines/N4_ACCEPTANCE.md)).
 - [tests/fixtures/pdf](../tests/fixtures/pdf/README.md): PDF fixture provenance, privacy and checksum contract.
 - [history/](history/README.md): frozen earlier plans, unchanged and not maintained.

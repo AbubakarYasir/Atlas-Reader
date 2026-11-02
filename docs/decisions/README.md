@@ -51,5 +51,6 @@ Ordinary implementation details do not need an ADR.
 - `ADR-0005-document-identity-and-reconciliation.md` — **Accepted** — Atlas-owned document IDs with conservative, reviewable move/copy/offline reconciliation.
 - `ADR-0006-interface-languages.md` — **Accepted** — English/Arabic/Urdu interface via checked string tables, live switching, bundled Nastaliq and Naskh fonts.
 - `ADR-0007-foxit-workspace-parity.md` — **Accepted** — Foxit PDF Editor ribbon workspace, measurements and shortcuts reproduced with Atlas's own icons, colours and three languages; Foxit features staged before/after 2.0.
+- `ADR-0008-bookmark-overlay-and-location-envelope.md` — **Proposed** — bookmark overlay in the profile database (schema 5) with explicit storage states, base snapshot and tombstones, plus the versioned `atlas-location/1` envelope; Accepted with `N5 PASS`.
 
 ADR-0004 was Accepted by owner `N2 PASS` on 2026-09-27: Qt PDF 6.10.3 for reading/rendering plus qpdf 12.4.1 CLI for structure/security/writes. ADR-0005 governs identity and reconciliation (implemented in N3, extended by N5). Scope and priority decisions that are not architectural are recorded in the [PLAN.md decision log](../../PLAN.md#9-decision-log).

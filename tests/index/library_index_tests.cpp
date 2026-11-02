@@ -74,7 +74,7 @@ void checkSchemaAndFts() {
 
     {
         atlas::index::SqliteLibraryIndex index{databasePath};
-        require(index.schemaVersion() == 4, "A new profile must reach the current schema version.");
+        require(index.schemaVersion() == 5, "A new profile must reach the current schema version.");
         index.registerRoot({"root-ar", temporary.path() / "مكتبتي", atlas::index::LibraryRootAvailability::available});
         index.upsertRecord({"book-ar", temporary.path() / "مكتبتي" / "مدخل.pdf", "مدخل إلى القراءة", "مؤلف عربي", atlas::document::Availability::available}, "root-ar");
         index.upsertRecord({"book-ur", temporary.path() / "مكتبتي" / "کتاب.pdf", "کتاب", "مصنف", atlas::document::Availability::available}, "root-ar");
@@ -113,7 +113,7 @@ void checkSchemaAndFts() {
 
     {
         atlas::index::SqliteLibraryIndex reopened{databasePath};
-        require(reopened.schemaVersion() == 4, "Reopening a profile must preserve its schema version.");
+        require(reopened.schemaVersion() == 5, "Reopening a profile must preserve its schema version.");
         const auto roots = reopened.roots();
         require(roots.size() == 1 && roots.front().availability == atlas::index::LibraryRootAvailability::offline,
             "An offline root must remain in the database after reopening.");
@@ -385,7 +385,7 @@ PRAGMA user_version = 1;
     sqlite3_close_v2(db);
 
     atlas::index::SqliteLibraryIndex retried{databasePath};
-    require(retried.schemaVersion() == 4, "A later retry must complete the remaining migrations.");
+    require(retried.schemaVersion() == 5, "A later retry must complete the remaining migrations.");
 }
 
 void checkNewerSchemaIsPreserved() {

@@ -1,0 +1,141 @@
+# Atlas Reader Native — Documentation Index
+
+<!-- atlas-status: N4|in-progress -->
+
+Use this page to find the authoritative document instead of duplicating requirements across random files.
+
+## Start here
+
+New visitor? Read the [public project introduction](../README.md). Building or contributing? Start with the [developer guide](DEVELOPER_GUIDE.md). This index holds the detailed technical and product references.
+
+**N4 In progress:** see the [native reader plan](N4_READER_FOUNDATION_PLAN.md) and [N4 evidence ledger](baselines/N4_READER_FOUNDATION_EVIDENCE.md). N3 remains frozen in its [acceptance record](baselines/N3_ACCEPTANCE.md). Flutter development has stopped; native C++/Qt is the active project.
+
+N4.1 is ready for owner review: start with the [plain-language review guide](N4_1_QUICK_START.md), then the [full owner checklist](N4_1_OWNER_TEST.md). Page display begins only after this review, in N4.2.
+
+1. **`../README.md`** — project entry point and current status.
+2. **`../PLAN.md`** — master product/engineering north star.
+3. **`../CHECKPOINTS.md`** — current checkpoint, release mapping, stop gates.
+4. **`N4_READER_FOUNDATION_PLAN.md`** — active N4 read-only Reader execution plan, subgates and stop gate.
+5. **`baselines/N4_READER_FOUNDATION_EVIDENCE.md`** — active N4 result, test, performance, package and owner ledger.
+6. **`baselines/N3_ACCEPTANCE.md`** — frozen N3 owner decision, exact acceptance evidence and boundaries.
+7. **`N3_LIBRARY_INDEX_PLAN.md`** — completed N3 execution plan.
+8. **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — Accepted N2 responsibility split decision.
+9. **`../tests/fixtures/pdf/README.md`** — N2 PDF fixture provenance/privacy/checksum/mutation contract.
+10. **`FEATURE_SCOPE_2_0.md`** — binding Windows 2.0 feature scope.
+11. **`SUCCESS_METRICS.md`** — how we prove the rewrite is becoming a better product rather than merely larger.
+12. **`CHECKPOINT_QA_MATRIX.md`** — binding automated/manual QA, owner tests, blockers and limitation ownership for N0–N11.
+13. **`GIT_WORKFLOW.md`** — binding branch, commit, PR, merge, tag, status synchronization and remote-verification rules.
+
+N0, N1, N2 and N3 are Accepted. N4 is In progress and not yet verified or accepted. A passed checkpoint cannot be reopened without new evidence of a user-facing regression.
+
+## Product behavior
+
+- [Formats before 2.0](FORMAT_EXPANSION_ROADMAP.md) — F1–F4 capabilities and dependencies.
+- [Competitive gap actions](COMPETITIVE_GAP_ACTIONS.md) — dated sources, screenshots, requirements and acceptance tests.
+
+- **`CORE_WORKFLOWS.md`** — Library/Index → Reader → Bookmarks capability, local fallback, security, conflict, import/export, recovery.
+- **`DATA_MODEL_AND_FORMATS.md`** — portable vs local authority, document identity, bookmark states, destinations, Atlas JSON/backup/migration contracts.
+- **`UX_ACCESSIBILITY_AND_DESIGN.md`** — interaction model, keyboard, Arabic/RTL, Narrator, scaling, state communication.
+- **`COMPETITIVE_BASELINE.md`** — what we learn from Acrobat/Foxit/Librera/Xournal++/Sumatra/Okular and what Atlas intentionally does differently.
+
+## Engineering
+
+- **`ARCHITECTURE.md`** — layers, thread model, reader viewport, PDF/storage/platform ports.
+- **`TECH_STACK.md`** — chosen technical stack and alternatives.
+- **`TOOLCHAIN.md`** — accepted N1 Windows alpha toolchain baseline and drift policy; N2 inherits it unless candidate-specific probe tooling is explicitly documented.
+- **`DEPENDENCIES_AND_TOOLS.md`** — open-source dependencies, PDF candidate acquisition constraints, profilers, IDE plugins, GitHub/agent automation, acceptance policy.
+- **`UPSTREAM_CATALOG.md`** — concrete upstream repos/tools, current N2 PDF integration notes, and the checkpoint at which each may be adopted.
+- **`SECURITY_MODEL.md`** — untrusted PDFs/imports/paths, password/privacy, safe mutation, dependency security, hardening.
+- **`PERFORMANCE.md`** — budgets, benchmark methodology, regression rules.
+- **`QUALITY_AND_TESTING.md`** — unit/component/integration/fixture/interoperability/accessibility/failure-injection gates.
+- **`RISK_REGISTER.md`** — current architectural/product/release risks and required mitigations.
+- **`BUILDING.md`** — local/CI build instructions; candidate-specific N2 commands are added only when a probe is introduced and pinned.
+- **`LICENSING.md`** — third-party license/distribution/SBOM requirements.
+
+## N2 PDF-engine qualification
+
+N2 intentionally treats PDF responsibilities separately rather than assuming one universal library.
+
+- **Qt PDF** — read/render/text/search/link/outline candidate.
+- **PDFium** — competing read/render/text/search/link/outline candidate; upstream non-thread-safe API and build/supply-chain costs are measured explicitly.
+- **qpdf** — structure/security/transformation candidate.
+
+The permitted final result is a split architecture behind Atlas-owned normalized contracts.
+
+Primary N2 documents:
+
+- **`N2_PDF_ENGINE_QUALIFICATION_PLAN.md`** — accepted historical N2 phases and evidence methodology;
+- **`baselines/N2_PDF_ENGINE_MATRIX.md`** — binding capability-by-capability results, canonical evidence ledger, scope questions and remaining gates;
+- **`baselines/N2_PDFIUM_PROVENANCE.md`** — PDFium pin/acquisition/build constraints;
+- **`baselines/N2_QPDF_BASELINE.md`** — qpdf structural/security/transformation evidence;
+- **`baselines/N2_QPDF_PROVENANCE.md`** — exact qpdf package provenance;
+- **`baselines/N2_RENDERING_FIDELITY.md`** — A011 1×/2× crop/rotation/annotation/background rendering evidence;
+- **`baselines/N2_COORDINATE_NORMALIZATION.md`** — Atlas page-space contract, A003/A011 geometry and A012 `/XYZ` destination evidence;
+- **`baselines/N2_STRESS_CONCURRENCY.md`** — 500-lifetime read-engine stress and 1,000-job serialized PDFium queue evidence;
+- **`baselines/N2_PRODUCTION_DISTRIBUTION.md`** — frozen/requalified official Qt PDF + first-party qpdf CLI acquisition/licensing/SBOM/update/rollback route;
+- **`decisions/ADR-0004-pdf-engine-responsibilities.md`** — records the Accepted Qt PDF/qpdf responsibility split following owner `N2 PASS` on 2026-09-27;
+- **`../tests/fixtures/pdf/README.md`** — public/synthetic/private fixture rules.
+
+Current evidence has closed core correctness, navigation, Unicode/search,
+malformed/password behavior, repeated synthetic performance, vector and
+real-font/image-only fidelity, coordinate normalization, qpdf outline breadth,
+encrypted-write preservation, stress/concurrency and selected-route
+distribution. Strict CI passed and explicit owner acceptance was recorded on
+2026-09-27. No N2 selection gate remains.
+
+N2 does not authorize production Reader UI, SQLite/FTS5, scanner, bookmarks editor/local overlay, annotations, migration, installer, OCR or AI document analysis. Those remain later checkpoints.
+
+## Accepted N1 evidence
+
+N1 Windows/toolchain and empty-shell evidence is frozen in:
+
+- **`baselines/N1_WINDOWS_BASELINE.md`** — investigation and accepted baseline summary;
+- **`baselines/N1_FINAL_QUALIFICATION.md`** — final owner qualification;
+- **`baselines/N1_WINDOWS_FONT_BACKEND_DECISION.md`** — measured Windows GDI shell decision and revisit conditions.
+
+The accepted N1 user-qualified runtime is commit `73f567cf2c557f185371d7f944ebf6d69453105a`.
+
+## Delivery
+
+- **`RELEASE_STRATEGY.md`** — `2.0.0-alpha` → beta → RC → stable rules.
+- **`DEVELOPMENT_WORKFLOW.md`** — branches, PRs, commits, ADRs, AI/agent workflow, CI tiers and checkpoint immutability.
+- **`GIT_WORKFLOW.md`** — exact Git tree, push, PR, merge, tag and documentation synchronization rules.
+- **`CHECKPOINT_QA_MATRIX.md`** — checkpoint-by-checkpoint QA and owner acceptance obligations.
+- **`PLATFORM_ROADMAP.md`** — Windows → Android → Linux → macOS → iOS/iPadOS.
+- **`MIGRATION_FROM_FLUTTER.md`** — side-by-side behavior and legacy profile migration policy.
+- **`N0_HANDOFF.md`** — frozen record of the accepted bootstrap review criteria.
+- **`decisions/`** — architecture decision records.
+
+## Status/history
+
+- **`../INFO.md`** — compact current orientation/status.
+- **`../CHANGELOG.md`** — repository changes.
+- **`../AGENTS.md`** — mandatory rules for coding agents and automated contributors.
+- **`../SECURITY.md`** — vulnerability/security reporting and repository security expectations.
+
+## Authority rule
+
+When two documents appear to conflict:
+
+1. Running code/tests define what is actually Implemented.
+2. `CHECKPOINTS.md` defines current execution/status.
+3. The active checkpoint plan/evidence sheet defines current experiment criteria and evidence.
+4. `FEATURE_SCOPE_2_0.md` defines accepted product scope.
+5. `PLAN.md` defines principles/north star.
+6. `DATA_MODEL_AND_FORMATS.md` defines Atlas-owned persisted/interchange semantics.
+7. `TOOLCHAIN.md` defines the accepted Windows alpha toolchain baseline unless an active experiment explicitly records an additional toolchain.
+8. Specialized docs define their domain contract.
+9. Older prose must be corrected rather than used to justify contradictory behavior.
+
+Never infer that a Planned requirement is already shipped, or that a probe dependency is production-selected.
+
+## Change discipline
+
+Architecture, P0 scope, durable data formats, release gates, canonical toolchain, or dependency strategy must not change silently. Update the relevant specialized document, add/update an ADR when the decision is architectural, revise checkpoint evidence, and note material changes in `CHANGELOG.md`.
+
+Every meaningful N2 engine experiment must record exact engine version/revision, fixture IDs, build/acquisition path, checksums where applicable, measurements, limitations/failures and decision impact in GitHub Markdown.
+
+
+## Expanded offline release scope
+
+[Offline editing roadmap](OFFLINE_EDITING_ROADMAP.md) defines mandatory E1–E5 actions, dependency ADRs, automated/owner tests and stop gates before N8 and stable 2.0.

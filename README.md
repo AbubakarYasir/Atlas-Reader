@@ -2,77 +2,53 @@
 
 ### Less searching. More understanding.
 
-**An open-source book reader and research library in the making—for people who do more than turn pages.**
+**A fast, local-first PDF reader and research library for people who study deeply. Its interface speaks English, Arabic and Urdu, and everything you write in it can be in any language.**
 
-Your next idea might be buried in a thousand-page book. Or scattered across a hundred PDFs. Finding it again shouldn't mean starting over.
+<!-- atlas-status: N4|in-progress -->
 
-Atlas Reader is working toward a better way to study: bring your books together, read with focus, and build a path back to what matters. Local-first. Windows first. With Arabic, Urdu, and right-to-left reading at the heart of the plan.
+Your next idea might be buried in a thousand-page book or scattered across a hundred PDFs. Atlas brings your books together, gives you a calm place to read, and helps you build a lasting path back to what matters.
 
-[Explore the vision](PLAN.md) · [See our progress](CHECKPOINTS.md) · [For developers](docs/DEVELOPER_GUIDE.md)
+Atlas Reader is built and published by **[DerekSol](https://dereksol.com)**. Need custom software, a website or branding? Contact DerekSol at [dereksol.com](https://dereksol.com) or info@dereksol.com.
 
-<!-- atlas-status: N3|accepted -->
+[The plan](PLAN.md) · [Progress](CHECKPOINTS.md) · [Design](docs/DESIGN.md) · [For developers](docs/README.md)
 
-## A library is more than a folder of files
+## What Atlas 2.0 will be
 
-It is the passage you need to quote. The chapter you want to revisit. The connection between two books that took you hours to find.
-
-We are building Atlas around that kind of reading.
-
-**Find the book. Keep the thought. Pick up where your research left off.**
-
-## What we're building for you
-
-The following describes our product direction, not features available today.
-
-- **Your books, brought together.** A searchable PDF library across your folders, designed to handle moved books and disconnected drives without quietly forgetting them.
-- **Reading with room to think.** A focused PDF workspace, responsive navigation, and search that helps you stay with the text.
-- **Bookmarks with depth.** Organize a book into meaningful paths—not just a pile of saved pages—with nested outlines built for serious study.
-- **Arabic and Urdu, considered from the start.** Joined letters, diacritics, mixed-language text, and right-to-left layouts belong in the foundation, not on a last-minute checklist.
-- **Your work, kept close.** Local-first research, portable PDF information where safe, and clearly identified local storage when the original document cannot be changed safely.
+| | |
+|---|---|
+| **Your books, together** | One searchable library across all your folders and drives. It doesn't lose track of books when you move them or unplug a drive. |
+| **Reading with room to think** | A quiet, fast reading workspace with tabs, search, outline and thumbnails. Long books stay smooth. |
+| **Bookmarks with depth** | Organize a book into nested research paths, find any bookmark across your whole library, and keep them even when the PDF itself can't be changed. |
+| **Your marks on the page** | Pen, highlighter, notes and comments that open in other PDF readers too. |
+| **English, Arabic and Urdu interface** | Switch the whole app between English (default), العربية and اردو at any time, with proper right-to-left layouts and Nastaliq for Urdu. |
+| **Any language in your notes** | Bookmarks, notes, tags and search accept every script and keep it exactly as you typed it, including mixed Arabic and English. |
+| **Yours, offline** | No account, no cloud, no tracking. Your research stays on your computer and can be backed up. |
 
 > Portable when possible. Local when necessary. Never lost silently.
 
-## Small steps. A serious foundation.
+## Where it stands today
 
-**Today: an accepted native Library beta foundation—not yet a daily-use reader.**
+| Stage | What it delivers | Status |
+|---|---|---|
+| Foundation (N0–N2) | Windows app shell, toolchain, PDF engine choice | ✅ Done |
+| Library (N3) | Folders, background indexing, search, Favorites, Recents | ✅ Released as [`2.0.0-beta.1`](https://github.com/AbubakarYasir/Atlas-Reader/releases/tag/v2.0.0-beta.1) |
+| **Reader (N4)** | **Reading PDFs inside Atlas** | 🟡 **In progress.** Opening, tabs, passwords and page display work. Now: the redesigned workspace in three languages. |
+| Bookmarks (N5) | Full bookmark editor, local fallback, import/export | Next |
+| Pen and notes (N6) | Ink, highlights, comments | Planned |
+| Everyday tools (N7) | Printing, covers, sorting, collections | Planned |
+| Backup (N8) | Backup, restore and moving over from the old app | Planned |
+| Polish and release (N9–N11) | Language and accessibility qualification, speed, installer, stable **2.0** | Planned |
 
-We have established the native Windows application shell and tested the PDF technology behind future reading and editing features. The approved stage includes Arabic/Urdu sample rendering, image-only PDFs, navigation, document-preservation tests, and repeated stability checks.
+The current beta is for early evaluation. It has the library, but you can't read inside it yet. No release date has been announced.
 
-The project owner tested and approved **N3** on **27 September 2026**. Its native Library can add folders, index PDFs in the background, search English/Arabic/Urdu metadata, show Favorites and Recents, and protect a book's identity when files move or drives disappear. The accepted engineering version is **[`2.0.0-beta.1`](https://github.com/AbubakarYasir/Atlas-Reader/releases/tag/v2.0.0-beta.1)**. This is a verified development beta foundation, not the finished Atlas Reader 2.0.
+**After 2.0:** EPUB, comics (CBZ/CBR), DRM-free Kindle files, PDF editing tools, and later Android, Linux, macOS and iOS. See [what comes after 2.0](docs/AFTER_2_0.md).
 
-**What's not ready yet:** the built-in reading interface, bookmark editor, and annotations begin in later stages. The published beta is for engineering/early evaluation, not everyday reading yet; success on our test samples does not mean every PDF has been proven perfect.
+## Follow along
 
-[What N3 passed—and what it means](docs/baselines/N3_ACCEPTANCE.md) · [Detailed N3 evidence](docs/baselines/N3_LIBRARY_INDEX_EVIDENCE.md)
-
-## The road ahead
-
-**First, your library.** N3 is Accepted: finding, indexing, and organizing local PDFs now has a verified native foundation.
-
-**Then, your reading workspace.** N4 is next: native PDF viewing, navigation, and search.
-
-**Next, your research tools.** Resilient bookmarks, followed by ink and annotations.
-
-**More of your books, before 2.0.** EPUB, CBZ/CBR and user-owned, DRM-free AZW3, MOBI and PRC files are planned after the PDF foundation. KFX requires a feasibility decision. Today's N3 candidate indexes PDFs only. [See the format plan](docs/FORMAT_EXPANSION_ROADMAP.md).
-
-**Before everyday use, the hard checks.** Further Windows integration, accessibility, performance, and release testing. Every stage has automated checks and hands-on acceptance requirements.
-
-Windows is our first destination. Android, Linux, macOS, and iOS/iPadOS are longer-term plans—not available native editions. We have not announced a release date.
-
-[Full roadmap](CHECKPOINTS.md) · [Planned Windows features](docs/FEATURE_SCOPE_2_0.md) · [Our quality commitments](docs/CHECKPOINT_QA_MATRIX.md)
-
-## Follow the making of Atlas
-
-If you want a PDF reader built around deep reading, organized research, and Arabic/Urdu needs, follow the journey.
-
-**Star this repository to keep Atlas on your radar.** Share it with a reader or researcher who would care about this direction. For updates, use GitHub's Watch options or browse the [change history](CHANGELOG.md).
-
-Want to look under the hood? Start with the [developer guide](docs/DEVELOPER_GUIDE.md) or the [full documentation](docs/README.md).
+Star or watch this repository to follow progress, and see the [change history](CHANGELOG.md) for what's new. Developers can start with the [documentation index](docs/README.md).
 
 ---
 
-**About the older app:** Flutter development has stopped. That implementation is obsolete and retained only as a backup and migration reference on [`legacy/flutter`](https://github.com/AbubakarYasir/Atlas-Reader/tree/legacy/flutter). The current C++/Qt native project lives on `main`. These two branch names are permanent.
+The earlier Flutter app is no longer developed. It is kept only as a reference on the [`legacy/flutter`](https://github.com/AbubakarYasir/Atlas-Reader/tree/legacy/flutter) branch. The native C++/Qt app lives on `main`.
 
-
-### Planned offline tools
-
-Before stable 2.0, the roadmap includes full annotation controls, PDF text/image editing, page organization, form tools, secure redaction, equations and offline signatures. These are planned, not available in the current N3 preview. OCR, audio notebooks and online/collaboration services are excluded. See the [delivery stages and safety gates](docs/OFFLINE_EDITING_ROADMAP.md).
+Atlas Reader's own code is [MIT licensed](LICENSE). Third-party components keep their own licenses; see [dependencies and licensing](docs/DEPENDENCIES.md).

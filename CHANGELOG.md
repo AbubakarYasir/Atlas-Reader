@@ -1,8 +1,108 @@
 # Changelog
 
-<!-- atlas-status: N3|accepted -->
+<!-- atlas-status: N4|in-progress -->
 
 All notable changes to Atlas Reader Native are documented here.
+
+## DerekSol as publisher; N4 merged to main — 2026-11-02
+
+- Atlas Reader is published by **DerekSol** ([dereksol.com](https://dereksol.com)). The Windows program now carries DerekSol as company, copyright and description (Properties → Details); About shows DerekSol and how to reach them for custom software; Help has a **Custom Software** button.
+- Windows will still say "Unknown publisher" until the program is signed with a code-signing certificate issued to DerekSol; how and when is in [WORKFLOW.md](docs/WORKFLOW.md#5-versions-and-releases) (planned with the installer, N11).
+- Windows build: sources are compiled as UTF-8, and printed page labels fall back to page numbers on Qt 6.10.
+- N4 is merged into `main` on the owner's direction; the end-of-N4 review continues there.
+
+## N4.4 and N4.5 complete: find, search, bookmarks, links — 2026-11-02
+
+- **Find and Search:** Ctrl+F opens a Find bar over the page (Enter or F3 for the next match, Shift+F3 for the previous one); Ctrl+Shift+F opens the Search panel on the right with every result and the words around it. Arabic and Urdu search ignores harakat, tatweel and letter shapes, so العلم finds العِلْمُ.
+- **Bookmarks panel:** the book's own table of contents in the left strip; the current chapter is highlighted.
+- **Select Text, SnapShot and Copy:** select text with Alt+6 and copy with Ctrl+C; SnapShot (Alt+7) copies any area as a picture; Word Count on the View tab.
+- **Links:** links inside the book jump there (Alt+Left comes back); web links show their address and open only when you confirm.
+- **More zoom:** Fit Visible (Ctrl+3), Zoom To (Ctrl+M), Marquee Zoom and Foxit's full zoom list; AutoScroll (Ctrl+Shift+H).
+- **Atlas remembers each book:** page, zoom and layout come back when you reopen it. New Preferences pages: Documents, History, Page Display, Search.
+- **Recent files:** pin, copy path, open the folder, remove; pinned files stay at the top.
+- Printed page numbers ("iv", "xii") work in the page box. Books without searchable text say so plainly.
+- Screen readers now hear the text of the current page.
+- Icons added from the same pinned Fluent UI commit for the new commands: cursor, screenshot, copy, clipboard, text_word_count, open, arrow_up, arrow_down, arrow_autofit_down, search_square.
+
+## N4.4 navigation, slices 1–2 — 2026-11-02
+
+- **Page display like Foxit:** Single Page, Continuous, Facing (two pages side by side), Continuous Facing, and Show Cover Page — from the View tab or the status bar.
+- **Reverse View** for Arabic and Urdu books: two-page spreads read right to left, and the Left arrow turns forward.
+
+- **Pages panel:** page thumbnails in a side panel opened from the new left icon strip (or F4); click a page to jump; drag the edge to resize, double-click it to hide. Arabic and Urdu mirror it to the right.
+- **Previous View / Next View** (Alt+Left / Alt+Right, and two new status-bar buttons) take you back to where you were before a jump.
+- **Right-click a document tab:** Close, Close Others, Close Tabs to the Left/Right, Close All, Copy Path, Open Containing Folder.
+- Commits are now signed with the owner's key and show Verified on GitHub; earlier commits were re-signed.
+
+## Complete Foxit feature plan and logo colours — 2026-11-01
+
+- **Every Foxit PDF Editor feature is now planned** (owner direction). [FOXIT_PARITY.md §3](docs/FOXIT_PARITY.md#3-complete-foxit-feature-catalogue-and-atlas-plan) catalogues all of them from the owner's reference package — 11 ribbon tabs, the classic menu bar, 114 menus, 159 core dialogs, 34 Preferences categories, every navigation panel and context menu, 107 modules and 62 plug-ins — and gives each a stage before 2.0 or an after-2.0 track.
+- [AFTER_2_0.md](docs/AFTER_2_0.md) is reorganized into tracks **A–K** (Reading Plus, Formats, Pages/Create/Convert, Edit, Forms, Protect & Sign, OCR/Accessibility/Standards, Automate, Review & Share, Connected opt-in, Platforms). Offline by default stays; connected features are opt-in. Only cracking, bypasses and hidden data collection are never built.
+- Pre-2.0 stages gained the Foxit items they own (N4.4 tab/page/recent menus and rail; N4.5 search options, Word Count, link/image menus; N5 Auto Create Bookmarks, Signatures panel; N6 full Comment tab and panel; N7 Help tab, menu bar, tray; N9 Reading Option).
+- **Atlas's main colour now comes from its logo:** Atlas Blue accent (`#0b4fae`, Sky `#6cc4ff` in dark mode), navy title bar (`#0b3d91`), cyan highlight; theme colours Atlas Blue, Midnight, Sky, Teal, Plum, Graphite. Green is gone.
+
+## N4.3 Foxit workspace — 2026-11-01
+
+- **Atlas now looks and works like Foxit PDF Editor** (owner decision, [ADR-0007](docs/decisions/ADR-0007-foxit-workspace-parity.md)): Atlas's own 48 px title bar with Quick Access Toolbar (Open, Mouse/Touch mode) and window buttons; ribbon tabs **File · Home · View · Accessibility · Help** with Foxit-sized buttons and menus (Hand, Zoom, Page Fit Option, Rotate View, Read Mode, Full Screen, Visual Mode, View Setting, Reading Option, Touch Mode, About); collapsible ribbon (Ctrl+F11); Foxit-style document tabs with the **Library as the first tab**; Foxit-style status bar (« ‹ 12 / 340 › », zoom slider and percentage menu, full screen).
+- **File page** like Foxit's: Open (Recent Documents, Computer), Close, Close All, Skins, Preferences, Exit. Recent documents are remembered.
+- **Preferences window** (Ctrl+K) with a searchable category list: General, Languages, Skins, Accessibility; Cancel undoes changes.
+- **Skins:** Light / Dark / Use system setting, and Classic or Colourful title bar with six Atlas theme colours.
+- Foxit shortcuts: Ctrl+K Preferences, Ctrl+Q exit, Ctrl+F11 ribbon, Ctrl+Shift+Page Up/Down tabs; Add folder moves to Ctrl+Shift+O; Ctrl+F searches the Library.
+- Fixed: text on green buttons and the title bar was drawn black because two colour names started with "on" (QML reads those as signal handlers).
+- New study [docs/FOXIT_PARITY.md](docs/FOXIT_PARITY.md): measured layout and every Foxit command mapped to before or after 2.0. Plans updated everywhere.
+
+## N4.3 workspace revamp and three languages — 2026-11-01
+
+- **Atlas speaks English, Arabic and Urdu.** Pick the language from the title bar; the whole interface switches instantly, mirrors for Arabic and Urdu, and is remembered. Urdu uses the bundled Noto Nastaliq Urdu font. Book titles, names and paths in any script display correctly in every language.
+- **New workspace design** (Foxit-style layout, Atlas look): title bar, document tabs, a command bar, and a status bar with page navigation, fit buttons and a zoom slider. New icons throughout.
+- **Read mode** (Ctrl+H), **Full screen** (F11), view **rotation**, **reading colours** (Paper, Sepia, Night, High contrast — the PDF itself never changes), **Light / Dark / System** appearance and **Touch mode**.
+- Library restyled with list and grid views.
+- PDFs passed on the command line open in the reader.
+- New CI check: every interface string must exist in all three languages.
+
+## N4.2 page display — 2026-11-01
+
+- **Atlas now shows PDF pages.** Opening a book shows a smooth, virtualized page view fitted to the window width, with a page box, page count, zoom out/in, Fit width and Fit page, scroll bars, wheel and keyboard navigation, and Ctrl+wheel zoom at the pointer. Only visible and nearby pages render, on a background thread; texture memory is capped.
+- Open PDFs are read into memory once, so the file is never locked and never changed.
+- *Restore reader tabs* moved into the reader's "More" menu.
+- New test `atlas_reader_viewport_render` renders a generated 60-page PDF offscreen and checks display, clipping, page jumps, zoom, fit page, file release and unchanged bytes.
+
+## N4.2 core viewport model — 2026-11-01
+
+- Added `atlas_reader_viewport`: engine-independent page layout, render planning with scale buckets, a cancelling render scheduler and a byte-budgeted texture cache with pinning. New `atlas_reader_viewport` test includes a 2,000-page memory series (peak 236 MiB within a 256 MiB budget). No UI change yet; page display arrives with the Qt render adapter.
+
+## Focused 2.0 plan and documentation consolidation — 2026-11-01
+
+- **Scope (owner decision):** Windows 2.0 now means Library + Reader + Bookmarks + annotations + everyday tools + backup/migration + Arabic/accessibility qualification. EPUB, comics, DRM-free Kindle files, the KFX decision, PDF editing tools (E1–E5), form filling (C20), side-by-side reading (C17), the reflow view (C18) and read-aloud (C11) moved to [after 2.0](docs/AFTER_2_0.md), with their requirements kept.
+- **Process (owner decision):** one owner review per stage instead of per sub-stage. Sub-stages close on automated evidence plus a recorded rendered self-review. N4.1 closes as Implemented and automated-Verified; its owner checks move into the end-of-N4 [review guide](docs/N4_REVIEW.md); **N4.2 is now active**. The next stage may start once a review build is delivered; merge, tag and release still need the owner's `N# PASS`.
+- **Versions renumbered** after beta.1 (nothing later was published): N5 beta.3, N6 beta.4, N7 beta.5, N8 beta.6, N9 beta.7, N10 rc.1, N11 2.0.0.
+- **Docs consolidated:** 35 reference files in `docs/` became 9 plus an index (DESIGN, ARCHITECTURE, DATA_AND_SAFETY, QUALITY, WORKFLOW, BUILDING, DEPENDENCIES, AFTER_2_0, N4_REVIEW). `INFO.md` was merged into README and CHECKPOINTS. README, PLAN, CHECKPOINTS, AGENTS and CONTRIBUTING were rewritten. Every previous file is preserved unchanged under [docs/history/plan-v1](docs/history/README.md).
+- **New design system** ([DESIGN.md](docs/DESIGN.md)): character, measured contrast for the existing palette, a new `controlBorder` token for WCAG 1.4.11, type scale with Arabic rules, spacing, radii, motion, components, keyboard map, a design-review matrix, and a plan for a `Theme` singleton plus Qt Linguist translations in N4.5.
+- **Tooling:** the docs governance check now validates the new document set, skips frozen history, and requires Automated QA / Owner review / Stop gate sections for N4–N11. CI copies of the N2/N3 plans point at their history location. The review packager ships `docs/N4_REVIEW.md` as `START-HERE.md`.
+- No product code, dependency pin, toolchain or source version changed.
+
+## N4.1 review-build preparation — 2026-10-16
+
+- Synchronized the public roadmap, checkpoint summary, current notes and agent/documentation entry points with the N4.1 Ready for owner review gate. The earlier partial implementation entry below remains historical.
+- Added a validated Windows environment helper for the active checkout, replacing reliance on the removed old checkout's vcpkg path while retaining the exact accepted dependency baseline.
+- Added separate N4.1 review packaging with runtime deployment, build identity, fixture provenance, notices, file/archive checksums and a packaged startup check. N4 branch builds must no longer be labelled as accepted N3 packages.
+- Added plain-language review instructions. N4.1 owner acceptance, N4.2 page display, beta.2 promotion and merge remain pending; no product version or dependency pin changes.
+- Rendered/source review found that Reader tabs used embedded titles and lacked keyboard selection. Reader primary names now use filename stems with document titles secondary, tab semantics include name/selected state, Enter/Space and Ctrl+Tab/Ctrl+Shift+Tab work, selected tabs stay visible, and close controls remain inset. Replaced the viewport implementation jargon with plain review-stage wording.
+- Extended controller integration checks for disabled-restoration restart, rejected network URLs and unchanged SHA-256 source bytes after the complete open/password/restoration/cancellation lifecycle.
+
+## N4 start — 2026-09-28
+
+- Opened `native-v2-n4-reader-foundation` from verified accepted `main` merge `739508e3e698016e8a6a4cb8b87c2b4aa418d66d` only after PR #5 merged, all permanent-branch workflows passed and the completed N3 branch was deleted locally/remotely.
+- Set N4 to **In progress** with N4.1 session/open model as the only active subgate. The source stays `2.0.0-beta.1`; `2.0.0-beta.2` is earned only at N4 acceptance.
+- Added a binding read-only reader plan and empty evidence ledger covering virtualized rendering, mixed geometry/rotation, zoom/fit/navigation, outlines/text/search/links, tabs/restoration, side-by-side and simplified text view, offline security, Arabic/Urdu, accessibility, rendered UI review, bounded memory and exact owner/package gates.
+- N5 bookmarks, N6 ink/annotations and every PDF mutation remain closed. N4 must prove source hashes unchanged.
+
+## N4.1 partial checkpoint — 2026-09-30
+
+- Added the first Atlas-owned read-session contract and focused lifecycle tests: asynchronous open states, duplicate-tab policy, deterministic tab activation/close, reopen revisions and stale-result rejection.
+- Routed Library and direct local PDF opens into an initial in-app tab workspace instead of the external Windows reader. The workspace currently proves open/session/error state only; virtual page rendering remains N4.2 and is not claimed.
+- Added opt-in local tab restoration, disabled by default and storing no passwords, plus clear missing, malformed, password-required and unsupported-security states.
+- Local Visual Studio 2026/Qt 6.10.3 Debug build, complete 25/25 CTest suite and isolated-profile startup pass. N4.1 remains In progress pending its remaining component, sharing, Release, rendered accessibility/RTL and CI evidence.
 
 ## `2.0.0-beta.1` released — 2026-09-28
 

@@ -20,7 +20,7 @@ The closure change records owner acceptance, synchronizes status/ADR/PR document
 
 ## Remaining product obligations
 
-No unresolved N2 selection gate remains. Accepted scope is not a claim that future product features are complete. All carried obligations remain binding in [the QA matrix](../CHECKPOINT_QA_MATRIX.md): N4 link normalization, rotated destinations, search, graphics and bounded memory; N5 security/preflight and safe saves; N6 annotation interoperability; N9 Arabic/RTL/accessibility breadth; N10 hardware, prolonged sessions and final distribution review.
+No unresolved N2 selection gate remains. Accepted scope is not a claim that future product features are complete. All carried obligations remain binding in [the QA matrix](../history/plan-v1/docs/CHECKPOINT_QA_MATRIX.md): N4 link normalization, rotated destinations, search, graphics and bounded memory; N5 security/preflight and safe saves; N6 annotation interoperability; N9 Arabic/RTL/accessibility breadth; N10 hardware, prolonged sessions and final distribution review.
 
 These obligations must retain their tests and blocking conditions. Cryptographic signature validity verification remains outside Windows 2.0; detecting signed/certified structure and preventing unsafe mutation remains required.
 
@@ -41,4 +41,4 @@ Closure cleanup removed the unused `DO_NOT_USE.tmp` and obsolete encrypted A013 
 
 N3 starts from the accepted native integration commit only after this report. Its order is storage/schema, bounded scanning, identity/reconciliation, then Library UX/search. The existing N3 QA and owner-test requirements in `CHECKPOINTS.md` apply. No N3 branch, schema, scanner or application code is part of N2 closure.
 
-On 2026-09-27 the owner requested N3 to begin. N3 branch `native-v2-n3-library-index-foundation` was created from native `main` commit `84a9b45b10b24ece595bb7069136fefd2ed2cc5b`; see the active [N3 plan](../N3_LIBRARY_INDEX_PLAN.md) and [evidence ledger](N3_LIBRARY_INDEX_EVIDENCE.md) for subsequent work. This entry preserves the N2 closeout as it stood before N3 began.
+On 2026-09-27 the owner requested N3 to begin. N3 branch `native-v2-n3-library-index-foundation` was created from native `main` commit `84a9b45b10b24ece595bb7069136fefd2ed2cc5b`; see the active [N3 plan](../history/plan-v1/docs/N3_LIBRARY_INDEX_PLAN.md) and [evidence ledger](N3_LIBRARY_INDEX_EVIDENCE.md) for subsequent work. This entry preserves the N2 closeout as it stood before N3 began.

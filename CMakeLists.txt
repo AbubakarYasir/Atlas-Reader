@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.28)
 project(
     AtlasReaderNative
     VERSION 2.0.0
-    DESCRIPTION "Native successor to Atlas Reader"
+    DESCRIPTION "Atlas Reader by DerekSol (dereksol.com)"
     LANGUAGES CXX
 )
 
@@ -17,12 +17,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent Gui Quick Qml QuickControls2 Pdf)
+find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent Gui Quick Qml QuickControls2 Pdf Svg)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 qt_standard_project_setup(REQUIRES 6.10)
 
 if(ATLAS_ENABLE_PDFIUM_PROBE)
     find_package(PDFium REQUIRED)
+endif()
+
+# Sources are UTF-8 (Arabic/Urdu test strings); MSVC otherwise reads the ANSI code page.
+if(MSVC)
+    add_compile_options(/utf-8)
 endif()
 
 function(atlas_enable_warnings target)
@@ -42,6 +47,28 @@ endfunction()
 add_library(atlas_core INTERFACE)
 target_include_directories(atlas_core INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_features(atlas_core INTERFACE cxx_std_23)
+
+add_library(atlas_reader_session STATIC
+    src/core/reader/ReaderSessionModel.cpp
+    src/core/reader/ReaderSessionModel.h
+)
+target_include_directories(atlas_reader_session PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_reader_session PUBLIC atlas_core)
+atlas_enable_warnings(atlas_reader_session)
+
+add_library(atlas_reader_viewport STATIC
+    src/core/reader/ViewportLayout.cpp
+    src/core/reader/ViewHistory.cpp
+    src/core/reader/ViewHistory.h
+    src/core/reader/TextSearch.cpp
+    src/core/reader/TextSearch.h
+    src/core/reader/ViewportLayout.h
+    src/core/reader/RenderPlanner.cpp
+    src/core/reader/RenderPlanner.h
+)
+target_include_directories(atlas_reader_viewport PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_reader_viewport PUBLIC atlas_core)
+atlas_enable_warnings(atlas_reader_viewport)
 
 add_library(atlas_document_identity STATIC
     src/core/index/DocumentIdentityReconciler.cpp
@@ -115,6 +142,8 @@ add_library(atlas_app_support STATIC
     src/app/diagnostics/ShellMetrics.h
     src/app/logging/Logging.cpp
     src/app/logging/Logging.h
+    src/app/settings/AppPreferences.cpp
+    src/app/settings/AppPreferences.h
 )
 target_include_directories(atlas_app_support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(atlas_app_support PUBLIC Qt6::Core Qt6::Gui Qt6::Quick)
@@ -131,9 +160,31 @@ target_link_libraries(atlas_library_ui PUBLIC
 )
 atlas_enable_warnings(atlas_library_ui)
 
+add_library(atlas_reader_ui STATIC
+    src/app/reader/ReaderController.cpp
+    src/app/reader/ReaderController.h
+    src/app/reader/PdfRenderWorker.cpp
+    src/app/reader/PageThumbnailProvider.cpp
+    src/app/reader/DocumentTextWorker.cpp
+    src/app/reader/DocumentTextWorker.h
+    src/app/reader/ReaderViewportText.cpp
+    src/app/reader/PageThumbnailProvider.h
+    src/app/reader/PdfRenderWorker.h
+    src/app/reader/ReaderViewport.cpp
+    src/app/reader/ReaderViewport.h
+)
+target_include_directories(atlas_reader_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_reader_ui PUBLIC
+    atlas_reader_session atlas_reader_viewport atlas_library_document_inspector
+    Qt6::Core Qt6::Concurrent Qt6::Gui Qt6::Quick Qt6::Pdf
+)
+atlas_enable_warnings(atlas_reader_ui)
+
 set(ATLAS_READER_PLATFORM_SOURCES)
 if(WIN32)
-    list(APPEND ATLAS_READER_PLATFORM_SOURCES assets/windows/atlas_reader.rc)
+    set(ATLAS_WINDOWS_ASSETS "${CMAKE_CURRENT_SOURCE_DIR}/assets/windows")
+    configure_file(assets/windows/atlas_reader.rc.in "${CMAKE_CURRENT_BINARY_DIR}/atlas_reader.rc" @ONLY)
+    list(APPEND ATLAS_READER_PLATFORM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/atlas_reader.rc")
 endif()
 
 qt_add_executable(atlas_reader
@@ -144,16 +195,42 @@ if(WIN32)
     set_target_properties(atlas_reader PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
+set(ATLAS_QML_FILES
+    qml/Main.qml qml/Theme.qml qml/I18n.qml qml/AppState.qml
+    qml/AtlasButton.qml qml/AtlasIconButton.qml qml/AtlasTextField.qml qml/SidebarItem.qml
+    qml/TitleBar.qml qml/LibraryView.qml qml/ReaderView.qml qml/ReaderTab.qml
+    qml/RibbonButton.qml qml/RibbonBar.qml qml/DocumentTabBar.qml qml/Backstage.qml
+    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/AtlasCheckBox.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
+)
+# Place every QML file at the module root so the module's qmldir (and its
+# singletons) is the implicit import of each file.
+foreach(qml_file IN LISTS ATLAS_QML_FILES)
+    get_filename_component(qml_name ${qml_file} NAME)
+    set_source_files_properties(${qml_file} PROPERTIES QT_RESOURCE_ALIAS ${qml_name})
+endforeach()
+set_source_files_properties(qml/i18n/Strings.js PROPERTIES QT_RESOURCE_ALIAS i18n/Strings.js)
+set_source_files_properties(qml/Theme.qml qml/I18n.qml qml/AppState.qml
+    PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+file(GLOB ATLAS_ICON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS assets/icons/*.svg)
+
 qt_add_qml_module(atlas_reader
     URI AtlasReader
     VERSION 1.0
-    QML_FILES qml/AtlasButton.qml qml/AtlasTextField.qml qml/Main.qml
+    QML_FILES
+        ${ATLAS_QML_FILES}
+        qml/i18n/Strings.js
+    RESOURCES
+        ${ATLAS_ICON_FILES}
+        assets/fonts/NotoNastaliqUrdu-wght.ttf
+        assets/fonts/NotoNaskhArabic-Regular.ttf
+        assets/fonts/NotoNaskhArabic-SemiBold.ttf
+        assets/branding/atlas-reader-icon.png
 )
 
 target_compile_definitions(atlas_reader PRIVATE ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}")
 target_link_libraries(atlas_reader
-    PRIVATE atlas_core atlas_app_support atlas_library_ui
-    Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2
+    PRIVATE atlas_core atlas_app_support atlas_library_ui atlas_reader_ui
+    Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2 Qt6::Svg
 )
 atlas_enable_warnings(atlas_reader)
 if(MSVC)
@@ -262,6 +339,31 @@ target_link_libraries(atlas_core_smoke PRIVATE atlas_core)
 atlas_enable_warnings(atlas_core_smoke)
 add_test(NAME atlas_core_smoke COMMAND atlas_core_smoke)
 
+add_executable(atlas_reader_session_tests tests/reader/reader_session_model_tests.cpp)
+target_link_libraries(atlas_reader_session_tests PRIVATE atlas_reader_session)
+atlas_enable_warnings(atlas_reader_session_tests)
+add_test(NAME atlas_reader_session COMMAND atlas_reader_session_tests)
+
+add_executable(atlas_reader_viewport_tests tests/reader/viewport_tests.cpp)
+target_link_libraries(atlas_reader_viewport_tests PRIVATE atlas_reader_viewport)
+atlas_enable_warnings(atlas_reader_viewport_tests)
+add_test(NAME atlas_reader_viewport COMMAND atlas_reader_viewport_tests)
+
+add_executable(atlas_reader_viewport_render_tests tests/reader/reader_viewport_render_tests.cpp)
+target_link_libraries(atlas_reader_viewport_render_tests PRIVATE atlas_reader_ui Qt6::Gui Qt6::Quick)
+atlas_enable_warnings(atlas_reader_viewport_render_tests)
+add_test(NAME atlas_reader_viewport_render COMMAND atlas_reader_viewport_render_tests)
+
+add_executable(atlas_reader_controller_tests tests/reader/reader_controller_tests.cpp)
+target_link_libraries(atlas_reader_controller_tests PRIVATE atlas_reader_ui)
+atlas_enable_warnings(atlas_reader_controller_tests)
+
+add_executable(atlas_app_preferences_tests tests/app/app_preferences_tests.cpp)
+target_link_libraries(atlas_app_preferences_tests PRIVATE atlas_app_support)
+atlas_enable_warnings(atlas_app_preferences_tests)
+add_test(NAME atlas_app_preferences COMMAND atlas_app_preferences_tests)
+set_tests_properties(atlas_app_preferences PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 add_executable(atlas_document_identity_tests tests/index/document_identity_reconciler_tests.cpp)
 target_link_libraries(atlas_document_identity_tests PRIVATE atlas_document_identity)
 atlas_enable_warnings(atlas_document_identity_tests)
@@ -294,6 +396,13 @@ target_link_libraries(atlas_library_document_inspector_tests PRIVATE atlas_libra
 atlas_enable_warnings(atlas_library_document_inspector_tests)
 
 set(ATLAS_N2_PDF_FIXTURE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
+
+add_test(
+    NAME atlas_reader_controller
+    COMMAND atlas_reader_controller_tests
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A001_simple_text.pdf"
+        "${ATLAS_N2_PDF_FIXTURE_DIR}/A008_password_rc4_40.pdf"
+)
 
 add_test(
     NAME atlas_library_document_inspector

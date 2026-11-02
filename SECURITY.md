@@ -37,7 +37,7 @@ High-priority reports include:
 - backup/import/migration corruption that can destroy existing user data;
 - dependency/package compromise affecting distributed Atlas binaries.
 
-See [`docs/SECURITY_MODEL.md`](docs/SECURITY_MODEL.md) for the engineering threat model.
+See the [security model](docs/DATA_AND_SAFETY.md#security-model) for the engineering threat model.
 
 ## Research/testing guidance
 
@@ -47,4 +47,4 @@ Atlas does not include or endorse password cracking, PDF restriction removal, or
 
 ## Disclosure
 
-We prefer coordinated disclosure after a fix or mitigation is available. Security fixes still require targeted regression/preservation testing before release, but critical issues may use an expedited release process.
+We prefer coordinated disclosure after a fix or mitigation is available. Security fixes still require targeted regression/preservation testing before release, but critical issues may use an expedited release process.

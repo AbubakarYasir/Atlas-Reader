@@ -86,7 +86,6 @@ A change requires a superseding ADR and migration plan.
 
 ## Related
 
-- `docs/DEPENDENCIES_AND_TOOLS.md`
-- `docs/TECH_STACK.md`
-- `docs/LICENSING.md`
-- N2 — PDF engine qualification
+- `docs/DEPENDENCIES.md` (dependencies and licensing)
+- `docs/ARCHITECTURE.md` (technology)
+- N2 — PDF engine qualification

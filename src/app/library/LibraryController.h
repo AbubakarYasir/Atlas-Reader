@@ -78,7 +78,7 @@ public:
     Q_INVOKABLE void addRoot(const QUrl& folder);
     Q_INVOKABLE void rescan();
     Q_INVOKABLE void setFavorite(const QString& documentId, bool favorite);
-    Q_INVOKABLE void openExternally(const QString& documentId);
+    Q_INVOKABLE void openInReader(const QString& documentId);
     Q_INVOKABLE void applyProposal(const QString& proposalId);
     Q_INVOKABLE void dismissProposal(const QString& proposalId);
 
@@ -92,6 +92,7 @@ signals:
     void selectedRootChanged();
     void pendingProposalsChanged();
     void operationError(const QString& message);
+    void openDocumentRequested(const QUrl& source);
 
 private:
     void requestRefresh();

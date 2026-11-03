@@ -30,7 +30,7 @@ PR #8 stays Draft. No N6 work, release or merge is authorized by this pass.
 | N5-08 | Format fidelity | Unicode/limits/CSV/round-trip tests | Pending |
 | UI-01 | Reference-based Windows review | EN/AR/UR, wide/narrow, 100/200%, empty/error/protected/conflict | Pending |
 | PKG-01 | Correct review instructions | N5 START-HERE and guide in packaged ZIP | Script corrected; package pending |
-| GIT-01 | Owner identity and signatures | Audit every N5 commit; GitHub Verified | 17 valid, last 2 corrected locally; push pending |
+| GIT-01 | Owner identity and signatures | Audit every N5 commit; GitHub Verified | All N5 commits valid; corrected history pushed and verified |
 | DOC-01 | Consistent contracts and status | Docs checker plus manual claim/evidence comparison | In progress |
 
 ## Preserved history and identity correction
@@ -48,6 +48,8 @@ All 17 earlier N5 commits returned `valid` from GitHub; the last two returned
 
 Local signature verification passed and the corrected tip's tree equals the
 published implementation tree exactly. Main and release tags are unchanged.
+GitHub reports `valid` for both corrected commits and repair commit `40d36d5`.
+The active local N5 branch and remote were equal after the authorized exact-lease push.
 
 ## Evidence boundaries
 

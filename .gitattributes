@@ -4,3 +4,4 @@
 *.pdf -text
 assets/fonts/OFL.txt -whitespace
 *.ttf binary
+.githooks/* text eol=lf

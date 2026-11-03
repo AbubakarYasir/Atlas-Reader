@@ -7,7 +7,7 @@
 #include <QJsonValue>
 #include <QProcess>
 #include <QRegularExpression>
-#include <QTemporaryFile>
+#include <QFile>
 
 #include <algorithm>
 #include <cmath>
@@ -375,17 +375,29 @@ std::optional<QByteArray> QpdfOutlineWriter::buildUpdate(const PdfSourceOutline&
 }
 
 QString QpdfOutlineWriter::write(const QString& qpdf, const QString& source, const QString& password,
-                                 const QByteArray& update, const QString& output) {
-    QTemporaryFile json;
-    json.setFileTemplate(QDir::temp().filePath(QStringLiteral("atlas-outline-XXXXXX.json")));
-    if (!json.open() || json.write(update) != update.size() || !json.flush()) return QStringLiteral("tempFile");
-    json.close();
-    const Run written = runQpdf(qpdf, {QStringLiteral("--update-from-json=") + QDir::toNativeSeparators(json.fileName())},
+                                 const QByteArray& update, const QString& output, QString* detail) {
+    // The update document sits beside the output (same folder, plain file)
+    // and is removed afterwards.
+    const QString jsonPath = output + QStringLiteral(".update.json");
+    struct Remove final {
+        QString path;
+        ~Remove() { QFile::remove(path); }
+    } cleanup{jsonPath};
+    {
+        QFile json{jsonPath};
+        if (!json.open(QIODevice::WriteOnly | QIODevice::Truncate) || json.write(update) != update.size()) {
+            if (detail) *detail = json.errorString();
+            return QStringLiteral("tempFile");
+        }
+    }
+    const Run written = runQpdf(qpdf, {QStringLiteral("--update-from-json=") + QDir::toNativeSeparators(jsonPath)},
                                 {source, output}, password);
+    if (detail) *detail = QString::fromUtf8(written.errors.left(800));
     if (written.exitCode < 0) return QStringLiteral("qpdfUnavailable");
     if (written.exitCode != 0 && written.exitCode != 3) return QStringLiteral("writeFailed");
     const Run check = runQpdf(qpdf, {QStringLiteral("--check")}, {output}, password);
     if (check.exitCode == 0) return {};
+    if (detail) *detail = QString::fromUtf8((check.output.right(400) + check.errors.left(400)));
     if (check.exitCode == 3) { // warnings: acceptable only if the source has them too
         const Run sourceCheck = runQpdf(qpdf, {QStringLiteral("--check")}, {source}, password);
         if (sourceCheck.exitCode == 3) return {};

@@ -91,8 +91,9 @@ Saved save(const QString& qpdf, const QString& source, const QString& output, co
     QString reason;
     const auto update = QpdfOutlineWriter::buildUpdate(saved.before, base, saved.plan, &reason);
     require(update.has_value(), "Update refused: " + reason.toStdString());
-    const QString written = QpdfOutlineWriter::write(qpdf, source, password, *update, output);
-    require(written.isEmpty(), "qpdf write failed: " + written.toStdString());
+    QString detail;
+    const QString written = QpdfOutlineWriter::write(qpdf, source, password, *update, output, &detail);
+    require(written.isEmpty(), "qpdf write failed: " + written.toStdString() + " — " + detail.toStdString());
     saved.after = QpdfOutlineWriter::read(qpdf, output, password);
     saved.verdict = QpdfOutlineWriter::verify(saved.before, saved.after, saved.plan);
     return saved;

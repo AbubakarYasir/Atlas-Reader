@@ -62,9 +62,10 @@ public:
                                                               const bookmarks::SavePlan& plan, QString* reason);
 
     // Runs `qpdf --update-from-json`; then `qpdf --check` on the output.
-    // Returns an empty string on success, else a stable reason.
+    // Returns an empty string on success, else a stable reason; `detail` gets
+    // qpdf's own message for logs and tests (never shown as is).
     [[nodiscard]] static QString write(const QString& qpdf, const QString& source, const QString& password,
-                                       const QByteArray& update, const QString& output);
+                                       const QByteArray& update, const QString& output, QString* detail = nullptr);
 
     // Pure: the written file (`after`) holds exactly the plan's outline and
     // everything else equals `before`. Empty on success, else a reason:

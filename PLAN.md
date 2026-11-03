@@ -242,3 +242,12 @@ Every change to scope, priority or release gates is added here with its reason.
 | Libraries, tools, licenses | [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) |
 | After 2.0 | [docs/AFTER_2_0.md](docs/AFTER_2_0.md) |
 | Rules for coding agents | [AGENTS.md](AGENTS.md) |
+
+## N1–N5 repair implementation, 2026-11-04
+
+Recovery uses a versioned journal beside profile backups, not a destructive database
+migration. Bookmark exchange uses the existing worker and an isolated editor snapshot;
+the published exchange format stays 1.0.0. Ambiguous external matches are held without
+guessing. The owner requested a runnable inspection build while engineering closure
+continues. Its version is `2.0.0-beta.2-n5-review.1`; this does not accept N5, authorize
+N6, or authorize merging PR #8. See the [closure ledger](docs/baselines/N1_N5_CLOSURE.md).

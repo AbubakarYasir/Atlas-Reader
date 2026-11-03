@@ -15,8 +15,14 @@
 #include <QPdfDocument>
 #include <QRandomGenerator>
 #include <QStorageInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QSaveFile>
+#include <QLockFile>
+#include <QUuid>
 
 #include <algorithm>
+#include <limits>
 #include <unordered_map>
 
 #ifdef Q_OS_WIN
@@ -111,9 +117,7 @@ QString backup(const QString& source, const std::filesystem::path& root, const s
         QFile::remove(copy);
         return {};
     }
-    QDir dir{folder};
-    const QStringList kept = dir.entryList({QStringLiteral("*.pdf")}, QDir::Files, QDir::Name | QDir::Reversed);
-    for (qsizetype i = 3; i < kept.size(); ++i) dir.remove(kept.at(i));
+    // Pending recovery owns its backup. Retention runs only after success.
     return copy;
 }
 
@@ -126,6 +130,47 @@ struct TempFile final {
 
 } // namespace
 
+SaveRecovery recoverOutlineSave(SqliteBookmarkOverlay& store, const QString& path,
+                               const std::string& documentId, const std::filesystem::path& backupRoot) {
+    const QString folder = qpath(backupRoot / documentId);
+    const QString journal = QDir{folder}.filePath(QStringLiteral("pending-save.json"));
+    if (!QFileInfo::exists(journal)) return SaveRecovery::none;
+    QLockFile lock{QDir{folder}.filePath(QStringLiteral("save.lock"))};
+    if (!lock.tryLock(0)) return SaveRecovery::required;
+    QFile file{journal};
+    if (!file.open(QIODevice::ReadOnly) || file.size() > 16384) return SaveRecovery::required;
+    const auto record = QJsonDocument::fromJson(file.readAll()).object();
+    file.close();
+    if (record.value("schema").toInt() != 1 || record.value("document").toString() != utf8(documentId) ||
+        record.value("path").toString() != QFileInfo{path}.absoluteFilePath()) return SaveRecovery::required;
+    const QByteArray original = QByteArray::fromHex(record.value("original").toString().toLatin1());
+    const QByteArray replacement = QByteArray::fromHex(record.value("replacement").toString().toLatin1());
+    if (original.size() != 32 || replacement.size() != 32) return SaveRecovery::required;
+    bool validRevision = false;
+    const auto revision = record.value("revision").toString().toLongLong(&validRevision);
+    if (!validRevision || revision < 0 || revision == std::numeric_limits<qint64>::max()) return SaveRecovery::required;
+    const auto snapshot = store.load(documentId);
+    const QByteArray current = sha256(path);
+    if (current == replacement && snapshot.revision == revision + 1 && snapshot.base &&
+        snapshot.base->sourceRevision == fileRevision(path)) {
+        return QFile::remove(journal) ? SaveRecovery::completed : SaveRecovery::required;
+    }
+    if (snapshot.revision != revision) return SaveRecovery::required;
+    if (current == original)
+        return QFile::remove(journal) ? SaveRecovery::completed : SaveRecovery::required;
+    if (current != replacement) return SaveRecovery::required; // preserve external edits
+    const QString name = record.value("backup").toString();
+    if (name.isEmpty() || QFileInfo{name}.fileName() != name) return SaveRecovery::required;
+    const QString source = QDir{folder}.filePath(name);
+    if (sha256(source) != original) return SaveRecovery::required;
+    TempFile restored{path + QStringLiteral(".atlas-recover-") + QUuid::createUuid().toString(QUuid::Id128)};
+    if (!QFile::copy(source, restored.path) || sha256(restored.path) != original ||
+        sha256(path) != replacement || !replaceFile(path, restored.path) || sha256(path) != original)
+        return SaveRecovery::required;
+    restored.path.clear();
+    return QFile::remove(journal) ? SaveRecovery::restored : SaveRecovery::required;
+}
+
 std::string fileRevision(const QString& path) {
     const QFileInfo info{path};
     if (!info.exists()) return {};
@@ -137,6 +182,7 @@ SafeSaveOutcome saveOutlineCopy(const SafeSaveInput& input, const QString& targe
     const auto fail = [&out](const char* reason) {
         out.ok = false;
         out.reason = QString::fromLatin1(reason);
+        if (out.reason == QStringLiteral("recoveryRequired")) out.disposition = SaveDisposition::recoveryRequired;
         return out;
     };
     const auto step = [&fault](std::string_view name) { return !fault || fault(name); };
@@ -215,6 +261,7 @@ SafeSaveOutcome saveOutlineCopy(const SafeSaveInput& input, const QString& targe
                                   : !QFile::rename(temp.path, target))
         return fail("replaceFailed");
     temp.path.clear();
+    out.disposition = SaveDisposition::saved;
     out.ok = true;
     out.sourceRevision = fileRevision(target);
     return out;
@@ -225,9 +272,23 @@ SafeSaveOutcome saveOutlineSafely(SqliteBookmarkOverlay& store, const SafeSaveIn
     const auto fail = [&out](const char* reason) {
         out.ok = false;
         out.reason = QString::fromLatin1(reason);
+        if (out.reason == QStringLiteral("recoveryRequired")) out.disposition = SaveDisposition::recoveryRequired;
         return out;
     };
     const auto step = [&fault](std::string_view name) { return !fault || fault(name); };
+
+    const auto recovery = recoverOutlineSave(store, input.path, input.documentId, input.backupRoot);
+    if (recovery == SaveRecovery::required) return fail("recoveryRequired");
+    if (recovery == SaveRecovery::restored) {
+        out.disposition = SaveDisposition::restored;
+        return fail("replaceUnverified");
+    }
+    const QString recoveryFolder = qpath(input.backupRoot / input.documentId);
+    if (!QDir{}.mkpath(recoveryFolder)) return fail("backupFailed");
+    QLockFile saveLock{QDir{recoveryFolder}.filePath(QStringLiteral("save.lock"))};
+    if (!saveLock.tryLock(0)) return fail("recoveryRequired");
+    const QString journal = QDir{recoveryFolder}.filePath(QStringLiteral("pending-save.json"));
+    if (QFileInfo::exists(journal)) return fail("recoveryRequired");
 
     // 1. Plan.
     std::vector<const BookmarkNode*> inOrder;
@@ -294,7 +355,27 @@ SafeSaveOutcome saveOutlineSafely(SqliteBookmarkOverlay& store, const SafeSaveIn
 
     // 6. Replace in one step and prove the result is the verified file.
     const QByteArray verifiedHash = sha256(temp.path);
-    if (!step("replace") || !replaceFile(input.path, temp.path)) return fail("replaceFailed");
+    QJsonObject record{{"schema", 1}, {"operation", QUuid::createUuid().toString(QUuid::Id128)},
+        {"document", utf8(input.documentId)}, {"path", QFileInfo{input.path}.absoluteFilePath()},
+        {"original", QString::fromLatin1(originalHash.toHex())},
+        {"replacement", QString::fromLatin1(verifiedHash.toHex())},
+        {"backup", QFileInfo{out.backupPath}.fileName()},
+        {"revision", QString::number(input.overlayRevision)}, {"phase", "prepared"}};
+    const auto recordPhase = [&](const QString& phase) {
+        record.insert(QStringLiteral("phase"), phase);
+        QSaveFile journalFile{journal};
+        const QByteArray journalBytes = QJsonDocument{record}.toJson(QJsonDocument::Compact);
+        return journalFile.open(QIODevice::WriteOnly) && journalFile.write(journalBytes) == journalBytes.size() &&
+               journalFile.commit();
+    };
+    if (!recordPhase(QStringLiteral("prepared"))) return fail("backupFailed");
+    if (!step("journalPrepared")) return fail("recoveryRequired");
+    if (sha256(input.path) != originalHash || fileRevision(input.path) != originalRevision)
+        return fail("recoveryRequired");
+    if (!step("replace") || !replaceFile(input.path, temp.path)) {
+        QFile::remove(journal);
+        return fail("replaceFailed");
+    }
     temp.path.clear(); // it is the PDF now
     out.pdfChanged = true;
     // Never remove the current PDF before a verified recovery copy is ready.
@@ -305,14 +386,17 @@ SafeSaveOutcome saveOutlineSafely(SqliteBookmarkOverlay& store, const SafeSaveIn
                                         .arg(QRandomGenerator::global()->generate());
         if (sha256(input.path) != verifiedHash || !step("restore") ||
             !QFile::copy(out.backupPath, recovery.path) || sha256(recovery.path) != originalHash ||
+            sha256(input.path) != verifiedHash ||
             !replaceFile(input.path, recovery.path) || sha256(input.path) != originalHash) {
             return fail("recoveryRequired");
         }
         recovery.path.clear();
         out.pdfChanged = false;
+        out.disposition = SaveDisposition::restored;
+        if (!QFile::remove(journal)) return fail("recoveryRequired");
         return fail(reason);
     };
-    if (sha256(input.path) != verifiedHash || !step("afterReplace")) {
+    if (!recordPhase(QStringLiteral("replaced")) || sha256(input.path) != verifiedHash || !step("afterReplace")) {
         return restore("replaceUnverified");
     }
 
@@ -362,6 +446,12 @@ SafeSaveOutcome saveOutlineSafely(SqliteBookmarkOverlay& store, const SafeSaveIn
     } catch (const std::exception&) {
         return restore("replaceUnverified");
     }
+    if (!recordPhase(QStringLiteral("committed")) || !step("afterOverlayCommit")) return fail("recoveryRequired");
+    if (!QFile::remove(journal)) return fail("recoveryRequired");
+    QDir backups{recoveryFolder};
+    const auto copies = backups.entryList({QStringLiteral("*.pdf")}, QDir::Files, QDir::Name | QDir::Reversed);
+    for (qsizetype i = 3; i < copies.size(); ++i) backups.remove(copies.at(i));
+    out.disposition = SaveDisposition::saved;
     out.ok = true;
     return out;
 }

@@ -30,6 +30,7 @@ Item {
     function showToast(text) {
         toast.text = text
         toast.open()
+        toast.Accessible.announce(text, Accessible.Polite)
         toastTimer.restart()
     }
 

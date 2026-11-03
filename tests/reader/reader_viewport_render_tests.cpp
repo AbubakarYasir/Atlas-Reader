@@ -21,6 +21,7 @@
 #include <QUrl>
 
 #include <cmath>
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <stdexcept>
@@ -54,7 +55,7 @@ QByteArray sha256(const QString& path) {
     return QCryptographicHash::hash(file.readAll(), QCryptographicHash::Sha256);
 }
 
-constexpr int kPages = 60;
+const int kPages = qEnvironmentVariableIsSet("ATLAS_LONG_BOOK") ? 2000 : 60;
 
 // The offscreen platform on Windows may see no system fonts, which would
 // leave the generated book without text; load Arial explicitly when present.
@@ -201,6 +202,24 @@ int main(int argc, char** argv) {
         require(viewport->hasText(), "Document text must be detected.");
         require(viewport->pageLabels().size() == kPages,
                 "Page labels must be read (got " + std::to_string(viewport->pageLabels().size()) + ").");
+        if (kPages >= 1000) {
+            std::vector<double> samples;
+            for (int i = 0; i < 100; ++i) {
+                QElapsedTimer measurement;
+                measurement.start();
+                viewport->find(QStringLiteral("Page %1").arg(1 + (i * 97) % kPages), false, true);
+                require(waitFor([&] { return !viewport->searching(); }, 30000), "Long-book search completes.");
+                require(viewport->searchHits().size() == 1, "Long-book unique hit.");
+                samples.push_back(static_cast<double>(measurement.nsecsElapsed()) / 1000000.0);
+            }
+            std::sort(samples.begin(), samples.end());
+            std::cout << "Search 2000 pages, 100 warm sequential queries: p50_ms=" << samples[49]
+                      << " p95_ms=" << samples[94] << " p99_ms=" << samples[98] << '\n';
+            viewport->find(QStringLiteral("Page"), false, false);
+            viewport->clearSearch();
+            settle(100);
+            require(!viewport->searching() && viewport->searchHits().isEmpty(), "Cancelled long search stays empty.");
+        }
         viewport->find(QStringLiteral("page 42"), false, true);
         require(waitFor([&] { return !viewport->searching(); }), "Search must finish.");
         require(viewport->searchHits().size() == 1 && viewport->currentPage() == 42,

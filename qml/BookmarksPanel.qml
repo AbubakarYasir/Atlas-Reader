@@ -34,7 +34,6 @@ Rectangle {
 
     // ---- actions
     function rowData(row) { return row >= 0 ? bookmarks.get(row) : ({}) }
-    function currentRow() { return list.currentIndex }
 
     function defaultTitle() {
         const selected = view.selectedText.replace(/\s+/g, " ").trim()
@@ -48,7 +47,7 @@ Rectangle {
     function addHere(asChild) {
         if (!canEdit) { toastRequested(I18n.t("bookmarks.readOnly." + (bookmarks.statusReason || "storageError"))); return }
         bookmarks.filter = ""
-        const row = bookmarks.addBookmark(currentRow(), asChild, defaultTitle(), view.viewLocation())
+        const row = bookmarks.addBookmark(list.currentIndex, asChild, defaultTitle(), view.viewLocation())
         if (row >= 0) {
             list.currentIndex = row
             list.positionViewAtIndex(row, ListView.Contain)
@@ -83,7 +82,7 @@ Rectangle {
         list.positionViewAtIndex(row, ListView.Contain)
     }
     function removeCurrent() {
-        const row = currentRow()
+        const row = list.currentIndex
         if (row < 0) return
         select(bookmarks.remove(row))
     }
@@ -401,6 +400,7 @@ Rectangle {
                     page >= 0 ? I18n.t("panel.pageA11y", page + 1) : "",
                     marked ? I18n.t("bookmarks.state." + storage) : ""
                 ].filter(s => s.length > 0).join(", ")
+                Accessible.selectable: true
                 Accessible.selected: ListView.isCurrentItem
 
                 onClicked: { list.currentIndex = index; list.forceActiveFocus(); panel.go(index) }

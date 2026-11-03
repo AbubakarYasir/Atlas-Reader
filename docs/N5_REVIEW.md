@@ -2,9 +2,12 @@
 
 <!-- atlas-status: N5|in-progress -->
 
-One short review at the end of N5 (about 45 minutes). Agents have run the detailed tests (every storage state, failure at each save step, encrypted, signed and certified files, 10,000 bookmarks, Unicode round trips). This review is about what only you can judge: are bookmarks pleasant to work with, is it always clear what is saved where, and can you trust Atlas with your PDFs?
+This is an N5 **inspection build**, not an accepted release. Use it to inspect the
+bookmark experience while the engineering closure ledger remains open. Automated
+results cover the cases named in that ledger; they do not prove every hardware or
+accessibility scenario.
 
-> **Status:** review postponed until the [repair closure ledger](baselines/N1_N5_CLOSURE.md) passes. Implemented features are not yet fully qualified. Do not approve N5 from an earlier package.
+> **Status:** N5 acceptance remains blocked until the [repair closure ledger](baselines/N1_N5_CLOSURE.md) passes. You can inspect this requested build now; a successful visual review does not silently close unverified engineering checks.
 
 Accessibility review explicitly includes Windows Narrator: complete an edit, save and import workflow; verify control names, focus, selected/expanded state and error announcements. A skipped Narrator check is unverified, not PASS.
 
@@ -24,8 +27,8 @@ Accessibility review explicitly includes Windows Narrator: complete an edit, sav
 5. **Protected files** (N5.1). Open the password sample and a signed/certified PDF. The status bar says what Atlas may do and why. The password book saves normally and still asks for its password afterwards. On the signed/certified one (or a read-only copy) you can still bookmark in Atlas, but Save says plainly it can't change this file and points to **Save a Copy** (**Ctrl+Shift+S**), which makes a new PDF with your bookmarks; the original's modified date is unchanged.
 6. **Changed elsewhere** (N5.4). Save a book, close it in Atlas, change one of its bookmarks in Foxit and add one, save in Foxit, then reopen in Atlas. The panel tells you what changed and shows it; your own Atlas bookmarks are still there. If you rename the same bookmark in both, it is marked and the right-click menu lets you keep yours or use the PDF's.
 7. **Export and import** (N5.5). Panel ⋯ → *Export Bookmarks…* as an Atlas bookmarks file, Markdown and CSV; open the Markdown in a text editor and the CSV in Excel (Arabic shows correctly, no formulas run). Then *Import Bookmarks…* the Atlas file into another copy of the book: try *at the end*, *skipping ones already here*, and undo.
-8. **Languages and accessibility.** Repeat checks 1, 4 and 7 briefly in العربية and اردو (Ctrl+K): dialogs mirror, nothing is left in English, Urdu is in Nastaliq. Do one edit-and-save with the keyboard only; try 200% scale and dark mode.
-9. **Looks and works like Foxit.** Compare the Bookmarks panel, its menu, Ctrl+B, F2, the title-bar search and Save with Foxit side by side. Note anything placed or named differently.
+8. **Languages and accessibility, including Narrator.** Repeat checks 1, 4 and 7 briefly in العربية and اردو (Ctrl+K): dialogs mirror, nothing is left in English, Urdu is in Nastaliq. Do one edit-and-save with the keyboard only; try Windows 200% scale, high contrast and dark mode. With Narrator, check the selected bookmark, open/closed branches, focus and save/error announcements. Report skipped checks as SKIPPED.
+9. **Workspace clarity.** Compare the Bookmarks panel, its menu, Ctrl+B, F2, the title-bar search and Save with Foxit side by side. Check that commands are easy to find and the document remains the main focus. Atlas uses its own licensed assets.
 
 ## Your reply
 

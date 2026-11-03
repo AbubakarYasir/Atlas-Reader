@@ -17,7 +17,7 @@ QtObject {
     ]
 
     // Urdu is read in Nastaliq, which needs a bundled font and more room.
-    readonly property string uiFamily: language === "ur" ? "Noto Nastaliq Urdu" : ""
+    readonly property string uiFamily: language === "ur" ? "Noto Nastaliq Urdu" : language === "ar" ? "Noto Naskh Arabic" : ""
     readonly property real sizeScale: language === "ur" ? 1.12 : 1.0
 
     // Font for user content (titles, names), chosen by the text's own script so

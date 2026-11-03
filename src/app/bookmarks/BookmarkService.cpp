@@ -105,6 +105,10 @@ void BookmarkService::post(std::function<void(Storage&)> job) {
         worker_, [shared = storage_, task = std::move(job)] { task(*shared); }, Qt::QueuedConnection);
 }
 
+void BookmarkService::exchangeWork(std::function<void()> work) {
+    post([task = std::move(work)](Storage&) { task(); });
+}
+
 void BookmarkService::waitForIdle() {
     QSemaphore done;
     post([&done](Storage&) { done.release(); });
@@ -129,6 +133,13 @@ void BookmarkService::open(const QString& path, const QVariantList& outline, QOb
                 result.status = BookmarkOpenResult::Status::outlineUnsupported;
             } else {
                 result.documentId = documents.front();
+                const auto recovery = recoverOutlineSave(*storage.overlay, path, result.documentId,
+                                                         storage.databasePath.parent_path() / "backups");
+                if (recovery == SaveRecovery::required || recovery == SaveRecovery::restored) {
+                    result.snapshot = storage.overlay->load(result.documentId);
+                    result.status = recovery == SaveRecovery::required ? BookmarkOpenResult::Status::recoveryRequired
+                                                                       : BookmarkOpenResult::Status::recoveredReopen;
+                } else {
                 if (result.base && !result.base->sourceRevision.empty()) {
                     result.adoption = storage.overlay->adoptBase(result.documentId, *result.base);
                 }
@@ -157,6 +168,7 @@ void BookmarkService::open(const QString& path, const QVariantList& outline, QOb
                     }
                 }
                 result.status = BookmarkOpenResult::Status::editable;
+                }
             }
         } catch (const std::exception&) {
             result.status = BookmarkOpenResult::Status::storageError;
@@ -182,6 +194,13 @@ void BookmarkService::save(SafeSaveInput input, QObject* receiver, std::function
             outcome = saveOutlineSafely(*storage.overlay, request);
         } catch (const std::exception&) {
             outcome.reason = QStringLiteral("storageError");
+            const auto journal = request.backupRoot / request.documentId / "pending-save.json";
+            if (QFileInfo::exists(QString::fromStdU16String(journal.u16string()))) {
+                // An exception after replacement must not masquerade as an unchanged file.
+                outcome.reason = QStringLiteral("recoveryRequired");
+                outcome.disposition = SaveDisposition::recoveryRequired;
+                outcome.pdfChanged = true; // refresh the reader; its cached bytes may be stale
+            }
         }
         request.password.fill(u'\0'); // as far as Qt allows: the copy dies here
         QMetaObject::invokeMethod(

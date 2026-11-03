@@ -12,6 +12,7 @@
 #include "core/bookmarks/BookmarkEditor.h"
 #include "core/bookmarks/BookmarkSearch.h"
 #include "core/bookmarks/LocationEnvelope.h"
+#include "core/bookmarks/Reconcile.h"
 
 #include <algorithm>
 #include <chrono>
@@ -132,6 +133,19 @@ int main(int argc, char** argv) {
         std::cerr << "Expected 10,000 nodes, got " << snapshot.nodes.size() << '\n';
         return 2;
     }
+
+    Series reconcileSeries{"reconcile 10,000 bookmarks", {}};
+    auto external = base;
+    external.sourceRevision = "external";
+    external.nodes.back().title += " updated";
+    for (int i = 0; i < 20; ++i) {
+        reconcileSeries.ms.push_back(timed([&] {
+            const auto result = reconcile("doc", snapshot.nodes, base, external);
+            if (!result.refusal.empty() || result.nodes.size() != 10000)
+                throw std::runtime_error("Large reconciliation did not preserve the tree.");
+        }));
+    }
+    results.push_back(reconcileSeries);
 
     std::unique_ptr<BookmarkEditor> editor;
     results.push_back({"build editor", {timed([&] {

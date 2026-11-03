@@ -14,8 +14,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($Checkpoint -eq 'N5' -and (-not $QpdfBin -or -not $QpdfCompliance)) { throw 'N5 requires the qpdf runtime and notices.' }
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $sourceExe = (Resolve-Path -LiteralPath $Executable).Path
+if ((Get-Item -LiteralPath $sourceExe).VersionInfo.ProductVersion -ne $Version) { throw 'Package version must match the built executable.' }
 $qtPath = (Resolve-Path -LiteralPath $QtRoot).Path
 $output = [IO.Path]::GetFullPath($OutputDirectory)
 if (Test-Path -LiteralPath $output) { throw 'Use a new output directory; existing review builds are preserved.' }
@@ -45,7 +47,7 @@ foreach ($doc in @($reviewGuide, 'DEPENDENCIES.md')) {
     Copy-Item -LiteralPath (Join-Path $repo "docs/$doc") -Destination $docs
 }
 Copy-Item -LiteralPath (Join-Path $repo "docs/$reviewGuide") -Destination (Join-Path $stage 'START-HERE.md')
-foreach ($fixture in @('A001_simple_text.pdf','A002_geometry_labels.pdf','A006_unicode_semantics.pdf','A008_password_rc4_40.pdf')) {
+foreach ($fixture in @('A001_simple_text.pdf','A002_geometry_labels.pdf','A003_outlines_links.pdf','A006_unicode_semantics.pdf','A008_password_rc4_40.pdf','A010_certification_structure.pdf')) {
     Copy-Item -LiteralPath (Join-Path $repo "tests/fixtures/pdf/generated/$fixture") -Destination $samples
 }
 Copy-Item -LiteralPath (Join-Path $repo 'tests/fixtures/pdf/README.md') -Destination (Join-Path $samples 'PROVENANCE.md')
@@ -109,7 +111,7 @@ $buildInfo = [ordered]@{
     version = $Version; implementationSha = $ImplementationSha; checkoutSha = $CheckoutSha
     configuration = 'Release'; qt = '6.10.3'; sqlite = '3.53.4#1'
     sourceExeSha256 = (Get-FileHash -LiteralPath $sourceExe -Algorithm SHA256).Hash.ToLowerInvariant()
-    builtUtc = [DateTime]::UtcNow.ToString('o'); pageRendering = $true; pdfWrites = $false
+    builtUtc = [DateTime]::UtcNow.ToString('o'); pageRendering = $true; pdfWrites = ($Checkpoint -eq 'N5')
 }
 $buildInfo | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $stage 'BUILD-INFO.json') -Encoding utf8
 
@@ -117,12 +119,13 @@ $smokeProfile = Join-Path $output 'smoke-profile'
 $smokeArgs = '--profile-directory "{0}" --quit-after-ms 1800' -f $smokeProfile
 $smokeLog = Join-Path $output 'smoke-stderr.log'
 $savedEnvironment = @{}
-foreach ($name in @('PATH','QT_PLUGIN_PATH','QML_IMPORT_PATH','QML2_IMPORT_PATH')) {
+foreach ($name in @('PATH','QT_PLUGIN_PATH','QML_IMPORT_PATH','QML2_IMPORT_PATH','ATLAS_QPDF','QT_FORCE_STDERR_LOGGING')) {
     $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
 }
 try {
     $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
-    foreach ($name in @('QT_PLUGIN_PATH','QML_IMPORT_PATH','QML2_IMPORT_PATH')) {
+    $env:QT_FORCE_STDERR_LOGGING = "1"
+    foreach ($name in @('QT_PLUGIN_PATH','QML_IMPORT_PATH','QML2_IMPORT_PATH','ATLAS_QPDF')) {
         [Environment]::SetEnvironmentVariable($name, $null, 'Process')
     }
     $smoke = Start-Process -FilePath (Join-Path $stage 'atlas_reader.exe') -ArgumentList $smokeArgs -PassThru -WindowStyle Hidden -RedirectStandardError $smokeLog

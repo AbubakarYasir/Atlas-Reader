@@ -22,6 +22,7 @@
 #include <QVariantMap>
 
 #include <memory>
+#include <atomic>
 #include <unordered_map>
 #include <optional>
 #include <string>
@@ -49,6 +50,7 @@ class BookmarkModel : public QAbstractListModel {
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY historyChanged)
     // N5.4: Save into the PDF (ADR-0009).
     Q_PROPERTY(bool saving READ saving NOTIFY statusChanged)
+    Q_PROPERTY(bool exchanging READ exchanging NOTIFY statusChanged)
     Q_PROPERTY(int unsavedCount READ unsavedCount NOTIFY countsChanged)
     Q_PROPERTY(QString undoKind READ undoKind NOTIFY historyChanged)
     Q_PROPERTY(QString redoKind READ redoKind NOTIFY historyChanged)
@@ -97,7 +99,8 @@ public:
     [[nodiscard]] QVariantMap reconcileInfo() const { return reconcileInfo_; }
     [[nodiscard]] int conflictCount() const;
     // Not while a save into the PDF runs: its result must match what was saved.
-    [[nodiscard]] bool editable() const { return status_ == QStringLiteral("editable") && !saving_; }
+    [[nodiscard]] bool editable() const { return status_ == QStringLiteral("editable") && !saving_ && !exchanging_; }
+    [[nodiscard]] bool exchanging() const { return exchanging_; }
     [[nodiscard]] bool busy() const;
     [[nodiscard]] bool saving() const { return saving_; }
     [[nodiscard]] int unsavedCount() const;
@@ -165,14 +168,19 @@ public:
     // N5.5 export: format "json" (lossless .atlas-bookmarks.json), "markdown" or
     // "csv"; scope "all", "subtree" (row and below) or "local" (Atlas's own work).
     // hints: {title, pageCount, pageLabels}. Returns "" or an error name.
-    Q_INVOKABLE QString exportTo(const QUrl& target, const QString& format, const QString& scope, int row,
+    QString exportTo(const QUrl& target, const QString& format, const QString& scope, int row,
                                  const QVariantMap& hints);
     // N5.5 import, step 1: read and check a file; nothing changes yet.
     // {ok, error, count, topTitles, title, fileName, exportedUtc, sameBook}
-    Q_INVOKABLE QVariantMap readImport(const QUrl& file);
+    QVariantMap readImport(const QUrl& file);
+    Q_INVOKABLE void readImportAsync(const QUrl& file);
+    Q_INVOKABLE void exportAsync(const QUrl& target, const QString& format, const QString& scope, int row,
+                                const QVariantMap& hints);
+    Q_INVOKABLE void cancelExchange();
+    Q_INVOKABLE void applyImportAsync(const QString& mode, int row);
     // Step 2: mode "end", "under" (the row), "merge" (skip what is already
     // here) or "replace"; one undo step. Returns the first new row or -1.
-    Q_INVOKABLE int applyImport(const QString& mode, int row);
+    int applyImport(const QString& mode, int row);
     // Save a Copy: writes the bookmarks into a new PDF at `target`; copySaved reports.
     Q_INVOKABLE void saveCopy(const QUrl& target, bool removeHidden);
     Q_INVOKABLE void undo();
@@ -194,6 +202,9 @@ signals:
     // ok, or a stable reason (SafeSaveOutcome); pdfChanged when the file was replaced.
     void saveFinished(bool ok, const QString& reason, bool pdfChanged, int added, int changed, int removed);
     void copySaved(bool ok, const QString& reason, const QString& path);
+    void importRead(const QVariantMap& result);
+    void exportFinished(const QString& error, const QUrl& target);
+    void importApplied(int row);
 
 private:
     struct Row final {
@@ -248,6 +259,9 @@ private:
     };
     std::vector<PendingWrite> writes_;
     bool saving_{false};
+    bool exchanging_{false};
+    quint64 exchangeGeneration_{};
+    std::shared_ptr<std::atomic_bool> exchangeCancelled_;
     bool writing_{false};
     int currentPage_{-1};
     double currentFy_{0.0};

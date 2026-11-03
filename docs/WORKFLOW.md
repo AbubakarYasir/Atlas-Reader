@@ -104,3 +104,13 @@ Every idea goes into exactly one bucket: active stage · next stage · Windows 2
 ## 10. Handoff record
 
 Every pushed handoff states: branch and PR · local and remote SHA (equal) · worktree state · what changed · tests and CI on that SHA · artifact and checksum if any · limitations with owners · whether owner PASS, merge or tag are still pending.
+
+## N5 repair delivery
+
+The repair candidate identifies itself as `2.0.0-beta.2-n5-review.1`. Package metadata
+must equal the executable's ProductVersion. N5 packaging requires qpdf plus its
+pinned notices, selects N5 instructions, includes outline/security fixtures and
+records the executable hash and source commit. Clean-PATH smoke clears development
+Qt and qpdf overrides and explicitly captures Qt warnings on stderr. Upload a final
+review package only on request, never on every intermediate push. Keep PR #8 Draft;
+N5 acceptance and a release remain owner decisions.

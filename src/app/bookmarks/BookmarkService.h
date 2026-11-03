@@ -31,6 +31,8 @@ struct BookmarkOpenResult final {
         ambiguous,          // more than one library document at this path: read-only
         outlineUnsupported, // the PDF's outline breaks overlay limits: read-only
         storageError,       // the profile could not be read: read-only
+        recoveryRequired,   // unresolved interrupted save; preserve local research
+        recoveredReopen,    // original restored; reader must reload its PDF
     };
     Status status{Status::storageError};
     std::string documentId;
@@ -90,6 +92,8 @@ public:
 
     // Blocks until every queued request has finished (tests and shutdown).
     void waitForIdle();
+    // CPU/file work serialized with bookmark storage, never on the UI thread.
+    void exchangeWork(std::function<void()> work);
 
 private:
     struct Storage;

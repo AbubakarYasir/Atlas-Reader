@@ -135,3 +135,11 @@ Status: **Implemented** (automated checks and rendered self-review; Windows CI s
 - Format published: `docs/formats/atlas-bookmarks.md`, `atlas-bookmarks.schema.json` (Draft 2020-12; the four fixtures checked with Python `jsonschema`: three schema-valid, `newer-major` not), fixtures `tests/fixtures/bookmarks/` (valid 1.0 with Arabic, Urdu, emoji, spaces, notes, tags, xyz with label; future minor with unknown members and an `atlas-location/2`; newer major; damaged destination).
 - Tests: `atlas_bookmark_exchange` (exact round trip of titles, notes, tags, locations and levels; scopes; refusals incl. refused-whole, 300-deep, 64 MiB + 1, empty children allowed; Markdown and CSV text; `createBatch` under/attachTo/refusals; the fixtures); `atlas_bookmark_model` adds export of all three formats, reading back, merge of the same file → `nothingNew`, import at the end (+5, one undo, undo restores), merge of an edited file (only the new chapter, under its existing parent), a foreign file refused with nothing pending. `-Wconversion -Wsign-conversion` clean on the new code. Full Qt 6.4 set 25/25; qpdf suites with 12.4.1 pass.
 - Rendered self-review (Qt 6.4.2, Xvfb, `--show bookmarks-export` and `bookmarks-import:<file>`): export dialog EN light 100% and AR light 200% (mirrored, no clipping); import preview EN light and UR dark with a file from another book (count, first titles, warning, four modes, safety note). Observed: Urdu option labels wrap earlier than their drawn width (Nastaliq metrics in the Linux Qt 6.4 review build); to be checked on Windows in the owner review. The file dialogs are native and covered by tests.
+
+## Repair pass — 2026-11-04
+
+The historical N5 test runs above do not qualify the repaired head. The current
+[closure ledger](N1_N5_CLOSURE.md) owns readiness and unresolved checks. Added durable
+restart recovery, cancellable worker exchange, conservative ambiguous matching,
+bookmark Add/Rename UI correction, accessibility announcements, and honest review
+version labelling. No N5 PASS has been recorded.

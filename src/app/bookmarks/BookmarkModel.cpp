@@ -62,11 +62,64 @@ struct Destination final {
     return QString::fromLatin1(name.data(), static_cast<qsizetype>(name.size()));
 }
 
+bookmarks::EditResult prepareImport(bookmarks::BookmarkEditor& editor,
+                                    const std::vector<ImportedBookmark>& pending, const QString& mode,
+                                    const std::optional<std::string>& under) {
+    std::vector<bookmarks::NewBookmark> items;
+    items.reserve(pending.size());
+    if (mode == QStringLiteral("merge")) {
+        // Skip bookmarks already here (same titles along the path and the same
+        // destination); new ones under an existing bookmark go under it.
+        std::unordered_map<std::string, std::string> existing; // path key → node id
+        for (const auto* node : editor.inOrder()) {
+            std::string key;
+            for (const auto& title : editor.breadcrumb(node->id)) key += title + '\x1f';
+            existing.emplace(key + '\x1e' + node->location, node->id);
+        }
+        std::vector<std::string> pathTitles;
+        std::vector<std::optional<std::string>> matchedAt; // per level: existing id when duplicate
+        std::vector<int> keptLevel;                        // per level: new level when kept, -1 when duplicate
+        for (const auto& item : pending) {
+            pathTitles.resize(item.level);
+            matchedAt.resize(item.level);
+            keptLevel.resize(item.level);
+            std::string key;
+            for (const auto& title : pathTitles) key += title + '\x1f';
+            key += item.title + '\x1f';
+            const auto found = existing.find(key + '\x1e' + item.location);
+            pathTitles.push_back(item.title);
+            if (found != existing.end()) {
+                matchedAt.emplace_back(found->second);
+                keptLevel.push_back(-1);
+                continue;
+            }
+            bookmarks::NewBookmark next{item.title, item.location, 0, item.description, item.tags, std::nullopt};
+            if (item.level > 0 && keptLevel.back() >= 0) {
+                next.level = static_cast<std::uint32_t>(keptLevel.back() + 1);
+            } else if (item.level > 0) {
+                next.attachTo = matchedAt.back(); // under the matching bookmark already here
+            }
+            matchedAt.emplace_back(std::nullopt);
+            keptLevel.push_back(static_cast<int>(next.level));
+            items.push_back(std::move(next));
+        }
+        if (items.empty()) {
+            return {false, "nothingNew", {}, {}};
+        }
+    } else {
+        for (const auto& item : pending)
+            items.push_back({item.title, item.location, item.level, item.description, item.tags, std::nullopt});
+    }
+    const auto placement = mode == QStringLiteral("replace") ? bookmarks::BatchPlacement::replace
+                                                             : bookmarks::BatchPlacement::after;
+    return editor.createBatch(std::move(items), placement, under);
+}
+
 } // namespace
 
 BookmarkModel::BookmarkModel(QObject* parent) : QAbstractListModel(parent) {}
 
-BookmarkModel::~BookmarkModel() { flushWrites(); }
+BookmarkModel::~BookmarkModel() { cancelExchange(); flushWrites(); }
 
 int BookmarkModel::rowCount(const QModelIndex& parent) const {
     return parent.isValid() ? 0 : static_cast<int>(rows_.size());
@@ -154,7 +207,7 @@ void BookmarkModel::setService(BookmarkService* service) {
     emit serviceChanged();
 }
 
-bool BookmarkModel::busy() const { return writing_ || saving_ || !writes_.empty(); }
+bool BookmarkModel::busy() const { return writing_ || saving_ || exchanging_ || !writes_.empty(); }
 
 int BookmarkModel::unsavedCount() const {
     if (!editor_ || status_ != QStringLiteral("editable")) return 0;
@@ -209,6 +262,154 @@ QString BookmarkModel::exportTo(const QUrl& target, const QString& format, const
     return {};
 }
 
+void BookmarkModel::cancelExchange() {
+    if (exchangeCancelled_) exchangeCancelled_->store(true);
+    ++exchangeGeneration_;
+    pendingImport_.clear();
+    exchanging_ = false;
+    emit statusChanged();
+    emit historyChanged();
+}
+
+void BookmarkModel::readImportAsync(const QUrl& source) {
+    if (!service_ || !editable()) { emit refused(QStringLiteral("readOnly")); return; }
+    cancelExchange();
+    exchanging_ = true;
+    exchangeCancelled_ = std::make_shared<std::atomic_bool>(false);
+    const auto token = exchangeCancelled_;
+    const auto request = exchangeGeneration_;
+    const auto bookName = QFileInfo{path_}.fileName();
+    const QPointer<BookmarkModel> self{this};
+    emit statusChanged();
+    emit historyChanged();
+    service_->exchangeWork([self, token, request, source, bookName] {
+        ImportResult result;
+        QFile file{source.isLocalFile() ? source.toLocalFile() : source.toString()};
+        if (token->load()) return;
+        if (!file.open(QIODevice::ReadOnly)) result.error = QStringLiteral("unreadable");
+        else if (file.size() > kMaxImportBytes) result.error = QStringLiteral("tooLarge");
+        else {
+            // Bound the read even if another process grows the file after size().
+            const auto bytes = file.read(kMaxImportBytes + 1);
+            if (file.error() != QFileDevice::NoError) result.error = QStringLiteral("unreadable");
+            else if (!token->load()) result = importJson(bytes);
+        }
+        if (token->load()) return;
+        QVariantMap info{{QStringLiteral("ok"), result.ok}, {QStringLiteral("error"), result.error}};
+        if (result.ok) {
+            QStringList tops;
+            for (const auto& item : result.items)
+                if (item.level == 0 && tops.size() < 5) tops << QString::fromStdString(item.title);
+            info.insert(QStringLiteral("count"), static_cast<int>(result.items.size()));
+            info.insert(QStringLiteral("topTitles"), tops);
+            info.insert(QStringLiteral("title"), result.hints.title);
+            info.insert(QStringLiteral("fileName"), result.hints.fileName);
+            info.insert(QStringLiteral("exportedUtc"), result.exportedUtc);
+            info.insert(QStringLiteral("sameBook"), result.hints.fileName.isEmpty() ||
+                        result.hints.fileName.compare(bookName, Qt::CaseInsensitive) == 0);
+        }
+        QMetaObject::invokeMethod(QCoreApplication::instance(),
+            [self, token, request, info, items = std::move(result.items)]() mutable {
+                if (!self || token->load() || self->exchangeGeneration_ != request) return;
+                self->pendingImport_ = std::move(items);
+                self->exchanging_ = false;
+                emit self->statusChanged();
+                emit self->historyChanged();
+                emit self->importRead(info);
+            }, Qt::QueuedConnection);
+    });
+}
+
+void BookmarkModel::exportAsync(const QUrl& target, const QString& format, const QString& scope, int row,
+                                const QVariantMap& hints) {
+    if (!service_ || !editor_ || saving_ || exchanging_) { emit refused(QStringLiteral("readOnly")); return; }
+    std::string root;
+    if (scope == QStringLiteral("subtree")) {
+        const auto* node = nodeAt(row);
+        if (!node) { emit exportFinished(QStringLiteral("noSelection"), target); return; }
+        root = node->id;
+    }
+    cancelExchange();
+    // An immutable snapshot keeps edits/history on the interface thread isolated.
+    const auto snapshot = std::make_shared<bookmarks::BookmarkEditor>(*editor_);
+    const auto name = QFileInfo{path_}.fileName();
+    const auto version = QCoreApplication::applicationVersion();
+    exchanging_ = true;
+    exchangeCancelled_ = std::make_shared<std::atomic_bool>(false);
+    const auto token = exchangeCancelled_;
+    const auto request = exchangeGeneration_;
+    const QPointer<BookmarkModel> self{this};
+    emit statusChanged();
+    emit historyChanged();
+    service_->exchangeWork([self, token, request, snapshot, name, version, target, format, scope, root, hints] {
+        if (token->load()) return;
+        const ExportScope which = scope == QStringLiteral("subtree") ? ExportScope::subtree
+                                  : scope == QStringLiteral("local") ? ExportScope::localOnly : ExportScope::all;
+        const auto selection = exportSelection(snapshot->inOrder(), which, root);
+        DocumentHints document{hints.value(QStringLiteral("title")).toString(), name,
+                               hints.value(QStringLiteral("pageCount")).toInt()};
+        const auto labels = hints.value(QStringLiteral("pageLabels")).toStringList();
+        QString error;
+        if (selection.empty()) error = QStringLiteral("nothing");
+        else {
+            QByteArray bytes;
+            if (format == QStringLiteral("markdown")) bytes = exportMarkdown(selection, document, labels);
+            else if (format == QStringLiteral("csv")) bytes = exportCsv(selection, labels);
+            else bytes = exportJson(selection, document, which, version, QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+            if (token->load()) return;
+            QSaveFile file{target.isLocalFile() ? target.toLocalFile() : target.toString()};
+            if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size()) error = QStringLiteral("writeFailed");
+            else if (token->load()) { file.cancelWriting(); return; }
+            else if (!file.commit()) error = QStringLiteral("writeFailed");
+        }
+        QMetaObject::invokeMethod(QCoreApplication::instance(), [self, token, request, error, target] {
+            if (!self || token->load() || self->exchangeGeneration_ != request) return;
+            self->exchanging_ = false;
+            emit self->statusChanged();
+            emit self->historyChanged();
+            emit self->exportFinished(error, target);
+        }, Qt::QueuedConnection);
+    });
+}
+
+void BookmarkModel::applyImportAsync(const QString& mode, int row) {
+    if (!service_ || !editor_ || !editable() || pendingImport_.empty() || busy()) {
+        emit refused(QStringLiteral("readOnly")); return;
+    }
+    std::optional<std::string> under;
+    if (mode == QStringLiteral("under")) {
+        const auto* node = nodeAt(row);
+        if (!node) { emit refused(QStringLiteral("noSelection")); return; }
+        under = node->id;
+    }
+    auto snapshot = std::make_shared<bookmarks::BookmarkEditor>(*editor_);
+    auto items = std::move(pendingImport_);
+    exchanging_ = true;
+    exchangeCancelled_ = std::make_shared<std::atomic_bool>(false);
+    const auto token = exchangeCancelled_;
+    const auto request = ++exchangeGeneration_;
+    const QPointer<BookmarkModel> self{this};
+    emit statusChanged();
+    emit historyChanged();
+    service_->exchangeWork([self, token, request, snapshot, items = std::move(items), mode, under]() mutable {
+        if (token->load()) return;
+        auto result = prepareImport(*snapshot, items, mode, under);
+        if (token->load()) return;
+        QMetaObject::invokeMethod(QCoreApplication::instance(),
+            [self, token, request, snapshot, result = std::move(result)]() mutable {
+                if (!self || token->load() || self->exchangeGeneration_ != request) return;
+                self->exchanging_ = false;
+                emit self->statusChanged();
+                emit self->historyChanged();
+                if (!result.ok) { emit self->refused(QString::fromStdString(result.reason)); return; }
+                *self->editor_ = std::move(*snapshot);
+                const auto id = result.nodeId;
+                const int first = self->run(std::move(result), id);
+                emit self->importApplied(first);
+            }, Qt::QueuedConnection);
+    });
+}
+
 QVariantMap BookmarkModel::readImport(const QUrl& source) {
     pendingImport_.clear();
     QFile file{source.isLocalFile() ? source.toLocalFile() : source.toString()};
@@ -238,64 +439,13 @@ int BookmarkModel::applyImport(const QString& mode, int row) {
         emit refused(QStringLiteral("readOnly"));
         return -1;
     }
-    std::vector<bookmarks::NewBookmark> items;
-    items.reserve(pendingImport_.size());
-    if (mode == QStringLiteral("merge")) {
-        // Skip bookmarks already here (same titles along the path and the same
-        // destination); new ones under an existing bookmark go under it.
-        std::unordered_map<std::string, std::string> existing; // path key → node id
-        for (const auto* node : editor_->inOrder()) {
-            std::string key;
-            for (const auto& title : editor_->breadcrumb(node->id)) key += title + '\x1f';
-            existing.emplace(key + '\x1e' + node->location, node->id);
-        }
-        std::vector<std::string> pathTitles;
-        std::vector<std::optional<std::string>> matchedAt; // per level: existing id when duplicate
-        std::vector<int> keptLevel;                        // per level: new level when kept, -1 when duplicate
-        for (const auto& item : pendingImport_) {
-            pathTitles.resize(item.level);
-            matchedAt.resize(item.level);
-            keptLevel.resize(item.level);
-            std::string key;
-            for (const auto& title : pathTitles) key += title + '\x1f';
-            key += item.title + '\x1f';
-            const auto found = existing.find(key + '\x1e' + item.location);
-            pathTitles.push_back(item.title);
-            if (found != existing.end()) {
-                matchedAt.emplace_back(found->second);
-                keptLevel.push_back(-1);
-                continue;
-            }
-            bookmarks::NewBookmark next{item.title, item.location, 0, item.description, item.tags, std::nullopt};
-            if (item.level > 0 && keptLevel.back() >= 0) {
-                next.level = static_cast<std::uint32_t>(keptLevel.back() + 1);
-            } else if (item.level > 0) {
-                next.attachTo = matchedAt.back(); // under the matching bookmark already here
-            }
-            matchedAt.emplace_back(std::nullopt);
-            keptLevel.push_back(static_cast<int>(next.level));
-            items.push_back(std::move(next));
-        }
-        if (items.empty()) {
-            emit refused(QStringLiteral("nothingNew"));
-            return -1;
-        }
-    } else {
-        for (const auto& item : pendingImport_)
-            items.push_back({item.title, item.location, item.level, item.description, item.tags, std::nullopt});
-    }
     std::optional<std::string> under;
     if (mode == QStringLiteral("under")) {
         const auto* node = nodeAt(row);
-        if (node == nullptr) {
-            emit refused(QStringLiteral("noSelection"));
-            return -1;
-        }
+        if (!node) { emit refused(QStringLiteral("noSelection")); return -1; }
         under = node->id;
     }
-    const auto placement = mode == QStringLiteral("replace") ? bookmarks::BatchPlacement::replace
-                                                             : bookmarks::BatchPlacement::after;
-    auto result = editor_->createBatch(std::move(items), placement, under);
+    auto result = prepareImport(*editor_, pendingImport_, mode, under);
     const auto id = result.nodeId;
     const int first = run(std::move(result), id);
     if (first >= 0) pendingImport_.clear();
@@ -303,7 +453,7 @@ int BookmarkModel::applyImport(const QString& mode, int row) {
 }
 
 void BookmarkModel::saveCopy(const QUrl& target, bool removeHidden) {
-    if (!editor_ || !service_ || status_ != QStringLiteral("editable") || saving_) {
+    if (!editor_ || !service_ || !editable()) {
         emit refused(QStringLiteral("readOnly"));
         return;
     }
@@ -345,6 +495,8 @@ void BookmarkModel::save(bool removeHidden) {
         if (generation != generation_) return;
         const auto finish = [this, outcome] {
             saving_ = false;
+            if (outcome.reason == QStringLiteral("recoveryRequired"))
+                setStatus(QStringLiteral("readOnly"), QStringLiteral("recoveryRequired"));
             emit statusChanged();
             emit historyChanged();
             emit saveFinished(outcome.ok, outcome.reason, outcome.pdfChanged, static_cast<int>(outcome.plan.added),
@@ -406,6 +558,13 @@ void BookmarkModel::open(bool followPdf) {
     service_->open(path_, lastOutline_, this, [this, generation](BookmarkOpenResult result) {
         if (generation != generation_) return;
         using Status = BookmarkOpenResult::Status;
+        if (result.status == Status::recoveryRequired || result.status == Status::recoveredReopen) {
+            documentId_ = result.documentId;
+            adoptSnapshot(std::move(result.snapshot.nodes), std::move(result.snapshot.base), result.snapshot.revision);
+            setStatus(QStringLiteral("readOnly"), result.status == Status::recoveryRequired
+                      ? QStringLiteral("recoveryRequired") : QStringLiteral("recoveredReopen"));
+            return;
+        }
         if (result.status == Status::editable) {
             documentId_ = result.documentId;
             outlineChangedOutside_ = result.adoption == bookmarks::BaseAdoption::needsReconcile;
@@ -473,6 +632,7 @@ void BookmarkModel::flushWrites() {
 }
 
 void BookmarkModel::detach() {
+    cancelExchange();
     flushWrites();
     ++generation_;
     beginResetModel();

@@ -151,6 +151,13 @@ void checkRemovedWithLocalWork() {
 
 int main() {
     try {
+        BaseSnapshot duplicates{"r1", {{"0", std::nullopt, 0, "Same", at(0)},
+                                       {"1", std::nullopt, 1, "Same", at(0)}}};
+        auto changedDuplicates = duplicates;
+        changedDuplicates.sourceRevision = "r2";
+        changedDuplicates.nodes[0].title = "Changed";
+        const auto ambiguous = reconcile("doc", embeddedNodesFromBase("doc", duplicates), duplicates, changedDuplicates);
+        require(ambiguous.refusal == "ambiguousMatch", "Indistinguishable bookmarks never acquire guessed identities.");
         checkRevisionOnly();
         checkMerge();
         checkRemovedWithLocalWork();

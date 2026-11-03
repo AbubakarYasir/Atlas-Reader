@@ -16,12 +16,10 @@ and what counts as proof that the write is right.
 
 ## Decision
 
-Repair qualification, 2026-11-04: the unconditional failure guarantee below was
-not established by the implementation. Late errors now attempt atomic restoration;
-restoration failure explicitly requires recovery and preserves the backup. Durable
-recovery journaling and restart qualification remain open in the
-[closure ledger](../baselines/N1_N5_CLOSURE.md). Do not accept this ADR until those
-requirements are proved.
+Repair qualification, 2026-11-04: failures are reported as **unchanged**, **saved**,
+**restored**, or **recovery required**. These are distinct outcomes; an error after
+replacement must not claim the original is unchanged. The implementation and
+remaining qualification are tracked in the [closure ledger](../baselines/N1_N5_CLOSURE.md).
 
 1. **What Save writes (Ctrl+S, Quick Access Save).** The PDF's outline becomes
    the bookmark tree the reader sees, in the same order and nesting:
@@ -69,9 +67,38 @@ requirements are proved.
    replace (Windows `ReplaceFileW`, else rename); the replaced file re-hashed
    and equal to the validated temporary file; then the overlay adopts the new
    outline as its base and the saved nodes become `Embedded` with an
-   `EmbedProof`, in one transaction. Any failure leaves the original file and
-   the overlay as they were and offers the safe choices (Retry, Keep in Atlas,
-   Save a copy).
+   `EmbedProof`, in one transaction. Before replacement, failures leave the original untouched. After replacement,
+   Atlas restores from a validated temporary copy if possible. Failed restoration
+   retains both versions and blocks further saves; it does not claim success.
+
+## Recovery journal (schema 1)
+
+Before replacement, an atomically committed `backups/<document>/pending-save.json`
+records a random operation ID, document ID, absolute destination path, SHA-256 of
+both known versions, backup basename, expected overlay revision and phase (prepared, replaced or committed). Hashes and the database revision, not the phase hint alone, decide recovery.
+The backup is hash-verified first. Passwords are never recorded. This is a versioned
+sidecar, so no database schema migration is required. A per-document lock prevents
+two Atlas save operations from replacing the file concurrently.
+
+On opening the book, and again before saving, recovery compares the actual file and
+database with that record:
+
+- Original hash and unchanged overlay revision: clear the interrupted operation.
+- Replacement hash and committed next overlay revision with matching source revision:
+  recognise the completed save and clear the record.
+- Replacement hash and unchanged overlay: copy the verified backup to a temporary
+  sibling, recheck the destination, atomically replace, verify, then clear the record.
+  The reader asks for a reopen because its in-memory pages may show the other version.
+- Any unknown file hash, invalid record, missing/bad backup or unexpected database
+  revision: preserve the file, overlay, journal and backup; make the book read-only
+  for bookmark editing and explain that explicit recovery is required.
+
+Retention runs only after a conclusive successful save. Pending backups cannot be
+pruned by later saves. Process-termination tests cover prepared, replaced,
+pre-database-commit and post-database-commit boundaries. These tests do not prove
+physical power-loss durability of a disk/controller. Hash checks narrow external
+writer races; they are not an operating-system compare-and-swap guarantee against
+an uncooperative writer changing bytes at the exact replacement instant.
 
 ## Alternatives considered
 

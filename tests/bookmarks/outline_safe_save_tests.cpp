@@ -22,6 +22,8 @@
 #include <QGuiApplication>
 #include <QPdfDocument>
 #include <QTemporaryDir>
+#include <QProcess>
+#include <cstdlib>
 
 #include <iostream>
 #include <memory>
@@ -168,6 +170,36 @@ void checkSave() {
     require(book.save().reason == QStringLiteral("nothingToSave"), "A second save has nothing to do.");
 }
 
+void checkProcessRecovery() {
+    for (const QString& phase : {QStringLiteral("journalPrepared"), QStringLiteral("afterReplace"),
+                                 QStringLiteral("commitSave:beforeCommit"), QStringLiteral("afterOverlayCommit")}) {
+        Book book{"A003_outlines_links.pdf"};
+        editA003(book);
+        const auto original = sha(book.pdf);
+        const auto revision = book.editor->revision();
+        book.store.reset();
+        QProcess child;
+        child.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--crash-save"),
+            book.dir.path(), book.pdf, phase});
+        const bool finished = child.waitForFinished(60000);
+        require(finished && child.exitCode() == 73, "Child exits at " + phase.toStdString() + ": " +
+                std::to_string(child.exitCode()) + " " + child.readAllStandardError().toStdString());
+        book.store = std::make_unique<SqliteBookmarkOverlay>(book.database);
+        const auto result = atlas::app::recoverOutlineSave(*book.store, book.pdf, "doc",
+            fsPath(book.dir.filePath(QStringLiteral("backups"))));
+        const bool committed = phase == QStringLiteral("afterOverlayCommit");
+        require(result == (phase == QStringLiteral("journalPrepared") || committed
+                    ? atlas::app::SaveRecovery::completed : atlas::app::SaveRecovery::restored),
+                "Restart resolves the exact interrupted boundary.");
+        require((sha(book.pdf) == original) != committed, "Restart preserves the correct PDF version.");
+        require(book.store->load("doc").revision == revision + (committed ? 1 : 0),
+                "Restart keeps PDF and SQLite commit state consistent.");
+        require(atlas::app::recoverOutlineSave(*book.store, book.pdf, "doc",
+                    fsPath(book.dir.filePath(QStringLiteral("backups")))) == atlas::app::SaveRecovery::none,
+                "Recovery is idempotent.");
+    }
+}
+
 void checkHidden() {
     {
         Book book{"A003_outlines_links.pdf"};
@@ -228,6 +260,16 @@ void checkFailures() {
                 "Failed recovery must never claim the original was restored.");
         require(QFileInfo::exists(book.pdf) && sha(outcome.backupPath) == original,
                 "Failed recovery retains both the current PDF and original backup.");
+        QFile external{book.pdf};
+        require(external.open(QIODevice::Append), "Open external change.");
+        external.write("\n% external edit after interrupted save\n");
+        external.close();
+        const auto changed = sha(book.pdf);
+        require(atlas::app::recoverOutlineSave(*book.store, book.pdf, "doc",
+                    fsPath(book.dir.filePath(QStringLiteral("backups")))) == atlas::app::SaveRecovery::required,
+                "Recovery preserves an unknown external revision.");
+        require(book.save().reason == QStringLiteral("recoveryRequired") && sha(book.pdf) == changed,
+                "An unresolved journal blocks another save.");
     }
     for (const char* failing : {"write", "verify", "reopen", "backup", "beforeReplace", "replace"}) {
         Book book{"A003_outlines_links.pdf"};
@@ -432,12 +474,35 @@ void checkThroughModel() {
 int main(int argc, char** argv) {
     qputenv("QT_QPA_PLATFORM", "offscreen");
     QGuiApplication app{argc, argv};
+    if (argc == 5 && QString::fromLocal8Bit(argv[1]) == QStringLiteral("--crash-save")) {
+        const auto args = app.arguments();
+        const QDir root{args.at(2)};
+        SqliteBookmarkOverlay store{fsPath(root.filePath(QStringLiteral("library.sqlite3")))};
+        const auto snapshot = store.load("doc");
+        SafeSaveInput input;
+        input.path = args.at(3);
+        input.documentId = "doc";
+        input.overlayRevision = snapshot.revision;
+        input.base = snapshot.base;
+        BookmarkEditor editor{"doc", snapshot.nodes, snapshot.base, snapshot.revision};
+        for (const auto* node : editor.inOrder()) input.nodes.push_back(*node);
+        input.backupRoot = fsPath(root.filePath(QStringLiteral("backups")));
+        const auto phase = args.at(4).toStdString();
+        store.setFaultHookForTesting([phase](std::string_view step) { if (step == phase) std::_Exit(73); });
+        const auto outcome = atlas::app::saveOutlineSafely(store, input, [phase](std::string_view step) {
+            if (step == phase) std::_Exit(73);
+            return true;
+        });
+        std::cerr << outcome.reason.toStdString();
+        return 74;
+    }
     if (atlas::app::QpdfInspector::locate().isEmpty()) {
         std::cout << "qpdf not found; safe save tests skipped.\n";
         return 0;
     }
     try {
         checkSave();
+        checkProcessRecovery();
         checkHidden();
         checkFailures();
         checkProtected();

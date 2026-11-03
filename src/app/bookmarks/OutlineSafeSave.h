@@ -30,6 +30,12 @@
 
 namespace atlas::app {
 
+// A pending journal blocks another write until recovery is resolved. No password
+// is persisted. 'restored' requires reopening the reader before further editing.
+enum class SaveRecovery { none, completed, restored, required };
+[[nodiscard]] SaveRecovery recoverOutlineSave(bookmarks::SqliteBookmarkOverlay& store,
+    const QString& path, const std::string& documentId, const std::filesystem::path& backupRoot);
+
 struct SafeSaveInput final {
     QString path;                                   // the PDF to save into
     QString password;                               // session only; never stored
@@ -42,7 +48,10 @@ struct SafeSaveInput final {
     QString qpdf;                                   // empty: QpdfInspector::locate()
 };
 
+enum class SaveDisposition { unchanged, saved, restored, recoveryRequired };
+
 struct SafeSaveOutcome final {
+    SaveDisposition disposition{SaveDisposition::unchanged};
     bool ok{false};
     // Stable reason when !ok: nothingToSave, resolveFirst, missingBaseItems,
     // unreadableLocation, changedOutside, notPermitted, diskFull, qpdfUnavailable,

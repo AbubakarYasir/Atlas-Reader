@@ -75,16 +75,17 @@ The overlay supports add bookmark/folder, rename, edit destination, move, reorde
 
 ## Safe save
 
-Repair status (2026-11-04): late reopen/database-commit failures attempt a verified
-atomic restore. If restoration cannot be proved, retain the current PDF and backup
-and report recovery required, never "nothing changed" or "restored". Do not delete
-the current PDF before restoring. Durable restart recovery and automatic blocking
-of unresolved saves remain open in the [closure ledger](baselines/N1_N5_CLOSURE.md);
-the historical pipeline below must not be read as proof of crash qualification.
+Repair implementation (2026-11-04): an atomic recovery journal is persisted before
+replacement. Interrupted operations are resolved using file hashes and the expected
+overlay revision before another save. Late reopen/database failures attempt verified
+atomic restoration without first deleting the PDF. Unknown external revisions or
+failed restoration preserve both files and block editing. See the precise protocol
+and limits in [ADR-0009](decisions/ADR-0009-outline-safe-save.md); qualification is
+tracked in the [closure ledger](baselines/N1_N5_CLOSURE.md).
 
 **What Save writes (N5.4, [ADR-0009](decisions/ADR-0009-outline-safe-save.md)):** the PDF outline becomes the bookmark tree the reader sees. Local-only, pending and changed bookmarks are written; untouched PDF bookmarks keep every key they had; a PDF bookmark deleted in Atlas stays in the PDF unless the save preview's removal is ticked (its children move up); notes and tags stay in Atlas; a conflict blocks Save. Destinations are converted from Atlas's displayed-page fractions through the page's crop box and /Rotate. Atlas matches each PDF bookmark to its object by place and title and refuses to save if any does not match.
 
-**How it runs (N5.4):** a hidden temporary file `.<name>.atlas-save-<random>.pdf` beside the PDF (removed on any failure); verification by qpdf and by Qt PDF; a recovery backup of the original in `<profile>/backups/<document>/` (hash-checked, newest three kept); atomic replace (Windows `ReplaceFileW` keeps attributes and security); the replaced file must hash equal to the verified one, else the original is restored from the backup; the overlay commits the new base and the saved nodes as Embedded in one transaction. Editing pauses during a save; undo history starts over after it. The password comes from the open reader session in memory and is cleared after use.
+**How it runs (N5.4):** a hidden temporary file `.<name>.atlas-save-<random>.pdf` beside the PDF (removed on handled failure; a killed process can leave a temporary sibling); verification by qpdf and by Qt PDF; a recovery backup of the original in `<profile>/backups/<document>/` (hash-checked; pending backups are retained, resolved saves keep the newest three); atomic replace (Windows `ReplaceFileW` keeps attributes and security); the replaced file must hash equal to the verified one, else recovery is required; the overlay commits the new base and the saved nodes as Embedded in one transaction. Editing pauses during a save; undo history starts over after it. The password comes from the open reader session in memory and is cleared after use.
 
 **Preflight** (every write): identity confirmed or safely relocated · revision unchanged · PDF security permits the operation · destination writable · signature/certification consequence acceptable and explicit · enough storage · the operation fits the engine's preservation guarantees.
 
@@ -94,7 +95,7 @@ the historical pipeline below must not be read as proof of crash qualification.
 
 **Reconcile (N5.4):** when a book opens and its PDF outline differs from the base Atlas read before, the outlines are matched (title and page in reading order, then title, then same parent and page). Atlas follows the PDF where the reader did nothing; keeps the reader's own bookmarks and changes; marks a conflict where both changed one bookmark, or the PDF dropped one the reader changed (kept, never lost); drops only untouched PDF bookmarks the PDF dropped; and waits for the reader's go-ahead if that would remove most of them (a reading problem looks the same). All of it is one transaction. A conflict is settled by the reader: keep Atlas's version, or take the PDF's.
 
-**Save a Copy (N5.4):** the same verified write into a new file, for books Atlas may not change in place (read-only, in use, signed, certified). A PDF whose own security forbids changing its outline gets no changed copy either. The original and the overlay stay as they are.
+**Save a Copy (N5.4):** the same verified write into a new file, for books Atlas may not change in place (read-only, in use, signed, certified). A PDF whose own security forbids changing its outline gets no changed copy either. The original and the overlay stay as they are. A changed copy of a signed/certified PDF is not represented as retaining the original signature validity.
 
 ## Import and export (N5.5)
 
@@ -104,6 +105,18 @@ Implemented; the file format, versions, refusals and import modes are specified 
 - **Markdown** (readable hierarchy with page references) and **CSV** (UTF-8, documented columns, full breadcrumb, page and storage state) are convenience formats, never called lossless.
 - **Scope:** all, a subtree, or local-only/pending changes. **Import modes** (after a preview): append at the end, append under the selection, merge (skip bookmarks already here), explicit replace. Imports are always Atlas's own (local-only) until the reader saves, even for a writable PDF; one Undo step.
 - Foxit XML only after real round-trip fixtures prove hierarchy, order, destinations and Unicode.
+
+Import reading, parsing, preview construction, merge preparation, serialization and
+file writes run on the bookmark worker. The interface holds an isolated editor
+snapshot while an exchange runs. Cancel or closing the tab invalidates its generation;
+a late result cannot mutate the book. Applying a successful import is one overlay
+transaction and one undo operation. Export uses an atomic temporary file; cancellation
+before commit removes it. Cancellation after atomic commit cannot retract the already
+written export. The bounded JSON parse itself runs to completion on the worker before
+its cancelled result is discarded. The exchange schema remains 1.0.0.
+
+Ambiguous external bookmark matches are held for review, not paired by reading order.
+The original local overlay is retained when reconciliation cannot prove a unique match.
 
 ## Library scanning
 

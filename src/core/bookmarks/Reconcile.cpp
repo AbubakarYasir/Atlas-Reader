@@ -45,7 +45,7 @@ std::vector<const BaseNode*> readingOrder(const BaseSnapshot& base) {
 
 // Old base key → new base key: title and page in reading order, then title.
 std::unordered_map<std::string, std::string> matchOutlines(const std::vector<const BaseNode*>& before,
-                                                           const std::vector<const BaseNode*>& after) {
+                                                           const std::vector<const BaseNode*>& after, bool& ambiguous) {
     std::unordered_map<std::string, std::string> matched;
     std::vector<bool> used(after.size(), false);
     const auto pass = [&](auto signature) {
@@ -53,33 +53,35 @@ std::unordered_map<std::string, std::string> matchOutlines(const std::vector<con
         for (std::size_t i = 0; i < after.size(); ++i) {
             if (!used[i]) candidates[signature(*after[i])].push_back(i);
         }
-        std::size_t last = 0;
-        bool any = false;
+        std::map<decltype(signature(*before.front())), std::size_t> oldCounts;
+        for (const BaseNode* node : before)
+            if (!matched.contains(node->key)) ++oldCounts[signature(*node)];
         for (const BaseNode* node : before) {
             if (matched.contains(node->key)) continue;
-            const auto found = candidates.find(signature(*node));
-            if (found == candidates.end()) continue;
-            auto& queue = found->second;
-            while (!queue.empty() && used[queue.front()]) queue.pop_front();
-            if (queue.empty()) continue;
-            // Prefer the first candidate after the previous match (keeps order).
-            auto pick = std::find_if(queue.begin(), queue.end(), [&](std::size_t i) { return !any || i > last; });
-            if (pick == queue.end()) pick = queue.begin();
-            const std::size_t index = *pick;
-            queue.erase(pick);
+            const auto signatureValue = signature(*node);
+            const auto found = candidates.find(signatureValue);
+            // Ordering is not identity: two identical headings may swap places.
+            if (found == candidates.end() || found->second.size() != 1 || oldCounts[signatureValue] != 1) continue;
+            const std::size_t index = found->second.front();
             used[index] = true;
             matched.emplace(node->key, after[index]->key);
-            last = index;
-            any = true;
         }
     };
-    if (after.empty()) return matched;
+    if (before.empty() || after.empty()) return matched;
+    pass([](const BaseNode& n) { return std::pair{n.title, n.location}; });
     pass([](const BaseNode& n) { return std::pair{n.title, pageOf(n.location)}; });
     pass([](const BaseNode& n) { return n.title; });
     // A renamed bookmark: same (matched) parent and same destination page.
     std::map<std::pair<std::string, int>, std::deque<std::size_t>> byPlace;
     for (std::size_t i = 0; i < after.size(); ++i) {
         if (!used[i]) byPlace[{after[i]->parentKey.value_or("~"), pageOf(after[i]->location)}].push_back(i);
+    }
+    std::map<std::pair<std::string, int>, std::size_t> oldPlaces;
+    for (const BaseNode* node : before) {
+        if (matched.contains(node->key)) continue;
+        if (node->parentKey && !matched.contains(*node->parentKey)) continue;
+        const auto parent = node->parentKey ? matched.at(*node->parentKey) : "~";
+        ++oldPlaces[{parent, pageOf(node->location)}];
     }
     for (const BaseNode* node : before) {
         if (matched.contains(node->key)) continue;
@@ -93,6 +95,10 @@ std::unordered_map<std::string, std::string> matchOutlines(const std::vector<con
         if (candidates == byPlace.end()) continue;
         while (!candidates->second.empty() && used[candidates->second.front()]) candidates->second.pop_front();
         if (candidates->second.empty()) continue;
+        if (candidates->second.size() != 1 || oldPlaces[{parent, pageOf(node->location)}] != 1) {
+            ambiguous = true;
+            continue;
+        }
         const std::size_t index = candidates->second.front();
         candidates->second.pop_front();
         used[index] = true;
@@ -108,7 +114,9 @@ ReconcileResult reconcile(std::string_view documentId, const std::vector<Bookmar
     ReconcileResult result;
     const auto before = readingOrder(oldBase);
     const auto after = readingOrder(newBase);
-    const auto oldToNew = matchOutlines(before, after);
+    bool ambiguous = false;
+    const auto oldToNew = matchOutlines(before, after, ambiguous);
+    if (ambiguous) { result.refusal = "ambiguousMatch"; return result; }
     std::unordered_map<std::string, std::string> newToOld;
     for (const auto& [o, n] : oldToNew) newToOld.emplace(n, o);
     std::unordered_map<std::string, const BaseNode*> oldByKey;

@@ -229,7 +229,7 @@ Before a UI change is called done, the author captures and inspects screenshots 
 
 | Axis | Values |
 |---|---|
-| Language | English, Arabic |
+| Language | English, Arabic, Urdu |
 | Theme | Light, Dark (+ Windows high contrast at N4.5, N9) |
 | Scale | 100%, 200% |
 | Width | Wide (≥ 1280), narrow (≈ 760) |
@@ -267,3 +267,12 @@ Windows is mouse and keyboard first, but:
 - Touch mode enlarges targets to 40 px.
 - Panning never creates ink. Writing mode has a clear exit that never loses unsaved work.
 - Stylus input goes to a low-latency live layer (see [ARCHITECTURE.md](ARCHITECTURE.md)). Barrel and eraser buttons and palm rejection are mapped only after hardware tests.
+
+### N5 repair refinements
+
+The Arabic interface explicitly selects bundled Noto Naskh Arabic; Urdu retains
+Noto Nastaliq Urdu. Export, Import and Save dialogs constrain their height to the
+available window and keep their action row outside scrollable options. Toasts use
+Qt accessibility announcements. Qt 6.10 does not expose QML expanded/expandable
+properties; descriptions currently convey that state and a real Narrator review
+is still required (see [Qt Accessible properties](https://doc.qt.io/qt-6.10/qml-qtquick-accessible.html)).

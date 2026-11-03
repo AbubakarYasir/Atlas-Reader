@@ -5,9 +5,8 @@
 // reader's own work, and marks a conflict where both changed the same bookmark
 // (docs/DATA_AND_SAFETY.md, ADR-0005). Pure C++.
 //
-// Matching the old outline to the new one: first by title and destination
-// page in reading order, then by title alone (a bookmark whose destination
-// moved), never by position alone.
+// Matching uses unique title/destination, title/page, title, then matched-parent/page
+// candidates. Indistinguishable candidates are refused; ordering is not identity.
 
 #include "core/bookmarks/BookmarkOverlay.h"
 

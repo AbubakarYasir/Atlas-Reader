@@ -186,14 +186,11 @@ Rectangle {
                    : format === "csv" ? [I18n.t("exchange.filterCsv") + " (*.csv)"]
                    : [I18n.t("exchange.filterJson") + " (*.atlas-bookmarks.json *.json)"]
         onAccepted: {
-            const error = bookmarkModel.exportTo(selectedFile, format, scope, row, {
+            bookmarkModel.exportAsync(selectedFile, format, scope, row, {
                 title: tab.documentTitle,
                 pageCount: view.pageCount,
                 pageLabels: tab.hasLabels ? view.pageLabels : []
             })
-            const file = String(selectedFile).split(/[\\/]/).pop()
-            tab.toastRequested(error.length === 0 ? I18n.t("exchange.exported", decodeURIComponent(file))
-                                                  : I18n.t("exchange.error." + error))
         }
     }
     function exportBookmarks() {
@@ -211,13 +208,57 @@ Rectangle {
         nameFilters: [I18n.t("exchange.filterJson") + " (*.atlas-bookmarks.json *.json)"]
         onAccepted: tab.previewImport(selectedFile)
     }
-    function previewImport(file) {
-        const info = bookmarkModel.readImport(file)
-        if (!info.ok) {
-            tab.toastRequested(I18n.t("exchange.error." + info.error))
-            return
+    function previewImport(file) { bookmarkModel.readImportAsync(file) }
+    Connections {
+        target: bookmarkModel
+        function onImportRead(info) {
+            if (info.ok) importDialog.ask(info)
+            else tab.toastRequested(I18n.t("exchange.error." + info.error))
         }
-        importDialog.ask(info)
+        function onExportFinished(error, target) {
+            const file = String(target).split(/[\\/]/).pop()
+            tab.toastRequested(error.length === 0 ? I18n.t("exchange.exported", decodeURIComponent(file))
+                                                  : I18n.t("exchange.error." + error))
+        }
+        function onImportApplied(row) {
+            if (row >= 0) {
+                bookmarksPanel.select(row)
+                tab.toastRequested(I18n.t("exchange.imported"))
+            }
+        }
+    }
+    Popup {
+        id: exchangeProgress
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(480, parent.width - Theme.xl * 2)
+        padding: Theme.xl
+        modal: true
+        focus: true
+        visible: bookmarkModel.exchanging
+        closePolicy: Popup.NoAutoClose
+        background: Rectangle { color: Theme.raised; radius: Theme.radiusSurface; border.color: Theme.chromeLine }
+        contentItem: ColumnLayout {
+            spacing: Theme.md
+            Accessible.role: Accessible.Dialog
+            Accessible.name: I18n.t("exchange.working")
+            Label {
+                Layout.fillWidth: true
+                text: I18n.t("exchange.working")
+                wrapMode: Text.Wrap
+                color: Theme.ink
+                font.family: I18n.uiFamily
+                font.pixelSize: Math.round(14 * I18n.sizeScale)
+            }
+            BusyIndicator { Layout.alignment: Qt.AlignHCenter; running: bookmarkModel.exchanging }
+            AtlasButton {
+                Layout.alignment: Qt.AlignRight
+                text: I18n.t("prefs.cancel")
+                focus: true
+                onClicked: bookmarkModel.cancelExchange()
+                Keys.onEscapePressed: bookmarkModel.cancelExchange()
+            }
+        }
     }
     ImportBookmarksDialog {
         id: importDialog
@@ -225,11 +266,7 @@ Rectangle {
         hasBookmarks: bookmarkModel.totalCount > 0
         onAccepted: (mode) => {
             preferences.navPanel = "bookmarks"
-            const row = bookmarkModel.applyImport(mode, bookmarksPanel.currentRow)
-            if (row >= 0) {
-                bookmarksPanel.select(row)
-                tab.toastRequested(I18n.t("exchange.imported"))
-            }
+            bookmarkModel.applyImportAsync(mode, bookmarksPanel.currentRow)
         }
     }
     function importBookmarks() {

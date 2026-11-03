@@ -21,7 +21,7 @@ DYNAMIC = {
                       "unsupported", "readOnly", "unavailable"],
     "view.colors.": ["0", "1", "2", "3"],
     "bookmarks.state.": ["embedded", "local_only", "pending_embed", "local_override", "locally_hidden", "conflict"],
-    "bookmarks.readOnly.": ["notInLibrary", "ambiguous", "outlineUnsupported", "storageError"],
+    "bookmarks.readOnly.": ["notInLibrary", "ambiguous", "outlineUnsupported", "storageError", "recoveryRequired", "recoveredReopen"],
     "exchange.error.": ["notJson", "wrongFormat", "newerVersion", "badVersion", "tooLarge", "tooMany", "tooDeep",
                         "badItem", "unreadable", "writeFailed", "nothing", "noSelection"],
     "bookmarks.refused.": ["readOnly", "atTop", "atBottom", "atTopLevel", "nothingToIndentInto", "unhideFirst",

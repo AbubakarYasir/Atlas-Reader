@@ -6,9 +6,15 @@ All notable changes to Atlas Reader Native are documented here.
 
 ## N1–N5 repair pass — 2026-11-04 (in progress)
 
+- Added a versioned recovery journal, per-book save lock and four actual process-termination recovery tests; unknown external revisions are preserved and block further saves.
+- Import/export and import merge preparation now run on the existing worker, with busy/cancel state and stale-result rejection. Tested a 10,000-bookmark import/export, single-step undo and tab closure.
+- Ambiguous outline identities no longer match by order. Fixed the bookmark panel's duplicate `currentRow` property/function name; added selectable accessibility state and spoken toast announcements.
+- Arabic UI now explicitly uses the bundled Naskh font. Save/Import/Export dialogs keep actions visible with scrollable content in short windows, including Urdu.
+- Added an opt-in 2,000-page end-to-end search measurement. Review binaries use `beta.2-n5-review.1`, not the accepted beta.2 or a released beta.3.
+
 - Late save failures now attempt verified atomic restoration without deleting the current PDF first. A failed restoration has an explicit recovery-required message in all three languages.
 - Added regression checks for final reopen, overlay commit and failed restoration, including a real database transaction exception.
-- N5 packaging selects the N5 review instructions. Added a requirement closure ledger; durable crash recovery and exchange responsiveness remain open.
+- N5 packaging selects the N5 review instructions. Added a requirement closure ledger; restart recovery and worker exchange are implemented, with their final qualification tracked explicitly.
 - Corrected the last two N5 commits locally to owner authorship and registered SSH signing; added a pre-push identity/signature gate.
 - This entry supersedes the earlier claim that N5 was complete: acceptance waits for the closure ledger and owner review.
 

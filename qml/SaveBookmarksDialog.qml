@@ -27,6 +27,8 @@ Popup {
     x: Math.round(((parent ? parent.width : 800) - width) / 2)
     y: Math.round(((parent ? parent.height : 600) - height) / 3)
     width: Math.min(460, (parent ? parent.width : 800) - 40)
+    height: Math.min(body.implicitHeight + footer.implicitHeight + Theme.md + padding * 2,
+                     (parent ? parent.height : 600) - Theme.xl * 2)
     padding: Theme.xl
     closePolicy: Popup.CloseOnEscape
     background: Rectangle { color: Theme.raised; radius: Theme.radiusSurface; border.color: Theme.chromeLine }
@@ -36,39 +38,55 @@ Popup {
         Accessible.role: Accessible.Dialog
         Accessible.name: I18n.t("save.title")
 
-        Label {
+        ScrollView {
+            id: bodyScroll
             Layout.fillWidth: true
-            horizontalAlignment: Text.AlignLeft
-            text: I18n.t("save.title")
-            color: Theme.ink
-            font.family: I18n.uiFamily
-            font.pixelSize: Math.round(16 * I18n.sizeScale)
-            font.weight: Font.DemiBold
-        }
-        Label {
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignLeft
-            wrapMode: Text.WordWrap
-            text: I18n.t("save.summary", dialog.current.added || 0, dialog.current.changed || 0, dialog.current.kept || 0)
-            color: Theme.ink
-            font.family: I18n.uiFamily
-        }
-        AtlasCheckBox {
-            id: removeHidden
-            Layout.fillWidth: true
-            visible: dialog.bookmarks.hiddenCount > 0
-            text: I18n.t("save.removeHidden", dialog.bookmarks.hiddenCount)
-        }
-        Label {
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignLeft
-            wrapMode: Text.WordWrap
-            text: I18n.t("save.safety")
-            color: Theme.muted
-            font.family: I18n.uiFamily
-            font.pixelSize: Math.round(12 * I18n.sizeScale)
+            Layout.fillHeight: true
+            Layout.minimumHeight: 0
+            Layout.preferredHeight: body.implicitHeight
+            contentWidth: availableWidth
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ColumnLayout {
+                id: body
+                width: bodyScroll.availableWidth
+                spacing: Theme.sm
+                Label {
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignLeft
+                    text: I18n.t("save.title")
+                    color: Theme.ink
+                    font.family: I18n.uiFamily
+                    font.pixelSize: Math.round(16 * I18n.sizeScale)
+                    font.weight: Font.DemiBold
+                }
+                Label {
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignLeft
+                    wrapMode: Text.WordWrap
+                    text: I18n.t("save.summary", dialog.current.added || 0, dialog.current.changed || 0, dialog.current.kept || 0)
+                    color: Theme.ink
+                    font.family: I18n.uiFamily
+                }
+                AtlasCheckBox {
+                    id: removeHidden
+                    Layout.fillWidth: true
+                    visible: dialog.bookmarks.hiddenCount > 0
+                    text: I18n.t("save.removeHidden", dialog.bookmarks.hiddenCount)
+                }
+                Label {
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignLeft
+                    wrapMode: Text.WordWrap
+                    text: I18n.t("save.safety")
+                    color: Theme.muted
+                    font.family: I18n.uiFamily
+                    font.pixelSize: Math.round(12 * I18n.sizeScale)
+                }
+            }
         }
         RowLayout {
+            id: footer
             Layout.alignment: Qt.AlignRight
             spacing: Theme.sm
             AtlasButton { text: I18n.t("prefs.cancel"); onClicked: dialog.close() }

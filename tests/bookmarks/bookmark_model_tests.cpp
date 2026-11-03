@@ -13,6 +13,8 @@
 #include <QFile>
 #include <QUrl>
 #include <QVariantMap>
+#include <QTimer>
+#include <QSemaphore>
 
 #include <atomic>
 #include <chrono>
@@ -362,6 +364,101 @@ void checkExchange() {
     require(model.applyImport(QStringLiteral("end"), -1) == -1, "Nothing pending after a refused file.");
 }
 
+void checkAsyncExchange() {
+    Profile profile;
+    BookmarkService service{profile.database};
+    BookmarkModel model;
+    model.setService(&service);
+    model.attach(qpath(profile.book), outline());
+    waitFor([&] { return model.editable(); }, "async overlay");
+    const auto source = QUrl::fromLocalFile(qpath(profile.temporary.path() / "large.json"));
+    const auto target = QUrl::fromLocalFile(qpath(profile.temporary.path() / "export.json"));
+    std::vector<atlas::bookmarks::BookmarkNode> nodes(10000);
+    std::vector<const atlas::bookmarks::BookmarkNode*> pointers;
+    for (std::size_t i = 0; i < nodes.size(); ++i) {
+        nodes[i].id = std::to_string(i);
+        nodes[i].title = "كتاب اردو " + std::to_string(i);
+        nodes[i].position = static_cast<std::uint32_t>(i);
+        nodes[i].state = atlas::bookmarks::StorageState::localOnly;
+        pointers.push_back(&nodes[i]);
+    }
+    QFile fixture{source.toLocalFile()};
+    const auto bytes = atlas::app::exportJson(pointers, {}, atlas::app::ExportScope::all, "test", "test");
+    require(fixture.open(QIODevice::WriteOnly) && fixture.write(bytes) == bytes.size(), "large fixture");
+    fixture.close();
+    int previews = 0;
+    QVariantMap info;
+    QObject::connect(&model, &BookmarkModel::importRead, [&](const QVariantMap& value) { info = value; ++previews; });
+    int applied = 0;
+    QObject::connect(&model, &BookmarkModel::importApplied, [&](int row) { require(row >= 0, "import row"); ++applied; });
+    int exports = 0;
+    QObject::connect(&model, &BookmarkModel::exportFinished, [&](const QString& error, const QUrl&) {
+        require(error.isEmpty(), "async export succeeds"); ++exports;
+    });
+    QSemaphore barrier;
+    service.exchangeWork([&] { barrier.acquire(); });
+    model.readImportAsync(source);
+    require(model.exchanging() && !model.editable(), "visible busy state prevents concurrent editing");
+    model.cancelExchange();
+    barrier.release();
+    service.waitForIdle();
+    QCoreApplication::processEvents();
+    require(previews == 0 && model.totalCount() == 5, "cancelled read has no stale preview or mutation");
+    int ticks = 0;
+    qint64 maximumGap = 0;
+    QElapsedTimer heartbeat;
+    heartbeat.start();
+    QTimer timer;
+    timer.setInterval(1);
+    QObject::connect(&timer, &QTimer::timeout, [&] {
+        maximumGap = std::max(maximumGap, heartbeat.restart()); ++ticks;
+    });
+    timer.start();
+    QElapsedTimer elapsed;
+    elapsed.start();
+    model.readImportAsync(source);
+    waitFor([&] { return previews == 1; }, "10k import parsing");
+    const auto readMs = elapsed.elapsed();
+    require(info.value("ok").toBool() && info.value("count").toInt() == 10000, "10k preview");
+    service.exchangeWork([&] { barrier.acquire(); });
+    model.applyImportAsync("end", -1);
+    model.cancelExchange();
+    barrier.release();
+    service.waitForIdle();
+    QCoreApplication::processEvents();
+    require(model.totalCount() == 5 && applied == 0, "cancelled apply has no partial import");
+    model.readImportAsync(source);
+    waitFor([&] { return previews == 2; }, "second preview");
+    elapsed.restart();
+    model.applyImportAsync("end", -1);
+    waitFor([&] { return applied == 1; }, "10k import apply");
+    waitFor([&] { return !model.busy(); }, "transaction committed");
+    const auto applyMs = elapsed.elapsed();
+    require(model.totalCount() == 10005 && model.canUndo(), "whole import is present with undo");
+    service.exchangeWork([&] { barrier.acquire(); });
+    model.exportAsync(target, "json", "all", -1, {});
+    model.cancelExchange();
+    barrier.release();
+    service.waitForIdle();
+    require(!QFile::exists(target.toLocalFile()), "cancelled export creates no destination");
+    elapsed.restart();
+    model.exportAsync(target, "json", "all", -1, {});
+    waitFor([&] { return exports == 1; }, "10k export");
+    const auto exportMs = elapsed.elapsed();
+    require(ticks > 0, "interface heartbeat runs during exchange");
+    timer.stop();
+    model.undo();
+    waitIdle(model, service);
+    require(model.totalCount() == 5, "one undo removes the entire asynchronous import");
+    model.readImportAsync(source);
+    service.waitForIdle(); // response is queued, but not yet delivered
+    model.detach();
+    QCoreApplication::processEvents();
+    require(previews == 2 && model.totalCount() == 0, "closing tab ignores completed stale import");
+    std::cout << "Exchange 10000: read_ms=" << readMs << " apply_commit_ms=" << applyMs
+              << " export_ms=" << exportMs << " max_heartbeat_gap_ms=" << maximumGap << '\n';
+}
+
 void checkReadOnly() {
     Profile profile;
     BookmarkService service{profile.database};
@@ -484,6 +581,7 @@ int main(int argc, char** argv) {
         checkEditing();
         checkAddMany();
         checkExchange();
+        checkAsyncExchange();
         checkReadOnly();
         checkQueuedWritesAndRecovery();
     } catch (const std::exception& error) {

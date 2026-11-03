@@ -49,13 +49,16 @@ public:
 struct CapabilityCheckResult final {
     document::CapabilityAssessment assessment;
     RevisionStamp stamp;
+    document::PdfFacts pdf; // what the structural check read (signatures for the Signatures panel)
 };
 
 // Runs every probe for one document (call off the UI thread).
 [[nodiscard]] CapabilityCheckResult checkDocumentCapabilities(const QString& path, const QString& password,
                                                               const RevisionStamp& baseline);
 
-// For QML: {state, canEmbedOutline, canEmbedAnnotations, canKeepLocalResearch, reasons: [names]}.
-[[nodiscard]] QVariantMap capabilityMap(const document::CapabilityAssessment& assessment);
+// For QML: {state, canEmbedOutline, canEmbedAnnotations, canKeepLocalResearch, reasons: [names],
+// inspected, certified, signatures: [{name, signed, page}]}.
+[[nodiscard]] QVariantMap capabilityMap(const document::CapabilityAssessment& assessment,
+                                        const document::PdfFacts& pdf = {});
 
 } // namespace atlas::app

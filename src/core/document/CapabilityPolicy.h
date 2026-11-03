@@ -42,6 +42,14 @@ struct PdfPermissions final {
     bool print{true};
 };
 
+// A signature form field (N5.3 Signatures panel). Atlas reports what the PDF
+// declares; it does not check whether a signature is valid (after 2.0, Track F).
+struct SignatureField final {
+    std::string name;   // the field's full name, as the PDF gives it
+    bool signedField{}; // the field holds a signature value
+    int page{};         // 1-based page of its widget; 0 when unknown
+};
+
 struct PdfFacts final {
     bool inspected{false}; // false until the structural check has run
     bool readable{true};
@@ -50,6 +58,7 @@ struct PdfFacts final {
     PdfPermissions permissions;
     bool hasSignatures{false}; // signed signature fields present
     bool certified{false};     // DocMDP certification signature
+    std::vector<SignatureField> signatureFields; // in the order the PDF lists them
 };
 
 struct RevisionFacts final {

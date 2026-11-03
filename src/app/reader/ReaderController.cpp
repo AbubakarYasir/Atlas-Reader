@@ -400,7 +400,7 @@ void ReaderController::startCapabilityCheck(std::uint64_t sessionId) {
             const auto it = self->capabilities_.find(sessionId);
             if (it == self->capabilities_.end() || it->second.generation != generation) return;
             if (!it->second.baseline.valid()) it->second.baseline = result.stamp;
-            it->second.map = capabilityMap(result.assessment);
+            it->second.map = capabilityMap(result.assessment, result.pdf);
             const auto& sessions = self->model_.sessions();
             for (std::size_t row = 0; row < sessions.size(); ++row) {
                 if (sessions[row].id != sessionId) continue;

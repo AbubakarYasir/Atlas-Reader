@@ -49,7 +49,8 @@ class BookmarkModel : public QAbstractListModel {
     Q_PROPERTY(bool showHidden READ showHidden WRITE setShowHidden NOTIFY showHiddenChanged)
     // Something is expanded: the panel's one Expand/Collapse button collapses.
     Q_PROPERTY(bool anyExpanded READ anyExpanded NOTIFY countsChanged)
-    // Zero-based page the reader shows; currentId is the deepest bookmark at or before it.
+    // Zero-based page the reader shows; currentId is the bookmark whose destination
+    // is the last one at or before the reading position (see setPosition).
     Q_PROPERTY(int currentPage READ currentPage WRITE setCurrentPage NOTIFY currentPageChanged)
     Q_PROPERTY(QString currentId READ currentId NOTIFY currentIdChanged)
 
@@ -114,6 +115,11 @@ public:
     Q_INVOKABLE QVariantMap get(int row) const;
     // Expands the ancestors so the bookmark has a row; returns it (or -1).
     Q_INVOKABLE int reveal(const QString& id);
+    // The reading position: page (zero-based) and fraction down that page.
+    Q_INVOKABLE void setPosition(int page, qreal fy);
+    // N5.3 Command Center: matching bookmarks of this book, reading order,
+    // [{nodeId, title, breadcrumb, page, fx, fy}], at most `limit`, hidden excluded.
+    Q_INVOKABLE QVariantList findBookmarks(const QString& text, int limit = 8);
 
     // Commands return the affected row (or -1 when refused; see refused()).
     // location: {page, fx, fy, zoom} from ReaderViewport::viewLocation().
@@ -171,7 +177,11 @@ private:
     std::unique_ptr<bookmarks::BookmarkEditor> editor_;
     std::unique_ptr<bookmarks::BookmarkSearchIndex> search_;
     std::vector<bookmarks::BookmarkHit> hits_;
-    std::unordered_map<std::string, int> pageOf_; // zero-based page per bookmark, -1 for none
+    struct Spot final {
+        int page{-1}; // zero-based, -1 for none
+        double top{};
+    };
+    std::unordered_map<std::string, Spot> spotOf_; // where each bookmark goes
     bool searchStale_{true};
     std::vector<Row> rows_;
     QSet<QString> expanded_;
@@ -192,6 +202,7 @@ private:
     std::vector<PendingWrite> writes_;
     bool writing_{false};
     int currentPage_{-1};
+    double currentFy_{0.0};
     int hiddenCount_{0};
     quint64 generation_{0}; // ignores answers for a book that is no longer attached
 };

@@ -47,7 +47,7 @@ The full measured layout is in [FOXIT_PARITY.md §1](FOXIT_PARITY.md#1-window-an
 ├────┴───────────┴ status 32: « ‹ [ 12 / 340 ] › »  ……  layouts − ━●━ + 125% ⛶ ┤
 ```
 
-- **Title bar (custom, Windows snap kept):** app mark; Quick Access Toolbar (Open, Mouse/Touch mode; Save/Undo/Redo from N5, Print from N7; customize from N7); file name; title-bar search box from N5 (Alt+Q); minimize, maximize, close. Colourful skin tints it with the theme colour; Classic keeps it neutral.
+- **Title bar (custom, Windows snap kept):** app mark; Quick Access Toolbar (Open, Undo, Redo, Mouse/Touch mode; Save from N5.4, Print from N7; customize from N7); file name; Command Center magnifier (Alt+Q) that opens into a search field with commands, books and bookmarks; minimize, maximize, close. Colourful skin tints it with the theme colour; Classic keeps it neutral.
 - **Ribbon:** *File* opens the File page (backstage). Task tabs follow Foxit's order and appear only with working commands: **Home · View · Accessibility · Help** in N4.3, **Comment** in N6, others after 2.0. Commands are grouped with 1 px separators; large buttons (24 px icon over a 12 px label, ▾ for menus) and small buttons (16 px icon, 2–3 per column). Ctrl+F11 or the ⌃ button collapses the ribbon to its tab row; clicking a tab then shows it as a temporary overlay.
 - **Document tabs:** the **Library** is the first, pinned tab (Foxit's *Start* tab). Book tabs are 124 px wide, filename-first with ellipsis, close ✕ on the active or hovered tab, Ctrl+Tab cycling, middle-click closes, overflow ▾ lists all tabs.
 - **Navigation rail:** 40 px, icon buttons for panels (Bookmarks = document outline and Pages, done in N4; editable Atlas bookmarks N5, Comments N6; Search opens on the right); a panel opens beside the rail, resizable (200–480 px), F4 toggles; icons appear only when their panel works.
@@ -173,7 +173,7 @@ Foxit's default keys for every command Atlas has ([FOXIT_PARITY §4](FOXIT_PARIT
 | Preferences | `Ctrl+K` |
 | Collapse or pin the ribbon | `Ctrl+F11` |
 | Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
-| Title-bar search / Command Center | `Alt+Q` (N5) |
+| Title-bar search / Command Center | `Alt+Q` (N5.3: ↑/↓ choose, Enter runs, Esc closes) |
 | Find in the Library | `Ctrl+F` |
 | Find in document / next / previous | `Ctrl+F` / `F3` / `Shift+F3`; Search panel `Ctrl+Shift+F` |
 | Go to page | `Ctrl+G` (focuses the page box) |
@@ -190,7 +190,7 @@ Foxit's default keys for every command Atlas has ([FOXIT_PARITY §4](FOXIT_PARIT
 | Move bookmark / nest under the one above / move out | `Alt+↑` `Alt+↓` / `Alt+→` / `Alt+←` (Bookmarks panel; nest/move-out mirrored in RTL) |
 | Save portable changes | `Ctrl+S` (N5+) |
 | Print | `Ctrl+P` (N7) |
-| Undo / redo | `Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z` |
+| Undo / redo | `Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z` (N5.3: bookmark edits in the open book; text fields keep their own) |
 | Rename / delete / activate | `F2` / `Delete` / `Enter` |
 | Context menu | `Shift+F10` or the Menu key |
 

@@ -1012,6 +1012,14 @@ void SqliteLibraryIndex::rebuildSearchIndex() {
 }
 
 std::vector<LibraryRecord> SqliteLibraryIndex::search(std::string query) const {
+    return searchWith(std::move(query), false);
+}
+
+std::vector<LibraryRecord> SqliteLibraryIndex::searchPrefix(std::string query) const {
+    return searchWith(std::move(query), true);
+}
+
+std::vector<LibraryRecord> SqliteLibraryIndex::searchWith(std::string query, bool prefix) const {
     if (query.empty()) return {};
     std::scoped_lock lock{impl_->mutex};
     Statement statement{impl_->db,
@@ -1019,7 +1027,8 @@ std::vector<LibraryRecord> SqliteLibraryIndex::search(std::string query) const {
         "(SELECT l.source_path FROM document_locations l WHERE l.document_id = d.document_id ORDER BY l.location_id LIMIT 1) "
         "FROM documents_fts f JOIN documents d ON d.rowid = f.rowid "
         "WHERE documents_fts MATCH ?1 ORDER BY rank LIMIT 100"};
-    statement.bindText(1, safeFtsPhrase(query));
+    // A quoted phrase, optionally with a prefix on its last word (FTS5 `"…"*`).
+    statement.bindText(1, safeFtsPhrase(query) + (prefix ? "*" : ""));
 
     std::vector<LibraryRecord> result;
     for (;;) {

@@ -12,7 +12,19 @@ Rectangle {
     id: bar
 
     signal openPdfRequested()
+    signal undoRequested()
+    signal redoRequested()
     property string placeTitle: ""
+    property bool canUndo: false
+    property bool canRedo: false
+    property bool hasDocument: false
+    property var bookmarks: null
+    signal commandRequested(string command)
+    signal bookRequested(string documentId, string path)
+    signal bookmarkRequested(var found)
+    // Command Center (Alt+Q), parked right of the file name like Foxit's search.
+    readonly property alias commandCenter: center
+    function openSearch() { center.open() }
     property bool customFrame: true
     readonly property var win: Window.window
     readonly property bool maximized: win !== null && win.visibility === Window.Maximized
@@ -68,6 +80,34 @@ Rectangle {
                 shortcutHint: "Ctrl+O"
                 onClicked: bar.openPdfRequested()
             }
+            // Undo/Redo act on this book's bookmark edits (N5.3); Save joins
+            // the toolbar with safe save in N5.4.
+            AtlasIconButton {
+                implicitWidth: Theme.qatButton
+                implicitHeight: Theme.qatButton
+                iconSize: 16
+                iconName: "arrow_undo"
+                iconColor: Theme.titleBarText
+                hoverColor: Theme.titleBarHover
+                cornerRadius: 2
+                enabled: bar.canUndo
+                text: I18n.t("bookmarks.undo")
+                shortcutHint: "Ctrl+Z"
+                onClicked: bar.undoRequested()
+            }
+            AtlasIconButton {
+                implicitWidth: Theme.qatButton
+                implicitHeight: Theme.qatButton
+                iconSize: 16
+                iconName: "arrow_redo"
+                iconColor: Theme.titleBarText
+                hoverColor: Theme.titleBarHover
+                cornerRadius: 2
+                enabled: bar.canRedo
+                text: I18n.t("bookmarks.redo")
+                shortcutHint: "Ctrl+Y"
+                onClicked: bar.redoRequested()
+            }
             AtlasIconButton {
                 implicitWidth: Theme.qatButton
                 implicitHeight: Theme.qatButton
@@ -99,6 +139,22 @@ Rectangle {
             font.family: I18n.contentFamily(text) || I18n.uiFamily
             font.pixelSize: Math.round(12 * I18n.sizeScale)
         }
+
+        CommandCenter {
+            id: center
+            Layout.preferredWidth: implicitWidth
+            Layout.preferredHeight: Theme.qatButton
+            Layout.leftMargin: Theme.sm
+            Layout.rightMargin: bar.customFrame ? 6 : 10
+            canUndo: bar.canUndo
+            canRedo: bar.canRedo
+            hasDocument: bar.hasDocument
+            bookmarks: bar.bookmarks
+            onCommandRequested: (command) => bar.commandRequested(command)
+            onBookRequested: (documentId, path) => bar.bookRequested(documentId, path)
+            onBookmarkRequested: (found) => bar.bookmarkRequested(found)
+        }
+        Rectangle { visible: bar.customFrame; Layout.rightMargin: 4; Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: Qt.alpha(Theme.titleBarText, 0.45) }
 
         // Window buttons (minimize, maximize/restore, close).
         Row {

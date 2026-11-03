@@ -104,10 +104,10 @@ A command appears in Atlas only when it works; until then its group is absent, n
 | Foxit feature | Where in Foxit | Atlas |
 |---|---|---|
 | Custom title bar, file name, window buttons | Title bar | Done (N4.3) |
-| Quick Access Toolbar: Open, Save, Print, Create, Undo, Redo, Hand/Select, Mouse/Touch | Title bar | Done: Open, Mouse/Touch · N5: Save, Undo, Redo · N7: Print · Hand/Select on the Home tab Done (N4.5) |
+| Quick Access Toolbar: Open, Save, Print, Create, Undo, Redo, Hand/Select, Mouse/Touch | Title bar | Done: Open, Undo, Redo (N5.3), Mouse/Touch · N5.4: Save · N7: Print · Hand/Select on the Home tab Done (N4.5) |
 | Customize Quick Access Toolbar (add, remove, order, above/below ribbon) | ▾ on QAT, right-click ribbon | N7 |
 | Customize ribbon (new tabs/groups, rename, reorder, import/export, reset) and keyboard shortcuts | Right-click ribbon → Customize | Track H |
-| Title-bar search (commands, text, help; Alt+Q), collapsed search option | Title bar | N5 (Command Center) |
+| Title-bar search (commands, text, help; Alt+Q), collapsed search option | Title bar | Done N5.3 (Command Center: commands, library books, bookmarks; collapsed magnifier) · help search with N12 |
 | Notifications bell | Title bar | Track J (local notices only before that) |
 | Ribbon collapse / pin (Ctrl+F11), double-click a tab | Ribbon | Done (N4.3) |
 | Classic menu bar (File, Edit, View, Tools, Help) as an option | View → Menu Bar | N7 (keyboard Alt menus) |
@@ -149,7 +149,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 | Done (N4.3) | General, Languages, Skins, Accessibility |
 | N4.4 | Done: Page Display (default layout, default zoom), History (clear; pinned files kept), Documents (restore tabs, restore last view per book) · N7: Full Screen options, rendering options |
 | N4.5 | Done: Search (whole words, case-sensitive, Arabic/Urdu note) · N7: Reading (reading order, caret browsing) |
-| N5 | Security (protected files, local research), Identity (author name for notes and bookmarks) |
+| N5 | Security (re-check on return, protection label), Identity (name, organization, email) — Done N5.3; categories sorted alphabetically as in Foxit |
 | N6 | Commenting, Tablet (pen and touch) |
 | N7 | Print, File Associations, Library (Atlas), Backup (N8) |
 | N9 | Accessibility completed, Speech (when read-aloud lands, Track A) |
@@ -281,13 +281,13 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 | Panel | Atlas |
 |---|---|
 | Pages (thumbnails, page operations menu) | Done (view, N4.4) · Track C (operations) |
-| Bookmarks (Atlas's signature editor) | Editable panel Done (N5.3 slice 2: add, rename, delete/hide, move, nest, undo, find, states); Command Center, Auto Create N5.3 slice 3 |
+| Bookmarks (Atlas's signature editor) | Editable panel Done (N5.3 slice 2: add, rename, delete/hide, move, nest, undo, find, states); Command Center Done (slice 3); Auto Create N5.3 slice 4 |
 | Outline / document bookmarks (read) | Done (N4.5) |
 | Comments | N6 |
 | Search (right panel; whole words, case, include bookmarks/comments, highlight all, save results to PDF/CSV) | Done: whole words, case, highlight all (always on), results with context (N4.5) · include bookmarks/comments N6 · save results Track H |
 | Attachments | Track D (read and save copy first) |
 | Layers (show/hide, list for all/visible pages, reset, print/export overrides, import, merge, flatten) | Track D (view first) |
-| Signatures | N5 (status) · Track F (validation) |
+| Signatures | Status panel Done (N5.3 slice 3: fields, signed/empty, page, certified) · Track F (validation) |
 | Destinations (named positions; new, sort by name/page) | Following named destinations Done (N4.5) · Destinations panel N7 · Track D (create) |
 | Content, Tags, Order, Fields, Links, Articles, Model Tree (3D) | Track G (Tags, Order, Content) · Track E (Fields) · Track D (Links, Articles, 3D) |
 
@@ -332,7 +332,7 @@ Atlas adopts Foxit's default shortcuts for every command it has. Changes to Atla
 |---|---|---|
 | Ctrl+K | Library search | **Preferences** |
 | Ctrl+F | — | Find in the current view: Library search box, or document Find bar (done) |
-| Alt+Q | — | Title-bar search (N5 Command Center) |
+| Alt+Q | — | Title-bar search (Command Center, Done N5.3) |
 | Ctrl+Shift+F | — | Search panel (done) |
 | Ctrl+Shift+A | Add library folder | Deselect all in the reader (done); Add folder moves to **Ctrl+Shift+O** |
 | Ctrl+Q | — | Exit |

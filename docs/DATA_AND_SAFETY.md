@@ -65,6 +65,8 @@ Opening and changing are separate capabilities.
 
 **Passwords:** the open password and the permissions/owner password are different concepts. Passwords are held in session memory only (cleared as far as C++/Qt allows); they never reach SQLite, logs, exports, filenames, diagnostics or session restore. Choosing local-only mode stops repeated prompts during the session. Persistent storage would require a future ADR and an OS secure store. No cracking or bypass, ever.
 
+**Preferences → Identity and Security (N5.3):** the name, organization and email the reader types are kept exactly as typed (up to 256 characters each) in the local preferences file, never in PDFs until a later stage writes an author into a note or markup the reader creates, and never in logs or diagnostics. Security options only decide when Atlas re-checks a file and whether the protection label shows; they cannot turn any protection off. The Signatures panel reads signature fields through the N5.1 qpdf check and never claims a signature is valid.
+
 ## Local overlay and promotion (N5)
 
 The overlay supports add bookmark/folder, rename, edit destination, move, reorder, any practical depth, delete local node, locally hide an embedded node, notes, tags, search and undo. It keeps a **base snapshot** for later reconciliation.

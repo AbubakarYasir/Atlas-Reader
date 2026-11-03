@@ -33,8 +33,10 @@ const char* kRestricted = R"({"version":2,"parameters":{},"acroform":{"fields":[
  "modifyassembly":false,"modifyforms":false,"modifyother":false,"printhigh":false,"printlow":true},
  "encrypted":true,"ownerpasswordmatched":false,"userpasswordmatched":true}})";
 
-const char* kSigned = R"({"version":2,"acroform":{"fields":[{"fieldtype":"/Sig","value":"7 0 R"},
- {"fieldtype":"/Sig","value":null}],"hasacroform":true},"encrypt":{"encrypted":false}})";
+const char* kSigned = R"({"version":2,"acroform":{"fields":[{"fieldtype":"/Sig","value":"7 0 R",
+ "fullname":"Approval.توقيع المؤلف","pageposfrom1":2},
+ {"fieldtype":"/Sig","value":null,"fullname":"Witness"},{"fieldtype":"/Tx","value":"x","fullname":"Name"}],
+ "hasacroform":true},"encrypt":{"encrypted":false}})";
 
 const char* kRoot = R"({"version":2,"qpdf":[{"jsonversion":2},{"obj:1 0 R":{"value":{"/Type":"/Catalog",
  "/Perms":{"/DocMDP":"9 0 R"}}}}]})";
@@ -55,6 +57,14 @@ int main(int argc, char** argv) {
                 "Permission flags are read.");
         facts = app::QpdfInspector::parse(kSigned, kRoot, 0, {});
         require(facts.hasSignatures && facts.certified, "Signed fields and DocMDP certification are found.");
+        require(facts.signatureFields.size() == 2 && facts.signatureFields[0].name == "Approval.توقيع المؤلف" &&
+                    facts.signatureFields[0].signedField && facts.signatureFields[0].page == 2 &&
+                    !facts.signatureFields[1].signedField && facts.signatureFields[1].page == 0,
+                "Signature fields are listed with name, state and page; other fields are not.");
+        const auto map = app::capabilityMap({}, facts);
+        require(map.value(QStringLiteral("signatures")).toList().size() == 2 &&
+                    map.value(QStringLiteral("certified")).toBool(),
+                "The Signatures panel receives the fields and the certification.");
         facts = app::QpdfInspector::parse(R"({"acroform":{"fields":[{"fieldtype":"/Sig","value":null}]},"encrypt":{}})", {},
                                           0, {});
         require(!facts.hasSignatures && !facts.certified, "An empty signature field is not a signature.");

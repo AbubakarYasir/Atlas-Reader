@@ -43,7 +43,34 @@ Rectangle {
     BookmarkModel {
         id: bookmarkModel
         service: bookmarkService
-        currentPage: view.currentPage - 1
+    }
+    readonly property alias bookmarks: bookmarkModel
+    // The current bookmark follows the top of the view, not just the page, so
+    // a chapter starting mid-page lights up once it reaches the top.
+    function trackPosition() {
+        const loc = view.viewLocation()
+        if (loc.page !== undefined) bookmarkModel.setPosition(loc.page, loc.fy !== undefined ? loc.fy : 0)
+    }
+    Timer { id: positionTimer; interval: 120; onTriggered: tab.trackPosition() }
+    Connections {
+        target: view
+        function onScrollChanged() { if (!positionTimer.running) positionTimer.start() }
+        function onLayoutChanged() { positionTimer.restart() }
+    }
+    // After "Add this book's folder", open the bookmarks again once the scan ends.
+    Connections {
+        target: libraryController
+        function onScanningChanged() {
+            if (!libraryController.scanning && bookmarkModel.status === "readOnly" && bookmarkModel.statusReason === "notInLibrary")
+                tab.attachBookmarks()
+        }
+    }
+    // Command Center → bookmark: go there and show it in the panel.
+    function goToBookmark(found) {
+        if (!tab.ready || found.page < 0) return
+        view.goToNormalized(found.page, found.fx, found.fy)
+        if (preferences.navPanel === "bookmarks") bookmarksPanel.select(bookmarkModel.reveal(found.nodeId))
+        view.forceActiveFocus()
     }
     function attachBookmarks() {
         if (view.textReady && tab.sourcePath.length > 0) bookmarkModel.attach(tab.sourcePath, view.outline)
@@ -68,7 +95,7 @@ Rectangle {
     }
     function showCapability() { if (capabilityChip.visible) capabilityPopup.open() }
     // Coming back to a tab re-checks the file (it may have changed outside Atlas).
-    onVisibleChanged: if (visible && ready && capability && capability.checked) readerController.recheckCapabilities(index)
+    onVisibleChanged: if (visible && ready && preferences.recheckOnReturn && capability && capability.checked) readerController.recheckCapabilities(index)
     function openFind() {
         if (preferences.rightPanel === "search") { searchPanel.focusField(view.selectedText); return }
         findBar.open(view.selectedText.length < 80 ? view.selectedText : "")
@@ -147,7 +174,8 @@ Rectangle {
                     Repeater {
                         model: [
                             { panel: "bookmarks", icon: "bookmark", key: "panel.bookmarks" },
-                            { panel: "pages", icon: "document_copy", key: "panel.pages" }
+                            { panel: "pages", icon: "document_copy", key: "panel.pages" },
+                            { panel: "signatures", icon: "signature", key: "panel.signatures" }
                         ]
                         delegate: AtlasIconButton {
                             required property var modelData
@@ -165,6 +193,13 @@ Rectangle {
                 }
             }
 
+            SignaturesPanel {
+                Layout.preferredWidth: preferences.navPanelWidth
+                Layout.fillHeight: true
+                visible: preferences.navPanel === "signatures" && !AppState.chromeHidden
+                view: view
+                capability: tab.capability
+            }
             PagesPanel {
                 id: pagesPanel
                 Layout.preferredWidth: preferences.navPanelWidth
@@ -181,6 +216,7 @@ Rectangle {
                 view: view
                 bookmarks: bookmarkModel
                 onToastRequested: (text) => tab.toastRequested(text)
+                onAddFolderRequested: libraryController.addFolderOf(tab.sourcePath)
             }
             Rectangle { // splitter: drag to resize, double-click to hide (Foxit)
                 Layout.preferredWidth: 6
@@ -483,7 +519,7 @@ Rectangle {
                 AbstractButton {
                     id: capabilityChip
                     readonly property string state: tab.capability && tab.capability.checked ? tab.capability.state : ""
-                    visible: state.length > 0 && state !== "writable"
+                    visible: preferences.showDocumentStatus && state.length > 0 && state !== "writable"
                     Layout.rightMargin: Theme.sm
                     implicitHeight: 22
                     implicitWidth: chipRow.implicitWidth + 14
@@ -553,7 +589,7 @@ Rectangle {
                             Label {
                                 Layout.fillWidth: true
                                 horizontalAlignment: Text.AlignLeft
-                                visible: tab.capability && tab.capability.canKeepLocalResearch
+                                visible: !!tab.capability && tab.capability.canKeepLocalResearch === true
                                 text: I18n.t("capability.local")
                                 color: Theme.muted
                                 wrapMode: Text.WordWrap

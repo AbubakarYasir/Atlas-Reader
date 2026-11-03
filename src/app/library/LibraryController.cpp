@@ -163,6 +163,11 @@ void LibraryController::setSelectedRootId(const QString& rootId) {
 int LibraryController::pendingCount() const { return pendingProposals_.size(); }
 QVariantList LibraryController::pendingProposals() const { return pendingProposals_; }
 
+void LibraryController::addFolderOf(const QString& filePath) {
+    if (filePath.isEmpty()) return;
+    addRoot(QUrl::fromLocalFile(QFileInfo{filePath}.absolutePath()));
+}
+
 void LibraryController::addRoot(const QUrl& folder) {
     if (scanning()) return;
     const auto localPath = QDir::cleanPath(folder.toLocalFile());
@@ -204,6 +209,40 @@ void LibraryController::setFavorite(const QString& documentId, bool favorite) {
     runOnWorker([this, id, favorite] {
         try {
             index_.setFavorite(id, favorite);
+            QMetaObject::invokeMethod(this, [this] { requestRefresh(); }, Qt::QueuedConnection);
+        } catch (const std::exception& error) { reportWorkerError(QString::fromUtf8(error.what())); }
+    });
+}
+
+void LibraryController::findBooks(const QString& text, int requestId, int limit) {
+    const auto query = toUtf8(text.trimmed());
+    const auto cap = static_cast<std::size_t>(std::clamp(limit, 1, 50));
+    runOnWorker([this, query, requestId, cap] {
+        QVariantList books;
+        try {
+            if (!query.empty()) {
+                for (const auto& record : index_.searchPrefix(query)) {
+                    if (books.size() >= static_cast<qsizetype>(cap)) break;
+                    books.append(QVariantMap{{QStringLiteral("documentId"), QString::fromUtf8(record.id)},
+                                             {QStringLiteral("title"), QString::fromUtf8(record.title)},
+                                             {QStringLiteral("author"), QString::fromUtf8(record.author)},
+                                             {QStringLiteral("path"), pathToQString(record.source)}});
+                }
+            }
+        } catch (const std::exception& error) { reportWorkerError(QString::fromUtf8(error.what())); }
+        QMetaObject::invokeMethod(this, [this, requestId, books] { emit booksFound(requestId, books); },
+                                  Qt::QueuedConnection);
+    });
+}
+
+void LibraryController::openFoundBook(const QString& documentId, const QString& path) {
+    if (path.isEmpty()) return;
+    emit openDocumentRequested(QUrl::fromLocalFile(path));
+    const auto id = toUtf8(documentId);
+    const auto openedAt = QDateTime::currentMSecsSinceEpoch();
+    runOnWorker([this, id, openedAt] {
+        try {
+            index_.recordOpened(id, openedAt);
             QMetaObject::invokeMethod(this, [this] { requestRefresh(); }, Qt::QueuedConnection);
         } catch (const std::exception& error) { reportWorkerError(QString::fromUtf8(error.what())); }
     });

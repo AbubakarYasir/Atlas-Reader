@@ -19,6 +19,7 @@ Rectangle {
     required property var view          // ReaderViewport
     required property var bookmarks     // BookmarkModel
     signal toastRequested(string text)
+    signal addFolderRequested()
 
     color: Theme.panel
 
@@ -209,6 +210,19 @@ Rectangle {
                 }
             }
         }
+        // Not in the library: one click adds the book's folder; the panel
+        // re-opens the bookmarks when the scan finishes (ReaderTab).
+        AtlasButton {
+            Layout.leftMargin: Theme.sm
+            Layout.rightMargin: Theme.sm
+            Layout.bottomMargin: Theme.sm
+            Layout.alignment: Qt.AlignLeft
+            visible: panel.bookmarks.status === "readOnly" && panel.bookmarks.statusReason === "notInLibrary"
+            enabled: !libraryController.scanning
+            text: libraryController.scanning ? I18n.t("bookmarks.addingFolder") : I18n.t("bookmarks.addFolder")
+            iconName: "folder_add"
+            onClicked: panel.addFolderRequested()
+        }
 
         Label {
             Layout.fillWidth: true
@@ -276,8 +290,6 @@ Rectangle {
                 }
                 else if (event.key === Qt.Key_Home) currentIndex = 0
                 else if (event.key === Qt.Key_End) currentIndex = count - 1
-                else if (ctrl && event.key === Qt.Key_Z && !shift) panel.bookmarks.undo()
-                else if (ctrl && (event.key === Qt.Key_Y || (shift && event.key === Qt.Key_Z))) panel.bookmarks.redo()
                 else if (event.key === Qt.Key_Menu || (shift && event.key === Qt.Key_F10)) {
                     const item = itemAtIndex(row)
                     panel.openMenu(row, item ? item.width / 2 : 0, item ? item.height : 0, item)

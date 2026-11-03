@@ -4,6 +4,15 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N5.3 (part 3): Command Center, Undo/Redo, Identity, Security, Signatures — 2026-11-03
+
+- **Command Center:** click the magnifier in the title bar or press **Alt+Q**, then type. Atlas lists matching commands (with their shortcuts), books in your library and bookmarks in the open book; use ↑/↓ and Enter, or Esc to close. Commands can be found by their English name in any interface language.
+- **Undo and Redo** buttons in the Quick Access Toolbar, and Ctrl+Z / Ctrl+Y anywhere in the reader, undo and redo your bookmark edits. Save comes with safe saving in the next part.
+- **Preferences → Identity:** your name, organization and email, for notes and markups later. **Preferences → Security:** whether Atlas re-checks a file when you return to its tab, and whether the status bar shows the protection label. Preferences categories are now in alphabetical order, as in Foxit.
+- **Signatures panel** (left rail): which signature fields a PDF has, whether each is signed, on which page, and whether the document is certified. Atlas does not check whether signatures are valid, and says so.
+- Fixes: books outside your library get an **Add This Book's Folder** button in the Bookmarks panel; the bookmark marked as current now follows the top of the view, not just the page; Home → Bookmark uses the plain bookmark icon; disabled title-bar buttons are dimmed correctly in the colourful skin.
+- Three icons added from the same pinned Fluent UI System Icons commit (signature, undo, redo).
+
 ## N5.3 (part 2): an editable Bookmarks panel — 2026-11-03
 
 - Press **Ctrl+B** (or Home → Bookmark, or right-click the page) to bookmark what you are reading; name it straight away, or keep the selected text or page number Atlas suggests.

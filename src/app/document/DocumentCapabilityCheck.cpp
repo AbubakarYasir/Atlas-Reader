@@ -10,6 +10,8 @@
 #include <QProcessEnvironment>
 #include <QStandardPaths>
 
+#include <algorithm>
+
 #ifdef Q_OS_WIN
 #include <qt_windows.h>
 #endif
@@ -117,10 +119,14 @@ document::PdfFacts QpdfInspector::parse(const QByteArray& encryptAcroform, const
     const QJsonArray fields = json.value(QStringLiteral("acroform")).toObject().value(QStringLiteral("fields")).toArray();
     for (const auto& field : fields) {
         const QJsonObject f = field.toObject();
-        if (f.value(QStringLiteral("fieldtype")).toString() == QStringLiteral("/Sig") &&
-            !f.value(QStringLiteral("value")).isNull()) {
-            facts.hasSignatures = true;
-        }
+        if (f.value(QStringLiteral("fieldtype")).toString() != QStringLiteral("/Sig")) continue;
+        const bool isSigned = !f.value(QStringLiteral("value")).isNull();
+        if (isSigned) facts.hasSignatures = true;
+        if (facts.signatureFields.size() >= 1000) continue; // a hostile file cannot flood the panel
+        // Field names are PDF text strings; qpdf gives them as UTF-8. Keep them as given.
+        const QByteArray name = f.value(QStringLiteral("fullname")).toString().left(512).toUtf8();
+        facts.signatureFields.push_back({std::string{name.constData(), static_cast<std::size_t>(name.size())},
+                                         isSigned, std::max(0, f.value(QStringLiteral("pageposfrom1")).toInt())});
     }
 
     // Certification: /Perms /DocMDP in the document catalog.
@@ -213,10 +219,11 @@ CapabilityCheckResult checkDocumentCapabilities(const QString& path, const QStri
     document::RevisionFacts revision;
     revision.changedExternally = baseline.valid() && result.stamp.valid() && !(baseline == result.stamp);
     result.assessment = document::assessCapabilities(file, pdf, revision);
+    result.pdf = std::move(pdf);
     return result;
 }
 
-QVariantMap capabilityMap(const document::CapabilityAssessment& assessment) {
+QVariantMap capabilityMap(const document::CapabilityAssessment& assessment, const document::PdfFacts& pdf) {
     using document::MutationSafety;
     QString state;
     switch (assessment.capabilities.mutation) {
@@ -230,12 +237,22 @@ QVariantMap capabilityMap(const document::CapabilityAssessment& assessment) {
     }
     QStringList reasons;
     for (const auto reason : assessment.reasons) reasons.append(QString::fromStdString(document::reasonName(reason)));
+    QVariantList signatures;
+    for (const auto& field : pdf.signatureFields) {
+        signatures.append(QVariantMap{
+            {QStringLiteral("name"), QString::fromUtf8(field.name.data(), static_cast<qsizetype>(field.name.size()))},
+            {QStringLiteral("signed"), field.signedField},
+            {QStringLiteral("page"), field.page}});
+    }
     return {{QStringLiteral("checked"), true},
             {QStringLiteral("state"), state},
             {QStringLiteral("canEmbedOutline"), assessment.capabilities.canEmbedOutline},
             {QStringLiteral("canEmbedAnnotations"), assessment.capabilities.canEmbedAnnotations},
             {QStringLiteral("canKeepLocalResearch"), assessment.canKeepLocalResearch},
-            {QStringLiteral("reasons"), reasons}};
+            {QStringLiteral("reasons"), reasons},
+            {QStringLiteral("inspected"), pdf.inspected},
+            {QStringLiteral("certified"), pdf.certified},
+            {QStringLiteral("signatures"), signatures}};
 }
 
 } // namespace atlas::app

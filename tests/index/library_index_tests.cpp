@@ -98,6 +98,10 @@ void checkSchemaAndFts() {
         require(index.search("Research\"").size() == 1,
             "User punctuation must be escaped rather than interpreted as invalid FTS syntax.");
         require(index.search("").empty(), "An empty query must not scan the entire index.");
+        require(index.search("Updated Atlas Res").empty() && index.searchPrefix("Updated Atlas Res").size() == 1,
+            "Prefix search finds an unfinished last word; ordinary search does not.");
+        require(index.searchPrefix("Research\"").size() == 1 && index.searchPrefix("").empty(),
+            "Prefix search escapes punctuation and ignores empty queries.");
         index.rebuildSearchIndex();
         require(index.search("Updated").size() == 1, "The derived search table must support a complete rebuild.");
         require(index.roots().size() == 1, "The root repository must return the configured root.");

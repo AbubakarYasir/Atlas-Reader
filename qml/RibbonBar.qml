@@ -157,7 +157,7 @@ Rectangle {
                 menu: clipboardMenu
             }
             RibbonButton {
-                iconName: "bookmark_add"
+                iconName: "bookmark"
                 text: I18n.t("cmd.bookmark")
                 shortcutHint: "Ctrl+B"
                 enabled: ribbon.hasDocument

@@ -21,11 +21,16 @@ using bookmarks::StorageState;
     return QString::fromUtf8(text.data(), static_cast<qsizetype>(text.size()));
 }
 
-[[nodiscard]] int pageOfLocation(const std::string& location) {
-    if (location.empty()) return -1;
+struct Destination final {
+    int page{-1};
+    double top{};
+};
+
+[[nodiscard]] Destination destinationOf(const std::string& location) {
+    if (location.empty()) return {};
     const auto decoded = bookmarks::decodeLocation(location);
-    if (decoded.status != bookmarks::LocationDecodeStatus::ok) return -1;
-    return static_cast<int>(decoded.envelope->pdf.pageIndex);
+    if (decoded.status != bookmarks::LocationDecodeStatus::ok) return {};
+    return {static_cast<int>(decoded.envelope->pdf.pageIndex), decoded.envelope->pdf.top.value_or(0.0)};
 }
 
 // {page, fx, fy} from the viewport → an XYZ envelope that keeps the reader's zoom.
@@ -95,8 +100,8 @@ QVariant BookmarkModel::data(const QModelIndex& index, int role) const {
         return QString::fromLatin1(name.data(), static_cast<qsizetype>(name.size()));
     }
     case PageRole: {
-        const auto found = pageOf_.find(node->id);
-        return found == pageOf_.end() ? -1 : found->second;
+        const auto found = spotOf_.find(node->id);
+        return found == spotOf_.end() ? -1 : found->second.page;
     }
     case FxRole:
     case FyRole: {
@@ -212,7 +217,7 @@ void BookmarkModel::detach() {
     editor_.reset();
     search_.reset();
     hits_.clear();
-    pageOf_.clear();
+    spotOf_.clear();
     expanded_.clear();
     endResetModel();
     documentId_.clear();
@@ -234,8 +239,11 @@ void BookmarkModel::adoptSnapshot(std::vector<BookmarkNode> nodes, std::optional
     const std::string documentId = documentId_.empty() ? std::string{"read-only"} : documentId_;
     if (editor_) editor_->reset(std::move(nodes), std::move(base), revision);
     else editor_ = std::make_unique<bookmarks::BookmarkEditor>(documentId, std::move(nodes), std::move(base), revision);
-    pageOf_.clear();
-    for (const auto* node : editor_->inOrder()) pageOf_[node->id] = pageOfLocation(node->location);
+    spotOf_.clear();
+    for (const auto* node : editor_->inOrder()) {
+        const auto spot = destinationOf(node->location);
+        spotOf_[node->id] = {spot.page, spot.top};
+    }
     searchStale_ = true;
     beginResetModel();
     rows_.clear();
@@ -326,13 +334,22 @@ void BookmarkModel::updateCounts() {
 }
 
 void BookmarkModel::updateCurrent() {
+    // The bookmark whose destination is the last one at or before the reading
+    // position (a little slack for rounding); later in reading order wins ties.
     QString best;
     if (editor_ && currentPage_ >= 0) {
+        Spot bestSpot;
         for (const auto* node : editor_->inOrder()) {
             if (!isVisibleNode(*node)) continue;
-            const auto found = pageOf_.find(node->id);
-            if (found != pageOf_.end() && found->second >= 0 && found->second <= currentPage_) {
+            const auto found = spotOf_.find(node->id);
+            if (found == spotOf_.end() || found->second.page < 0) continue;
+            const auto& spot = found->second;
+            const bool reached = spot.page < currentPage_ || (spot.page == currentPage_ && spot.top <= currentFy_ + 0.02);
+            if (!reached) continue;
+            const bool later = spot.page > bestSpot.page || (spot.page == bestSpot.page && spot.top >= bestSpot.top);
+            if (best.isEmpty() || later) {
                 best = fromUtf8(node->id);
+                bestSpot = spot;
             }
         }
     }
@@ -360,6 +377,43 @@ void BookmarkModel::setCurrentPage(int page) {
     currentPage_ = page;
     emit currentPageChanged();
     updateCurrent();
+}
+
+void BookmarkModel::setPosition(int page, qreal fy) {
+    const double clamped = std::isfinite(fy) ? std::clamp(static_cast<double>(fy), 0.0, 1.0) : 0.0;
+    if (currentPage_ == page && std::abs(currentFy_ - clamped) < 1e-4) return;
+    const bool pageChanged = currentPage_ != page;
+    currentPage_ = page;
+    currentFy_ = clamped;
+    if (pageChanged) emit currentPageChanged();
+    updateCurrent();
+}
+
+QVariantList BookmarkModel::findBookmarks(const QString& text, int limit) {
+    QVariantList result;
+    if (!editor_ || text.trimmed().isEmpty()) return result;
+    if (searchStale_ || !search_) {
+        search_ = std::make_unique<bookmarks::BookmarkSearchIndex>(editor_->inOrder());
+        searchStale_ = false;
+    }
+    const auto hits = search_->find(toUtf8(text), static_cast<std::size_t>(std::clamp(limit, 1, 50)), false);
+    for (const auto& hit : hits) {
+        const auto* node = editor_->find(hit.id);
+        if (node == nullptr) continue;
+        auto titles = editor_->breadcrumb(node->id);
+        if (!titles.empty()) titles.pop_back();
+        QStringList crumbs;
+        for (const auto& title : titles) crumbs.push_back(fromUtf8(title));
+        const auto decoded = bookmarks::decodeLocation(node->location);
+        const bool ok = decoded.status == bookmarks::LocationDecodeStatus::ok;
+        result.append(QVariantMap{{QStringLiteral("nodeId"), fromUtf8(node->id)},
+                                  {QStringLiteral("title"), fromUtf8(node->title)},
+                                  {QStringLiteral("breadcrumb"), crumbs.join(QStringLiteral(" › "))},
+                                  {QStringLiteral("page"), ok ? static_cast<int>(decoded.envelope->pdf.pageIndex) : -1},
+                                  {QStringLiteral("fx"), ok ? decoded.envelope->pdf.left.value_or(0.0) : 0.0},
+                                  {QStringLiteral("fy"), ok ? decoded.envelope->pdf.top.value_or(0.0) : 0.0}});
+    }
+    return result;
 }
 
 void BookmarkModel::toggle(int row) {
@@ -429,8 +483,11 @@ int BookmarkModel::run(bookmarks::EditResult result, const std::string& focusId)
         emit refused(QString::fromStdString(result.reason));
         return -1;
     }
-    for (const auto& node : result.change.upserts) pageOf_[node.id] = pageOfLocation(node.location);
-    for (const auto& id : result.change.removals) pageOf_.erase(id);
+    for (const auto& node : result.change.upserts) {
+        const auto spot = destinationOf(node.location);
+        spotOf_[node.id] = {spot.page, spot.top};
+    }
+    for (const auto& id : result.change.removals) spotOf_.erase(id);
     searchStale_ = true;
     persist(result);
     rebuildRows();

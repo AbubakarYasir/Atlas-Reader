@@ -226,6 +226,24 @@ void checkEditing() {
     require(model.currentId() == model.data(model.index(1), BookmarkModel::NodeIdRole).toString(),
             "The bookmark for the current page is found.");
 
+    // Position within a page: before the section's point (fy 0.4) the chapter is
+    // current; at or after it, the section is.
+    const QString chapterId = model.data(model.index(0), BookmarkModel::NodeIdRole).toString();
+    const QString sectionId = model.data(model.index(1), BookmarkModel::NodeIdRole).toString();
+    model.setPosition(1, 0.1);
+    require(model.currentId() == chapterId, "Above a bookmark's point, the previous bookmark is current.");
+    model.setPosition(1, 0.45);
+    require(model.currentId() == sectionId, "Past a bookmark's point, that bookmark is current.");
+
+    // Command Center search: reading order, breadcrumb and destination.
+    const auto found = model.findBookmarks(QStringLiteral("الفصل"), 8);
+    require(found.size() == 2 && found[0].toMap().value(QStringLiteral("breadcrumb")).toString() == QStringLiteral("الباب الأول") &&
+                found[0].toMap().value(QStringLiteral("page")).toInt() == 1 &&
+                std::abs(found[0].toMap().value(QStringLiteral("fy")).toDouble() - 0.4) < 1e-9,
+            "Bookmark search returns where each one is and where it goes.");
+    require(model.findBookmarks(QStringLiteral("الفصل"), 1).size() == 1 && model.findBookmarks(QStringLiteral(" "), 8).isEmpty(),
+            "Search respects its limit and ignores blank text.");
+
     // Refusals are reported, not silent.
     refusals.reasons.clear();
     require(model.moveUp(0) == -1 && refusals.reasons == QStringList{QStringLiteral("atTop")},

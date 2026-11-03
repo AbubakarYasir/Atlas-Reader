@@ -8,6 +8,7 @@
 #include "app/bookmarks/OutlineSafeSave.h"
 #include "app/bookmarks/SqliteBookmarkOverlay.h"
 #include "app/document/DocumentCapabilityCheck.h"
+#include "app/document/QpdfOutlineWriter.h"
 #include "app/index/SqliteLibraryIndex.h"
 #include "app/reader/DocumentTextWorker.h"
 #include "core/bookmarks/BookmarkEditor.h"
@@ -256,6 +257,92 @@ void checkProtected() {
     }
 }
 
+// Another program changes the PDF's outline; opening the book reconciles.
+void checkReconcileOnOpen() {
+    Book book{"A003_outlines_links.pdf"};
+    book.run(book.editor->create(std::nullopt, 9, "my own", at(1, 0.2)));
+    book.run(book.editor->rename(book.id("1"), "Chapter 2 — mine"));
+    {
+        // "Another program": rename Chapter 1 and add a bookmark, written with qpdf.
+        const QString qpdf = atlas::app::QpdfInspector::locate();
+        const auto source = atlas::app::QpdfOutlineWriter::read(qpdf, book.pdf, {});
+        BaseSnapshot base = *book.store->load("doc").base;
+        BookmarkEditor other{"x", embeddedNodesFromBase("x", base), base, 1};
+        std::string chapterOne;
+        for (const auto* node : other.inOrder()) if (node->baseKey == std::optional<std::string>{"0"}) chapterOne = node->id;
+        require(other.rename(chapterOne, "Chapter 1 (revised)").ok, "rename");
+        other.confirm(2);
+        require(other.create(std::nullopt, 9, "Appendix", at(2, 0.5)).ok, "create");
+        other.confirm(3);
+        const auto plan = planOutlineSave(other.inOrder(), base);
+        QString reason;
+        const auto update = atlas::app::QpdfOutlineWriter::buildUpdate(source, base, plan, &reason);
+        require(update.has_value(), "update: " + reason.toStdString());
+        const QString changed = book.pdf + QStringLiteral(".other.pdf");
+        require(atlas::app::QpdfOutlineWriter::write(qpdf, book.pdf, {}, *update, changed).isEmpty(), "other write");
+        QFile::remove(book.pdf);
+        require(QFile::rename(changed, book.pdf), "other program replaces the file");
+    }
+    book.store.reset();
+    atlas::app::BookmarkService service{book.database};
+    atlas::app::BookmarkModel model;
+    model.setService(&service);
+    model.attach(book.pdf, qtOutline(book.pdf));
+    QElapsedTimer timer;
+    timer.start();
+    while (model.status() != QStringLiteral("editable") && timer.elapsed() < 30000)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+    require(model.status() == QStringLiteral("editable"), "The book opens.");
+    const QVariantMap info = model.reconcileInfo();
+    require(info.value(QStringLiteral("done")).toBool() && info.value(QStringLiteral("added")).toInt() == 1 &&
+                info.value(QStringLiteral("updated")).toInt() == 1 && info.value(QStringLiteral("conflicts")).toInt() == 0,
+            "Reconciled: one new, one updated, no conflicts.");
+    require(!model.outlineChangedOutside() && model.unsavedCount() == 2,
+            "The reader's own bookmark and rename are kept as unsaved local work.");
+    model.expandAll();
+    QStringList rows;
+    for (int row = 0; row < model.rowCount(); ++row)
+        rows << model.data(model.index(row), atlas::app::BookmarkModel::TitleRole).toString();
+    require(rows.contains(QStringLiteral("Chapter 1 (revised)")) && rows.contains(QStringLiteral("Appendix")) &&
+                rows.contains(QStringLiteral("Chapter 2 — mine")) && rows.contains(QStringLiteral("my own")),
+            "Both sides' changes are shown: " + rows.join(u" | ").toStdString());
+}
+
+void checkCopy() {
+    {
+        Book book{"A010_certification_structure.pdf"};
+        book.run(book.editor->create(std::nullopt, 0, "نسخة العمل", at(0, 0.2)));
+        const QByteArray original = sha(book.pdf);
+        SafeSaveInput input;
+        input.path = book.pdf;
+        input.documentId = "doc";
+        for (const auto* node : book.editor->inOrder()) input.nodes.push_back(*node);
+        input.base = book.store->load("doc").base;
+        const QString target = QDir{book.folder}.filePath(QStringLiteral("working copy.pdf"));
+        const auto copy = atlas::app::saveOutlineCopy(input, target);
+        require(copy.ok, "A certified PDF can be saved as a copy: " + copy.reason.toStdString());
+        require(sha(book.pdf) == original, "The certified original is untouched.");
+        require(titles(qtOutline(target)).first() == QStringLiteral("0 نسخة العمل"), "The copy holds the bookmarks.");
+        require(book.store->load("doc").revision == book.editor->revision(), "The overlay is untouched by a copy.");
+        require(atlas::app::saveOutlineCopy(input, book.pdf).reason == QStringLiteral("sameFile"),
+                "A copy never overwrites its own source.");
+        require(folderFiles(book.folder).size() == 2, "Only the original and the copy are in the folder.");
+    }
+    {
+        Book book{"A009_restricted_permissions_rc4_40.pdf", QStringLiteral("atlas-user")};
+        book.run(book.editor->create(std::nullopt, 0, "x", at(0, 0.2)));
+        SafeSaveInput input;
+        input.path = book.pdf;
+        input.password = book.password;
+        input.documentId = "doc";
+        for (const auto* node : book.editor->inOrder()) input.nodes.push_back(*node);
+        input.base = book.store->load("doc").base;
+        const auto copy = atlas::app::saveOutlineCopy(input, QDir{book.folder}.filePath(QStringLiteral("c.pdf")));
+        require(copy.reason == QStringLiteral("notPermitted"), "A PDF whose owner forbids changes gets no changed copy either: " +
+                                                                 copy.reason.toStdString());
+    }
+}
+
 // The app's path: BookmarkModel → BookmarkService worker → safe save → reload.
 void checkThroughModel() {
     Book book{"A003_outlines_links.pdf"};
@@ -299,6 +386,8 @@ int main(int argc, char** argv) {
         checkHidden();
         checkFailures();
         checkProtected();
+        checkCopy();
+        checkReconcileOnOpen();
         checkThroughModel();
     } catch (const std::exception& error) {
         std::cerr << "Safe save test failed: " << error.what() << '\n';

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Controls.impl
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import Atlas.Reader
 
@@ -81,6 +82,7 @@ Rectangle {
             changedOutside: I18n.t("save.reason.changed"),
             changedDuringSave: I18n.t("save.reason.changed"),
             notPermitted: I18n.t("save.reason.notPermitted"),
+            sameFile: I18n.t("save.reason.sameFile"),
             diskFull: I18n.t("save.reason.diskFull"),
             folderReadOnly: I18n.t("save.reason.locked"),
             replaceFailed: I18n.t("save.reason.locked"),
@@ -107,6 +109,34 @@ Rectangle {
         }
         if (!tab.saveAsked) saveDialog.ask()
         else tab.runSave(tab.saveRemovesHidden)
+    }
+    // Save a Copy (Ctrl+Shift+S): the bookmarks into a new PDF; works for
+    // read-only, in-use, signed and certified books too.
+    FileDialog {
+        id: copyDialog
+        title: I18n.t("save.copyTitle")
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "pdf"
+        nameFilters: [I18n.t("dialog.pdfFilter") + " (*.pdf)"]
+        onAccepted: bookmarkModel.saveCopy(selectedFile, tab.saveRemovesHidden)
+    }
+    function saveCopy() {
+        if (!tab.ready || bookmarkModel.saving) return
+        if (bookmarkModel.status !== "editable") {
+            tab.toastRequested(I18n.t("bookmarks.readOnly." + (bookmarkModel.statusReason || "storageError")))
+            return
+        }
+        const folder = tab.sourcePath.replace(/[\\/][^\\/]*$/, "")
+        const name = tab.sourcePath.split(/[\\/]/).pop().replace(/\.pdf$/i, "")
+        copyDialog.currentFolder = "file:///" + folder.replace(/^\/+/, "")
+        copyDialog.selectedFile = "file:///" + (folder + "/" + name + I18n.t("save.copySuffix") + ".pdf").replace(/^\/+/, "")
+        copyDialog.open()
+    }
+    Connections {
+        target: bookmarkModel
+        function onCopySaved(ok, reason, path) {
+            tab.toastRequested(ok ? I18n.t("save.copyDone", path.split(/[\\/]/).pop()) : tab.saveMessage(reason))
+        }
     }
     function runSave(removeHidden) {
         tab.saveAsked = true

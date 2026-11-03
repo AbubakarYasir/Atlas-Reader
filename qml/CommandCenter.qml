@@ -41,6 +41,7 @@ Item {
         { id: "find", key: "find.title", keys: "Ctrl+F", icon: "search", doc: true },
         { id: "search", key: "panel.search", keys: "Ctrl+Shift+F", icon: "search_square", doc: true },
         { id: "save", key: "save.qat", keys: "Ctrl+S", icon: "save", doc: true },
+        { id: "saveCopy", key: "save.copy", keys: "Ctrl+Shift+S", icon: "document_copy", doc: true },
         { id: "undo", key: "bookmarks.undo", keys: "Ctrl+Z", icon: "arrow_undo", doc: true },
         { id: "redo", key: "bookmarks.redo", keys: "Ctrl+Y", icon: "arrow_redo", doc: true },
         { id: "goToPage", key: "nav.goToPage", keys: "Ctrl+G", icon: "document", doc: true },

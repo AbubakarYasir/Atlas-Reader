@@ -43,6 +43,13 @@ struct SaveCommit final {
     EmbedProof proof;                 // every flag must be true
 };
 
+// N5.4: the outcome of reconciling with a PDF changed outside Atlas.
+struct ReconcileCommit final {
+    BaseSnapshot base;                // the outline as read now
+    std::vector<BookmarkNode> nodes;  // every live node afterwards; new ones only Embedded
+    std::vector<std::string> removed; // Embedded or hidden nodes the PDF dropped
+};
+
 enum class BaseAdoption : std::uint8_t {
     adopted,        // first outline seen: base stored, Embedded nodes created
     unchanged,      // same revision and outline as the stored base
@@ -98,6 +105,12 @@ public:
     // complete proof; the result must pass "no false Embedded" against the new
     // base. Returns the new overlay revision.
     std::int64_t commitSave(std::string_view documentId, std::int64_t expectedRevision, const SaveCommit& commit);
+
+    // N5.4 reconcile (core/bookmarks/Reconcile): the new outline becomes the
+    // base; nodes keep their state or become conflicts; new nodes only as
+    // Embedded mirrors; only Embedded or hidden nodes may be dropped.
+    std::int64_t commitReconcile(std::string_view documentId, std::int64_t expectedRevision,
+                                 const ReconcileCommit& commit);
 
     // Documents with local research that is not in the PDF (any state other
     // than Embedded): what a restart after a crash must offer to continue.

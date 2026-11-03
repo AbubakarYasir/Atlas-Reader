@@ -130,7 +130,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 | Open → Recent Documents (pin, open a copy, copy path, remove), Computer, cloud places | Done: recent, Computer, remove · pin, copy path, open containing folder Done (N4.4) · open a copy N7 · cloud places Track J |
 | Create (blank, from file, scanner, clipboard, web page, template, portfolio, binder) | Track C (portfolio/binder Track H) |
 | Properties (Ctrl+D): description, security, fonts, initial view, custom, advanced, XMP | N7 (view and permitted edits) |
-| Save (Ctrl+S), Save As (Ctrl+Shift+S), Revert | Save Done (N5.4: bookmarks, safe save with backup) · Save As and Revert N5.4 slice 3 |
+| Save (Ctrl+S), Save As (Ctrl+Shift+S), Revert | Save Done (N5.4: bookmarks, safe save with backup) · Save a Copy Done (N5.4, Ctrl+Shift+S) · Revert: the recovery backup is kept in the profile; a Revert command is Track D |
 | Print (Ctrl+P), Print preview, Batch Print, print current/all tabs | N7 (batch print Track H) |
 | Share: e-mail current/all tabs (Ctrl+Shift+L / K) | Track I |
 | Export (to images, Office, HTML, text) | Track C |

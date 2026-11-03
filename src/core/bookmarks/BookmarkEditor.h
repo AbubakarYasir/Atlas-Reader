@@ -51,6 +51,7 @@ enum class EditKind : std::uint8_t {
     requestEmbed,
     cancelEmbed,
     autoCreate,
+    resolve,
 };
 
 // One bookmark of a batch (Auto Create Bookmarks). `level` 0 is the top; a
@@ -100,6 +101,10 @@ public:
     EditResult remove(std::string_view id);
     EditResult setHidden(std::string_view id, bool hidden);
     EditResult setEmbedRequested(std::string_view id, bool requested);
+    // Settles a conflict. keepMine: Atlas's version stays (over the PDF's
+    // bookmark if the PDF still has it, else as the reader's own). Otherwise
+    // the PDF's version: title, destination and place as in the PDF.
+    EditResult resolveConflict(std::string_view id, bool keepMine);
     // Adds a whole tree in one step (one undo). Refused if empty or too large.
     EditResult createBatch(std::vector<NewBookmark> items, BatchPlacement placement);
 

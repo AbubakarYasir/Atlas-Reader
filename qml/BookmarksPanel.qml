@@ -208,10 +208,72 @@ Rectangle {
                     text: panel.bookmarks.saving ? I18n.t("save.saving")
                           : panel.bookmarks.status === "readOnly"
                           ? I18n.t("bookmarks.readOnly." + (panel.bookmarks.statusReason || "storageError"))
-                          : panel.bookmarks.outlineChangedOutside ? I18n.t("bookmarks.outlineChanged") : ""
+                          : panel.bookmarks.outlineChangedOutside && !panel.bookmarks.reconcileInfo.held
+                            ? I18n.t("bookmarks.outlineChanged") : ""
                 }
             }
         }
+        // N5.4: the PDF's bookmarks changed outside Atlas and were reconciled
+        // (or wait for the reader because most of them are gone).
+        Rectangle {
+            id: reconcileNotice
+            readonly property var info: panel.bookmarks.reconcileInfo
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.sm
+            Layout.rightMargin: Theme.sm
+            Layout.bottomMargin: Theme.sm
+            visible: info.done !== undefined
+            implicitHeight: reconcileColumn.implicitHeight + Theme.sm * 2
+            radius: Theme.radiusSmall
+            color: info.held || info.conflicts > 0 ? Theme.warningSoft : Theme.rail
+            ColumnLayout {
+                id: reconcileColumn
+                anchors.fill: parent
+                anchors.margins: Theme.sm
+                spacing: Theme.sm
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.sm
+                    IconImage {
+                        Layout.alignment: Qt.AlignTop
+                        source: Theme.icon(reconcileNotice.info.held || reconcileNotice.info.conflicts > 0 ? "warning" : "arrow_sync")
+                        sourceSize.width: 16; sourceSize.height: 16
+                        color: reconcileNotice.info.held || reconcileNotice.info.conflicts > 0 ? Theme.warning : Theme.muted
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        horizontalAlignment: Text.AlignLeft
+                        color: Theme.ink
+                        font.family: I18n.uiFamily
+                        font.pixelSize: Math.round(12 * I18n.sizeScale)
+                        text: {
+                            const info = reconcileNotice.info
+                            if (info.held === "largeRemoval") return I18n.t("reconcile.largeRemoval", info.removed)
+                            if (info.held) return I18n.t("bookmarks.outlineChanged")
+                            let text = I18n.t("reconcile.done", info.added || 0, info.updated || 0, info.removed || 0)
+                            if (info.conflicts > 0) text += " " + I18n.t("reconcile.conflicts", info.conflicts)
+                            return text
+                        }
+                    }
+                    AtlasIconButton {
+                        Layout.alignment: Qt.AlignTop
+                        visible: !reconcileNotice.info.held
+                        implicitWidth: 24; implicitHeight: 24
+                        iconSize: 12
+                        iconName: "dismiss"
+                        text: I18n.t("action.close")
+                        onClicked: panel.bookmarks.dismissReconcileInfo()
+                    }
+                }
+                AtlasButton {
+                    visible: reconcileNotice.info.held === "largeRemoval"
+                    text: I18n.t("reconcile.follow")
+                    onClicked: panel.bookmarks.followPdf()
+                }
+            }
+        }
+
         // Not in the library: one click adds the book's folder; the panel
         // re-opens the bookmarks when the scan finishes (ReaderTab).
         AtlasButton {
@@ -512,6 +574,21 @@ Rectangle {
         }
 
         MenuItem { text: I18n.t("bookmarks.goTo"); enabled: rowMenu.hasRow && rowMenu.data.page >= 0; onTriggered: panel.go(rowMenu.row) }
+        // N5.4 conflicts: the reader decides.
+        MenuItem {
+            text: I18n.t("reconcile.keepMine")
+            visible: rowMenu.data.storage === "conflict"
+            height: visible ? implicitHeight : 0
+            enabled: panel.canEdit
+            onTriggered: panel.select(panel.bookmarks.resolveConflict(rowMenu.row, true))
+        }
+        MenuItem {
+            text: I18n.t("reconcile.takePdf")
+            visible: rowMenu.data.storage === "conflict" && rowMenu.data.fromPdf === true
+            height: visible ? implicitHeight : 0
+            enabled: panel.canEdit
+            onTriggered: panel.select(panel.bookmarks.resolveConflict(rowMenu.row, false))
+        }
         MenuSeparator {}
         MenuItem { text: I18n.t("bookmarks.add"); enabled: panel.canEdit; onTriggered: panel.addHere(false) }
         MenuItem { text: I18n.t("bookmarks.addChild"); enabled: panel.canEdit && rowMenu.hasRow && !rowMenu.frozen; onTriggered: panel.addHere(true) }

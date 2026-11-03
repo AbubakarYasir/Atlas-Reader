@@ -1,6 +1,7 @@
 #include "app/bookmarks/BookmarkService.h"
 
 #include "app/bookmarks/OutlineSafeSave.h"
+#include "core/bookmarks/Reconcile.h"
 
 #include "app/index/SqliteLibraryIndex.h"
 #include "core/bookmarks/LocationEnvelope.h"
@@ -111,10 +112,10 @@ void BookmarkService::waitForIdle() {
 }
 
 void BookmarkService::open(const QString& path, const QVariantList& outline, QObject* receiver,
-                           std::function<void(BookmarkOpenResult)> done) {
+                           std::function<void(BookmarkOpenResult)> done, bool followPdf) {
     QPointer<QObject> target{receiver};
     QPointer<BookmarkService> self{this};
-    post([path, outline, target, self, callback = std::move(done)](Storage& storage) mutable {
+    post([path, outline, target, self, followPdf, callback = std::move(done)](Storage& storage) mutable {
         BookmarkOpenResult result;
         result.base = baseFromOutline(outline, fileRevision(path));
         try {
@@ -132,6 +133,29 @@ void BookmarkService::open(const QString& path, const QVariantList& outline, QOb
                     result.adoption = storage.overlay->adoptBase(result.documentId, *result.base);
                 }
                 result.snapshot = storage.overlay->load(result.documentId);
+                if (result.adoption == bookmarks::BaseAdoption::needsReconcile && result.snapshot.base) {
+                    auto merged = bookmarks::reconcile(result.documentId, result.snapshot.nodes,
+                                                       *result.snapshot.base, *result.base);
+                    std::size_t embedded = 0;
+                    for (const auto& node : result.snapshot.nodes)
+                        embedded += node.state == bookmarks::StorageState::embedded ? 1 : 0;
+                    // Dropping most of the PDF's bookmarks may be a reading
+                    // problem, not an edit: wait for the reader's go-ahead.
+                    const bool large = merged.removedFromPdf > 0 && merged.removedFromPdf * 2 > embedded;
+                    if (!merged.refusal.empty()) {
+                        result.reconciled.held = "cannotMerge";
+                    } else if (large && !followPdf) {
+                        result.reconciled.held = "largeRemoval";
+                        result.reconciled.removed = static_cast<int>(merged.removedFromPdf);
+                    } else {
+                        storage.overlay->commitReconcile(result.documentId, result.snapshot.revision,
+                                                         {*result.base, std::move(merged.nodes), std::move(merged.removed)});
+                        result.reconciled = {true, static_cast<int>(merged.added), static_cast<int>(merged.updated),
+                                             static_cast<int>(merged.removedFromPdf), static_cast<int>(merged.conflicts), {}};
+                        result.adoption = bookmarks::BaseAdoption::unchanged;
+                        result.snapshot = storage.overlay->load(result.documentId);
+                    }
+                }
                 result.status = BookmarkOpenResult::Status::editable;
             }
         } catch (const std::exception&) {
@@ -164,6 +188,23 @@ void BookmarkService::save(SafeSaveInput input, QObject* receiver, std::function
             self.data(),
             [target, reply = std::move(callback), answer = std::move(outcome)]() mutable {
                 if (target) reply(std::move(answer));
+            },
+            Qt::QueuedConnection);
+    });
+}
+
+void BookmarkService::saveCopy(SafeSaveInput input, QString target, QObject* receiver,
+                               std::function<void(SafeSaveOutcome)> done) {
+    QPointer<QObject> target_{receiver};
+    QPointer<BookmarkService> self{this};
+    if (passwordSource_) input.password = passwordSource_(input.path);
+    post([request = std::move(input), target, target_, self, callback = std::move(done)](Storage&) mutable {
+        SafeSaveOutcome outcome = saveOutlineCopy(request, target);
+        request.password.fill(u'\0');
+        QMetaObject::invokeMethod(
+            self.data(),
+            [target_, reply = std::move(callback), answer = std::move(outcome)]() mutable {
+                if (target_) reply(std::move(answer));
             },
             Qt::QueuedConnection);
     });

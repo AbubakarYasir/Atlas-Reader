@@ -17,6 +17,7 @@
 #include <QSet>
 #include <QString>
 #include <QVariantList>
+#include <QUrl>
 #include <QVariantMap>
 
 #include <memory>
@@ -37,6 +38,10 @@ class BookmarkModel : public QAbstractListModel {
     Q_PROPERTY(QString statusReason READ statusReason NOTIFY statusChanged)
     // The PDF's outline differs from the one Atlas last read (reconciled in N5.4).
     Q_PROPERTY(bool outlineChangedOutside READ outlineChangedOutside NOTIFY statusChanged)
+    // N5.4: what reconciling with a PDF changed outside Atlas did:
+    // {done, added, updated, removed, conflicts, held}. Empty when nothing happened.
+    Q_PROPERTY(QVariantMap reconcileInfo READ reconcileInfo NOTIFY statusChanged)
+    Q_PROPERTY(int conflictCount READ conflictCount NOTIFY countsChanged)
     Q_PROPERTY(bool editable READ editable NOTIFY statusChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY historyChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY historyChanged)
@@ -88,6 +93,8 @@ public:
     [[nodiscard]] QString status() const { return status_; }
     [[nodiscard]] QString statusReason() const { return statusReason_; }
     [[nodiscard]] bool outlineChangedOutside() const { return outlineChangedOutside_; }
+    [[nodiscard]] QVariantMap reconcileInfo() const { return reconcileInfo_; }
+    [[nodiscard]] int conflictCount() const;
     // Not while a save into the PDF runs: its result must match what was saved.
     [[nodiscard]] bool editable() const { return status_ == QStringLiteral("editable") && !saving_; }
     [[nodiscard]] bool busy() const;
@@ -110,6 +117,11 @@ public:
 
     // The book shown in this tab: its file and the outline the reader read.
     Q_INVOKABLE void attach(const QString& path, const QVariantList& outline);
+    // After "most of the PDF's bookmarks are gone": follow the PDF anyway.
+    Q_INVOKABLE void followPdf();
+    // Conflict on this row: keep Atlas's version, or take the PDF's.
+    Q_INVOKABLE int resolveConflict(int row, bool keepMine);
+    Q_INVOKABLE void dismissReconcileInfo();
     Q_INVOKABLE void detach();
 
     Q_INVOKABLE void toggle(int row);
@@ -149,6 +161,8 @@ public:
     Q_INVOKABLE QVariantMap savePreview(bool removeHidden) const;
     // Saves into the PDF on the bookmark worker; saveFinished reports.
     Q_INVOKABLE void save(bool removeHidden);
+    // Save a Copy: writes the bookmarks into a new PDF at `target`; copySaved reports.
+    Q_INVOKABLE void saveCopy(const QUrl& target, bool removeHidden);
     Q_INVOKABLE void undo();
     Q_INVOKABLE void redo();
 
@@ -167,6 +181,7 @@ signals:
     void reloaded(const QString& reason);
     // ok, or a stable reason (SafeSaveOutcome); pdfChanged when the file was replaced.
     void saveFinished(bool ok, const QString& reason, bool pdfChanged, int added, int changed, int removed);
+    void copySaved(bool ok, const QString& reason, const QString& path);
 
 private:
     struct Row final {
@@ -208,6 +223,9 @@ private:
     QString filter_;
     QString currentId_;
     bool outlineChangedOutside_{false};
+    QVariantMap reconcileInfo_;
+    QVariantList lastOutline_;
+    void open(bool followPdf);
     bool showHidden_{false};
     // Saves in order. Each change expects the revision the one before it makes
     // (the store adds exactly one per change), so editing never waits for disk.

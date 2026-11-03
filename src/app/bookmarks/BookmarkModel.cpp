@@ -173,6 +173,29 @@ QVariantMap BookmarkModel::savePreview(bool removeHidden) const {
                                                               : QStringLiteral("nothingToSave")}};
 }
 
+void BookmarkModel::saveCopy(const QUrl& target, bool removeHidden) {
+    if (!editor_ || !service_ || status_ != QStringLiteral("editable") || saving_) {
+        emit refused(QStringLiteral("readOnly"));
+        return;
+    }
+    SafeSaveInput input;
+    input.path = path_;
+    input.documentId = documentId_;
+    for (const auto* node : editor_->inOrder()) input.nodes.push_back(*node);
+    input.base = editor_->base();
+    input.options.removeHidden = removeHidden;
+    const QString path = target.isLocalFile() ? target.toLocalFile() : target.toString();
+    saving_ = true;
+    emit statusChanged();
+    const auto generation = generation_;
+    service_->saveCopy(std::move(input), path, this, [this, generation, path](SafeSaveOutcome outcome) {
+        if (generation != generation_) return;
+        saving_ = false;
+        emit statusChanged();
+        emit copySaved(outcome.ok, outcome.reason, path);
+    });
+}
+
 void BookmarkModel::save(bool removeHidden) {
     if (!editable() || !editor_ || !service_ || documentId_.empty()) {
         emit refused(QStringLiteral("readOnly"));
@@ -238,12 +261,35 @@ void BookmarkModel::attach(const QString& path, const QVariantList& outline) {
         setStatus(QStringLiteral("readOnly"), QStringLiteral("storageError"));
         return;
     }
-    service_->open(path, outline, this, [this, generation](BookmarkOpenResult result) {
+    lastOutline_ = outline;
+    open(false);
+}
+
+void BookmarkModel::followPdf() {
+    if (path_.isEmpty() || !service_) return;
+    ++generation_;
+    setStatus(QStringLiteral("loading"), {});
+    open(true);
+}
+
+void BookmarkModel::open(bool followPdf) {
+    const auto generation = generation_;
+    service_->open(path_, lastOutline_, this, [this, generation](BookmarkOpenResult result) {
         if (generation != generation_) return;
         using Status = BookmarkOpenResult::Status;
         if (result.status == Status::editable) {
             documentId_ = result.documentId;
             outlineChangedOutside_ = result.adoption == bookmarks::BaseAdoption::needsReconcile;
+            reconcileInfo_.clear();
+            const auto& r = result.reconciled;
+            if (r.done && (r.added + r.updated + r.removed + r.conflicts) > 0) {
+                reconcileInfo_ = {{QStringLiteral("done"), true}, {QStringLiteral("added"), r.added},
+                                  {QStringLiteral("updated"), r.updated}, {QStringLiteral("removed"), r.removed},
+                                  {QStringLiteral("conflicts"), r.conflicts}};
+            } else if (!r.held.empty()) {
+                reconcileInfo_ = {{QStringLiteral("done"), false}, {QStringLiteral("held"), QString::fromStdString(r.held)},
+                                  {QStringLiteral("removed"), r.removed}};
+            }
             adoptSnapshot(std::move(result.snapshot.nodes), std::move(result.snapshot.base),
                           result.snapshot.revision);
             setStatus(QStringLiteral("editable"), {});
@@ -258,7 +304,32 @@ void BookmarkModel::attach(const QString& path, const QVariantList& outline) {
                                    ? QStringLiteral("outlineUnsupported")
                                    : QStringLiteral("storageError");
         setStatus(QStringLiteral("readOnly"), reason);
-    });
+    }, followPdf);
+}
+
+int BookmarkModel::conflictCount() const {
+    if (!editor_) return 0;
+    int count = 0;
+    for (const auto* node : editor_->inOrder()) count += node->state == bookmarks::StorageState::conflict ? 1 : 0;
+    return count;
+}
+
+void BookmarkModel::dismissReconcileInfo() {
+    if (reconcileInfo_.isEmpty()) return;
+    reconcileInfo_.clear();
+    emit statusChanged();
+}
+
+int BookmarkModel::resolveConflict(int row, bool keepMine) {
+    const auto* node = nodeAt(row);
+    if (!editable() || node == nullptr) {
+        emit refused(QStringLiteral("readOnly"));
+        return -1;
+    }
+    const auto id = node->id;
+    const int result = run(editor_->resolveConflict(id, keepMine), id);
+    emit countsChanged();
+    return result;
 }
 
 void BookmarkModel::flushWrites() {
@@ -288,6 +359,7 @@ void BookmarkModel::detach() {
     writes_.clear();
     writing_ = false;
     outlineChangedOutside_ = false;
+    reconcileInfo_.clear();
     hiddenCount_ = 0;
     if (!currentId_.isEmpty()) {
         currentId_.clear();

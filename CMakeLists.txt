@@ -87,6 +87,7 @@ add_library(atlas_bookmark_overlay STATIC
     src/core/bookmarks/BookmarkSearch.cpp
     src/core/bookmarks/HeadingDetector.cpp
     src/core/bookmarks/OutlineSavePlan.cpp
+    src/core/bookmarks/Reconcile.cpp
     src/core/bookmarks/BookmarkSearch.h
     src/core/bookmarks/LocationEnvelope.cpp
     src/core/bookmarks/LocationEnvelope.h
@@ -448,6 +449,11 @@ add_executable(atlas_outline_save_plan_tests tests/bookmarks/outline_save_plan_t
 target_link_libraries(atlas_outline_save_plan_tests PRIVATE atlas_bookmark_overlay)
 atlas_enable_warnings(atlas_outline_save_plan_tests)
 add_test(NAME atlas_outline_save_plan COMMAND atlas_outline_save_plan_tests)
+
+add_executable(atlas_reconcile_tests tests/bookmarks/reconcile_tests.cpp)
+target_link_libraries(atlas_reconcile_tests PRIVATE atlas_bookmark_overlay)
+atlas_enable_warnings(atlas_reconcile_tests)
+add_test(NAME atlas_reconcile COMMAND atlas_reconcile_tests)
 
 add_executable(atlas_bookmark_model_tests tests/bookmarks/bookmark_model_tests.cpp)
 target_link_libraries(atlas_bookmark_model_tests PRIVATE atlas_bookmark_ui)

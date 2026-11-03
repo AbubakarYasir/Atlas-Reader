@@ -618,6 +618,58 @@ std::int64_t SqliteBookmarkOverlay::apply(std::string_view documentId, std::int6
     }
 }
 
+namespace {
+// Replaces a document's base snapshot and writes its nodes (safe save and
+// reconcile). Runs inside the caller's transaction.
+template <typename Impl>
+void replaceBaseAndNodes(Impl& impl, std::string_view documentId, const BaseSnapshot& base,
+                         const std::vector<BookmarkNode>& prepared, const std::vector<std::string>& removed) {
+    // The new base replaces the old one.
+    {
+        Statement clear{impl.db, "DELETE FROM bookmark_base_nodes WHERE document_id = ?1"};
+        clear.text(1, documentId);
+        clear.run();
+        Statement snapshot{impl.db,
+            "INSERT INTO bookmark_base_snapshots(document_id, source_revision) VALUES (?1, ?2) "
+            "ON CONFLICT(document_id) DO UPDATE SET source_revision = excluded.source_revision, "
+            "captured_utc_ms = unixepoch('subsec') * 1000"};
+        snapshot.text(1, documentId);
+        snapshot.text(2, base.sourceRevision);
+        snapshot.run();
+        Statement node{impl.db,
+            "INSERT INTO bookmark_base_nodes(document_id, base_key, parent_base_key, position, title, location) "
+            "VALUES (?1, ?2, ?3, ?4, ?5, ?6)"};
+        for (const auto& source : base.nodes) {
+            node.reset();
+            node.text(1, documentId);
+            node.text(2, source.key);
+            node.optionalText(3, source.parentKey);
+            node.integer(4, source.position);
+            node.text(5, source.title);
+            node.textOrNull(6, source.location);
+            node.run();
+        }
+    }
+    {
+        // Base keys are renumbered; move the old ones aside first so the
+        // unique (document, base key) index never sees two live owners.
+        Statement aside{impl.db, "UPDATE bookmark_nodes SET base_key = '~' || base_key WHERE document_id = ?1 "
+                                   "AND base_key IS NOT NULL AND deleted_utc_ms IS NULL"};
+        aside.text(1, documentId);
+        aside.run();
+        Statement retire{impl.db, "UPDATE bookmark_nodes SET deleted_utc_ms = unixepoch('subsec') * 1000, "
+                                    "updated_utc_ms = unixepoch('subsec') * 1000 WHERE node_id = ?1"};
+        for (const auto& id : removed) {
+            retire.reset();
+            retire.text(1, id);
+            retire.run();
+        }
+        NodeWriter writer{impl.db};
+        for (const auto& node : prepared) writer.write(node);
+    }
+}
+} // namespace
+
 std::int64_t SqliteBookmarkOverlay::commitSave(std::string_view documentId, std::int64_t expectedRevision,
                                                const SaveCommit& commit) {
     const auto& proof = commit.proof;
@@ -667,51 +719,70 @@ std::int64_t SqliteBookmarkOverlay::commitSave(std::string_view documentId, std:
     }
     if (accounted.size() != previous.size()) throw OverlayRuleViolation{"nodeNotAccounted"};
 
-    // The new base replaces the old one.
-    {
-        Statement clear{impl_->db, "DELETE FROM bookmark_base_nodes WHERE document_id = ?1"};
-        clear.text(1, documentId);
-        clear.run();
-        Statement snapshot{impl_->db,
-            "INSERT INTO bookmark_base_snapshots(document_id, source_revision) VALUES (?1, ?2) "
-            "ON CONFLICT(document_id) DO UPDATE SET source_revision = excluded.source_revision, "
-            "captured_utc_ms = unixepoch('subsec') * 1000"};
-        snapshot.text(1, documentId);
-        snapshot.text(2, commit.base.sourceRevision);
-        snapshot.run();
-        Statement node{impl_->db,
-            "INSERT INTO bookmark_base_nodes(document_id, base_key, parent_base_key, position, title, location) "
-            "VALUES (?1, ?2, ?3, ?4, ?5, ?6)"};
-        for (const auto& source : commit.base.nodes) {
-            node.reset();
-            node.text(1, documentId);
-            node.text(2, source.key);
-            node.optionalText(3, source.parentKey);
-            node.integer(4, source.position);
-            node.text(5, source.title);
-            node.textOrNull(6, source.location);
-            node.run();
-        }
-    }
-    {
-        // Base keys are renumbered; move the old ones aside first so the
-        // unique (document, base key) index never sees two live owners.
-        Statement aside{impl_->db, "UPDATE bookmark_nodes SET base_key = '~' || base_key WHERE document_id = ?1 "
-                                   "AND base_key IS NOT NULL AND deleted_utc_ms IS NULL"};
-        aside.text(1, documentId);
-        aside.run();
-        Statement retire{impl_->db, "UPDATE bookmark_nodes SET deleted_utc_ms = unixepoch('subsec') * 1000, "
-                                    "updated_utc_ms = unixepoch('subsec') * 1000 WHERE node_id = ?1"};
-        for (const auto& id : commit.removed) {
-            retire.reset();
-            retire.text(1, id);
-            retire.run();
-        }
-        NodeWriter writer{impl_->db};
-        for (const auto& node : prepared) writer.write(node);
-    }
+    replaceBaseAndNodes(*impl_, documentId, commit.base, prepared, commit.removed);
     const auto next = impl_->bumpRevision(documentId);
     impl_->step("commitSave:beforeCommit");
+    impl_->checked.erase(std::string{documentId});
+    transaction.commit();
+    return next;
+}
+
+std::int64_t SqliteBookmarkOverlay::commitReconcile(std::string_view documentId, std::int64_t expectedRevision,
+                                                    const ReconcileCommit& commit) {
+    if (auto problem = validateBase(commit.base); !problem.empty()) throw OverlayRuleViolation{problem};
+    for (const auto& node : commit.nodes) {
+        if (node.documentId != documentId) throw OverlayRuleViolation{"wrongDocument"};
+        if (auto problem = validateNode(node); !problem.empty()) throw OverlayRuleViolation{problem};
+    }
+    if (auto problem = validateTree(commit.nodes); !problem.empty()) throw OverlayRuleViolation{problem};
+    if (auto problem = validateAgainstBase(commit.nodes, commit.base); !problem.empty())
+        throw OverlayRuleViolation{problem};
+
+    std::lock_guard lock{impl_->mutex};
+    Transaction transaction{impl_->db};
+    if (impl_->revision(documentId) != expectedRevision) {
+        throw OverlayRevisionConflict{"The bookmark overlay changed since it was loaded."};
+    }
+    impl_->ensureOverlayRow(documentId);
+    std::unordered_map<std::string, BookmarkNode> previous;
+    for (auto& node : impl_->liveNodes(documentId)) previous.emplace(node.id, std::move(node));
+    std::unordered_set<std::string> accounted;
+    std::vector<BookmarkNode> prepared;
+    prepared.reserve(commit.nodes.size());
+    Statement owner{impl_->db, "SELECT 1 FROM bookmark_nodes WHERE node_id = ?1"};
+    for (const auto& node : commit.nodes) {
+        if (!accounted.insert(node.id).second) throw OverlayRuleViolation{"duplicateChange"};
+        BookmarkNode next = node;
+        const auto found = previous.find(node.id);
+        if (found == previous.end()) {
+            // New only as an Embedded mirror of the PDF (checked against the base above).
+            owner.reset();
+            owner.text(1, node.id);
+            if (owner.row()) throw OverlayRuleViolation{"idInUse"};
+            if (node.state != StorageState::embedded) throw OverlayRuleViolation{"newNodeState"};
+            next.localRevision = 1;
+        } else {
+            const BookmarkNode& before = found->second;
+            const bool same = before.state == node.state;
+            const bool conflicted = node.state == StorageState::conflict &&
+                                    transition(before.state, StorageEvent::detectConflict).allowed;
+            if (!same && !conflicted) throw OverlayRuleViolation{"illegalTransition"};
+            next.localRevision = before.localRevision + (sameContent(before, node) ? 0 : 1);
+        }
+        prepared.push_back(std::move(next));
+    }
+    for (const auto& id : commit.removed) {
+        const auto found = previous.find(id);
+        if (found == previous.end() || !accounted.insert(id).second || !found->second.baseKey ||
+            (found->second.state != StorageState::embedded && found->second.state != StorageState::locallyHidden))
+            throw OverlayRuleViolation{"unknownNode"};
+    }
+    for (const auto& [id, _] : previous) {
+        if (!accounted.contains(id)) throw OverlayRuleViolation{"nodeNotAccounted"};
+    }
+    replaceBaseAndNodes(*impl_, documentId, commit.base, prepared, commit.removed);
+    const auto next = impl_->bumpRevision(documentId);
+    impl_->step("commitReconcile:beforeCommit");
     impl_->checked.erase(std::string{documentId});
     transaction.commit();
     return next;

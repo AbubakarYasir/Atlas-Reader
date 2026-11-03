@@ -34,6 +34,7 @@ enum class StorageEvent : std::uint8_t {
     revertToSource,   // drop local changes to an embedded node
     detectConflict,   // reconciliation found a disagreement with the PDF
     keepLocal,        // conflict resolved by keeping Atlas's version, local only
+    keepOverride,     // conflict on a bookmark the PDF still has: keep Atlas's version over it (N5.4)
     takeSource,       // conflict resolved by taking the PDF's version
     embedVerified,    // a write was validated, reopened and re-indexed (needs EmbedProof)
 };

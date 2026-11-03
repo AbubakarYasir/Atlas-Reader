@@ -189,6 +189,7 @@ Foxit's default keys for every command Atlas has ([FOXIT_PARITY §4](FOXIT_PARIT
 | Add bookmark | `Ctrl+B` (N5.3: opens the Bookmarks panel and names the new bookmark at once) |
 | Move bookmark / nest under the one above / move out | `Alt+↑` `Alt+↓` / `Alt+→` / `Alt+←` (Bookmarks panel; nest/move-out mirrored in RTL) |
 | Save bookmarks into the PDF | `Ctrl+S` (N5.4; first save of a book shows what will change) |
+| Save a copy with bookmarks | `Ctrl+Shift+S` (N5.4; for read-only, in-use, signed or certified books) |
 | Print | `Ctrl+P` (N7) |
 | Undo / redo | `Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z` (N5.3: bookmark edits in the open book; text fields keep their own) |
 | Rename / delete / activate | `F2` / `Delete` / `Enter` |

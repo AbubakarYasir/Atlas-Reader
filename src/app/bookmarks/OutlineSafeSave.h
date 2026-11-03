@@ -63,6 +63,14 @@ using SafeSaveFault = std::function<bool(std::string_view step)>;
 [[nodiscard]] SafeSaveOutcome saveOutlineSafely(bookmarks::SqliteBookmarkOverlay& store, const SafeSaveInput& input,
                                                 const SafeSaveFault& fault = {});
 
+// N5.4 Save a Copy: the same plan written into a new file (`target`), for
+// PDFs Atlas may read but not change in place (read-only, in use, signed,
+// certified). The source and the overlay are untouched; the copy is checked by
+// qpdf and reopened with Qt PDF before it appears under its name. Refused when
+// the PDF's own security does not allow changing its outline.
+[[nodiscard]] SafeSaveOutcome saveOutlineCopy(const SafeSaveInput& input, const QString& target,
+                                              const SafeSaveFault& fault = {});
+
 // "size=…;mtime=…": the revision stamp the overlay's base snapshot records.
 [[nodiscard]] std::string fileRevision(const QString& path);
 

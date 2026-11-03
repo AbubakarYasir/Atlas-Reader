@@ -88,6 +88,7 @@ ApplicationWindow {
         case "find": tab.openFind(); return
         case "search": tab.openSearch(); return
         case "save": tab.saveBookmarks(); return
+        case "saveCopy": tab.saveCopy(); return
         case "undo": if (root.currentBookmarks) root.currentBookmarks.undo(); break
         case "redo": if (root.currentBookmarks) root.currentBookmarks.redo(); break
         case "goToPage": tab.focusPageBox(); return
@@ -127,6 +128,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Z"; enabled: root.currentBookmarks !== null && root.currentBookmarks.canUndo; onActivated: root.currentBookmarks.undo() }
     Shortcut { sequences: ["Ctrl+Y", "Ctrl+Shift+Z"]; enabled: root.currentBookmarks !== null && root.currentBookmarks.canRedo; onActivated: root.currentBookmarks.redo() }
     Shortcut { sequence: "Ctrl+S"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.saveBookmarks() }
+    Shortcut { sequence: "Ctrl+Shift+S"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.saveCopy() }
     Shortcut { sequence: "Alt+Q"; enabled: !(AppState.chromeHidden && root.inReader); onActivated: titleBar.openSearch() }
     Shortcut { sequence: "F3"; enabled: root.activeViewport !== null && root.activeViewport.searchHits.length > 0; onActivated: root.activeViewport.findNext() }
     Shortcut { sequence: "Shift+F3"; enabled: root.activeViewport !== null && root.activeViewport.searchHits.length > 0; onActivated: root.activeViewport.findPrevious() }

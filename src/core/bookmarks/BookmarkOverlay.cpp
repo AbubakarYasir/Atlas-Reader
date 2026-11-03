@@ -23,7 +23,7 @@ struct Rule final {
 
 // The complete transition table. Anything not here is refused; in particular
 // a hidden node or a conflict cannot be edited until it is unhidden or resolved.
-constexpr std::array<Rule, 22> rules{{
+constexpr std::array<Rule, 23> rules{{
     {S::embedded, E::editLocally, S::localOverride},
     {S::localOverride, E::editLocally, S::localOverride},
     {S::localOnly, E::editLocally, S::localOnly},
@@ -46,6 +46,7 @@ constexpr std::array<Rule, 22> rules{{
     {S::locallyHidden, E::detectConflict, S::conflict},
 
     {S::conflict, E::keepLocal, S::localOnly},
+    {S::conflict, E::keepOverride, S::localOverride},
     {S::conflict, E::takeSource, S::embedded},
 
     {S::localOnly, E::embedVerified, S::embedded},

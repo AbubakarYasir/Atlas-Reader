@@ -4,6 +4,12 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N5.4 (part 3): bookmarks changed elsewhere, and Save a Copy — 2026-11-03
+
+- If another program changed a PDF's bookmarks, Atlas now catches up when you open the book: new bookmarks appear, changed ones update, removed ones go, and the panel tells you what happened. Your own bookmarks and edits are kept. If a bookmark was changed both in Atlas and in the PDF, it is marked; right-click it to keep your version or use the PDF's. If most of the PDF's bookmarks seem to have vanished, Atlas asks before removing them.
+- **Save a Copy with Bookmarks** (Ctrl+Shift+S): for books Atlas can't change in place (read-only, in use, signed, certified), save a new PDF with your bookmarks in it. The original stays untouched.
+- Review builds are now made only when asked for.
+
 ## N5.4 (part 2): Save bookmarks into the PDF — 2026-11-03
 
 - Press **Ctrl+S** (or the Save button at the top left) to put the bookmarks you see into the PDF itself, so other PDF readers show them too. The first time for a book, Atlas says how many will be added and changed, and offers to also remove the PDF's own bookmarks you deleted in Atlas (they are kept unless you choose this).

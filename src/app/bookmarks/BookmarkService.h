@@ -37,6 +37,12 @@ struct BookmarkOpenResult final {
     bookmarks::BaseAdoption adoption{bookmarks::BaseAdoption::unchanged};
     bookmarks::OverlaySnapshot snapshot;      // when editable
     std::optional<bookmarks::BaseSnapshot> base; // the outline as read now (always, if valid)
+    // N5.4 reconcile when the PDF's outline changed outside Atlas.
+    struct Reconciled final {
+        bool done{false};
+        int added{}, updated{}, removed{}, conflicts{};
+        std::string held; // "largeRemoval" (needs the reader's go-ahead) or "cannotMerge"
+    } reconciled;
 };
 
 struct BookmarkWriteResult final {
@@ -63,8 +69,12 @@ public:
     BookmarkService& operator=(const BookmarkService&) = delete;
 
     // Each callback runs on this object's thread, and only while `receiver` exists.
+    // A PDF whose outline changed outside Atlas is reconciled here: Atlas
+    // follows the PDF where the reader did nothing and marks conflicts. If
+    // that would drop most of the PDF's bookmarks, it waits for
+    // `followPdf` (the reader's go-ahead).
     void open(const QString& path, const QVariantList& outline, QObject* receiver,
-              std::function<void(BookmarkOpenResult)> done);
+              std::function<void(BookmarkOpenResult)> done, bool followPdf = false);
     void write(const std::string& documentId, std::int64_t expectedRevision, bookmarks::OverlayChangeSet change,
                QObject* receiver, std::function<void(BookmarkWriteResult)> done);
     void reload(const std::string& documentId, QObject* receiver,
@@ -74,6 +84,8 @@ public:
     // pending writes. The password comes from the password source (the open
     // reader session), never from QML. Backups go to <profile>/backups.
     void save(SafeSaveInput input, QObject* receiver, std::function<void(SafeSaveOutcome)> done);
+    // Save a Copy (N5.4): the same, into `target`; the source and overlay stay as they are.
+    void saveCopy(SafeSaveInput input, QString target, QObject* receiver, std::function<void(SafeSaveOutcome)> done);
     void setPasswordSource(std::function<QString(const QString& path)> source) { passwordSource_ = std::move(source); }
 
     // Blocks until every queued request has finished (tests and shutdown).

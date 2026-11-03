@@ -4,6 +4,7 @@
 #include "app/document/DocumentCapabilityCheck.h"
 #include "app/document/QpdfOutlineWriter.h"
 #include "app/reader/DocumentTextWorker.h"
+#include "core/document/CapabilityPolicy.h"
 #include "core/bookmarks/LocationEnvelope.h"
 
 #include <QCryptographicHash>
@@ -129,6 +130,81 @@ std::string fileRevision(const QString& path) {
     const QFileInfo info{path};
     if (!info.exists()) return {};
     return "size=" + std::to_string(info.size()) + ";mtime=" + std::to_string(info.lastModified().toMSecsSinceEpoch());
+}
+
+SafeSaveOutcome saveOutlineCopy(const SafeSaveInput& input, const QString& target, const SafeSaveFault& fault) {
+    SafeSaveOutcome out;
+    const auto fail = [&out](const char* reason) {
+        out.ok = false;
+        out.reason = QString::fromLatin1(reason);
+        return out;
+    };
+    const auto step = [&fault](std::string_view name) { return !fault || fault(name); };
+    std::vector<const BookmarkNode*> inOrder;
+    for (const auto& node : input.nodes) inOrder.push_back(&node);
+    const BaseSnapshot base = input.base.value_or(BaseSnapshot{fileRevision(input.path), {}});
+    out.plan = planOutlineSave(inOrder, base, input.options);
+    if (!out.plan.refusal.empty()) return fail(out.plan.refusal.c_str());
+    const QFileInfo targetInfo{target};
+    if (target.isEmpty() || targetInfo.absoluteFilePath() == QFileInfo{input.path}.absoluteFilePath())
+        return fail("sameFile");
+    if (input.base && input.base->sourceRevision != fileRevision(input.path)) return fail("changedOutside");
+
+    // The PDF's own security decides; the file being read-only, in use, signed
+    // or certified does not (the copy is a new file).
+    using R = document::CapabilityReason;
+    const auto capabilities = checkDocumentCapabilities(input.path, input.password, {});
+    for (const auto reason : capabilities.assessment.reasons) {
+        switch (reason) {
+        case R::fileReadOnly:
+        case R::folderReadOnly:
+        case R::sharingLocked:
+        case R::signatures:
+        case R::certified:
+        case R::annotationsNotPermitted:
+            break;
+        default:
+            return fail("notPermitted");
+        }
+    }
+    const QString qpdf = input.qpdf.isEmpty() ? QpdfInspector::locate() : input.qpdf;
+    if (qpdf.isEmpty()) return fail("qpdfUnavailable");
+    const QStorageInfo volume{targetInfo.absolutePath()};
+    if (volume.bytesAvailable() >= 0 && volume.bytesAvailable() < 2 * QFileInfo{input.path}.size() + (4 << 20))
+        return fail("diskFull");
+
+    TempFile temp;
+    temp.path = QDir{targetInfo.absolutePath()}.filePath(
+        QStringLiteral(".%1.atlas-copy-%2.pdf").arg(targetInfo.completeBaseName())
+            .arg(QRandomGenerator::global()->generate(), 8, 16, QLatin1Char('0')));
+    {
+        QFile probe{temp.path};
+        if (!probe.open(QIODevice::WriteOnly)) {
+            temp.path.clear();
+            return fail("folderReadOnly");
+        }
+    }
+    const PdfSourceOutline before = QpdfOutlineWriter::read(qpdf, input.path, input.password);
+    if (!before.ok) return fail("outlineMismatch");
+    QString reason;
+    const auto update = QpdfOutlineWriter::buildUpdate(before, base, out.plan, &reason);
+    if (!update) return fail(reason == QStringLiteral("unreadableLocation") ? "unreadableLocation" : "outlineMismatch");
+    if (const QString written = QpdfOutlineWriter::write(qpdf, input.path, input.password, *update, temp.path);
+        !written.isEmpty() || !step("write"))
+        return fail(written == QStringLiteral("validation") ? "validation" : "writeFailed");
+    const PdfSourceOutline after = QpdfOutlineWriter::read(qpdf, temp.path, input.password);
+    const QString verdict = QpdfOutlineWriter::verify(before, after, out.plan);
+    if (!verdict.isEmpty() || !step("verify")) return fail(verdict == QStringLiteral("preservation") ? "preservation" : "outlineDiffers");
+    const auto reread = reopen(temp.path, input.password);
+    if (!reread || !sameAsPlan(*reread, out.plan, plannedKeys(out.plan)) || !step("reopen")) return fail("reopenDiffers");
+    // Into place under the chosen name (the file dialog already confirmed any overwrite).
+    if (QFileInfo::exists(target) ? !replaceFile(target, temp.path)
+                                  : !QFile::rename(temp.path, target))
+        return fail("replaceFailed");
+    temp.path.clear();
+    out.ok = true;
+    out.sourceRevision = fileRevision(target);
+    return out;
 }
 
 SafeSaveOutcome saveOutlineSafely(SqliteBookmarkOverlay& store, const SafeSaveInput& input, const SafeSaveFault& fault) {

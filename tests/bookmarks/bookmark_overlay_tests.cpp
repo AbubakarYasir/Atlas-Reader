@@ -147,8 +147,8 @@ void checkTransitions() {
     using E = StorageEvent;
     const std::array<S, 6> states{S::embedded, S::localOnly, S::pendingEmbed, S::localOverride, S::locallyHidden,
                                   S::conflict};
-    const std::array<E, 11> events{E::editLocally, E::requestEmbed, E::cancelEmbed, E::hide, E::unhideUnchanged,
-                                   E::unhideChanged, E::revertToSource, E::detectConflict, E::keepLocal,
+    const std::array<E, 12> events{E::editLocally, E::requestEmbed, E::cancelEmbed, E::hide, E::unhideUnchanged,
+                                   E::unhideChanged, E::revertToSource, E::detectConflict, E::keepLocal, E::keepOverride,
                                    E::takeSource, E::embedVerified};
     // Expected table, written independently of the implementation.
     const std::map<std::pair<S, E>, S> expected{
@@ -169,6 +169,7 @@ void checkTransitions() {
         {{S::localOverride, E::detectConflict}, S::conflict},
         {{S::locallyHidden, E::detectConflict}, S::conflict},
         {{S::conflict, E::keepLocal}, S::localOnly},
+        {{S::conflict, E::keepOverride}, S::localOverride},
         {{S::conflict, E::takeSource}, S::embedded},
         {{S::localOnly, E::embedVerified}, S::embedded},
         {{S::pendingEmbed, E::embedVerified}, S::embedded},

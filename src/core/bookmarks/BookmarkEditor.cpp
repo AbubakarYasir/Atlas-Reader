@@ -49,6 +49,7 @@ std::string_view editKindName(EditKind kind) {
     case EditKind::requestEmbed: return "requestEmbed";
     case EditKind::cancelEmbed: return "cancelEmbed";
     case EditKind::autoCreate: return "autoCreate";
+    case EditKind::resolve: return "resolve";
     }
     return "unknown";
 }
@@ -417,6 +418,65 @@ EditResult BookmarkEditor::setEmbedRequested(std::string_view id, bool requested
     remember(touched, found->first);
     node.state = wanted;
     return finish(requested ? EditKind::requestEmbed : EditKind::cancelEmbed, touched, found->first);
+}
+
+EditResult BookmarkEditor::resolveConflict(std::string_view id, bool keepMine) {
+    if (pending_) return refuse("busy");
+    const auto found = nodes_.find(std::string{id});
+    if (found == nodes_.end()) return refuse("unknownNode");
+    if (found->second.state != S::conflict) return refuse("unchanged");
+    std::unordered_map<std::string, std::optional<BookmarkNode>> touched;
+    remember(touched, found->first);
+    BookmarkNode& node = found->second;
+    const BaseNode* source = nullptr;
+    if (node.baseKey) {
+        if (const auto b = baseByKey_.find(*node.baseKey); b != baseByKey_.end()) source = b->second;
+    }
+    if (keepMine || source == nullptr) {
+        if (!keepMine) return refuse("notInPdf"); // nothing in the PDF to take
+        node.conflict.reset();
+        if (source != nullptr) {
+            node.state = S::localOverride;
+            settleSourceState(node); // equal to the PDF after all → Embedded
+        } else {
+            node.state = S::localOnly;
+            node.baseKey.reset();
+        }
+        return finish(EditKind::resolve, touched, found->first);
+    }
+    // The PDF's version: its title and destination, under its PDF parent,
+    // after the PDF sibling that precedes it.
+    node.title = source->title;
+    node.location = source->location;
+    node.conflict.reset();
+    std::optional<std::string> parent;
+    if (source->parentKey) {
+        for (const auto& [otherId, other] : nodes_) {
+            if (other.baseKey && *other.baseKey == *source->parentKey) parent = otherId;
+        }
+        if (!parent) parent = node.parentId; // its PDF parent is not shown: stay put
+    }
+    const std::string nodeId = found->first;
+    const auto from = groupKey(node.parentId);
+    auto& oldList = children_[from];
+    oldList.erase(std::find(oldList.begin(), oldList.end(), nodeId));
+    node.parentId = parent;
+    const auto to = groupKey(parent);
+    auto& list = children_[to];
+    std::size_t at = 0;
+    for (std::size_t i = 0; i < list.size(); ++i) {
+        const auto& sibling = nodes_.at(list[i]);
+        if (sibling.baseKey && baseByKey_.contains(*sibling.baseKey) &&
+            baseByKey_.at(*sibling.baseKey)->parentKey == source->parentKey &&
+            baseByKey_.at(*sibling.baseKey)->position < source->position)
+            at = i + 1;
+    }
+    list.insert(list.begin() + static_cast<std::ptrdiff_t>(at), nodeId);
+    renumber(from, touched);
+    if (to != from) renumber(to, touched);
+    nodes_.at(nodeId).state = S::localOverride;
+    settleSourceState(nodes_.at(nodeId)); // Embedded when it now equals the PDF's bookmark
+    return finish(EditKind::resolve, touched, nodeId);
 }
 
 EditResult BookmarkEditor::createBatch(std::vector<NewBookmark> items, BatchPlacement placement) {

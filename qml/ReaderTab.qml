@@ -38,6 +38,34 @@ Rectangle {
     signal toastRequested(string text)
 
     function focusPageBox() { pageBox.forceActiveFocus() }
+
+    // ---- N5.3 bookmarks: this book's overlay, attached once the outline is read
+    BookmarkModel {
+        id: bookmarkModel
+        service: bookmarkService
+        currentPage: view.currentPage - 1
+    }
+    function attachBookmarks() {
+        if (view.textReady && tab.sourcePath.length > 0) bookmarkModel.attach(tab.sourcePath, view.outline)
+    }
+    Connections {
+        target: view
+        function onTextInfoChanged() { tab.attachBookmarks() }
+    }
+    // Visual QA (--show bookmarks-find:<text>, bookmarks-menu, bookmarks-add, bookmarks-expand)
+    function bookmarksQa(action) {
+        preferences.navPanel = "bookmarks"
+        if (action.indexOf("find:") === 0) bookmarkModel.filter = action.slice(5)
+        else if (action === "expand") bookmarkModel.expandAll()
+        else if (action === "menu") { bookmarkModel.expandAll(); bookmarksPanel.openMenu(1, 40, 60, null) }
+        else if (action === "add") bookmarksPanel.addHere(false)
+    }
+    // Ctrl+B / Bookmark buttons: open the panel and add a bookmark for this view.
+    function addBookmarkHere() {
+        if (!tab.ready) return
+        preferences.navPanel = "bookmarks"
+        bookmarksPanel.addHere(false)
+    }
     function showCapability() { if (capabilityChip.visible) capabilityPopup.open() }
     // Coming back to a tab re-checks the file (it may have changed outside Atlas).
     onVisibleChanged: if (visible && ready && capability && capability.checked) readerController.recheckCapabilities(index)
@@ -151,6 +179,8 @@ Rectangle {
                 Layout.fillHeight: true
                 visible: preferences.navPanel === "bookmarks" && !AppState.chromeHidden
                 view: view
+                bookmarks: bookmarkModel
+                onToastRequested: (text) => tab.toastRequested(text)
             }
             Rectangle { // splitter: drag to resize, double-click to hide (Foxit)
                 Layout.preferredWidth: 6
@@ -757,6 +787,7 @@ Rectangle {
             onTriggered: view.copySelection()
         }
         MenuItem { text: I18n.t("action.selectAll") + "\tCtrl+A"; enabled: view.hasText; onTriggered: view.selectAllOnPage() }
+        MenuItem { text: I18n.t("bookmarks.add") + "\tCtrl+B"; onTriggered: tab.addBookmarkHere() }
         MenuSeparator {}
         MenuItem { text: I18n.t("cmd.hand") + "\tAlt+3"; checkable: true; checked: view.tool === ReaderViewport.HandTool; onTriggered: view.tool = ReaderViewport.HandTool }
         MenuItem { text: I18n.t("cmd.selectText") + "\tAlt+6"; checkable: true; checked: view.tool === ReaderViewport.SelectTool; onTriggered: view.tool = ReaderViewport.SelectTool }

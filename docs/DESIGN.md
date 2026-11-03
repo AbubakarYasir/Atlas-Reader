@@ -186,7 +186,8 @@ Foxit's default keys for every command Atlas has ([FOXIT_PARITY §4](FOXIT_PARIT
 | Show/hide navigation panel | `F4` |
 | Read mode / Full screen | `Ctrl+H` / `F11` (`Esc` exits either) |
 | Back / Forward (history) | `Alt+←` / `Alt+→` (temporal, not mirrored in RTL) |
-| Add bookmark | `Ctrl+B` (N5) |
+| Add bookmark | `Ctrl+B` (N5.3: opens the Bookmarks panel and names the new bookmark at once) |
+| Move bookmark / nest under the one above / move out | `Alt+↑` `Alt+↓` / `Alt+→` / `Alt+←` (Bookmarks panel; nest/move-out mirrored in RTL) |
 | Save portable changes | `Ctrl+S` (N5+) |
 | Print | `Ctrl+P` (N7) |
 | Undo / redo | `Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z` |

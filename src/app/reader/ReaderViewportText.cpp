@@ -288,6 +288,44 @@ void ReaderViewport::goToDestination(int zeroBasedPage, QPointF location) {
     }
 }
 
+void ReaderViewport::goToNormalized(int zeroBasedPage, qreal fx, qreal fy) {
+    if (layout_.pageCount() == 0) return;
+    const auto page = static_cast<std::size_t>(std::clamp(zeroBasedPage, 0, static_cast<int>(layout_.pageCount()) - 1));
+    if (!std::isfinite(fx) || !std::isfinite(fy) || fy <= 0.0 || fy > 1.0) {
+        recordJump();
+        jumpToIndex(page);
+        return;
+    }
+    const QSizeF size = pageSizePoints(static_cast<int>(page) + 1);
+    const bool upright = static_cast<int>(layout_.settings().viewRotation) % 2 == 0;
+    const double w = upright ? size.width() : size.height();
+    const double h = upright ? size.height() : size.width();
+    const QPointF location{std::clamp(fx, 0.0, 1.0) * w, fy * h};
+    recordJump();
+    const QRectF target = pointsToContent(page, QRectF{location, QSizeF{1, 1}});
+    setContentY(target.top() - layout_.settings().pageGap);
+}
+
+QVariantMap ReaderViewport::viewLocation() const {
+    QVariantMap result;
+    if (layout_.pageCount() == 0 || currentPage_ < 1) return result;
+    const auto page = static_cast<std::size_t>(currentPage_ - 1);
+    const auto r = layout_.pageRect(page);
+    const QSizeF size = pageSizePoints(currentPage_);
+    const bool upright = static_cast<int>(layout_.settings().viewRotation) % 2 == 0;
+    const double w = upright ? size.width() : size.height();
+    const double h = upright ? size.height() : size.width();
+    // The top of the view, or the top of the page when the view starts above it.
+    const QPointF points = contentToPoints(page, QPointF{r.x, std::max<double>(contentY_, r.y)});
+    const double fx = w > 0 ? std::clamp(points.x() / w, 0.0, 1.0) : 0.0;
+    const double fy = h > 0 ? std::clamp(points.y() / h, 0.0, 1.0) : 0.0;
+    result.insert(QStringLiteral("page"), static_cast<int>(page));
+    result.insert(QStringLiteral("fx"), fx);
+    result.insert(QStringLiteral("fy"), fy);
+    result.insert(QStringLiteral("zoom"), layout_.settings().zoom);
+    return result;
+}
+
 // ------------------------------------------------------------ geometry
 
 QPointF ReaderViewport::toContent(QPointF itemPos) const {

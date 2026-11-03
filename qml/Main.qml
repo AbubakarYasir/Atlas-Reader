@@ -69,6 +69,7 @@ ApplicationWindow {
     // Reader text (N4.5, FOXIT_PARITY §4)
     Shortcut { sequence: "Ctrl+F"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.openFind() }
     Shortcut { sequence: "Ctrl+Shift+F"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.openSearch() }
+    Shortcut { sequence: "Ctrl+B"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.addBookmarkHere() }
     Shortcut { sequence: "F3"; enabled: root.activeViewport !== null && root.activeViewport.searchHits.length > 0; onActivated: root.activeViewport.findNext() }
     Shortcut { sequence: "Shift+F3"; enabled: root.activeViewport !== null && root.activeViewport.searchHits.length > 0; onActivated: root.activeViewport.findPrevious() }
     Shortcut { sequence: "Alt+3"; enabled: root.activeViewport !== null; onActivated: root.activeViewport.tool = ReaderViewport.HandTool }
@@ -156,6 +157,7 @@ ApplicationWindow {
             else if (qaShow.indexOf("search:") === 0 && reader.currentTab) { reader.currentTab.openSearch(); reader.currentTab.searchRun(qaShow.slice(7)) }
             else if (qaShow === "capability" && reader.currentTab) reader.currentTab.showCapability()
             else if (qaShow === "bookmarks") preferences.navPanel = "bookmarks"
+            else if (qaShow.indexOf("bookmarks-") === 0 && reader.currentTab) reader.currentTab.bookmarksQa(qaShow.slice(10))
             else if (qaShow === "wordcount" && root.activeViewport) readerDialogs.openWordCount(root.activeViewport)
             else if (qaShow === "zoomto" && root.activeViewport) readerDialogs.openZoomTo(root.activeViewport)
             else if (qaShow === "link") readerDialogs.confirmLink("https://example.org/atlas")
@@ -221,6 +223,7 @@ ApplicationWindow {
             onAboutRequested: aboutDialog.open()
             onPreferencesRequested: (page) => preferencesDialog.openPage(page)
             onFindRequested: if (reader.currentTab) reader.currentTab.openFind()
+            onBookmarkRequested: if (reader.currentTab) reader.currentTab.addBookmarkHere()
             onSearchRequested: if (reader.currentTab) reader.currentTab.openSearch()
             onZoomToRequested: if (root.activeViewport) readerDialogs.openZoomTo(root.activeViewport)
             onWordCountRequested: if (root.activeViewport) readerDialogs.openWordCount(root.activeViewport)

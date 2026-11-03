@@ -159,7 +159,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 
 | Group | Foxit commands | Atlas |
 |---|---|---|
-| Tools | Hand (Alt+3), Select Text and Image (Alt+6), Select Annotation, SnapShot (Alt+7), Clipboard ▾ (copy, paste, paste in place), Bookmark | Hand Done · Select Text, SnapShot, Clipboard (copy, select all, deselect) Done (N4.5) · paste N6 · Select annotation N6 · Bookmark N5 |
+| Tools | Hand (Alt+3), Select Text and Image (Alt+6), Select Annotation, SnapShot (Alt+7), Clipboard ▾ (copy, paste, paste in place), Bookmark | Hand Done · Select Text, SnapShot, Clipboard (copy, select all, deselect) Done (N4.5) · paste N6 · Select annotation N6 · Bookmark Done (N5.3) |
 | View | Zoom ▾ (in, out, marquee, loupe, magnifier, Zoom To Ctrl+M), Page Fit Option ▾ (Actual Size Ctrl+1, Fit Page Ctrl+0, Fit Width Ctrl+2, Fit Visible Ctrl+3), Reflow (Ctrl+4), Rotate View ▾ | Zoom, Page Fit, Rotate View Done · Fit Visible, Zoom To, marquee zoom, full zoom list Done (N4.4) · loupe, magnifier, Reflow Track A |
 | Edit | Edit Text, Edit Object ▾ | Track D |
 | Comment | Typewriter, Highlight | N6 |
@@ -182,7 +182,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 |---|---|---|
 | Content | Edit Text, Edit Object (text, image, shape, shading), Link & Join Text, Check Spelling, Search & Replace (Ctrl+T) | Track D |
 | Add | Add Text, Add Images, Add Shapes, Reflow Editing, Add Article Box, Articles panel | Track D |
-| Links | Web Links ▾ (create from URLs, remove all), Link, Bookmark (Ctrl+B), Auto Create Bookmarks, Cross Reference (Ctrl+Shift+C) | Following links Done (N4.5) · Bookmark N5 · Auto Create Bookmarks from outline/headings N5 · creating links, web-link detection, cross reference Track D |
+| Links | Web Links ▾ (create from URLs, remove all), Link, Bookmark (Ctrl+B), Auto Create Bookmarks, Cross Reference (Ctrl+Shift+C) | Following links Done (N4.5) · Bookmark (Ctrl+B) Done (N5.3) · Auto Create Bookmarks from outline/headings N5 · creating links, web-link detection, cross reference Track D |
 | Insert | File Attachment, Image Annotation, Audio & Video, Add 3D | Attachments panel (read, save copy) Track D · image annotation Track D · audio/video and 3D playback Track D (sandboxed, off by default) |
 | Image editing | Page Editor tools: magic wand, lasso, polygonal lasso, filters (dodge, greyen, sharpen, binarize, soften…), add image | Track D |
 
@@ -281,7 +281,7 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 | Panel | Atlas |
 |---|---|
 | Pages (thumbnails, page operations menu) | Done (view, N4.4) · Track C (operations) |
-| Bookmarks (Atlas's signature editor) | N5 |
+| Bookmarks (Atlas's signature editor) | Editable panel Done (N5.3 slice 2: add, rename, delete/hide, move, nest, undo, find, states); Command Center, Auto Create N5.3 slice 3 |
 | Outline / document bookmarks (read) | Done (N4.5) |
 | Comments | N6 |
 | Search (right panel; whole words, case, include bookmarks/comments, highlight all, save results to PDF/CSV) | Done: whole words, case, highlight all (always on), results with context (N4.5) · include bookmarks/comments N6 · save results Track H |

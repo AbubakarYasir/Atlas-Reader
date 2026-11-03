@@ -23,6 +23,7 @@ Rectangle {
     signal aboutRequested()
     signal preferencesRequested(string page)
     signal findRequested()
+    signal bookmarkRequested()
     signal searchRequested()
     signal zoomToRequested()
     signal wordCountRequested()
@@ -154,6 +155,13 @@ Rectangle {
                 text: I18n.t("cmd.clipboard")
                 enabled: ribbon.hasDocument
                 menu: clipboardMenu
+            }
+            RibbonButton {
+                iconName: "bookmark_add"
+                text: I18n.t("cmd.bookmark")
+                shortcutHint: "Ctrl+B"
+                enabled: ribbon.hasDocument
+                onClicked: ribbon.bookmarkRequested()
             }
             Separator {}
             RibbonButton {

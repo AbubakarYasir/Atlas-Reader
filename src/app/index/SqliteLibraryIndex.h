@@ -132,6 +132,11 @@ public:
     void rebuildSearchIndex();
     [[nodiscard]] std::vector<LibraryRecord> search(std::string query) const override;
     [[nodiscard]] std::vector<LibraryRecord> favorites() const;
+    // N5.3: the documents indexed at exactly this path (generic UTF-8 form). If
+    // none match exactly, an ASCII case-insensitive match is tried (Windows
+    // paths). Callers treat anything but exactly one result as "not known":
+    // ambiguous identity never attaches research to a book.
+    [[nodiscard]] std::vector<std::string> documentsAtPath(const std::filesystem::path& source) const;
     [[nodiscard]] std::vector<LibraryRecord> recentlyOpened(std::size_t limit = 20) const;
 
 private:

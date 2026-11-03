@@ -216,6 +216,17 @@ target_link_libraries(atlas_reader_ui PUBLIC atlas_document_policy
 )
 atlas_enable_warnings(atlas_reader_ui)
 
+# N5.3: Bookmarks panel model and its storage worker (Qt Core only).
+add_library(atlas_bookmark_ui STATIC
+    src/app/bookmarks/BookmarkModel.cpp
+    src/app/bookmarks/BookmarkModel.h
+    src/app/bookmarks/BookmarkService.cpp
+    src/app/bookmarks/BookmarkService.h
+)
+target_include_directories(atlas_bookmark_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_bookmark_ui PUBLIC atlas_bookmark_store atlas_library_index Qt6::Core)
+atlas_enable_warnings(atlas_bookmark_ui)
+
 set(ATLAS_READER_PLATFORM_SOURCES)
 if(WIN32)
     set(ATLAS_WINDOWS_ASSETS "${CMAKE_CURRENT_SOURCE_DIR}/assets/windows")
@@ -265,7 +276,7 @@ qt_add_qml_module(atlas_reader
 
 target_compile_definitions(atlas_reader PRIVATE ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}")
 target_link_libraries(atlas_reader
-    PRIVATE atlas_core atlas_app_support atlas_library_ui atlas_reader_ui
+    PRIVATE atlas_core atlas_app_support atlas_library_ui atlas_reader_ui atlas_bookmark_ui
     Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2 Qt6::Svg
 )
 atlas_enable_warnings(atlas_reader)
@@ -417,6 +428,11 @@ add_executable(atlas_bookmark_editor_tests tests/bookmarks/bookmark_editor_tests
 target_link_libraries(atlas_bookmark_editor_tests PRIVATE atlas_bookmark_store atlas_library_index)
 atlas_enable_warnings(atlas_bookmark_editor_tests)
 add_test(NAME atlas_bookmark_editor COMMAND atlas_bookmark_editor_tests)
+
+add_executable(atlas_bookmark_model_tests tests/bookmarks/bookmark_model_tests.cpp)
+target_link_libraries(atlas_bookmark_model_tests PRIVATE atlas_bookmark_ui)
+atlas_enable_warnings(atlas_bookmark_model_tests)
+add_test(NAME atlas_bookmark_model COMMAND atlas_bookmark_model_tests)
 
 add_executable(atlas_qpdf_inspector_tests tests/document/qpdf_inspector_tests.cpp)
 target_link_libraries(atlas_qpdf_inspector_tests PRIVATE atlas_reader_ui)

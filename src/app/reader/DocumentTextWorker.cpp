@@ -20,6 +20,7 @@
 #endif
 
 #include <algorithm>
+#include <cmath>
 #include <chrono>
 
 namespace atlas::app {
@@ -62,18 +63,37 @@ QVariantList rectsOf(const QPdfSelection& selection) {
     return rects;
 }
 
-void collectOutline(const QPdfBookmarkModel& model, const QModelIndex& parent, int depth, QVariantList& out) {
+// N5.3 also records, for the bookmark overlay: `key` (the entry's place in the
+// outline tree, "0/3/1"), `position` among its siblings, and the destination
+// as fractions of the unrotated page (`fx`, `fy`, `hasPoint`) plus `zoom`.
+void collectOutline(const QPdfDocument& document, const QPdfBookmarkModel& model, const QModelIndex& parent,
+                    int depth, const QString& parentKey, QVariantList& out) {
     const int rows = model.rowCount(parent);
     for (int row = 0; row < rows; ++row) {
         const QModelIndex index = model.index(row, 0, parent);
+        const QString key = parentKey.isEmpty() ? QString::number(row) : parentKey + u'/' + QString::number(row);
+        const int page = model.data(index, static_cast<int>(QPdfBookmarkModel::Role::Page)).toInt();
+        const QPointF location = model.data(index, static_cast<int>(QPdfBookmarkModel::Role::Location)).toPointF();
         QVariantMap entry;
         entry.insert(QStringLiteral("title"), model.data(index, static_cast<int>(QPdfBookmarkModel::Role::Title)));
         entry.insert(QStringLiteral("level"), depth);
-        entry.insert(QStringLiteral("page"), model.data(index, static_cast<int>(QPdfBookmarkModel::Role::Page)));
-        entry.insert(QStringLiteral("location"), model.data(index, static_cast<int>(QPdfBookmarkModel::Role::Location)));
+        entry.insert(QStringLiteral("page"), page);
+        entry.insert(QStringLiteral("location"), location);
         entry.insert(QStringLiteral("children"), model.rowCount(index));
+        entry.insert(QStringLiteral("key"), key);
+        entry.insert(QStringLiteral("parentKey"), parentKey);
+        entry.insert(QStringLiteral("position"), row);
+        entry.insert(QStringLiteral("zoom"), model.data(index, static_cast<int>(QPdfBookmarkModel::Role::Zoom)));
+        // Only a point that lies on the page is a usable destination.
+        const QSizeF size = page >= 0 && page < document.pageCount() ? document.pagePointSize(page) : QSizeF{};
+        const bool hasPoint = size.width() > 0 && size.height() > 0 && std::isfinite(location.x()) &&
+                              std::isfinite(location.y()) && location.x() >= 0 && location.y() > 0 &&
+                              location.x() <= size.width() && location.y() <= size.height();
+        entry.insert(QStringLiteral("hasPoint"), hasPoint);
+        entry.insert(QStringLiteral("fx"), hasPoint ? location.x() / size.width() : 0.0);
+        entry.insert(QStringLiteral("fy"), hasPoint ? location.y() / size.height() : 0.0);
         out.push_back(entry);
-        if (depth < 32) collectOutline(model, index, depth + 1, out); // flat, depth-first
+        if (depth < 32) collectOutline(document, model, index, depth + 1, key, out); // flat, depth-first
     }
 }
 
@@ -116,7 +136,7 @@ void DocumentTextWorker::open(const QByteArray& bytes, const QString& password, 
     {
         QPdfBookmarkModel model;
         model.setDocument(document_);
-        collectOutline(model, {}, 0, outline);
+        collectOutline(*document_, model, {}, 0, {}, outline);
     }
     const int count = document_->pageCount();
     QStringList labels;

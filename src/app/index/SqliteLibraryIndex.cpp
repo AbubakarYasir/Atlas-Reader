@@ -1043,6 +1043,27 @@ std::vector<LibraryRecord> SqliteLibraryIndex::search(std::string query) const {
     return result;
 }
 
+std::vector<std::string> SqliteLibraryIndex::documentsAtPath(const std::filesystem::path& source) const {
+    std::scoped_lock lock{impl_->mutex};
+    const auto key = pathToUtf8(source);
+    std::vector<std::string> result;
+    for (const char* sql : {"SELECT DISTINCT document_id FROM document_locations WHERE source_path = ?1 "
+                            "ORDER BY document_id",
+                            "SELECT DISTINCT document_id FROM document_locations "
+                            "WHERE source_path = ?1 COLLATE NOCASE ORDER BY document_id"}) {
+        Statement statement{impl_->db, sql};
+        statement.bindText(1, key);
+        for (;;) {
+            const int step = sqlite3_step(statement.get());
+            if (step == SQLITE_DONE) break;
+            if (step != SQLITE_ROW) fail(impl_->db, "Finding a document by path", step);
+            result.emplace_back(reinterpret_cast<const char*>(sqlite3_column_text(statement.get(), 0)));
+        }
+        if (!result.empty()) break;
+    }
+    return result;
+}
+
 std::vector<LibraryRecord> SqliteLibraryIndex::favorites() const {
     std::scoped_lock lock{impl_->mutex};
     Statement statement{impl_->db,

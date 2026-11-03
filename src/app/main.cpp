@@ -1,3 +1,5 @@
+#include "app/bookmarks/BookmarkModel.h"
+#include "app/bookmarks/BookmarkService.h"
 #include "app/diagnostics/ShellMetrics.h"
 #include "app/library/LibraryController.h"
 #include "app/logging/Logging.h"
@@ -151,6 +153,9 @@ int main(int argc, char* argv[]) {
     metrics.recordStage(QStringLiteral("startup.metrics_ready_ms"));
 
     qmlRegisterType<atlas::app::ReaderViewport>("Atlas.Reader", 1, 0, "ReaderViewport");
+    qmlRegisterType<atlas::app::BookmarkModel>("Atlas.Reader", 1, 0, "BookmarkModel");
+    qmlRegisterUncreatableType<atlas::app::BookmarkService>(
+        "Atlas.Reader", 1, 0, "BookmarkService", QStringLiteral("Provided by the application"));
     qmlRegisterUncreatableType<atlas::app::ReaderController>(
         "Atlas.Reader", 1, 0, "ReaderController", QStringLiteral("Provided by the application"));
 
@@ -160,6 +165,9 @@ int main(int argc, char* argv[]) {
     atlas::app::LibraryController libraryController(
         filesystemPath(QDir{profileDirectory}.filePath(QStringLiteral("library.sqlite3"))));
     atlas::app::ReaderController readerController(filesystemPath(profileDirectory));
+    // N5.3: bookmark storage on its own worker, in the same profile database.
+    atlas::app::BookmarkService bookmarkService(
+        filesystemPath(QDir{profileDirectory}.filePath(QStringLiteral("library.sqlite3"))));
     atlas::app::AppPreferences preferences(QDir{profileDirectory}.filePath(QStringLiteral("preferences.ini")));
     if (parser.isSet(languageOption)) preferences.overrideLanguage(parser.value(languageOption));
     if (parser.isSet(themeOption)) preferences.overrideThemeMode(parser.value(themeOption));
@@ -184,6 +192,7 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty(QStringLiteral("qaShow"), parser.value(showOption));
     engine.rootContext()->setContextProperty(QStringLiteral("libraryController"), &libraryController);
     engine.rootContext()->setContextProperty(QStringLiteral("readerController"), &readerController);
+    engine.rootContext()->setContextProperty(QStringLiteral("bookmarkService"), &bookmarkService);
     // Pages panel thumbnails (engine owns the provider).
     auto* thumbnails = new atlas::app::PageThumbnailProvider;
     QObject thumbnailConnections; // destroyed before the engine deletes the provider

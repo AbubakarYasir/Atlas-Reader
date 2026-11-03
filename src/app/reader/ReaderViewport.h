@@ -166,6 +166,12 @@ public:
     Q_INVOKABLE void fitVisible();
     Q_INVOKABLE bool goToLabel(const QString& label);
     Q_INVOKABLE void goToDestination(int zeroBasedPage, QPointF location);
+    // N5.3 bookmark destinations: a point given as fractions (0–1) of the
+    // unrotated page, origin top-left; fy = 0 means the top of the page.
+    Q_INVOKABLE void goToNormalized(int zeroBasedPage, qreal fx, qreal fy);
+    // Where the reader is now, for "add a bookmark here": {page (zero-based),
+    // fx, fy, zoom}. Empty when no document is shown.
+    Q_INVOKABLE QVariantMap viewLocation() const;
     Q_INVOKABLE void toggleAutoScroll();
     Q_INVOKABLE void changeAutoScrollSpeed(int steps);
     Q_INVOKABLE void stopAutoScroll();

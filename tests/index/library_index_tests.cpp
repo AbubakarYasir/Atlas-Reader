@@ -118,6 +118,14 @@ void checkSchemaAndFts() {
         require(roots.size() == 1 && roots.front().availability == atlas::index::LibraryRootAvailability::offline,
             "An offline root must remain in the database after reopening.");
         require(reopened.search("القراءة").size() == 1, "Arabic FTS results must survive reopening.");
+        const auto arabicBook = temporary.path() / "مكتبتي" / "مدخل.pdf";
+        require(reopened.documentsAtPath(arabicBook) == std::vector<std::string>{"book-ar"},
+            "An indexed path resolves to exactly its document.");
+        auto upper = temporary.path() / "مكتبتي" / "RESEARCH.PDF";
+        require(reopened.documentsAtPath(upper) == std::vector<std::string>{"book-en"},
+            "A path differing only in ASCII case resolves when no exact match exists.");
+        require(reopened.documentsAtPath(temporary.path() / "elsewhere.pdf").empty(),
+            "An unknown path resolves to no document.");
         require(reopened.favorites().size() == 1, "Favorite state must survive reopening.");
         require(reopened.recentlyOpened().front().id == "book-en", "Recent-opened state must survive reopening.");
 

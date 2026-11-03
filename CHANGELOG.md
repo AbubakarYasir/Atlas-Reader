@@ -4,6 +4,14 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N5.3 (part 2): an editable Bookmarks panel — 2026-11-03
+
+- Press **Ctrl+B** (or Home → Bookmark, or right-click the page) to bookmark what you are reading; name it straight away, or keep the selected text or page number Atlas suggests.
+- In the Bookmarks panel: rename with F2, move with Alt+↑/↓, nest under the bookmark above with Alt+→ (Alt+← in Arabic and Urdu) and out again with the opposite arrow, set a bookmark to the current view, undo and redo, and find any bookmark by its title, notes or tags.
+- Bookmarks that came with the PDF are never removed from the book: deleting one hides it in Atlas, and "N bookmarks are hidden" brings them back. Small icons say which bookmarks live only in Atlas or were changed in Atlas; hover or use a screen reader for the words.
+- Books outside your library show their own bookmarks read-only, with a note on how to add the folder so you can keep your own.
+- Five icons added from the same pinned Fluent UI System Icons commit (bookmark add, delete, edit, eye, eye off) for these commands.
+
 ## N5.3 (part 1): the bookmark editing engine — 2026-11-03
 
 - Behind the coming Bookmarks panel: add, rename, move, nest and reorder bookmarks, give them notes and tags, and undo or redo any of it. Deleting a bookmark that belongs to the PDF hides it in Atlas instead, so the book itself is never changed by accident; change a PDF bookmark back and Atlas knows it matches the book again.

@@ -250,7 +250,7 @@ void BookmarkModel::setStatus(const QString& status, const QString& reason) {
 void BookmarkModel::attach(const QString& path, const QVariantList& outline) {
     detach();
     path_ = path;
-    const auto generation = ++generation_;
+    ++generation_;
     setStatus(QStringLiteral("loading"), {});
     if (!service_) {
         // No storage (tests or a failed profile): the PDF's outline, read-only.

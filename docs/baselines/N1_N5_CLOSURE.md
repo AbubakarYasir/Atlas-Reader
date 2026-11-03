@@ -13,21 +13,21 @@ PR #8 stays Draft. No N6 work, release or merge is authorized by this pass.
 | N2-01 | Rendering and text correctness | Full nine PDF regression workflows on final head | Pending |
 | N2-02 | Passwords, restrictions, signatures | Fixtures; no credentials in persisted data | Pending |
 | N2-03 | Coordinates and preservation | Rotated/cropped destinations; independent reopen | Pending |
-| N3-01 | Background scanning and cancellation | Existing scanner suite; incomplete scan never purges | Pending |
-| N3-02 | Identity and offline roots | Moves/copies/ambiguity/offline regression checks | Pending |
+| N3-01 | Background scanning and cancellation | `library_scanner_tests` and scan-service integration | Local Debug/Release passed; final-head CI pending |
+| N3-02 | Identity and offline roots | `document_identity_reconciler_tests`, `native_file_identity_tests` | Local moves/copies/ambiguity/offline checks passed |
 | N3-03 | Filename-first metadata and library state | Unicode paths, Favorites/Recents, restart | Pending |
 | N4-01 | Open/tabs/password/restore | Controller regression suite and keyboard checks | Pending |
 | N4-02 | Virtual viewport and navigation | Long/mixed/rotated/link-heavy fixtures; memory bounds | Pending |
-| N4-03 | Search and selection | Arabic/Urdu normalization; long-book p50/p95/p99 | Pending |
+| N4-03 | Search and selection | Text-search suite; 2k-page viewport measurement below | Local tests and 100-query measurement passed |
 | N4-04 | Windows accessibility | Narrator, keyboard, high contrast, real scaling | Pending |
 | N5-01 | Capability and overlay persistence | Full state/transaction/crash corpus | Pending |
 | N5-02 | Editing, undo, auto headings | Tree/Unicode/10k-node tests and rendered review | Pending |
 | N5-03 | Late-save failures | Reindex/commit failure restore and failed-restore tests | Local Windows regression passed; final CI pending |
 | N5-04 | Durable recovery | Journal, process termination, restart, conflict preservation | Implemented; repair-head tests and Windows review in progress |
 | N5-05 | Safe copy | Source alias and destination race checks | Hard-link/during-generation changes tested locally; broader audit pending |
-| N5-06 | Reconcile external changes | Ambiguous matching and local-work preservation | Pending audit |
+| N5-06 | Reconcile external changes | `reconcile_tests`, `outline_safe_save_tests`; 10k benchmark | Ambiguity regression passes; worker timing p95 161.199 ms |
 | N5-07 | Exchange responsiveness | Worker import/export, cancel, stale answers, large workload | Implemented; repair-head tests and Windows review in progress |
-| N5-08 | Format fidelity | Unicode/limits/CSV/round-trip tests | Pending |
+| N5-08 | Format fidelity | `bookmark_exchange_tests`, `bookmark_model_tests` | Local Unicode/limits/CSV/round-trip and asynchronous undo tests pass |
 | UI-01 | Reference-based Windows review | EN/AR/UR, wide/narrow, 100/200%, empty/error/protected/conflict | Pending |
 | PKG-01 | Correct review instructions | N5 START-HERE and guide in packaged ZIP | Script corrected; package pending |
 | GIT-01 | Owner identity and signatures | Audit every N5 commit; GitHub Verified | All N5 commits valid; corrected history pushed and verified |
@@ -104,7 +104,7 @@ real Narrator workflow and native tree expanded/collapsed state; Windows contras
 and actual 200% display configuration; physical insufficient-space/removable-drive
 and final-reopen failure qualification beyond injection; cryptographically signed
 public fixture (A010 is a certification-structure marker, not a valid signature);
-large reconciliation timing; full final-head CI, source/package traceability and
+full final-head CI, source/package traceability and
 final clean-package smoke. Unknown-hash recovery currently blocks safely and retains
 all evidence; an integrated explicit recovery-choice dialog is not yet implemented.
 Do not describe the inspection package as N5 complete while these remain open.

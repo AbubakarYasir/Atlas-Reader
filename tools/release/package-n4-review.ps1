@@ -46,12 +46,29 @@ $reviewGuide = if ($Checkpoint -eq 'N5') { 'N5_REVIEW.md' } else { 'N4_REVIEW.md
 foreach ($doc in @($reviewGuide, 'DEPENDENCIES.md')) {
     Copy-Item -LiteralPath (Join-Path $repo "docs/$doc") -Destination $docs
 }
-Copy-Item -LiteralPath (Join-Path $repo "docs/$reviewGuide") -Destination (Join-Path $stage 'START-HERE.md')
+if ($Checkpoint -eq 'N5') {
+    New-Item -ItemType Directory -Force (Join-Path $docs 'baselines') | Out-Null
+    Copy-Item -LiteralPath (Join-Path $repo 'docs/baselines/N1_N5_CLOSURE.md') -Destination (Join-Path $docs 'baselines')
+}
+@"
+# Atlas Reader — $Checkpoint review
+
+Version: $Version. This is an inspection build, not a newly accepted release.
+
+Run **atlas_reader.exe**. Use copies of your books for testing.
+Read the [plain-language review guide](docs/$reviewGuide) before testing saves.
+The build identity is in BUILD-INFO.json; file hashes are in SHA256SUMS.txt.
+The samples are synthetic, redistributable fixtures; their provenance is in samples/PROVENANCE.md.
+N5 acceptance remains subject to the open checks in docs/baselines/N1_N5_CLOSURE.md.
+"@ | Set-Content -LiteralPath (Join-Path $stage 'START-HERE.md') -Encoding utf8
 foreach ($fixture in @('A001_simple_text.pdf','A002_geometry_labels.pdf','A003_outlines_links.pdf','A006_unicode_semantics.pdf','A008_password_rc4_40.pdf','A010_certification_structure.pdf')) {
     Copy-Item -LiteralPath (Join-Path $repo "tests/fixtures/pdf/generated/$fixture") -Destination $samples
 }
 Copy-Item -LiteralPath (Join-Path $repo 'tests/fixtures/pdf/README.md') -Destination (Join-Path $samples 'PROVENANCE.md')
 Copy-Item -LiteralPath (Join-Path $repo 'tests/fixtures/pdf/manifest.json') -Destination $samples
+if ($Checkpoint -eq 'N5') {
+    Copy-Item -LiteralPath (Join-Path $repo 'tests/fixtures/bookmarks/valid-1.0.atlas-bookmarks.json') -Destination $samples
+}
 
 & (Join-Path $qtPath 'bin/windeployqt.exe') --release --no-translations --compiler-runtime --qmldir (Join-Path $repo 'qml') (Join-Path $stage 'atlas_reader.exe')
 if ($LASTEXITCODE -ne 0) { throw 'Qt deployment failed.' }

@@ -14,7 +14,7 @@ All notable changes to Atlas Reader Native are documented here.
 
 - Late save failures now attempt verified atomic restoration without deleting the current PDF first. A failed restoration has an explicit recovery-required message in all three languages.
 - Added regression checks for final reopen, overlay commit and failed restoration, including a real database transaction exception.
-- N5 packaging selects the N5 review instructions. Added a requirement closure ledger; restart recovery and worker exchange are implemented, with their final qualification tracked explicitly.
+- N5 packaging selects the N5 review instructions, includes the closure ledger and a bookmark exchange sample, and checks that the package version matches the executable. START-HERE links to the packaged guide so its relative evidence links work. Added a requirement closure ledger; restart recovery and worker exchange are implemented, with their final qualification tracked explicitly.
 - Corrected the last two N5 commits locally to owner authorship and registered SSH signing; added a pre-push identity/signature gate.
 - This entry supersedes the earlier claim that N5 was complete: acceptance waits for the closure ledger and owner review.
 

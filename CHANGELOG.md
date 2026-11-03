@@ -4,6 +4,11 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N5.4 (part 1): groundwork for saving bookmarks into the PDF — 2026-11-03
+
+- Behind the coming Save: Atlas can now write a bookmark tree into a copy of a PDF and prove it is right before anything is replaced: the copy is checked by qpdf, every untouched bookmark keeps everything it had, nothing outside the bookmarks changes (pages, links, forms, document details, encryption), and Atlas's own PDF engine reads the result back. Encrypted PDFs stay encrypted with the same passwords. Nothing in the app writes PDFs yet.
+- Decided: Save will put the bookmarks you see into the PDF. A PDF bookmark you deleted in Atlas stays in the PDF unless you choose to remove it when saving; notes and tags stay in Atlas.
+
 ## N5.3 (part 4): Auto Create Bookmarks — 2026-11-03
 
 - In the Bookmarks panel's options (or the Command Center), choose **Auto Create Bookmarks…**. Atlas reads the whole book in the background and suggests headings: lines in larger type, and short lines that start like a heading in English, Arabic or Urdu (Chapter, الفصل, باب …). Running headers, footers and page numbers are left out, and a heading over two lines becomes one bookmark.

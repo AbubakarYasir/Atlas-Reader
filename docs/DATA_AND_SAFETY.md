@@ -75,6 +75,8 @@ The overlay supports add bookmark/folder, rename, edit destination, move, reorde
 
 ## Safe save
 
+**What Save writes (N5.4, [ADR-0009](decisions/ADR-0009-outline-safe-save.md)):** the PDF outline becomes the bookmark tree the reader sees. Local-only, pending and changed bookmarks are written; untouched PDF bookmarks keep every key they had; a PDF bookmark deleted in Atlas stays in the PDF unless the save preview's removal is ticked (its children move up); notes and tags stay in Atlas; a conflict blocks Save. Destinations are converted from Atlas's displayed-page fractions through the page's crop box and /Rotate. Atlas matches each PDF bookmark to its object by place and title and refuses to save if any does not match.
+
 **Preflight** (every write): identity confirmed or safely relocated · revision unchanged · PDF security permits the operation · destination writable · signature/certification consequence acceptable and explicit · enough storage · the operation fits the engine's preservation guarantees.
 
 **Commit:** temporary write → open and validate → verify preservation invariants ([QUALITY.md §3](QUALITY.md#3-preservation-and-interoperability)) → keep a recovery backup → replace → reopen and re-index → mark committed.

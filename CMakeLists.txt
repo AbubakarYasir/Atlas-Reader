@@ -86,6 +86,7 @@ add_library(atlas_bookmark_overlay STATIC
     src/core/bookmarks/BookmarkOverlay.h
     src/core/bookmarks/BookmarkSearch.cpp
     src/core/bookmarks/HeadingDetector.cpp
+    src/core/bookmarks/OutlineSavePlan.cpp
     src/core/bookmarks/BookmarkSearch.h
     src/core/bookmarks/LocationEnvelope.cpp
     src/core/bookmarks/LocationEnvelope.h
@@ -197,6 +198,7 @@ atlas_enable_warnings(atlas_library_ui)
 
 add_library(atlas_reader_ui STATIC
     src/app/document/DocumentCapabilityCheck.cpp
+    src/app/document/QpdfOutlineWriter.cpp
     src/app/document/DocumentCapabilityCheck.h
     src/app/reader/ReaderController.cpp
     src/app/reader/ReaderController.h
@@ -440,6 +442,11 @@ target_link_libraries(atlas_heading_detector_tests PRIVATE atlas_bookmark_overla
 atlas_enable_warnings(atlas_heading_detector_tests)
 add_test(NAME atlas_heading_detector COMMAND atlas_heading_detector_tests)
 
+add_executable(atlas_outline_save_plan_tests tests/bookmarks/outline_save_plan_tests.cpp)
+target_link_libraries(atlas_outline_save_plan_tests PRIVATE atlas_bookmark_overlay)
+atlas_enable_warnings(atlas_outline_save_plan_tests)
+add_test(NAME atlas_outline_save_plan COMMAND atlas_outline_save_plan_tests)
+
 add_executable(atlas_bookmark_model_tests tests/bookmarks/bookmark_model_tests.cpp)
 target_link_libraries(atlas_bookmark_model_tests PRIVATE atlas_bookmark_ui)
 atlas_enable_warnings(atlas_bookmark_model_tests)
@@ -451,6 +458,13 @@ target_compile_definitions(atlas_qpdf_inspector_tests PRIVATE
     ATLAS_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
 atlas_enable_warnings(atlas_qpdf_inspector_tests)
 add_test(NAME atlas_qpdf_inspector COMMAND atlas_qpdf_inspector_tests)
+
+add_executable(atlas_qpdf_outline_writer_tests tests/document/qpdf_outline_writer_tests.cpp)
+target_link_libraries(atlas_qpdf_outline_writer_tests PRIVATE atlas_reader_ui)
+target_compile_definitions(atlas_qpdf_outline_writer_tests PRIVATE
+    ATLAS_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
+atlas_enable_warnings(atlas_qpdf_outline_writer_tests)
+add_test(NAME atlas_qpdf_outline_writer COMMAND atlas_qpdf_outline_writer_tests)
 
 add_executable(atlas_app_preferences_tests tests/app/app_preferences_tests.cpp)
 target_link_libraries(atlas_app_preferences_tests PRIVATE atlas_app_support)

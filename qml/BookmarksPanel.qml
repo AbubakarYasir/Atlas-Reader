@@ -21,6 +21,9 @@ Rectangle {
     signal toastRequested(string text)
     signal addFolderRequested()
     signal autoCreateRequested()
+    signal exportRequested()
+    signal importRequested()
+    readonly property int currentRow: list.currentIndex
 
     color: Theme.panel
 
@@ -96,7 +99,7 @@ Rectangle {
             if (reason === "busy" || reason === "unchanged" || reason === "nothingToUndo" || reason === "nothingToRedo") return
             const known = ["readOnly", "atTop", "atBottom", "atTopLevel", "nothingToIndentInto", "unhideFirst",
                            "resolveFirst", "containsSourceNodes", "cycle", "tooDeep", "tooManyNodes", "badTitle",
-                           "historyStale"]
+                           "historyStale", "nothingNew"]
             panel.toastRequested(I18n.t("bookmarks.refused." + (known.indexOf(reason) >= 0 ? reason : "other")))
         }
         function onReloaded() { panel.toastRequested(I18n.t("bookmarks.reloaded")) }
@@ -618,6 +621,8 @@ Rectangle {
         MenuItem { text: I18n.t("bookmarks.redo"); enabled: panel.bookmarks.canRedo; onTriggered: panel.bookmarks.redo() }
         MenuSeparator {}
         MenuItem { text: I18n.t("autoBookmarks.menu"); enabled: panel.canEdit; onTriggered: panel.autoCreateRequested() }
+        MenuItem { text: I18n.t("exchange.import"); enabled: panel.canEdit; onTriggered: panel.importRequested() }
+        MenuItem { text: I18n.t("exchange.export"); enabled: panel.bookmarks.totalCount > 0; onTriggered: panel.exportRequested() }
         MenuItem {
             text: I18n.t("bookmarks.showHidden")
             checkable: true

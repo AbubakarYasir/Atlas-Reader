@@ -60,6 +60,9 @@ struct NewBookmark final {
     std::string title;
     std::string location;
     std::uint32_t level{};
+    std::string description{};       // notes (imports keep them)
+    std::vector<std::string> tags{};
+    std::optional<std::string> attachTo{}; // a top item goes under this existing bookmark (merge imports)
 };
 
 // Where a batch goes among the top-level bookmarks.
@@ -106,7 +109,10 @@ public:
     // the PDF's version: title, destination and place as in the PDF.
     EditResult resolveConflict(std::string_view id, bool keepMine);
     // Adds a whole tree in one step (one undo). Refused if empty or too large.
-    EditResult createBatch(std::vector<NewBookmark> items, BatchPlacement placement);
+    // `under`: add the tree's top items as children of this bookmark instead
+    // of at the top level (after/before its existing children; replace is top-level only).
+    EditResult createBatch(std::vector<NewBookmark> items, BatchPlacement placement,
+                           const std::optional<std::string>& under = std::nullopt);
 
     [[nodiscard]] bool canUndo() const noexcept { return !undo_.empty() && !pending_; }
     [[nodiscard]] bool canRedo() const noexcept { return !redo_.empty() && !pending_; }

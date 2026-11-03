@@ -152,6 +152,95 @@ Rectangle {
         }
     }
 
+    // Export / Import Bookmarks (N5.5; panel options, Command Center).
+    readonly property string selectedBookmarkTitle: {
+        const row = bookmarksPanel.currentRow
+        const data = row >= 0 ? bookmarkModel.get(row) : null
+        return data && data.title !== undefined ? data.title : ""
+    }
+    function bookmarkFolder() { return "file:///" + tab.sourcePath.replace(/[\\/][^\\/]*$/, "").replace(/^\/+/, "") }
+    ExportBookmarksDialog {
+        id: exportDialog
+        selectedTitle: tab.selectedBookmarkTitle
+        hasLocal: bookmarkModel.unsavedCount > 0
+        onAccepted: (format, scope) => {
+            exportFile.format = format
+            exportFile.scope = scope
+            exportFile.row = bookmarksPanel.currentRow
+            const name = tab.sourcePath.split(/[\\/]/).pop().replace(/\.pdf$/i, "")
+            const suffix = format === "markdown" ? ".md" : format === "csv" ? ".csv" : ".atlas-bookmarks.json"
+            exportFile.currentFolder = tab.bookmarkFolder()
+            exportFile.selectedFile = tab.bookmarkFolder() + "/" + name + suffix
+            exportFile.open()
+        }
+    }
+    FileDialog {
+        id: exportFile
+        property string format: "json"
+        property string scope: "all"
+        property int row: -1
+        title: I18n.t("exchange.exportTitle")
+        fileMode: FileDialog.SaveFile
+        nameFilters: format === "markdown" ? [I18n.t("exchange.filterMarkdown") + " (*.md)"]
+                   : format === "csv" ? [I18n.t("exchange.filterCsv") + " (*.csv)"]
+                   : [I18n.t("exchange.filterJson") + " (*.atlas-bookmarks.json *.json)"]
+        onAccepted: {
+            const error = bookmarkModel.exportTo(selectedFile, format, scope, row, {
+                title: tab.documentTitle,
+                pageCount: view.pageCount,
+                pageLabels: tab.hasLabels ? view.pageLabels : []
+            })
+            const file = String(selectedFile).split(/[\\/]/).pop()
+            tab.toastRequested(error.length === 0 ? I18n.t("exchange.exported", decodeURIComponent(file))
+                                                  : I18n.t("exchange.error." + error))
+        }
+    }
+    function exportBookmarks() {
+        if (!tab.ready) return
+        if (bookmarkModel.totalCount === 0) {
+            tab.toastRequested(I18n.t("exchange.error.nothing"))
+            return
+        }
+        exportDialog.ask()
+    }
+    FileDialog {
+        id: importFile
+        title: I18n.t("exchange.importTitle")
+        fileMode: FileDialog.OpenFile
+        nameFilters: [I18n.t("exchange.filterJson") + " (*.atlas-bookmarks.json *.json)"]
+        onAccepted: tab.previewImport(selectedFile)
+    }
+    function previewImport(file) {
+        const info = bookmarkModel.readImport(file)
+        if (!info.ok) {
+            tab.toastRequested(I18n.t("exchange.error." + info.error))
+            return
+        }
+        importDialog.ask(info)
+    }
+    ImportBookmarksDialog {
+        id: importDialog
+        selectedTitle: tab.selectedBookmarkTitle
+        hasBookmarks: bookmarkModel.totalCount > 0
+        onAccepted: (mode) => {
+            preferences.navPanel = "bookmarks"
+            const row = bookmarkModel.applyImport(mode, bookmarksPanel.currentRow)
+            if (row >= 0) {
+                bookmarksPanel.select(row)
+                tab.toastRequested(I18n.t("exchange.imported"))
+            }
+        }
+    }
+    function importBookmarks() {
+        if (!tab.ready) return
+        if (!bookmarkModel.editable) {
+            tab.toastRequested(I18n.t("bookmarks.readOnly." + (bookmarkModel.statusReason || "storageError")))
+            return
+        }
+        importFile.currentFolder = tab.bookmarkFolder()
+        importFile.open()
+    }
+
     // Auto Create Bookmarks (panel options, Command Center).
     AutoBookmarksDialog {
         id: autoBookmarks
@@ -197,6 +286,8 @@ Rectangle {
         else if (action === "add") bookmarksPanel.addHere(false)
         else if (action === "autocreate") { autoBookmarks.qaCreate = true; openAutoBookmarks() }
         else if (action === "save") saveBookmarks()
+        else if (action === "export") exportBookmarks()
+        else if (action.indexOf("import:") === 0) { preferences.navPanel = "bookmarks"; previewImport("file://" + action.slice(7)) }
         else if (action.indexOf("autocreate-save") === 0) {
             tab.qaSave = action === "autocreate-save-confirm" ? "confirm" : "ask"
             autoBookmarks.qaCreate = true
@@ -334,6 +425,8 @@ Rectangle {
                 onToastRequested: (text) => tab.toastRequested(text)
                 onAddFolderRequested: libraryController.addFolderOf(tab.sourcePath)
                 onAutoCreateRequested: tab.openAutoBookmarks()
+                onExportRequested: tab.exportBookmarks()
+                onImportRequested: tab.importBookmarks()
             }
             Rectangle { // splitter: drag to resize, double-click to hide (Foxit)
                 Layout.preferredWidth: 6

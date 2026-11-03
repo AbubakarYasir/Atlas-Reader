@@ -222,6 +222,8 @@ atlas_enable_warnings(atlas_reader_ui)
 
 # N5.3: Bookmarks panel model and its storage worker (Qt Core only).
 add_library(atlas_bookmark_ui STATIC
+    src/app/bookmarks/BookmarkExchange.cpp
+    src/app/bookmarks/BookmarkExchange.h
     src/app/bookmarks/BookmarkModel.cpp
     src/app/bookmarks/BookmarkModel.h
     src/app/bookmarks/BookmarkService.cpp
@@ -253,7 +255,7 @@ set(ATLAS_QML_FILES
     qml/AtlasButton.qml qml/AtlasIconButton.qml qml/AtlasTextField.qml qml/SidebarItem.qml
     qml/TitleBar.qml qml/LibraryView.qml qml/ReaderView.qml qml/ReaderTab.qml
     qml/RibbonButton.qml qml/RibbonBar.qml qml/DocumentTabBar.qml qml/Backstage.qml
-    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/SignaturesPanel.qml qml/CommandCenter.qml qml/AutoBookmarksDialog.qml qml/SaveBookmarksDialog.qml qml/AtlasCheckBox.qml qml/AtlasRadioButton.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
+    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/SignaturesPanel.qml qml/CommandCenter.qml qml/AutoBookmarksDialog.qml qml/SaveBookmarksDialog.qml qml/ExportBookmarksDialog.qml qml/ImportBookmarksDialog.qml qml/AtlasCheckBox.qml qml/AtlasRadioButton.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
 )
 # Place every QML file at the module root so the module's qmldir (and its
 # singletons) is the implicit import of each file.
@@ -454,6 +456,13 @@ add_executable(atlas_reconcile_tests tests/bookmarks/reconcile_tests.cpp)
 target_link_libraries(atlas_reconcile_tests PRIVATE atlas_bookmark_overlay)
 atlas_enable_warnings(atlas_reconcile_tests)
 add_test(NAME atlas_reconcile COMMAND atlas_reconcile_tests)
+
+add_executable(atlas_bookmark_exchange_tests tests/bookmarks/bookmark_exchange_tests.cpp)
+target_link_libraries(atlas_bookmark_exchange_tests PRIVATE atlas_bookmark_ui)
+target_compile_definitions(atlas_bookmark_exchange_tests PRIVATE
+    ATLAS_BOOKMARK_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/bookmarks")
+atlas_enable_warnings(atlas_bookmark_exchange_tests)
+add_test(NAME atlas_bookmark_exchange COMMAND atlas_bookmark_exchange_tests)
 
 add_executable(atlas_bookmark_model_tests tests/bookmarks/bookmark_model_tests.cpp)
 target_link_libraries(atlas_bookmark_model_tests PRIVATE atlas_bookmark_ui)

@@ -479,13 +479,20 @@ EditResult BookmarkEditor::resolveConflict(std::string_view id, bool keepMine) {
     return finish(EditKind::resolve, touched, nodeId);
 }
 
-EditResult BookmarkEditor::createBatch(std::vector<NewBookmark> items, BatchPlacement placement) {
+EditResult BookmarkEditor::createBatch(std::vector<NewBookmark> items, BatchPlacement placement,
+                                      const std::optional<std::string>& under) {
     if (pending_) return refuse("busy");
     if (items.empty()) return refuse("nothingToAdd");
+    if (under) {
+        const auto* owner = find(*under);
+        if (owner == nullptr) return refuse("unknownNode");
+        if (frozen(*owner)) return refuse(frozenReason(*owner));
+        if (placement == BatchPlacement::replace) return refuse("replaceAtTopOnly");
+    }
     if (nodes_.size() + items.size() > OverlayLimits::maxNodesPerDocument) return refuse("tooManyNodes");
 
     std::unordered_map<std::string, std::optional<BookmarkNode>> touched;
-    const std::string top = groupKey(std::nullopt);
+    const std::string top = groupKey(under);
 
     if (placement == BatchPlacement::replace) {
         // Hide every PDF bookmark; remove Atlas's own unless they hold PDF ones.
@@ -529,19 +536,35 @@ EditResult BookmarkEditor::createBatch(std::vector<NewBookmark> items, BatchPlac
     // headings of one level stay siblings ("1", "1.1.1", "1.1.2" → both under "1").
     std::vector<std::pair<std::uint32_t, std::string>> open; // (requested level, node id)
     std::vector<std::string> parents;                        // parents[depth] = open node at that depth
+    std::string firstNew;
     std::vector<std::string> newTops;
     std::unordered_set<std::string> groups{top};
     for (auto& item : items) {
         while (!open.empty() && open.back().first >= item.level) open.pop_back();
-        if (open.size() >= OverlayLimits::maxDepth) open.resize(OverlayLimits::maxDepth - 1);
+        const std::size_t baseDepth = under ? breadcrumb(*under).size() : 0;
+        if (open.size() + baseDepth >= OverlayLimits::maxDepth) open.resize(OverlayLimits::maxDepth - 1 - baseDepth);
         const auto level = static_cast<std::uint32_t>(open.size());
         BookmarkNode node;
         node.id = newBookmarkId();
         while (nodes_.contains(node.id) || touched.contains(node.id)) node.id = newBookmarkId();
         node.documentId = documentId_;
         if (level > 0) node.parentId = parents[level - 1];
+        else node.parentId = item.attachTo ? item.attachTo : under;
+        if (level == 0 && item.attachTo) {
+            const auto* owner = find(*item.attachTo);
+            if (owner == nullptr || frozen(*owner)) {
+                for (auto& [touchedId, previous] : touched) {
+                    if (previous) nodes_.insert_or_assign(touchedId, *previous);
+                    else nodes_.erase(touchedId);
+                }
+                rebuildIndex();
+                return refuse(owner == nullptr ? "unknownNode" : frozenReason(*owner));
+            }
+        }
         node.title = std::move(item.title);
         node.location = std::move(item.location);
+        node.description = std::move(item.description);
+        node.tags = std::move(item.tags);
         node.state = S::localOnly;
         if (auto problem = validateNode(node); !problem.empty()) {
             // Undo what this command did so far, then refuse.
@@ -558,8 +581,9 @@ EditResult BookmarkEditor::createBatch(std::vector<NewBookmark> items, BatchPlac
         open.emplace_back(item.level, node.id);
         const auto group = groupKey(node.parentId);
         const auto id = node.id;
+        if (firstNew.empty()) firstNew = id;
         nodes_.emplace(id, std::move(node));
-        if (level == 0) newTops.push_back(id);
+        if (level == 0 && nodes_.at(id).parentId == under) newTops.push_back(id);
         else {
             children_[group].push_back(id);
             groups.insert(group);
@@ -573,7 +597,7 @@ EditResult BookmarkEditor::createBatch(std::vector<NewBookmark> items, BatchPlac
         auto found = nodes_.find(id);
         if (found != nodes_.end()) settleSourceState(found->second);
     }
-    return finish(EditKind::autoCreate, touched, newTops.empty() ? std::string{} : newTops.front());
+    return finish(EditKind::autoCreate, touched, firstNew); // the first new bookmark, in reading order
 }
 
 std::optional<EditKind> BookmarkEditor::undoKind() const {

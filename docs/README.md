@@ -11,7 +11,7 @@ Each topic has exactly one home. If two documents seem to disagree, fix the wron
 | Understand the product and 2.0 scope | [PLAN.md](../PLAN.md) |
 | See status and what's next | [CHECKPOINTS.md](../CHECKPOINTS.md) |
 | Contribute code (people or agents) | [AGENTS.md](../AGENTS.md) → [WORKFLOW.md](WORKFLOW.md) → [BUILDING.md](BUILDING.md) |
-| Review the last accepted stage | [N4_REVIEW.md](N4_REVIEW.md) (N5's guide arrives with its review build) |
+| Review the current stage | [N5_REVIEW.md](N5_REVIEW.md) (N5, ready) · last accepted: [N4_REVIEW.md](N4_REVIEW.md) |
 
 ## Reference
 
@@ -30,6 +30,7 @@ Each topic has exactly one home. If two documents seem to disagree, fix the wron
 ## Records
 
 - [decisions/](decisions/README.md): architecture decision records (ADR-0001 to ADR-0009).
+- [formats/](formats/atlas-bookmarks.md): Atlas-owned file formats (the bookmarks file, schema 1.0.0, with its JSON Schema).
 - [baselines/](baselines/): measured evidence per stage. The active ledger is [N5_BOOKMARKS_SAFETY_EVIDENCE.md](baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md); N4 is closed ([acceptance](baselines/N4_ACCEPTANCE.md)).
 - [tests/fixtures/pdf](../tests/fixtures/pdf/README.md): PDF fixture provenance, privacy and checksum contract.
 - [history/](history/README.md): frozen earlier plans, unchanged and not maintained.

@@ -89,6 +89,8 @@ ApplicationWindow {
         case "search": tab.openSearch(); return
         case "save": tab.saveBookmarks(); return
         case "saveCopy": tab.saveCopy(); return
+        case "exportBookmarks": tab.exportBookmarks(); return
+        case "importBookmarks": tab.importBookmarks(); return
         case "undo": if (root.currentBookmarks) root.currentBookmarks.undo(); break
         case "redo": if (root.currentBookmarks) root.currentBookmarks.redo(); break
         case "goToPage": tab.focusPageBox(); return

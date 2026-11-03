@@ -8,6 +8,7 @@
 // the PDF's own outline read-only: research is never attached to a guess.
 // Qt Core only; presentation stays in QML.
 
+#include "app/bookmarks/BookmarkExchange.h"
 #include "app/bookmarks/BookmarkService.h"
 #include "core/bookmarks/BookmarkEditor.h"
 #include "core/bookmarks/BookmarkSearch.h"
@@ -161,6 +162,17 @@ public:
     Q_INVOKABLE QVariantMap savePreview(bool removeHidden) const;
     // Saves into the PDF on the bookmark worker; saveFinished reports.
     Q_INVOKABLE void save(bool removeHidden);
+    // N5.5 export: format "json" (lossless .atlas-bookmarks.json), "markdown" or
+    // "csv"; scope "all", "subtree" (row and below) or "local" (Atlas's own work).
+    // hints: {title, pageCount, pageLabels}. Returns "" or an error name.
+    Q_INVOKABLE QString exportTo(const QUrl& target, const QString& format, const QString& scope, int row,
+                                 const QVariantMap& hints);
+    // N5.5 import, step 1: read and check a file; nothing changes yet.
+    // {ok, error, count, topTitles, title, fileName, exportedUtc, sameBook}
+    Q_INVOKABLE QVariantMap readImport(const QUrl& file);
+    // Step 2: mode "end", "under" (the row), "merge" (skip what is already
+    // here) or "replace"; one undo step. Returns the first new row or -1.
+    Q_INVOKABLE int applyImport(const QString& mode, int row);
     // Save a Copy: writes the bookmarks into a new PDF at `target`; copySaved reports.
     Q_INVOKABLE void saveCopy(const QUrl& target, bool removeHidden);
     Q_INVOKABLE void undo();
@@ -224,6 +236,7 @@ private:
     QString currentId_;
     bool outlineChangedOutside_{false};
     QVariantMap reconcileInfo_;
+    std::vector<ImportedBookmark> pendingImport_;
     QVariantList lastOutline_;
     void open(bool followPdf);
     bool showHidden_{false};

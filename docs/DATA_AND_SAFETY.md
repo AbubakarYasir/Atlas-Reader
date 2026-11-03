@@ -89,11 +89,13 @@ The overlay supports add bookmark/folder, rename, edit destination, move, reorde
 
 **Save a Copy (N5.4):** the same verified write into a new file, for books Atlas may not change in place (read-only, in use, signed, certified). A PDF whose own security forbids changing its outline gets no changed copy either. The original and the overlay stay as they are.
 
-## Import and export (N5)
+## Import and export (N5.5)
 
-- **`.atlas-bookmarks.json`**, lossless and versioned: UTF-8, `format` name, semantic `schemaVersion`, document identity *hints* that can never force automatic binding, full hierarchy and order, exact Atlas destinations, titles, notes, tags, provenance, and informational exporter version and time. Unknown fields are handled by the version policy; newer schemas are explicitly rejected. Never contains passwords. N5 publishes the real JSON Schema and fixtures.
+Implemented; the file format, versions, refusals and import modes are specified in [formats/atlas-bookmarks.md](formats/atlas-bookmarks.md) with a [JSON Schema](formats/atlas-bookmarks.schema.json) and fixtures.
+
+- **`.atlas-bookmarks.json`**, lossless and versioned: UTF-8, `format` name, semantic `schemaVersion`, document identity *hints* that can never force automatic binding, full hierarchy and order, exact Atlas destinations, titles, notes, tags, provenance, and informational exporter version and time. Unknown fields are handled by the version policy; newer schemas are explicitly rejected. Never contains passwords or paths. A damaged file is refused whole; nothing is half-imported.
 - **Markdown** (readable hierarchy with page references) and **CSV** (UTF-8, documented columns, full breadcrumb, page and storage state) are convenience formats, never called lossless.
-- **Scope:** all, a subtree, or local-only/pending changes. **Import modes:** append at root, append under the selection, merge, explicit replace (with preview), import as local-only even into a writable PDF.
+- **Scope:** all, a subtree, or local-only/pending changes. **Import modes** (after a preview): append at the end, append under the selection, merge (skip bookmarks already here), explicit replace. Imports are always Atlas's own (local-only) until the reader saves, even for a writable PDF; one Undo step.
 - Foxit XML only after real round-trip fixtures prove hierarchy, order, destinations and Unicode.
 
 ## Library scanning

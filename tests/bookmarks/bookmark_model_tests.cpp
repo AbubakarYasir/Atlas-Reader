@@ -11,6 +11,7 @@
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QFile>
+#include <QUrl>
 #include <QVariantMap>
 
 #include <atomic>
@@ -297,6 +298,70 @@ void checkAddMany() {
             "An empty batch is refused with a reason.");
 }
 
+void checkExchange() {
+    Profile profile;
+    BookmarkService service{profile.database};
+    BookmarkModel model;
+    model.setService(&service);
+    model.attach(qpath(profile.book), outline());
+    waitFor([&] { return model.status() == QStringLiteral("editable"); }, "the overlay");
+    const QString file = qpath(profile.temporary.path() / "out.atlas-bookmarks.json");
+    const QVariantMap hints{{QStringLiteral("title"), QStringLiteral("كتاب")}, {QStringLiteral("pageCount"), 50}};
+    require(model.exportTo(QUrl::fromLocalFile(file), QStringLiteral("json"), QStringLiteral("all"), -1, hints).isEmpty(),
+            "Export writes the Atlas bookmarks file.");
+    require(model.exportTo(QUrl::fromLocalFile(file + QStringLiteral(".md")), QStringLiteral("markdown"),
+                           QStringLiteral("all"), -1, hints).isEmpty() &&
+                model.exportTo(QUrl::fromLocalFile(file + QStringLiteral(".csv")), QStringLiteral("csv"),
+                               QStringLiteral("all"), -1, hints).isEmpty(),
+            "Markdown and CSV export too.");
+    require(model.exportTo(QUrl::fromLocalFile(file), QStringLiteral("json"), QStringLiteral("local"), -1, hints) ==
+                QStringLiteral("nothing"),
+            "Nothing of Atlas's own to export yet.");
+    QVariantMap info = model.readImport(QUrl::fromLocalFile(file));
+    require(info.value(QStringLiteral("ok")).toBool() && info.value(QStringLiteral("count")).toInt() == 5 &&
+                info.value(QStringLiteral("sameBook")).toBool(),
+            "The file reads back: five bookmarks from this book.");
+    Refusals refusals{model};
+    require(model.applyImport(QStringLiteral("merge"), -1) == -1 && refusals.reasons.contains(QStringLiteral("nothingNew")),
+            "Merging the same bookmarks adds nothing.");
+    info = model.readImport(QUrl::fromLocalFile(file));
+    require(model.applyImport(QStringLiteral("end"), -1) >= 0, "Import at the end.");
+    waitIdle(model, service);
+    require(model.totalCount() == 10 && model.undoKind() == QStringLiteral("autoCreate"), "Five added, one undo step.");
+    model.undo();
+    waitIdle(model, service);
+    require(model.totalCount() == 5, "Undo takes the whole import out.");
+    // Merge where only a child is new: it joins the bookmark already here.
+    QFile edited{file};
+    require(edited.open(QIODevice::ReadOnly), "read export");
+    QByteArray bytes = edited.readAll();
+    edited.close();
+    bytes.replace("\"title\": \"الفصل الثاني\"", "\"title\": \"الفصل الثالث\"");
+    require(edited.open(QIODevice::WriteOnly | QIODevice::Truncate) && edited.write(bytes) == bytes.size(), "write");
+    edited.close();
+    info = model.readImport(QUrl::fromLocalFile(file));
+    require(info.value(QStringLiteral("ok")).toBool(), "edited file reads");
+    refusals.reasons.clear();
+    require(model.applyImport(QStringLiteral("merge"), -1) >= 0,
+            "Merge with one new bookmark: " + refusals.reasons.join(u',').toStdString());
+    waitIdle(model, service);
+    require(model.totalCount() == 6, "Only the new bookmark is added.");
+    model.expandAll();
+    bool underParent = false;
+    for (int row = 0; row < model.rowCount(); ++row) {
+        if (titleAt(model, row) == QStringLiteral("الفصل الثالث"))
+            underParent = model.get(row).value(QStringLiteral("depth")).toInt() == 1;
+    }
+    require(underParent, "It goes under its parent already here.");
+    QFile junk{file + QStringLiteral(".bad")};
+    require(junk.open(QIODevice::WriteOnly) && junk.write("{\"format\":\"x\"}") > 0, "write junk");
+    junk.close();
+    require(model.readImport(QUrl::fromLocalFile(junk.fileName())).value(QStringLiteral("error")).toString() ==
+                QStringLiteral("wrongFormat"),
+            "A file that isn't Atlas bookmarks is refused.");
+    require(model.applyImport(QStringLiteral("end"), -1) == -1, "Nothing pending after a refused file.");
+}
+
 void checkReadOnly() {
     Profile profile;
     BookmarkService service{profile.database};
@@ -418,6 +483,7 @@ int main(int argc, char** argv) {
         checkOutlineConversion();
         checkEditing();
         checkAddMany();
+        checkExchange();
         checkReadOnly();
         checkQueuedWritesAndRecovery();
     } catch (const std::exception& error) {

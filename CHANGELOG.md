@@ -4,6 +4,14 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N5.5: export and import bookmarks — 2026-11-03
+
+- **Export Bookmarks…** (Bookmarks panel ⋯, or the title-bar search): save your bookmarks as an Atlas bookmarks file (complete, with notes and tags, and can be imported again), as Markdown for reading, or as CSV for a spreadsheet. Export all of them, one bookmark with everything under it, or only what you added or changed in Atlas.
+- **Import Bookmarks…**: Atlas checks the file first and shows what it holds (and warns if it came from another book). Add the bookmarks at the end, under the selected bookmark, at the end without the ones already here, or instead of the current ones. One Undo takes the whole import out; the PDF changes only when you save.
+- Files from a newer Atlas Reader are refused with a clear message, and a damaged file imports nothing.
+- The file format is published (`docs/formats/atlas-bookmarks.md`).
+- N5 is complete and ready for the owner review.
+
 ## N5.4 (part 3): bookmarks changed elsewhere, and Save a Copy — 2026-11-03
 
 - If another program changed a PDF's bookmarks, Atlas now catches up when you open the book: new bookmarks appear, changed ones update, removed ones go, and the panel tells you what happened. Your own bookmarks and edits are kept. If a bookmark was changed both in Atlas and in the PDF, it is marked; right-click it to keep your version or use the PDF's. If most of the PDF's bookmarks seem to have vanished, Atlas asks before removing them.

@@ -281,7 +281,7 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 | Panel | Atlas |
 |---|---|
 | Pages (thumbnails, page operations menu) | Done (view, N4.4) · Track C (operations) |
-| Bookmarks (Atlas's signature editor) | Editable panel Done (N5.3 slice 2: add, rename, delete/hide, move, nest, undo, find, states); Command Center Done (slice 3); Auto Create Done (slice 4) |
+| Bookmarks (Atlas's signature editor) | Editable panel Done (N5.3 slice 2: add, rename, delete/hide, move, nest, undo, find, states); Command Center Done (slice 3); Auto Create Done (slice 4); Save into the PDF, reconcile, Save a Copy Done (N5.4); Export/Import (Atlas JSON, Markdown, CSV) Done (N5.5) · Foxit XML bookmark exchange after round-trip fixtures |
 | Outline / document bookmarks (read) | Done (N4.5) |
 | Comments | N6 |
 | Search (right panel; whole words, case, include bookmarks/comments, highlight all, save results to PDF/CSV) | Done: whole words, case, highlight all (always on), results with context (N4.5) · include bookmarks/comments N6 · save results Track H |

@@ -4,6 +4,14 @@ on:
   push:
     branches: ['**']
   pull_request:
+  # Review builds are made only when asked (owner, 2026-11-03):
+  # Actions → Windows CI → Run workflow → "Build the owner review package".
+  workflow_dispatch:
+    inputs:
+      review_build:
+        description: 'Build and upload the owner review package'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -494,7 +502,7 @@ jobs:
           ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N2_BUILD_INFO.txt')
 
       - name: Upload N2 Windows engineering artifact
-        if: matrix.configuration == 'Release'
+        if: matrix.configuration == 'Release' && github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: atlas-reader-n2-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
@@ -529,8 +537,8 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Stage owner review package (stage branch)
-        if: matrix.configuration == 'Release' && startsWith(github.head_ref || github.ref_name, 'native-v2-')
+      - name: Stage owner review package (on request)
+        if: matrix.configuration == 'Release' && github.event_name == 'workflow_dispatch' && inputs.review_build
         shell: pwsh
         run: |
           ./tools/release/package-n4-review.ps1 `
@@ -545,8 +553,8 @@ jobs:
             -Checkpoint 'N5' `
             -Purpose 'Owner review build; the stage is in progress'
 
-      - name: Upload owner review package (stage branch)
-        if: matrix.configuration == 'Release' && startsWith(github.head_ref || github.ref_name, 'native-v2-')
+      - name: Upload owner review package (on request)
+        if: matrix.configuration == 'Release' && github.event_name == 'workflow_dispatch' && inputs.review_build
         uses: actions/upload-artifact@v4
         with:
           name: atlas-reader-review-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}

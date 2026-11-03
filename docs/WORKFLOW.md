@@ -50,7 +50,7 @@ Documentation-only changes don't bump the product version, but they still need t
 
 **PR description:** stage and requirement · what changed · boundaries touched · dependencies · tests run (with run IDs) · performance evidence for hot paths · schema/format changes · accessibility/RTL impact and screenshots · known limitations with their owning stage.
 
-**CI:** Windows CI (Debug + Release, docs governance, script syntax, review package on every `native-v2-*` stage branch; the accepted beta package on `main`) runs on every push. The seven inherited N2 PDF regression workflows run on `main` and PRs. N4 will path-filter them and add a nightly schedule ([CHECKPOINTS.md](../CHECKPOINTS.md#engineering-speed-tasks-in-n4)).
+**CI:** Windows CI (Debug + Release, docs governance, script syntax, owner review package only when run by hand with *Build and upload the owner review package*; the accepted beta package on `main`) runs on every push. The inherited N2 PDF regression workflows run on `main` and PRs; they upload their evidence only when they fail or are run by hand, to stay within the account's artifact storage. N4 will path-filter them and add a nightly schedule ([CHECKPOINTS.md](../CHECKPOINTS.md#engineering-speed-tasks-in-n4)).
 
 ## 5. Versions and releases
 

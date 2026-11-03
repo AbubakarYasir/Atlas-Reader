@@ -1,6 +1,7 @@
 name: N2 qpdf Outline Breadth
 
 on:
+  workflow_dispatch:
   push:
     branches: ['main']
   pull_request:
@@ -104,7 +105,7 @@ jobs:
           Copy-Item 'tools/pdf/qpdf_outline_breadth_probe.py' (Join-Path $out 'qpdf_outline_breadth_probe.py')
 
       - name: Upload outline-breadth evidence
-        if: always()
+        if: failure() || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: atlas-reader-n2-qpdf-outline-breadth-${{ github.event.pull_request.head.sha || github.sha }}

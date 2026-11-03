@@ -80,14 +80,20 @@ target_link_libraries(atlas_reader_viewport PUBLIC atlas_core)
 atlas_enable_warnings(atlas_reader_viewport)
 
 add_library(atlas_bookmark_overlay STATIC
+    src/core/bookmarks/BookmarkEditor.cpp
+    src/core/bookmarks/BookmarkEditor.h
     src/core/bookmarks/BookmarkOverlay.cpp
     src/core/bookmarks/BookmarkOverlay.h
+    src/core/bookmarks/BookmarkSearch.cpp
+    src/core/bookmarks/BookmarkSearch.h
     src/core/bookmarks/LocationEnvelope.cpp
     src/core/bookmarks/LocationEnvelope.h
+    src/core/bookmarks/OverlayTreeIndex.cpp
+    src/core/bookmarks/OverlayTreeIndex.h
     src/core/bookmarks/Utf8.h
 )
 target_include_directories(atlas_bookmark_overlay PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(atlas_bookmark_overlay PUBLIC atlas_core)
+target_link_libraries(atlas_bookmark_overlay PUBLIC atlas_core atlas_reader_viewport)
 atlas_enable_warnings(atlas_bookmark_overlay)
 
 add_library(atlas_document_identity STATIC
@@ -270,6 +276,10 @@ if(MSVC)
     target_compile_options(atlas_reader PRIVATE /wd4702)
 endif()
 
+add_executable(atlas_n5_bookmark_benchmark tools/bench/n5_bookmark_benchmark.cpp)
+target_link_libraries(atlas_n5_bookmark_benchmark PRIVATE atlas_bookmark_store atlas_library_index)
+atlas_enable_warnings(atlas_n5_bookmark_benchmark)
+
 add_executable(atlas_n3_library_benchmark tools/bench/n3_library_benchmark.cpp)
 target_link_libraries(atlas_n3_library_benchmark PRIVATE atlas_library_scanner atlas_library_index)
 atlas_enable_warnings(atlas_n3_library_benchmark)
@@ -402,6 +412,11 @@ add_executable(atlas_bookmark_store_tests tests/bookmarks/bookmark_overlay_store
 target_link_libraries(atlas_bookmark_store_tests PRIVATE atlas_bookmark_store atlas_library_index)
 atlas_enable_warnings(atlas_bookmark_store_tests)
 add_test(NAME atlas_bookmark_store COMMAND atlas_bookmark_store_tests)
+
+add_executable(atlas_bookmark_editor_tests tests/bookmarks/bookmark_editor_tests.cpp)
+target_link_libraries(atlas_bookmark_editor_tests PRIVATE atlas_bookmark_store atlas_library_index)
+atlas_enable_warnings(atlas_bookmark_editor_tests)
+add_test(NAME atlas_bookmark_editor COMMAND atlas_bookmark_editor_tests)
 
 add_executable(atlas_qpdf_inspector_tests tests/document/qpdf_inspector_tests.cpp)
 target_link_libraries(atlas_qpdf_inspector_tests PRIVATE atlas_reader_ui)

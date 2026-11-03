@@ -32,8 +32,9 @@ and `.atlas-bookmarks.json` (N5.5), so it constrains the future.
    `PendingEmbed`, `LocalOverride`, `LocallyHidden`, `Conflict` follow one
    transition table in core (`core/bookmarks/BookmarkOverlay`). The repository
    refuses any write that skips the table and enforces **"no false Embedded"**:
-   an Embedded node must equal its base node (title, destination, parent and
-   position), new nodes start `LocalOnly` or `PendingEmbed`, and only a verified
+   an Embedded node must equal its base node (title, destination and parent),
+   Embedded siblings must keep the PDF's relative order (local nodes may sit
+   between them; refined in N5.3 slice 1), new nodes start `LocalOnly` or `PendingEmbed`, and only a verified
    save (N5.4, `EmbedProof`) can take local work to Embedded. Database `CHECK`
    constraints repeat the state/base-key/conflict rules.
 3. **Every change is one transaction** with an optimistic revision check
@@ -42,7 +43,7 @@ and `.atlas-bookmarks.json` (N5.5), so it constrains the future.
    change or after it, never between.
 4. **Nodes from the PDF are hidden, not deleted.** Removing a local node keeps
    a tombstone row (`deleted_utc_ms`) for reconciliation and backup; its ID is
-   never reused.
+   reused only when undo explicitly restores that same node (N5.3).
 5. **Versioned location envelope** stored as text:
    `atlas-location/1;scheme=pdf;page=3;label=iv;kind=xyz;left=0.125;top=0.5;zoom=1.5`.
    The major version and scheme come first; values are percent-encoded UTF-8;
@@ -74,10 +75,11 @@ and `.atlas-bookmarks.json` (N5.5), so it constrains the future.
 ## Consequences
 
 - Reading the outline, editing and reconciling all go through one repository;
-  the UI never emits SQL. Calls run off the UI thread. Indicative only: on a
-  Linux development container (g++ 13 `-O2`, SQLite 3.45) a 10,000-node overlay
-  loads in about 11 ms and is written in about 130 ms; Windows Release numbers
-  are recorded with N5.3.
+  the UI never emits SQL. Writes run off the UI thread. Each write checks only
+  what the change touches (`OverlayTreeIndex`, cross-checked against the full
+  rules in Debug builds). Measured in N5.3 slice 1 on a 10,000-node outline:
+  Linux container (g++ 13 `-O2`) write p50 2.8 ms / p95 6 ms; Windows Release
+  numbers come from the CI benchmark and are recorded in the evidence ledger.
 - Base adoption never overwrites an existing base: a changed outline is
   reported for reconciliation (N5.4) and nothing is applied.
 - Schema 5 adds tables only; existing profiles upgrade in one transaction and a

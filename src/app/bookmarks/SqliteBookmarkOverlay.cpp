@@ -1,10 +1,13 @@
 #include "app/bookmarks/SqliteBookmarkOverlay.h"
 
+#include "core/bookmarks/OverlayTreeIndex.h"
+
 #include <sqlite3.h>
 
 #include <algorithm>
 #include <limits>
 #include <mutex>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -181,6 +184,15 @@ struct SqliteBookmarkOverlay::Impl final {
     mutable std::mutex mutex;
     std::function<void(std::string_view)> faultHook;
 
+    // The last checked tree per document, valid only while the stored revision
+    // is unchanged. Every write anywhere bumps the revision, so a stale entry is
+    // detected inside the write transaction and simply reloaded.
+    struct Checked final {
+        std::int64_t revision{};
+        OverlayTreeIndex tree; // nodes without notes and tags
+    };
+    std::unordered_map<std::string, Checked> checked;
+
     void step(std::string_view name) const {
         if (faultHook) faultHook(name);
     }
@@ -225,6 +237,48 @@ struct SqliteBookmarkOverlay::Impl final {
             result.nodes.push_back(std::move(node));
         }
         return result;
+    }
+
+    // Live nodes without notes and tags: what a change needs to check the tree,
+    // the states and "no false Embedded". Changed nodes arrive complete.
+    [[nodiscard]] std::vector<BookmarkNode> structure(std::string_view documentId) const {
+        std::vector<BookmarkNode> result;
+        Statement nodes{db,
+            "SELECT node_id, parent_id, position, title, location, storage_state, base_key, local_revision, "
+            "conflict_reason, conflict_previous_state, conflict_source_revision "
+            "FROM bookmark_nodes WHERE document_id = ?1 AND deleted_utc_ms IS NULL"};
+        nodes.text(1, documentId);
+        while (nodes.row()) {
+            BookmarkNode node;
+            node.id = nodes.string(0);
+            node.documentId = std::string{documentId};
+            node.parentId = nodes.optionalString(1);
+            node.position = static_cast<std::uint32_t>(nodes.int64(2));
+            node.title = nodes.string(3);
+            node.location = nodes.optionalString(4).value_or(std::string{});
+            node.state = storedState(nodes.string(5));
+            node.baseKey = nodes.optionalString(6);
+            node.localRevision = nodes.int64(7);
+            if (!nodes.isNull(8)) {
+                const auto reason = parseConflictReasonName(nodes.string(8));
+                if (!reason) throw std::runtime_error("The profile contains an unknown bookmark conflict.");
+                node.conflict = ConflictInfo{*reason, storedState(nodes.string(9)),
+                                             nodes.optionalString(10).value_or(std::string{})};
+            }
+            result.push_back(std::move(node));
+        }
+        return result;
+    }
+
+    // Notes and tags of one node, to compare a changed node with what is stored.
+    void fillNotes(BookmarkNode& node) const {
+        node.tags.clear();
+        Statement description{db, "SELECT description FROM bookmark_nodes WHERE node_id = ?1"};
+        description.text(1, node.id);
+        if (description.row()) node.description = description.string(0);
+        Statement tags{db, "SELECT tag FROM bookmark_node_tags WHERE node_id = ?1 ORDER BY position"};
+        tags.text(1, node.id);
+        while (tags.row()) node.tags.push_back(tags.string(0));
     }
 
     [[nodiscard]] std::vector<BookmarkNode> liveNodes(std::string_view documentId) const {
@@ -285,7 +339,7 @@ public:
               "local_revision = excluded.local_revision, conflict_reason = excluded.conflict_reason, "
               "conflict_previous_state = excluded.conflict_previous_state, "
               "conflict_source_revision = excluded.conflict_source_revision, "
-              "updated_utc_ms = unixepoch('subsec') * 1000"},
+              "updated_utc_ms = unixepoch('subsec') * 1000, deleted_utc_ms = NULL"},
           clearTags_{db, "DELETE FROM bookmark_node_tags WHERE node_id = ?1"},
           tag_{db, "INSERT INTO bookmark_node_tags(node_id, position, tag) VALUES (?1, ?2, ?3)"} {}
 
@@ -437,6 +491,7 @@ BaseAdoption SqliteBookmarkOverlay::adoptBase(std::string_view documentId, const
     (void)impl_->bumpRevision(documentId);
 
     impl_->step("adoptBase:beforeCommit");
+    impl_->checked.erase(std::string{documentId});
     transaction.commit();
     return BaseAdoption::adopted;
 }
@@ -450,38 +505,43 @@ std::int64_t SqliteBookmarkOverlay::apply(std::string_view documentId, std::int6
     if (current != expectedRevision) {
         throw OverlayRevisionConflict{"The bookmark overlay changed since it was loaded."};
     }
-    if (change.upserts.empty() && change.removals.empty()) return current;
+    if (change.upserts.empty() && change.removals.empty() && change.restores.empty()) return current;
     impl_->ensureOverlayRow(documentId);
 
-    const auto base = impl_->base(documentId);
-    std::unordered_map<std::string, BookmarkNode> nodes;
-    for (auto& node : impl_->liveNodes(documentId)) {
-        auto id = node.id;
-        nodes.emplace(std::move(id), std::move(node));
+    const std::string key{documentId};
+    auto cached = impl_->checked.find(key);
+    if (cached == impl_->checked.end() || cached->second.revision != current) {
+        Impl::Checked fresh{current, OverlayTreeIndex{key, impl_->structure(documentId), impl_->base(documentId)}};
+        cached = impl_->checked.insert_or_assign(key, std::move(fresh)).first;
     }
+    OverlayTreeIndex& tree = cached->second.tree;
 
     std::unordered_set<std::string_view> touched;
     for (const auto& id : change.removals) {
         if (!touched.insert(id).second) throw OverlayRuleViolation{"duplicateChange"};
-        const auto found = nodes.find(id);
-        if (found == nodes.end()) throw OverlayRuleViolation{"unknownNode"};
+        const auto* found = tree.find(id);
+        if (found == nullptr) throw OverlayRuleViolation{"unknownNode"};
         // A node that is in the PDF is hidden in Atlas, never silently dropped.
-        if (found->second.baseKey) throw OverlayRuleViolation{"sourceNodeMustBeHidden"};
-        nodes.erase(found);
+        if (found->baseKey) throw OverlayRuleViolation{"sourceNodeMustBeHidden"};
     }
 
     std::vector<BookmarkNode> prepared;
     prepared.reserve(change.upserts.size());
-    Statement owner{impl_->db, "SELECT document_id FROM bookmark_nodes WHERE node_id = ?1"};
+    std::unordered_set<std::string_view> restoring;
+    for (const auto& id : change.restores) {
+        if (!restoring.insert(id).second) throw OverlayRuleViolation{"duplicateChange"};
+    }
+    Statement owner{impl_->db,
+        "SELECT document_id, deleted_utc_ms IS NOT NULL, local_revision FROM bookmark_nodes WHERE node_id = ?1"};
     for (const auto& requested : change.upserts) {
         if (!touched.insert(requested.id).second) throw OverlayRuleViolation{"duplicateChange"};
         if (requested.documentId != documentId) throw OverlayRuleViolation{"wrongDocument"};
         if (auto problem = validateNode(requested); !problem.empty()) throw OverlayRuleViolation{problem};
 
         BookmarkNode next = requested;
-        const auto found = nodes.find(requested.id);
-        if (found != nodes.end()) {
-            const BookmarkNode& previous = found->second;
+        if (const auto* stored = tree.find(requested.id); stored != nullptr) {
+            BookmarkNode previous = *stored;
+            impl_->fillNotes(previous);
             if (!isOrdinaryStateChange(previous.state, next.state)) throw OverlayRuleViolation{"illegalTransition"};
             const bool keepLocalFromConflict =
                 previous.state == StorageState::conflict && next.state == StorageState::localOnly && !next.baseKey;
@@ -497,40 +557,65 @@ std::int64_t SqliteBookmarkOverlay::apply(std::string_view documentId, std::int6
         } else {
             owner.reset();
             owner.text(1, requested.id);
-            if (owner.row()) throw OverlayRuleViolation{"idInUse"}; // live elsewhere, or retired
+            std::int64_t revisionBase = 0;
+            if (owner.row()) {
+                // A retired ID comes back only as an explicit restore of the same
+                // document's removed local node (undo of a removal).
+                const bool restorable = restoring.erase(requested.id) == 1 && owner.string(0) == documentId &&
+                                        owner.int64(1) != 0;
+                if (!restorable) throw OverlayRuleViolation{"idInUse"};
+                revisionBase = owner.int64(2);
+            } else if (restoring.contains(requested.id)) {
+                throw OverlayRuleViolation{"restoreWithoutTombstone"};
+            }
             if (next.state != StorageState::localOnly && next.state != StorageState::pendingEmbed) {
                 throw OverlayRuleViolation{"newNodeState"};
             }
-            next.localRevision = 1;
+            next.localRevision = revisionBase + 1;
         }
-        prepared.push_back(next);
-        nodes.insert_or_assign(next.id, std::move(next));
+        prepared.push_back(std::move(next));
     }
+    if (!restoring.empty()) throw OverlayRuleViolation{"restoreWithoutRecord"};
 
-    std::vector<BookmarkNode> result;
-    result.reserve(nodes.size());
-    for (auto& [id, node] : nodes) result.push_back(node);
-    if (auto problem = validateTree(result); !problem.empty()) throw OverlayRuleViolation{problem};
-    if (auto problem = validateAgainstBase(result, base); !problem.empty()) throw OverlayRuleViolation{problem};
-
-    {
-        Statement retire{impl_->db, "UPDATE bookmark_nodes SET deleted_utc_ms = unixepoch('subsec') * 1000, "
-                                    "updated_utc_ms = unixepoch('subsec') * 1000 WHERE node_id = ?1"};
-        for (const auto& id : change.removals) {
-            retire.reset();
-            retire.text(1, id);
-            retire.run();
+    // Only what the change touches is checked; on refusal the tree is unchanged.
+    std::vector<BookmarkNode> structural = prepared;
+    for (auto& node : structural) {
+        node.description.clear();
+        node.tags.clear();
+    }
+    if (auto problem = tree.apply(structural, change.removals); !problem.empty()) {
+        throw OverlayRuleViolation{problem};
+    }
+    try {
+#ifndef NDEBUG
+        // Debug builds prove the incremental verdict against the full rules.
+        const auto all = tree.nodes();
+        if (!validateStructure(all).empty() || !validateAgainstBase(all, tree.base()).empty()) {
+            throw std::logic_error("Incremental overlay validation accepted a change the full rules refuse.");
         }
+#endif
+        {
+            Statement retire{impl_->db, "UPDATE bookmark_nodes SET deleted_utc_ms = unixepoch('subsec') * 1000, "
+                                        "updated_utc_ms = unixepoch('subsec') * 1000 WHERE node_id = ?1"};
+            for (const auto& id : change.removals) {
+                retire.reset();
+                retire.text(1, id);
+                retire.run();
+            }
+        }
+        {
+            NodeWriter writer{impl_->db};
+            for (const auto& node : prepared) writer.write(node);
+        }
+        const auto next = impl_->bumpRevision(documentId);
+        impl_->step("apply:beforeCommit");
+        transaction.commit();
+        cached->second.revision = next;
+        return next;
+    } catch (...) {
+        impl_->checked.erase(key); // the tree may be ahead of the database
+        throw;
     }
-    {
-        NodeWriter writer{impl_->db};
-        for (const auto& node : prepared) writer.write(node);
-    }
-    const auto next = impl_->bumpRevision(documentId);
-
-    impl_->step("apply:beforeCommit");
-    transaction.commit();
-    return next;
 }
 
 std::vector<std::string> SqliteBookmarkOverlay::documentsWithLocalWork() const {

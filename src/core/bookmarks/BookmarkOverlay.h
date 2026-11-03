@@ -123,12 +123,17 @@ struct OverlayLimits final {
 // present, no cycles, depth limit, contiguous sibling positions, field rules.
 [[nodiscard]] std::string validateTree(const std::vector<BookmarkNode>& nodes);
 
+// Only the structural part of validateTree (IDs, one document, parents, cycles,
+// depth, positions), for a tree whose node fields were already checked.
+[[nodiscard]] std::string validateStructure(const std::vector<BookmarkNode>& nodes);
+
 // Same structural checks for a base snapshot.
 [[nodiscard]] std::string validateBase(const BaseSnapshot& base);
 
-// "No false Embedded": every Embedded node must match its base node exactly
-// (title, location, sibling position and parent), and no two live nodes may
-// claim the same base node. Empty when consistent.
+// "No false Embedded": every Embedded node must match its base node (title,
+// location and parent), Embedded siblings must keep the PDF's relative order
+// (local nodes may sit between them), and no two live nodes may claim the same
+// base node. Empty when consistent.
 [[nodiscard]] std::string validateAgainstBase(const std::vector<BookmarkNode>& nodes,
                                               const std::optional<BaseSnapshot>& base);
 

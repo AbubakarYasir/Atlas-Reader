@@ -30,6 +30,9 @@ struct OverlaySnapshot final {
 struct OverlayChangeSet final {
     std::vector<BookmarkNode> upserts; // new or changed nodes (full records)
     std::vector<std::string> removals; // local nodes to remove (kept as tombstones)
+    // Removed local nodes brought back by undo. Each must also be in `upserts`
+    // with its full record; only these may reuse a retired ID.
+    std::vector<std::string> restores;
 };
 
 enum class BaseAdoption : std::uint8_t {

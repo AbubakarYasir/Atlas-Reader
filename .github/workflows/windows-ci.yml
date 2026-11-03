@@ -277,6 +277,13 @@ jobs:
           -C ${{ matrix.configuration }}
           --output-on-failure
 
+      - name: N5 bookmark benchmark (10,000 nodes, gates from QUALITY.md)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          & "build/ci-Release/Release/atlas_n5_bookmark_benchmark.exe" (Join-Path $env:RUNNER_TEMP 'atlas-n5-benchmark')
+          if ($LASTEXITCODE -ne 0) { throw "N5 bookmark benchmark missed a gate." }
+
       - name: Stage N2 Windows engineering artifact + engine evidence
         if: matrix.configuration == 'Release'
         shell: pwsh

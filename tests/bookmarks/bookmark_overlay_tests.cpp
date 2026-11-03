@@ -2,11 +2,14 @@
 
 #include "core/bookmarks/BookmarkOverlay.h"
 #include "core/bookmarks/LocationEnvelope.h"
+#include "core/bookmarks/OverlayTreeIndex.h"
 #include "core/bookmarks/Utf8.h"
 
+#include <algorithm>
 #include <array>
 #include <iostream>
 #include <map>
+#include <random>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -314,6 +317,23 @@ void checkBase() {
     moved[1].parentId = moved[2].id; // under the other chapter
     require(validateAgainstBase(moved, base) == "embeddedDiffersFromSource", "A moved node may not stay Embedded.");
 
+    // A local node placed before the chapters shifts them, but they keep the
+    // PDF's relative order and stay Embedded.
+    auto shifted = embedded;
+    shifted[0].position = 1;
+    shifted[2].position = 2;
+    auto mine = localNode("mine", std::nullopt, 0, "ملاحظاتي");
+    shifted.push_back(mine);
+    require(validateTree(shifted).empty() && validateAgainstBase(shifted, base).empty(),
+            "Local nodes may sit between Embedded nodes.");
+    auto swapped = embedded;
+    swapped[0].position = 1;
+    swapped[2].position = 0;
+    require(validateAgainstBase(swapped, base) == "embeddedOrderDiffersFromSource",
+            "Reordered source nodes cannot stay Embedded.");
+    swapped[2].state = StorageState::localOverride;
+    require(validateAgainstBase(swapped, base).empty(), "A reordered source node is a LocalOverride.");
+
     auto twice = embedded;
     twice[2].baseKey = "0";
     require(validateAgainstBase(twice, base) == "baseClaimedTwice", "A source node has one overlay node.");
@@ -333,6 +353,124 @@ void checkBase() {
     require(newBookmarkId().size() == 32, "IDs are 32 hex digits.");
 }
 
+
+// The incremental checker must agree with the full rules on every change, and
+// a refused change must leave the index exactly as it was.
+void checkIncrementalValidation() {
+    std::mt19937 random{20261103};
+    const auto pick = [&](std::size_t n) { return std::uniform_int_distribution<std::size_t>{0, n - 1}(random); };
+    const auto canonical = [](std::vector<BookmarkNode> nodes) {
+        std::sort(nodes.begin(), nodes.end(), [](const BookmarkNode& a, const BookmarkNode& b) { return a.id < b.id; });
+        std::string text;
+        for (const auto& n : nodes) {
+            text += n.id + "|" + n.parentId.value_or("-") + "|" + std::to_string(n.position) + "|" + n.title + "|" +
+                    std::string{stateName(n.state)} + "|" + n.baseKey.value_or("-") + "\n";
+        }
+        return text;
+    };
+
+    // Base: 3 roots with 3 children each.
+    BaseSnapshot base;
+    base.sourceRevision = "rev";
+    for (std::uint32_t r = 0; r < 3; ++r) {
+        base.nodes.push_back({std::to_string(r), std::nullopt, r, "R" + std::to_string(r), {}});
+        for (std::uint32_t c = 0; c < 3; ++c) {
+            base.nodes.push_back({std::to_string(r) + "/" + std::to_string(c), std::to_string(r), c,
+                                  "C" + std::to_string(r) + std::to_string(c), {}});
+        }
+    }
+    auto start = embeddedNodesFromBase("doc", base);
+    for (std::size_t i = 0; i < 6; ++i) start.push_back(localNode("L" + std::to_string(i), std::nullopt,
+                                                                     static_cast<std::uint32_t>(3 + i)));
+    OverlayTreeIndex tree{"doc", start, base};
+    std::size_t accepted = 0;
+    std::size_t refused = 0;
+    for (int round = 0; round < 6000; ++round) {
+        auto current = tree.nodes();
+        std::vector<BookmarkNode> upserts;
+        std::vector<std::string> removals;
+        const auto action = pick(7);
+        auto node = current[pick(current.size())];
+        if (action == 0) { // move anywhere, possibly invalid position or cycle
+            const auto& target = current[pick(current.size())];
+            node.parentId = pick(4) == 0 ? std::nullopt : std::optional<std::string>{target.id};
+            node.position = static_cast<std::uint32_t>(pick(12));
+            upserts.push_back(node);
+        } else if (action == 1) { // well-formed move with sibling renumbering
+            const auto& target = current[pick(current.size())];
+            std::optional<std::string> parent = pick(3) == 0 ? std::nullopt : std::optional<std::string>{target.id};
+            std::map<std::string, BookmarkNode> next;
+            for (const auto& n : current) next.emplace(n.id, n);
+            next[node.id].parentId = parent;
+            std::map<std::string, std::vector<std::string>> groups;
+            for (auto& [id, n] : next) {
+                if (id != node.id) groups[n.parentId.value_or("")].push_back(id);
+            }
+            for (auto& [group, ids] : groups) {
+                std::sort(ids.begin(), ids.end(), [&](const auto& a, const auto& b) {
+                    return next[a].position < next[b].position;
+                });
+            }
+            auto& list = groups[parent.value_or("")];
+            list.insert(list.begin() + static_cast<std::ptrdiff_t>(pick(list.size() + 1)), node.id);
+            for (auto& [group, ids] : groups) {
+                for (std::size_t i = 0; i < ids.size(); ++i) next[ids[i]].position = static_cast<std::uint32_t>(i);
+            }
+            for (auto& [id, n] : next) {
+                const auto* old = tree.find(id);
+                if (old->parentId != n.parentId || old->position != n.position) upserts.push_back(n);
+            }
+        } else if (action == 2) { // rename, keeping or flipping the state
+            node.title = pick(2) == 0 ? node.title + "x" : node.title;
+            if (node.baseKey && node.state != StorageState::conflict) {
+                node.state = pick(2) == 0 ? StorageState::embedded : StorageState::localOverride;
+            }
+            upserts.push_back(node);
+        } else if (action == 3) { // remove (may orphan children)
+            if (!node.baseKey) removals.push_back(node.id);
+        } else if (action == 4) { // new local node at a random place
+            auto fresh = localNode("N" + std::to_string(round), std::nullopt, static_cast<std::uint32_t>(pick(12)));
+            if (pick(2) == 0) fresh.parentId = current[pick(current.size())].id;
+            upserts.push_back(fresh);
+        } else if (action == 5) { // claim another node's base key
+            if (node.baseKey) {
+                const auto& other = current[pick(current.size())];
+                if (other.baseKey) node.baseKey = other.baseKey;
+                upserts.push_back(node);
+            }
+        } else { // hide / unhide
+            if (node.baseKey && node.state != StorageState::conflict) {
+                node.state = node.state == StorageState::locallyHidden ? StorageState::embedded
+                                                                        : StorageState::locallyHidden;
+                upserts.push_back(node);
+            }
+        }
+        if (upserts.empty() && removals.empty()) continue;
+
+        // Expected verdict: the full rules on the result.
+        std::map<std::string, BookmarkNode> result;
+        for (const auto& n : current) result.emplace(n.id, n);
+        for (const auto& id : removals) result.erase(id);
+        for (const auto& n : upserts) result.insert_or_assign(n.id, n);
+        std::vector<BookmarkNode> after;
+        for (auto& [id, n] : result) after.push_back(n);
+        const bool valid = validateStructure(after).empty() && validateAgainstBase(after, base).empty();
+
+        const auto before = canonical(current);
+        const auto verdict = tree.apply(upserts, removals);
+        require(verdict.empty() == valid, "Incremental and full validation disagree in round " +
+                                              std::to_string(round) + " (" + verdict + ").");
+        if (valid) {
+            require(canonical(tree.nodes()) == canonical(after), "An accepted change must be applied exactly.");
+            ++accepted;
+        } else {
+            require(canonical(tree.nodes()) == before, "A refused change must leave the index unchanged.");
+            ++refused;
+        }
+    }
+    require(accepted > 1000 && refused > 1000, "The fuzz must exercise both outcomes.");
+}
+
 } // namespace
 
 int main() {
@@ -343,6 +481,7 @@ int main() {
         checkTransitions();
         checkTreeRules();
         checkBase();
+        checkIncrementalValidation();
     } catch (const std::exception& error) {
         std::cerr << "Bookmark overlay test failed: " << error.what() << '\n';
         return 1;

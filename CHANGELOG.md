@@ -4,6 +4,12 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N5.3 (part 1): the bookmark editing engine — 2026-11-03
+
+- Behind the coming Bookmarks panel: add, rename, move, nest and reorder bookmarks, give them notes and tags, and undo or redo any of it. Deleting a bookmark that belongs to the PDF hides it in Atlas instead, so the book itself is never changed by accident; change a PDF bookmark back and Atlas knows it matches the book again.
+- Bookmark search covers titles, notes and tags, and finds Arabic and Urdu words with or without harakat.
+- Fast on big books: with 10,000 bookmarks, searching takes well under a millisecond and every edit or undo under 2 ms; saving happens in the background. Windows checks these limits automatically on every build.
+
 ## N5.2: bookmarks kept safely in Atlas — 2026-11-03
 
 - Groundwork for the bookmark editor: Atlas can now keep your bookmarks in its own profile, next to the book's own table of contents, and remembers for each one whether it is in the PDF, only in Atlas, waiting to be saved into the PDF, changed in Atlas, hidden in Atlas, or in conflict. Nothing is ever shown as saved into the PDF until it really is.

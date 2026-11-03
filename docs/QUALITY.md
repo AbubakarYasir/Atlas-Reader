@@ -42,7 +42,8 @@ Engineering targets for baseline hardware (named in the [N1 baseline](baselines/
 | Warm / cold shell first frame | < 800 ms / < 1.5 s p95 on SSD |
 | Cached library usable after shell | < 1 s |
 | Command Center query | < 50 ms p95 |
-| **10,000-bookmark search** | **< 100 ms p95 (gate)** |
+| **10,000-bookmark search** | **< 100 ms p95 (gate)**; checked on every Windows CI run by `atlas_n5_bookmark_benchmark` |
+| Bookmark editor command or undo (UI thread) | < 2 ms p95 on 10,000 bookmarks (gate in the same benchmark); the write runs on a worker |
 | Page jump feedback | Within one frame; sharp render may follow asynchronously |
 | Visible-page render (open session) | < 250 ms p95 at reading resolution |
 | First readable page after open | Measured in N4; target < 500 ms p95 for typical books |

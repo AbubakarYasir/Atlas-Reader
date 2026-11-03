@@ -3,6 +3,7 @@
 #include "core/bookmarks/LocationEnvelope.h"
 #include "core/bookmarks/Utf8.h"
 
+#include <algorithm>
 #include <array>
 #include <random>
 #include <unordered_map>
@@ -191,6 +192,18 @@ std::string validateTree(const std::vector<BookmarkNode>& nodes) {
         [](const BookmarkNode& n) -> const std::optional<std::string>& { return n.parentId; });
 }
 
+std::string validateStructure(const std::vector<BookmarkNode>& nodes) {
+    if (nodes.empty()) return {};
+    const auto& documentId = nodes.front().documentId;
+    for (const auto& node : nodes) {
+        if (node.documentId != documentId) return "mixedDocuments";
+        if (node.parentId && *node.parentId == node.id) return "badParent";
+    }
+    return validateHierarchy(
+        nodes, [](const BookmarkNode& n) -> std::string_view { return n.id; },
+        [](const BookmarkNode& n) -> const std::optional<std::string>& { return n.parentId; });
+}
+
 std::string validateBase(const BaseSnapshot& base) {
     if (base.sourceRevision.empty()) return "missingSourceRevision";
     for (const auto& node : base.nodes) {
@@ -215,6 +228,11 @@ std::string validateAgainstBase(const std::vector<BookmarkNode>& nodes, const st
     byId.reserve(nodes.size());
     for (const auto& node : nodes) byId.emplace(node.id, &node);
 
+    // Embedded siblings, in overlay order, must keep the PDF's relative order.
+    // Local nodes may sit anywhere between them.
+    constexpr std::string_view rootKey{"\x01root"};
+    std::unordered_map<std::string_view, std::vector<std::pair<std::uint32_t, std::uint32_t>>> embeddedOrder;
+
     std::unordered_set<std::string_view> claimed;
     for (const auto& node : nodes) {
         if (!node.baseKey) continue;
@@ -227,9 +245,7 @@ std::string validateAgainstBase(const std::vector<BookmarkNode>& nodes, const st
         }
         if (node.state != S::embedded) continue;
         const BaseNode& source = *found->second;
-        if (node.title != source.title || node.location != source.location || node.position != source.position) {
-            return "embeddedDiffersFromSource";
-        }
+        if (node.title != source.title || node.location != source.location) return "embeddedDiffersFromSource";
         std::optional<std::string> parentBaseKey;
         if (node.parentId) {
             const auto parent = byId.find(*node.parentId);
@@ -237,6 +253,14 @@ std::string validateAgainstBase(const std::vector<BookmarkNode>& nodes, const st
             parentBaseKey = parent->second->baseKey;
         }
         if (parentBaseKey != source.parentKey) return "embeddedDiffersFromSource";
+        const auto group = node.parentId ? std::string_view{*node.parentId} : rootKey;
+        embeddedOrder[group].emplace_back(node.position, source.position);
+    }
+    for (auto& [group, order] : embeddedOrder) {
+        std::sort(order.begin(), order.end());
+        for (std::size_t i = 1; i < order.size(); ++i) {
+            if (order[i - 1].second >= order[i].second) return "embeddedOrderDiffersFromSource";
+        }
     }
     return {};
 }

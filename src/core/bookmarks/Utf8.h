@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 
 namespace atlas::bookmarks {
@@ -42,6 +43,35 @@ namespace atlas::bookmarks {
         i += length;
     }
     return true;
+}
+
+// UTF-8 → UTF-16 for search. Input must be valid UTF-8 (isValidUtf8).
+[[nodiscard]] inline std::u16string toUtf16(std::string_view text) {
+    std::u16string out;
+    out.reserve(text.size());
+    std::size_t i = 0;
+    while (i < text.size()) {
+        const auto c = static_cast<unsigned char>(text[i]);
+        char32_t cp = 0;
+        std::size_t length = 1;
+        if (c < 0x80) cp = c;
+        else if (c < 0xE0) { cp = c & 0x1Fu; length = 2; }
+        else if (c < 0xF0) { cp = c & 0x0Fu; length = 3; }
+        else { cp = c & 0x07u; length = 4; }
+        if (i + length > text.size()) break;
+        for (std::size_t k = 1; k < length; ++k) {
+            cp = (cp << 6) | (static_cast<unsigned char>(text[i + k]) & 0x3Fu);
+        }
+        if (cp >= 0x10000) {
+            cp -= 0x10000;
+            out.push_back(static_cast<char16_t>(0xD800 + (cp >> 10)));
+            out.push_back(static_cast<char16_t>(0xDC00 + (cp & 0x3FF)));
+        } else {
+            out.push_back(static_cast<char16_t>(cp));
+        }
+        i += length;
+    }
+    return out;
 }
 
 } // namespace atlas::bookmarks

@@ -4,7 +4,9 @@
 
 One short review at the end of N5 (about 45 minutes). Agents have run the detailed tests (every storage state, failure at each save step, encrypted, signed and certified files, 10,000 bookmarks, Unicode round trips). This review is about what only you can judge: are bookmarks pleasant to work with, is it always clear what is saved where, and can you trust Atlas with your PDFs?
 
-> **Status:** every part of N5 (N5.1–N5.5) is built. The review build is made when you ask for it (Windows CI → *Run workflow* → *Build and upload the owner review package*).
+> **Status:** review postponed until the [repair closure ledger](baselines/N1_N5_CLOSURE.md) passes. Implemented features are not yet fully qualified. Do not approve N5 from an earlier package.
+
+Accessibility review explicitly includes Windows Narrator: complete an edit, save and import workflow; verify control names, focus, selected/expanded state and error announcements. A skipped Narrator check is unverified, not PASS.
 
 ## Before you start
 

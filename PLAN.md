@@ -4,7 +4,9 @@
 
 This is the single source of direction: what Atlas is, what Windows 2.0 must contain, what comes later, and how we judge quality. Order and status live in [CHECKPOINTS.md](CHECKPOINTS.md). The detailed contracts live in the [docs folder](docs/README.md).
 
-**Owner:** Abu Bakar (`AbubakarYasir`) · **Current version:** `2.0.0-beta.1` · **Active stage:** N4 Reader · **Target:** Windows 11, then other platforms after 2.0 · **Interface languages:** English (default), Arabic, Urdu · **Content:** any language
+**Owner:** Abu Bakar (`AbubakarYasir`) · **Released version:** `2.0.0-beta.2` · **Active stage:** N5 repair and verification · **Target:** Windows 11, then other platforms after 2.0 · **Interface languages:** English (default), Arabic, Urdu · **Content:** any language
+
+2026-11-04: owner authorized the [N1–N5 closure pass](docs/baselines/N1_N5_CLOSURE.md), including corrected signed N5 history. No feature expansion or N6 work; deferred features retain their named stages. N5 is not yet ready for acceptance.
 
 ## 1. North star
 

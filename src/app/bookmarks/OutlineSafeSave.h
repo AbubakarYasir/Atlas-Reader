@@ -11,8 +11,9 @@
 //   equals the verified one → re-read the outline → overlay commit (saved
 //   nodes become Embedded with an EmbedProof, one transaction).
 //
-// Every failure before the replace leaves the PDF and the overlay exactly as
-// they were. A failure after it restores the PDF from the backup.
+// Failures before replacement leave PDF and overlay unchanged. Late failures
+// attempt verified atomic restoration; recoveryRequired means restoration was
+// not proved and the current file and backup must both be retained.
 
 #include "app/bookmarks/SqliteBookmarkOverlay.h"
 #include "core/bookmarks/OutlineSavePlan.h"
@@ -47,7 +48,7 @@ struct SafeSaveOutcome final {
     // unreadableLocation, changedOutside, notPermitted, diskFull, qpdfUnavailable,
     // folderReadOnly, outlineMismatch, writeFailed, validation, preservation,
     // outlineDiffers, reopenDiffers, backupFailed, changedDuringSave,
-    // replaceFailed, replaceUnverified, reindexFailed, overlayChanged.
+    // replaceFailed, replaceUnverified, recoveryRequired, reindexFailed, overlayChanged.
     QString reason;
     bool pdfChanged{false};       // the PDF was replaced (ok, or overlayChanged)
     bookmarks::SavePlan plan;

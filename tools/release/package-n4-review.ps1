@@ -40,10 +40,11 @@ Copy-Item -LiteralPath $sqliteNotice -Destination (Join-Path $notices 'sqlite3-c
 Copy-Item -LiteralPath (Join-Path $repo 'assets/fonts/OFL.txt') -Destination (Join-Path $notices 'noto-fonts-OFL.txt')
 Copy-Item -LiteralPath (Join-Path $repo 'assets/fonts/README.md') -Destination (Join-Path $notices 'noto-fonts-README.md')
 Copy-Item -LiteralPath (Join-Path $repo 'assets/icons/LICENSE.txt') -Destination (Join-Path $notices 'fluentui-system-icons-LICENSE.txt')
-foreach ($doc in @('N4_REVIEW.md', 'DEPENDENCIES.md')) {
+$reviewGuide = if ($Checkpoint -eq 'N5') { 'N5_REVIEW.md' } else { 'N4_REVIEW.md' }
+foreach ($doc in @($reviewGuide, 'DEPENDENCIES.md')) {
     Copy-Item -LiteralPath (Join-Path $repo "docs/$doc") -Destination $docs
 }
-Copy-Item -LiteralPath (Join-Path $repo 'docs/N4_REVIEW.md') -Destination (Join-Path $stage 'START-HERE.md')
+Copy-Item -LiteralPath (Join-Path $repo "docs/$reviewGuide") -Destination (Join-Path $stage 'START-HERE.md')
 foreach ($fixture in @('A001_simple_text.pdf','A002_geometry_labels.pdf','A006_unicode_semantics.pdf','A008_password_rc4_40.pdf')) {
     Copy-Item -LiteralPath (Join-Path $repo "tests/fixtures/pdf/generated/$fixture") -Destination $samples
 }

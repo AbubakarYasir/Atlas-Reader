@@ -194,6 +194,41 @@ void checkHidden() {
 }
 
 void checkFailures() {
+    {
+        Book book{"A003_outlines_links.pdf"};
+        editA003(book);
+        const auto original = sha(book.pdf);
+        const auto revision = book.editor->revision();
+        book.store->setFaultHookForTesting([](std::string_view step) {
+            if (step == "commitSave:beforeCommit") throw std::runtime_error("injected database failure");
+        });
+        const auto outcome = book.save();
+        require(!outcome.ok && !outcome.pdfChanged && sha(book.pdf) == original,
+                "A database transaction exception restores the PDF.");
+        require(book.store->load("doc").revision == revision, "Failed database transaction rolls back.");
+    }
+    for (const char* failing : {"reindex", "commitOverlay"}) {
+        Book book{"A003_outlines_links.pdf"};
+        editA003(book);
+        const auto original = sha(book.pdf);
+        const auto revision = book.editor->revision();
+        const auto outcome = book.save({}, [failing](std::string_view step) { return step != failing; });
+        require(!outcome.ok && !outcome.pdfChanged && sha(book.pdf) == original,
+                "Late failure restores the original PDF.");
+        require(book.store->load("doc").revision == revision, "Late failure preserves overlay revision.");
+    }
+    {
+        Book book{"A003_outlines_links.pdf"};
+        editA003(book);
+        const auto original = sha(book.pdf);
+        const auto outcome = book.save({}, [](std::string_view step) {
+            return step != "afterReplace" && step != "restore";
+        });
+        require(!outcome.ok && outcome.pdfChanged && outcome.reason == QStringLiteral("recoveryRequired"),
+                "Failed recovery must never claim the original was restored.");
+        require(QFileInfo::exists(book.pdf) && sha(outcome.backupPath) == original,
+                "Failed recovery retains both the current PDF and original backup.");
+    }
     for (const char* failing : {"write", "verify", "reopen", "backup", "beforeReplace", "replace"}) {
         Book book{"A003_outlines_links.pdf"};
         editA003(book);
@@ -327,6 +362,26 @@ void checkCopy() {
         require(atlas::app::saveOutlineCopy(input, book.pdf).reason == QStringLiteral("sameFile"),
                 "A copy never overwrites its own source.");
         require(folderFiles(book.folder).size() == 2, "Only the original and the copy are in the folder.");
+          const QString alias = QDir{book.folder}.filePath(QStringLiteral("source alias.pdf"));
+          std::error_code linkError;
+          std::filesystem::create_hard_link(fsPath(book.pdf), fsPath(alias), linkError);
+          require(!linkError, "The test filesystem supports a hard-link alias.");
+          require(atlas::app::saveOutlineCopy(input, alias).reason == QStringLiteral("sameFile"),
+                  "A source hard-link is not a separate copy destination.");
+          require(sha(book.pdf) == original && sha(alias) == original, "Source aliases remain unchanged.");
+          QByteArray externalHash;
+          const auto raced = atlas::app::saveOutlineCopy(input, target, [&](std::string_view step) {
+              if (step == "beforeCopyReplace") {
+                  QFile external{target};
+                  require(external.open(QIODevice::Append), "Open target for an external edit.");
+                  external.write("\n% external change\n");
+                  external.close();
+                  externalHash = sha(target);
+              }
+              return true;
+          });
+          require(!raced.ok && raced.reason == QStringLiteral("changedDuringSave") && sha(target) == externalHash,
+                  "Save a Copy preserves a destination edited during generation.");
     }
     {
         Book book{"A009_restricted_permissions_rc4_40.pdf", QStringLiteral("atlas-user")};

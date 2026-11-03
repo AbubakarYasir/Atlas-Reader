@@ -12,6 +12,8 @@ Atlas Reader is built and published by **[DerekSol](https://dereksol.com)**. Nee
 
 [The plan](PLAN.md) · [Progress](CHECKPOINTS.md) · [Design](docs/DESIGN.md) · [For developers](docs/README.md)
 
+The released reader is beta.2. Bookmark development is undergoing a [safety and quality closure pass](docs/baselines/N1_N5_CLOSURE.md) before N5 owner review.
+
 ## What Atlas 2.0 will be
 
 | | |

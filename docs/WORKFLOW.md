@@ -2,6 +2,21 @@
 
 The goal is fast progress without losing discipline. Atlas is built stage by stage ([CHECKPOINTS.md](../CHECKPOINTS.md)), never on one long branch that becomes impossible to review.
 
+## Current repair workflow (2026-11-04)
+
+Active branch: `native-v2-n5-bookmarks-safety`, PR #8 Draft. The owner's explicit
+repair authorization permits correcting the affected N5 history using an exact-head
+force-with-lease after a verified backup. Main and release tags are preserved.
+Use repository-local owner identity and SSH signing with the registered public key;
+configure `core.hooksPath=.githooks` to enforce identity and signature checks before
+push. GitHub verification must also be checked after push (a local signature alone
+does not prove GitHub recognizes the key).
+
+Owner review packages are on request only, not on every stage push. The repair
+delivery includes one package after its gates pass. See the
+[closure ledger](baselines/N1_N5_CLOSURE.md) for open work; earlier readiness claims
+do not override it.
+
 ## 1. Branches
 
 | Branch | Purpose |

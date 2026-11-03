@@ -9,11 +9,11 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | | |
 |---|---|
 | Active stage | **N5: Bookmarks + document safety**, planned `2.0.0-beta.3` |
-| Active sub-stage | **N5 owner review** (N5.1–N5.5 implemented; review defects first) |
+| Active sub-stage | **N1–N5 repair audit**; [closure ledger](docs/baselines/N1_N5_CLOSURE.md), no N6 work |
 | Done | N4 Reader **Accepted** (`N4 PASS`, 2026-11-02; [acceptance](docs/baselines/N4_ACCEPTANCE.md)) |
 | Branch | `native-v2-n5-bookmarks-safety`, from `main` after the `2.0.0-beta.2` release |
 | Released | `2.0.0-beta.2` (Reader), 2026-11-02 · `2.0.0-beta.1` (Library), 2026-09-28 |
-| Next owner review | **N5, ready:** [N5 review guide](docs/N5_REVIEW.md); the review build is made on request (Windows CI → Run workflow → *Build and upload the owner review package*) |
+| Next owner review | **N5, pending repairs and verification:** [N5 review guide](docs/N5_REVIEW.md); package only after closure gates |
 | Evidence | [N5 evidence ledger](docs/baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md) |
 
 ## Roadmap

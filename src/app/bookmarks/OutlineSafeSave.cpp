@@ -146,8 +146,16 @@ SafeSaveOutcome saveOutlineCopy(const SafeSaveInput& input, const QString& targe
     out.plan = planOutlineSave(inOrder, base, input.options);
     if (!out.plan.refusal.empty()) return fail(out.plan.refusal.c_str());
     const QFileInfo targetInfo{target};
-    if (target.isEmpty() || targetInfo.absoluteFilePath() == QFileInfo{input.path}.absoluteFilePath())
+    std::error_code identityError;
+    const bool sameObject = std::filesystem::equivalent(
+        std::filesystem::path{target.toStdU16String()}, std::filesystem::path{input.path.toStdU16String()}, identityError);
+    if (target.isEmpty() || sameObject || targetInfo.absoluteFilePath() == QFileInfo{input.path}.absoluteFilePath())
         return fail("sameFile");
+    const bool targetExisted = targetInfo.exists();
+    const QByteArray targetHash = targetExisted ? sha256(target) : QByteArray{};
+    if (targetExisted && targetHash.isEmpty()) return fail("replaceFailed");
+    const QByteArray sourceHash = sha256(input.path);
+    if (sourceHash.isEmpty()) return fail("changedOutside");
     if (input.base && input.base->sourceRevision != fileRevision(input.path)) return fail("changedOutside");
 
     // The PDF's own security decides; the file being read-only, in use, signed
@@ -197,6 +205,11 @@ SafeSaveOutcome saveOutlineCopy(const SafeSaveInput& input, const QString& targe
     if (!verdict.isEmpty() || !step("verify")) return fail(verdict == QStringLiteral("preservation") ? "preservation" : "outlineDiffers");
     const auto reread = reopen(temp.path, input.password);
     if (!reread || !sameAsPlan(*reread, out.plan, plannedKeys(out.plan)) || !step("reopen")) return fail("reopenDiffers");
+    // Confirmation does not authorize overwriting a destination changed while
+    // qpdf was running. Preserve both files if either revision has changed.
+    if (!step("beforeCopyReplace") || sha256(input.path) != sourceHash ||
+        QFileInfo::exists(target) != targetExisted || (targetExisted && sha256(target) != targetHash))
+        return fail("changedDuringSave");
     // Into place under the chosen name (the file dialog already confirmed any overwrite).
     if (QFileInfo::exists(target) ? !replaceFile(target, temp.path)
                                   : !QFile::rename(temp.path, target))
@@ -284,19 +297,31 @@ SafeSaveOutcome saveOutlineSafely(SqliteBookmarkOverlay& store, const SafeSaveIn
     if (!step("replace") || !replaceFile(input.path, temp.path)) return fail("replaceFailed");
     temp.path.clear(); // it is the PDF now
     out.pdfChanged = true;
+    // Never remove the current PDF before a verified recovery copy is ready.
+    // If another writer changed it, preserve that version for explicit recovery.
+    const auto restore = [&](const char* reason) {
+        TempFile recovery;
+        recovery.path = input.path + QStringLiteral(".atlas-restore-%1.pdf")
+                                        .arg(QRandomGenerator::global()->generate());
+        if (sha256(input.path) != verifiedHash || !step("restore") ||
+            !QFile::copy(out.backupPath, recovery.path) || sha256(recovery.path) != originalHash ||
+            !replaceFile(input.path, recovery.path) || sha256(input.path) != originalHash) {
+            return fail("recoveryRequired");
+        }
+        recovery.path.clear();
+        out.pdfChanged = false;
+        return fail(reason);
+    };
     if (sha256(input.path) != verifiedHash || !step("afterReplace")) {
-        // Put the original back from the verified backup.
-        QFile::remove(input.path);
-        const bool restored = QFile::copy(out.backupPath, input.path) && sha256(input.path) == originalHash;
-        out.pdfChanged = !restored;
-        return fail("replaceUnverified");
+        return restore("replaceUnverified");
     }
 
     // 7. Re-read the saved PDF the way Atlas opens books, then commit the overlay.
     out.sourceRevision = fileRevision(input.path);
     const auto finalOutline = reopen(input.path, input.password);
     const auto newBase = finalOutline ? baseFromOutline(*finalOutline, out.sourceRevision) : std::nullopt;
-    if (!finalOutline || !newBase || !sameAsPlan(*finalOutline, out.plan, keys)) return fail("reindexFailed");
+    if (!finalOutline || !newBase || !sameAsPlan(*finalOutline, out.plan, keys) || !step("reindex"))
+        return restore("replaceUnverified");
     std::unordered_map<std::string, const BaseNode*> newByKey;
     for (const auto& node : newBase->nodes) newByKey.emplace(node.key, &node);
 
@@ -330,11 +355,12 @@ SafeSaveOutcome saveOutlineSafely(SqliteBookmarkOverlay& store, const SafeSaveIn
         commit.nodes.push_back(std::move(next));
     }
     try {
+        if (!step("commitOverlay")) return restore("replaceUnverified");
         out.overlayRevision = store.commitSave(input.documentId, input.overlayRevision, commit);
     } catch (const OverlayRevisionConflict&) {
-        return fail("overlayChanged");
+        return restore("replaceUnverified");
     } catch (const std::exception&) {
-        return fail("overlayChanged");
+        return restore("replaceUnverified");
     }
     out.ok = true;
     return out;

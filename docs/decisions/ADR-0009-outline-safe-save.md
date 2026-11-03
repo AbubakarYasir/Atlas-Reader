@@ -16,6 +16,13 @@ and what counts as proof that the write is right.
 
 ## Decision
 
+Repair qualification, 2026-11-04: the unconditional failure guarantee below was
+not established by the implementation. Late errors now attempt atomic restoration;
+restoration failure explicitly requires recovery and preserves the backup. Durable
+recovery journaling and restart qualification remain open in the
+[closure ledger](../baselines/N1_N5_CLOSURE.md). Do not accept this ADR until those
+requirements are proved.
+
 1. **What Save writes (Ctrl+S, Quick Access Save).** The PDF's outline becomes
    the bookmark tree the reader sees, in the same order and nesting:
    `LocalOnly`, `PendingEmbed` and `LocalOverride` nodes are written;

@@ -4,6 +4,14 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N1–N5 repair pass — 2026-11-04 (in progress)
+
+- Late save failures now attempt verified atomic restoration without deleting the current PDF first. A failed restoration has an explicit recovery-required message in all three languages.
+- Added regression checks for final reopen, overlay commit and failed restoration, including a real database transaction exception.
+- N5 packaging selects the N5 review instructions. Added a requirement closure ledger; durable crash recovery and exchange responsiveness remain open.
+- Corrected the last two N5 commits locally to owner authorship and registered SSH signing; added a pre-push identity/signature gate.
+- This entry supersedes the earlier claim that N5 was complete: acceptance waits for the closure ledger and owner review.
+
 ## N5.5: export and import bookmarks — 2026-11-03
 
 - **Export Bookmarks…** (Bookmarks panel ⋯, or the title-bar search): save your bookmarks as an Atlas bookmarks file (complete, with notes and tags, and can be imported again), as Markdown for reading, or as CSV for a spreadsheet. Export all of them, one bookmark with everything under it, or only what you added or changed in Atlas.

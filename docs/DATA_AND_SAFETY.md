@@ -75,6 +75,13 @@ The overlay supports add bookmark/folder, rename, edit destination, move, reorde
 
 ## Safe save
 
+Repair status (2026-11-04): late reopen/database-commit failures attempt a verified
+atomic restore. If restoration cannot be proved, retain the current PDF and backup
+and report recovery required, never "nothing changed" or "restored". Do not delete
+the current PDF before restoring. Durable restart recovery and automatic blocking
+of unresolved saves remain open in the [closure ledger](baselines/N1_N5_CLOSURE.md);
+the historical pipeline below must not be read as proof of crash qualification.
+
 **What Save writes (N5.4, [ADR-0009](decisions/ADR-0009-outline-safe-save.md)):** the PDF outline becomes the bookmark tree the reader sees. Local-only, pending and changed bookmarks are written; untouched PDF bookmarks keep every key they had; a PDF bookmark deleted in Atlas stays in the PDF unless the save preview's removal is ticked (its children move up); notes and tags stay in Atlas; a conflict blocks Save. Destinations are converted from Atlas's displayed-page fractions through the page's crop box and /Rotate. Atlas matches each PDF bookmark to its object by place and title and refuses to save if any does not match.
 
 **How it runs (N5.4):** a hidden temporary file `.<name>.atlas-save-<random>.pdf` beside the PDF (removed on any failure); verification by qpdf and by Qt PDF; a recovery backup of the original in `<profile>/backups/<document>/` (hash-checked, newest three kept); atomic replace (Windows `ReplaceFileW` keeps attributes and security); the replaced file must hash equal to the verified one, else the original is restored from the backup; the overlay commits the new base and the saved nodes as Embedded in one transaction. Editing pauses during a save; undo history starts over after it. The password comes from the open reader session in memory and is cleared after use.

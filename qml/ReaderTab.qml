@@ -88,6 +88,7 @@ Rectangle {
             replaceFailed: I18n.t("save.reason.locked"),
             qpdfUnavailable: I18n.t("save.reason.engine"),
             replaceUnverified: I18n.t("save.reason.restored"),
+            recoveryRequired: I18n.t("save.reason.recoveryRequired"),
             overlayChanged: I18n.t("save.reason.reopen")
         }
         return messages[reason] || I18n.t("save.reason.unsafe")

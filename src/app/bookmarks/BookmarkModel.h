@@ -41,6 +41,9 @@ class BookmarkModel : public QAbstractListModel {
     Q_PROPERTY(bool busy READ busy NOTIFY historyChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY historyChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY historyChanged)
+    // N5.4: Save into the PDF (ADR-0009).
+    Q_PROPERTY(bool saving READ saving NOTIFY statusChanged)
+    Q_PROPERTY(int unsavedCount READ unsavedCount NOTIFY countsChanged)
     Q_PROPERTY(QString undoKind READ undoKind NOTIFY historyChanged)
     Q_PROPERTY(QString redoKind READ redoKind NOTIFY historyChanged)
     Q_PROPERTY(int totalCount READ totalCount NOTIFY countsChanged)
@@ -85,8 +88,11 @@ public:
     [[nodiscard]] QString status() const { return status_; }
     [[nodiscard]] QString statusReason() const { return statusReason_; }
     [[nodiscard]] bool outlineChangedOutside() const { return outlineChangedOutside_; }
-    [[nodiscard]] bool editable() const { return status_ == QStringLiteral("editable"); }
+    // Not while a save into the PDF runs: its result must match what was saved.
+    [[nodiscard]] bool editable() const { return status_ == QStringLiteral("editable") && !saving_; }
     [[nodiscard]] bool busy() const;
+    [[nodiscard]] bool saving() const { return saving_; }
+    [[nodiscard]] int unsavedCount() const;
     [[nodiscard]] bool canUndo() const;
     [[nodiscard]] bool canRedo() const;
     [[nodiscard]] QString undoKind() const;
@@ -139,6 +145,10 @@ public:
     Q_INVOKABLE int indent(int row);  // into the previous sibling, as its last child
     Q_INVOKABLE int outdent(int row); // after its parent
     Q_INVOKABLE int setHidden(int row, bool hidden);
+    // What Save would do now: {added, changed, kept, removed, refusal}.
+    Q_INVOKABLE QVariantMap savePreview(bool removeHidden) const;
+    // Saves into the PDF on the bookmark worker; saveFinished reports.
+    Q_INVOKABLE void save(bool removeHidden);
     Q_INVOKABLE void undo();
     Q_INVOKABLE void redo();
 
@@ -155,6 +165,8 @@ signals:
     void refused(const QString& reason);
     // A write failed and the panel now shows what is stored.
     void reloaded(const QString& reason);
+    // ok, or a stable reason (SafeSaveOutcome); pdfChanged when the file was replaced.
+    void saveFinished(bool ok, const QString& reason, bool pdfChanged, int added, int changed, int removed);
 
 private:
     struct Row final {
@@ -204,6 +216,7 @@ private:
         bookmarks::OverlayChangeSet change;
     };
     std::vector<PendingWrite> writes_;
+    bool saving_{false};
     bool writing_{false};
     int currentPage_{-1};
     double currentFy_{0.0};

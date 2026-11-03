@@ -69,6 +69,11 @@ public:
     Q_INVOKABLE void showLibrary();
     // N5.1: re-run the capability check (also detects a change made outside Atlas).
     Q_INVOKABLE void recheckCapabilities(int index);
+    // N5.4: Atlas itself saved this file; its new revision is the baseline
+    // (not a change made outside Atlas). Re-runs the capability check.
+    Q_INVOKABLE void acceptSavedFile(const QString& path);
+    // For safe save on the bookmark worker; never exposed to QML.
+    [[nodiscard]] QString passwordForPath(const QString& path) const;
 
     // For the in-process page renderer only; never exposed to QML. The password
     // lives in memory for the tab's lifetime and is never persisted or logged.

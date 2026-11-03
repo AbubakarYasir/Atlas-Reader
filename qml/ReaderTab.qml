@@ -65,6 +65,63 @@ Rectangle {
                 tab.attachBookmarks()
         }
     }
+    // ---- N5.4 Save into the PDF (Ctrl+S, Quick Access Save, ADR-0009)
+    property bool saveAsked: false          // the preview was shown for this book
+    property bool saveRemovesHidden: false
+    property string qaSave: ""              // visual QA: save after Auto Create ("ask" or "confirm")
+    SaveBookmarksDialog {
+        id: saveDialog
+        bookmarks: bookmarkModel
+        onAccepted: (removeHidden) => tab.runSave(removeHidden)
+    }
+    function saveMessage(reason) {
+        const messages = {
+            nothingToSave: I18n.t("save.nothing"),
+            resolveFirst: I18n.t("save.reason.conflict"),
+            changedOutside: I18n.t("save.reason.changed"),
+            changedDuringSave: I18n.t("save.reason.changed"),
+            notPermitted: I18n.t("save.reason.notPermitted"),
+            diskFull: I18n.t("save.reason.diskFull"),
+            folderReadOnly: I18n.t("save.reason.locked"),
+            replaceFailed: I18n.t("save.reason.locked"),
+            qpdfUnavailable: I18n.t("save.reason.engine"),
+            replaceUnverified: I18n.t("save.reason.restored"),
+            overlayChanged: I18n.t("save.reason.reopen")
+        }
+        return messages[reason] || I18n.t("save.reason.unsafe")
+    }
+    function saveBookmarks() {
+        if (!tab.ready || bookmarkModel.saving) return
+        if (!bookmarkModel.editable) {
+            tab.toastRequested(I18n.t("bookmarks.readOnly." + (bookmarkModel.statusReason || "storageError")))
+            return
+        }
+        if (tab.capability && tab.capability.checked && !tab.capability.canEmbedOutline) {
+            tab.toastRequested(I18n.t("save.reason.notPermitted"))
+            return
+        }
+        const preview = bookmarkModel.savePreview(tab.saveRemovesHidden)
+        if (preview.refusal) {
+            tab.toastRequested(tab.saveMessage(preview.refusal))
+            return
+        }
+        if (!tab.saveAsked) saveDialog.ask()
+        else tab.runSave(tab.saveRemovesHidden)
+    }
+    function runSave(removeHidden) {
+        tab.saveAsked = true
+        tab.saveRemovesHidden = removeHidden
+        tab.toastRequested(I18n.t("save.saving"))
+        bookmarkModel.save(removeHidden)
+    }
+    Connections {
+        target: bookmarkModel
+        function onSaveFinished(ok, reason, pdfChanged, added, changed, removed) {
+            if (pdfChanged) readerController.acceptSavedFile(tab.sourcePath)
+            tab.toastRequested(ok ? I18n.t("save.done") : tab.saveMessage(reason))
+        }
+    }
+
     // Auto Create Bookmarks (panel options, Command Center).
     AutoBookmarksDialog {
         id: autoBookmarks
@@ -74,6 +131,9 @@ Rectangle {
         onCreated: (count) => {
             preferences.navPanel = "bookmarks"
             tab.toastRequested(I18n.t("autoBookmarks.done", count))
+            if (tab.qaSave === "ask") Qt.callLater(tab.saveBookmarks)
+            else if (tab.qaSave === "confirm") Qt.callLater(() => tab.runSave(false))
+            tab.qaSave = ""
         }
     }
     function openAutoBookmarks() {
@@ -106,6 +166,12 @@ Rectangle {
         else if (action === "menu") { bookmarkModel.expandAll(); bookmarksPanel.openMenu(1, 40, 60, null) }
         else if (action === "add") bookmarksPanel.addHere(false)
         else if (action === "autocreate") { autoBookmarks.qaCreate = true; openAutoBookmarks() }
+        else if (action === "save") saveBookmarks()
+        else if (action.indexOf("autocreate-save") === 0) {
+            tab.qaSave = action === "autocreate-save-confirm" ? "confirm" : "ask"
+            autoBookmarks.qaCreate = true
+            openAutoBookmarks()
+        }
     }
     // Ctrl+B / Bookmark buttons: open the panel and add a bookmark for this view.
     function addBookmarkHere() {

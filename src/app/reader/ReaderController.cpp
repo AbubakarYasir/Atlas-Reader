@@ -381,6 +381,25 @@ void ReaderController::recheckCapabilities(int index) {
     if (session.state == atlas::reader::OpenState::ready) startCapabilityCheck(session.id);
 }
 
+void ReaderController::acceptSavedFile(const QString& path) {
+    const QString key = normalizedSourceKey(path);
+    for (const auto& session : model_.sessions()) {
+        if (normalizedSourceKey(pathToQString(session.source)) != key) continue;
+        capabilities_[session.id].baseline = {}; // the next check records the saved revision
+        if (session.state == atlas::reader::OpenState::ready) startCapabilityCheck(session.id);
+    }
+}
+
+QString ReaderController::passwordForPath(const QString& path) const {
+    const QString key = normalizedSourceKey(path);
+    for (const auto& session : model_.sessions()) {
+        if (normalizedSourceKey(pathToQString(session.source)) != key) continue;
+        const auto found = sessionPasswords_.find(session.id);
+        if (found != sessionPasswords_.end()) return found->second;
+    }
+    return {};
+}
+
 void ReaderController::startCapabilityCheck(std::uint64_t sessionId) {
     const auto found = std::find_if(model_.sessions().begin(), model_.sessions().end(),
                                     [sessionId](const auto& session) { return session.id == sessionId; });

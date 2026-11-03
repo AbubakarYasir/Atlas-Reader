@@ -87,6 +87,7 @@ ApplicationWindow {
         case "togglePanels": preferences.navPanel = preferences.navPanel === "" ? "bookmarks" : ""; break
         case "find": tab.openFind(); return
         case "search": tab.openSearch(); return
+        case "save": tab.saveBookmarks(); return
         case "undo": if (root.currentBookmarks) root.currentBookmarks.undo(); break
         case "redo": if (root.currentBookmarks) root.currentBookmarks.redo(); break
         case "goToPage": tab.focusPageBox(); return
@@ -125,6 +126,7 @@ ApplicationWindow {
     // Undo/Redo: the open book's bookmark edits (text fields keep their own).
     Shortcut { sequence: "Ctrl+Z"; enabled: root.currentBookmarks !== null && root.currentBookmarks.canUndo; onActivated: root.currentBookmarks.undo() }
     Shortcut { sequences: ["Ctrl+Y", "Ctrl+Shift+Z"]; enabled: root.currentBookmarks !== null && root.currentBookmarks.canRedo; onActivated: root.currentBookmarks.redo() }
+    Shortcut { sequence: "Ctrl+S"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.saveBookmarks() }
     Shortcut { sequence: "Alt+Q"; enabled: !(AppState.chromeHidden && root.inReader); onActivated: titleBar.openSearch() }
     Shortcut { sequence: "F3"; enabled: root.activeViewport !== null && root.activeViewport.searchHits.length > 0; onActivated: root.activeViewport.findNext() }
     Shortcut { sequence: "Shift+F3"; enabled: root.activeViewport !== null && root.activeViewport.searchHits.length > 0; onActivated: root.activeViewport.findPrevious() }
@@ -270,6 +272,8 @@ ApplicationWindow {
             customFrame: root.customFrame
             placeTitle: root.inReader && reader.currentTab ? reader.currentTab.title : ""
             onOpenPdfRequested: pdfDialog.open()
+            canSave: root.currentBookmarks !== null && !root.currentBookmarks.saving && root.currentBookmarks.unsavedCount > 0
+            onSaveRequested: if (reader.currentTab) reader.currentTab.saveBookmarks()
             canUndo: root.currentBookmarks !== null && root.currentBookmarks.canUndo
             canRedo: root.currentBookmarks !== null && root.currentBookmarks.canRedo
             onUndoRequested: root.currentBookmarks.undo()

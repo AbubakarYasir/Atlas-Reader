@@ -403,6 +403,15 @@ void checkBatch() {
                 "Undo restores everything replace touched.");
     }
     {
+        // Headings of one level stay siblings even when a level is skipped.
+        Fixture f;
+        f.persist(f.editor->createBatch({{"Part", at(7), 0}, {"7.1", at(7), 2}, {"7.2", at(8), 2}, {"8", at(9), 1}},
+                                        BatchPlacement::after));
+        const auto part = f.editor->children(std::nullopt).back();
+        require(f.editor->children(part).size() == 3, "Skipped levels close up: 7.1, 7.2 and 8 all sit under Part.");
+        f.requireInSync("skipped levels");
+    }
+    {
         Fixture f;
         require(f.editor->createBatch({}, BatchPlacement::after).reason == "nothingToAdd", "An empty batch is refused.");
         const auto before = f.editor->size();

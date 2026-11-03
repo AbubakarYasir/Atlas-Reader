@@ -225,9 +225,11 @@ add_library(atlas_bookmark_ui STATIC
     src/app/bookmarks/BookmarkModel.h
     src/app/bookmarks/BookmarkService.cpp
     src/app/bookmarks/BookmarkService.h
+    src/app/bookmarks/OutlineSafeSave.cpp
+    src/app/bookmarks/OutlineSafeSave.h
 )
 target_include_directories(atlas_bookmark_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(atlas_bookmark_ui PUBLIC atlas_bookmark_store atlas_library_index Qt6::Core)
+target_link_libraries(atlas_bookmark_ui PUBLIC atlas_bookmark_store atlas_library_index atlas_reader_ui Qt6::Core Qt6::Pdf)
 atlas_enable_warnings(atlas_bookmark_ui)
 
 set(ATLAS_READER_PLATFORM_SOURCES)
@@ -250,7 +252,7 @@ set(ATLAS_QML_FILES
     qml/AtlasButton.qml qml/AtlasIconButton.qml qml/AtlasTextField.qml qml/SidebarItem.qml
     qml/TitleBar.qml qml/LibraryView.qml qml/ReaderView.qml qml/ReaderTab.qml
     qml/RibbonButton.qml qml/RibbonBar.qml qml/DocumentTabBar.qml qml/Backstage.qml
-    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/SignaturesPanel.qml qml/CommandCenter.qml qml/AutoBookmarksDialog.qml qml/AtlasCheckBox.qml qml/AtlasRadioButton.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
+    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/SignaturesPanel.qml qml/CommandCenter.qml qml/AutoBookmarksDialog.qml qml/SaveBookmarksDialog.qml qml/AtlasCheckBox.qml qml/AtlasRadioButton.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
 )
 # Place every QML file at the module root so the module's qmldir (and its
 # singletons) is the implicit import of each file.
@@ -451,6 +453,13 @@ add_executable(atlas_bookmark_model_tests tests/bookmarks/bookmark_model_tests.c
 target_link_libraries(atlas_bookmark_model_tests PRIVATE atlas_bookmark_ui)
 atlas_enable_warnings(atlas_bookmark_model_tests)
 add_test(NAME atlas_bookmark_model COMMAND atlas_bookmark_model_tests)
+
+add_executable(atlas_outline_safe_save_tests tests/bookmarks/outline_safe_save_tests.cpp)
+target_link_libraries(atlas_outline_safe_save_tests PRIVATE atlas_bookmark_ui)
+target_compile_definitions(atlas_outline_safe_save_tests PRIVATE
+    ATLAS_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
+atlas_enable_warnings(atlas_outline_safe_save_tests)
+add_test(NAME atlas_outline_safe_save COMMAND atlas_outline_safe_save_tests)
 
 add_executable(atlas_qpdf_inspector_tests tests/document/qpdf_inspector_tests.cpp)
 target_link_libraries(atlas_qpdf_inspector_tests PRIVATE atlas_reader_ui)

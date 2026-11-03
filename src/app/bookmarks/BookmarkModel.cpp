@@ -1,5 +1,7 @@
 #include "app/bookmarks/BookmarkModel.h"
 
+#include "core/bookmarks/OutlineSavePlan.h"
+
 #include "core/bookmarks/LocationEnvelope.h"
 
 #include <algorithm>
@@ -146,7 +148,68 @@ void BookmarkModel::setService(BookmarkService* service) {
     emit serviceChanged();
 }
 
-bool BookmarkModel::busy() const { return writing_ || !writes_.empty(); }
+bool BookmarkModel::busy() const { return writing_ || saving_ || !writes_.empty(); }
+
+int BookmarkModel::unsavedCount() const {
+    if (!editor_ || status_ != QStringLiteral("editable")) return 0;
+    int count = 0;
+    for (const auto* node : editor_->inOrder()) {
+        if (node->state == bookmarks::StorageState::localOnly || node->state == bookmarks::StorageState::pendingEmbed ||
+            node->state == bookmarks::StorageState::localOverride)
+            ++count;
+    }
+    return count;
+}
+
+QVariantMap BookmarkModel::savePreview(bool removeHidden) const {
+    if (!editor_) return {{QStringLiteral("refusal"), QStringLiteral("readOnly")}};
+    const auto plan = bookmarks::planOutlineSave(editor_->inOrder(), editor_->base(), {removeHidden});
+    return {{QStringLiteral("added"), static_cast<int>(plan.added)},
+            {QStringLiteral("changed"), static_cast<int>(plan.changed)},
+            {QStringLiteral("kept"), static_cast<int>(plan.kept)},
+            {QStringLiteral("removed"), static_cast<int>(plan.removed)},
+            {QStringLiteral("refusal"), !plan.refusal.empty() ? QString::fromStdString(plan.refusal)
+                                        : plan.hasChanges()   ? QString{}
+                                                              : QStringLiteral("nothingToSave")}};
+}
+
+void BookmarkModel::save(bool removeHidden) {
+    if (!editable() || !editor_ || !service_ || documentId_.empty()) {
+        emit refused(QStringLiteral("readOnly"));
+        return;
+    }
+    SafeSaveInput input;
+    input.path = path_;
+    input.documentId = documentId_;
+    input.overlayRevision = editor_->revision(); // after the queued writes, which run first
+    for (const auto* node : editor_->inOrder()) input.nodes.push_back(*node);
+    input.base = editor_->base();
+    input.options.removeHidden = removeHidden;
+    saving_ = true;
+    emit statusChanged();
+    emit historyChanged();
+    const auto generation = generation_;
+    service_->save(std::move(input), this, [this, generation](SafeSaveOutcome outcome) {
+        if (generation != generation_) return;
+        const auto finish = [this, outcome] {
+            saving_ = false;
+            emit statusChanged();
+            emit historyChanged();
+            emit saveFinished(outcome.ok, outcome.reason, outcome.pdfChanged, static_cast<int>(outcome.plan.added),
+                              static_cast<int>(outcome.plan.changed), static_cast<int>(outcome.plan.removed));
+        };
+        if (!outcome.ok && !outcome.pdfChanged) {
+            finish();
+            return;
+        }
+        // The PDF changed: show exactly what is stored now (undo history starts over).
+        service_->reload(documentId_, this, [this, generation, finish](std::optional<bookmarks::OverlaySnapshot> snapshot) {
+            if (generation != generation_) return;
+            if (snapshot) adoptSnapshot(std::move(snapshot->nodes), std::move(snapshot->base), snapshot->revision);
+            finish();
+        });
+    });
+}
 bool BookmarkModel::canUndo() const { return editable() && editor_ && editor_->canUndo(); }
 bool BookmarkModel::canRedo() const { return editable() && editor_ && editor_->canRedo(); }
 QString BookmarkModel::undoKind() const { return editor_ ? editKindText(editor_->undoKind()) : QString{}; }

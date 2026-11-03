@@ -168,6 +168,10 @@ int main(int argc, char* argv[]) {
     // N5.3: bookmark storage on its own worker, in the same profile database.
     atlas::app::BookmarkService bookmarkService(
         filesystemPath(QDir{profileDirectory}.filePath(QStringLiteral("library.sqlite3"))));
+    // Safe save asks the open reader session for a PDF's password (never QML).
+    bookmarkService.setPasswordSource([&readerController](const QString& path) {
+        return readerController.passwordForPath(path);
+    });
     atlas::app::AppPreferences preferences(QDir{profileDirectory}.filePath(QStringLiteral("preferences.ini")));
     if (parser.isSet(languageOption)) preferences.overrideLanguage(parser.value(languageOption));
     if (parser.isSet(themeOption)) preferences.overrideThemeMode(parser.value(themeOption));

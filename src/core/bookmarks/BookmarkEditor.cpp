@@ -464,16 +464,17 @@ EditResult BookmarkEditor::createBatch(std::vector<NewBookmark> items, BatchPlac
     }
 
     // Build the new nodes, then insert the top-level ones in one place.
-    std::vector<std::string> parents; // parents[level] = last node at that level
+    // Open headings by their requested level; a heading nests under the
+    // nearest open one with a smaller level, so skipped levels close up and
+    // headings of one level stay siblings ("1", "1.1.1", "1.1.2" → both under "1").
+    std::vector<std::pair<std::uint32_t, std::string>> open; // (requested level, node id)
+    std::vector<std::string> parents;                        // parents[depth] = open node at that depth
     std::vector<std::string> newTops;
     std::unordered_set<std::string> groups{top};
-    std::uint32_t previousLevel = 0;
-    bool first = true;
     for (auto& item : items) {
-        std::uint32_t level = first ? 0 : std::min(item.level, previousLevel + 1);
-        level = std::min<std::uint32_t>(level, static_cast<std::uint32_t>(OverlayLimits::maxDepth - 1));
-        first = false;
-        previousLevel = level;
+        while (!open.empty() && open.back().first >= item.level) open.pop_back();
+        if (open.size() >= OverlayLimits::maxDepth) open.resize(OverlayLimits::maxDepth - 1);
+        const auto level = static_cast<std::uint32_t>(open.size());
         BookmarkNode node;
         node.id = newBookmarkId();
         while (nodes_.contains(node.id) || touched.contains(node.id)) node.id = newBookmarkId();
@@ -494,6 +495,7 @@ EditResult BookmarkEditor::createBatch(std::vector<NewBookmark> items, BatchPlac
         remember(touched, node.id); // absent before
         parents.resize(level + 1);
         parents[level] = node.id;
+        open.emplace_back(item.level, node.id);
         const auto group = groupKey(node.parentId);
         const auto id = node.id;
         nodes_.emplace(id, std::move(node));

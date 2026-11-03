@@ -20,6 +20,11 @@ class QPdfDocument;
 
 namespace atlas::app {
 
+// The outline as the reader and the bookmark overlay see it: one entry per
+// item, depth first, with key, parentKey, position, title, page, fx/fy/hasPoint
+// and zoom. Used on open and by safe save to re-read a written file.
+[[nodiscard]] QVariantList readOutline(const QPdfDocument& document);
+
 class DocumentTextWorker final : public QObject {
     Q_OBJECT
 

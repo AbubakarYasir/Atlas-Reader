@@ -618,6 +618,105 @@ std::int64_t SqliteBookmarkOverlay::apply(std::string_view documentId, std::int6
     }
 }
 
+std::int64_t SqliteBookmarkOverlay::commitSave(std::string_view documentId, std::int64_t expectedRevision,
+                                               const SaveCommit& commit) {
+    const auto& proof = commit.proof;
+    if (!proof.written || !proof.validated || !proof.reopened || !proof.reindexed || proof.sourceRevisionAfterWrite.empty())
+        throw OverlayRuleViolation{"proofIncomplete"};
+    if (commit.base.sourceRevision != proof.sourceRevisionAfterWrite) throw OverlayRuleViolation{"proofMismatch"};
+    if (auto problem = validateBase(commit.base); !problem.empty()) throw OverlayRuleViolation{problem};
+    for (const auto& node : commit.nodes) {
+        if (node.documentId != documentId) throw OverlayRuleViolation{"wrongDocument"};
+        if (auto problem = validateNode(node); !problem.empty()) throw OverlayRuleViolation{problem};
+    }
+    if (auto problem = validateTree(commit.nodes); !problem.empty()) throw OverlayRuleViolation{problem};
+    if (auto problem = validateAgainstBase(commit.nodes, commit.base); !problem.empty())
+        throw OverlayRuleViolation{problem};
+
+    std::lock_guard lock{impl_->mutex};
+    Transaction transaction{impl_->db};
+    if (impl_->revision(documentId) != expectedRevision) {
+        throw OverlayRevisionConflict{"The bookmark overlay changed since it was loaded."};
+    }
+    impl_->ensureOverlayRow(documentId);
+
+    // Every live node is either kept (in `nodes`) or removed from the PDF.
+    std::unordered_map<std::string, BookmarkNode> previous;
+    for (auto& node : impl_->liveNodes(documentId)) previous.emplace(node.id, std::move(node));
+    std::unordered_set<std::string> accounted;
+    std::vector<BookmarkNode> prepared;
+    prepared.reserve(commit.nodes.size());
+    for (const auto& node : commit.nodes) {
+        const auto found = previous.find(node.id);
+        if (found == previous.end() || !accounted.insert(node.id).second) throw OverlayRuleViolation{"unknownNode"};
+        const BookmarkNode& before = found->second;
+        const bool stays = before.state == node.state &&
+                           (node.state == StorageState::embedded || node.state == StorageState::locallyHidden);
+        const bool embeds = node.state == StorageState::embedded &&
+                            transition(before.state, StorageEvent::embedVerified, &proof).allowed;
+        if (!stays && !embeds) throw OverlayRuleViolation{"illegalTransition"};
+        BookmarkNode next = node;
+        next.localRevision = before.localRevision + (sameContent(before, node) ? 0 : 1);
+        prepared.push_back(std::move(next));
+    }
+    for (const auto& id : commit.removed) {
+        const auto found = previous.find(id);
+        if (found == previous.end() || !accounted.insert(id).second || !found->second.baseKey ||
+            found->second.state != StorageState::locallyHidden)
+            throw OverlayRuleViolation{"unknownNode"};
+    }
+    if (accounted.size() != previous.size()) throw OverlayRuleViolation{"nodeNotAccounted"};
+
+    // The new base replaces the old one.
+    {
+        Statement clear{impl_->db, "DELETE FROM bookmark_base_nodes WHERE document_id = ?1"};
+        clear.text(1, documentId);
+        clear.run();
+        Statement snapshot{impl_->db,
+            "INSERT INTO bookmark_base_snapshots(document_id, source_revision) VALUES (?1, ?2) "
+            "ON CONFLICT(document_id) DO UPDATE SET source_revision = excluded.source_revision, "
+            "captured_utc_ms = unixepoch('subsec') * 1000"};
+        snapshot.text(1, documentId);
+        snapshot.text(2, commit.base.sourceRevision);
+        snapshot.run();
+        Statement node{impl_->db,
+            "INSERT INTO bookmark_base_nodes(document_id, base_key, parent_base_key, position, title, location) "
+            "VALUES (?1, ?2, ?3, ?4, ?5, ?6)"};
+        for (const auto& source : commit.base.nodes) {
+            node.reset();
+            node.text(1, documentId);
+            node.text(2, source.key);
+            node.optionalText(3, source.parentKey);
+            node.integer(4, source.position);
+            node.text(5, source.title);
+            node.textOrNull(6, source.location);
+            node.run();
+        }
+    }
+    {
+        // Base keys are renumbered; move the old ones aside first so the
+        // unique (document, base key) index never sees two live owners.
+        Statement aside{impl_->db, "UPDATE bookmark_nodes SET base_key = '~' || base_key WHERE document_id = ?1 "
+                                   "AND base_key IS NOT NULL AND deleted_utc_ms IS NULL"};
+        aside.text(1, documentId);
+        aside.run();
+        Statement retire{impl_->db, "UPDATE bookmark_nodes SET deleted_utc_ms = unixepoch('subsec') * 1000, "
+                                    "updated_utc_ms = unixepoch('subsec') * 1000 WHERE node_id = ?1"};
+        for (const auto& id : commit.removed) {
+            retire.reset();
+            retire.text(1, id);
+            retire.run();
+        }
+        NodeWriter writer{impl_->db};
+        for (const auto& node : prepared) writer.write(node);
+    }
+    const auto next = impl_->bumpRevision(documentId);
+    impl_->step("commitSave:beforeCommit");
+    impl_->checked.erase(std::string{documentId});
+    transaction.commit();
+    return next;
+}
+
 std::vector<std::string> SqliteBookmarkOverlay::documentsWithLocalWork() const {
     std::lock_guard lock{impl_->mutex};
     Statement statement{impl_->db, "SELECT DISTINCT document_id FROM bookmark_nodes WHERE deleted_utc_ms IS NULL "

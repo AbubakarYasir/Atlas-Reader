@@ -86,6 +86,7 @@ public:
     // Titles from the top level down to the node (duplicates are fine).
     [[nodiscard]] std::vector<std::string> breadcrumb(std::string_view id) const;
     [[nodiscard]] bool hasPending() const noexcept { return pending_.has_value(); }
+    [[nodiscard]] const std::optional<BaseSnapshot>& base() const noexcept { return base_; }
 
     // Commands. `index` is the position among the new parent's children
     // (clamped to the end). Titles, notes and tags are kept exactly as given.

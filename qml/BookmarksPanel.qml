@@ -205,7 +205,8 @@ Rectangle {
                     color: Theme.ink
                     font.family: I18n.uiFamily
                     font.pixelSize: Math.round(12 * I18n.sizeScale)
-                    text: panel.bookmarks.status === "readOnly"
+                    text: panel.bookmarks.saving ? I18n.t("save.saving")
+                          : panel.bookmarks.status === "readOnly"
                           ? I18n.t("bookmarks.readOnly." + (panel.bookmarks.statusReason || "storageError"))
                           : panel.bookmarks.outlineChangedOutside ? I18n.t("bookmarks.outlineChanged") : ""
                 }

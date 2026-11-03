@@ -216,6 +216,14 @@ void DocumentTextWorker::scanSlice() {
     emit headingsReady(id, headings, result.bodySize, result.truncated);
 }
 
+QVariantList readOutline(const QPdfDocument& document) {
+    QVariantList outline;
+    QPdfBookmarkModel model;
+    model.setDocument(const_cast<QPdfDocument*>(&document));
+    collectOutline(document, model, {}, 0, {}, outline);
+    return outline;
+}
+
 DocumentTextWorker::DocumentTextWorker(std::shared_ptr<std::atomic<quint64>> latestSearch)
     : latestSearch_{std::move(latestSearch)} {}
 

@@ -4,6 +4,14 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N5.4 (part 2): Save bookmarks into the PDF — 2026-11-03
+
+- Press **Ctrl+S** (or the Save button at the top left) to put the bookmarks you see into the PDF itself, so other PDF readers show them too. The first time for a book, Atlas says how many will be added and changed, and offers to also remove the PDF's own bookmarks you deleted in Atlas (they are kept unless you choose this).
+- Saving is careful: Atlas writes a copy, checks it, compares it with the original, opens it again, keeps a backup of the original in your profile, and only then replaces the PDF. If anything goes wrong, the PDF and your bookmarks stay exactly as they were, and Atlas tells you why in plain words.
+- Protected, signed, certified, read-only or in-use PDFs are never changed; your bookmarks stay in Atlas. A PDF changed by another program since Atlas read it is never overwritten.
+- After saving, the bookmarks show as being in the PDF; notes and tags stay in Atlas. Undo starts fresh after a save.
+- Auto Create Bookmarks now keeps headings of the same level side by side when a level is missing.
+
 ## N5.4 (part 1): groundwork for saving bookmarks into the PDF — 2026-11-03
 
 - Behind the coming Save: Atlas can now write a bookmark tree into a copy of a PDF and prove it is right before anything is replaced: the copy is checked by qpdf, every untouched bookmark keeps everything it had, nothing outside the bookmarks changes (pages, links, forms, document details, encryption), and Atlas's own PDF engine reads the result back. Encrypted PDFs stay encrypted with the same passwords. Nothing in the app writes PDFs yet.

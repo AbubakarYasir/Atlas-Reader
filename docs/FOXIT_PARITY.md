@@ -104,7 +104,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 | Foxit feature | Where in Foxit | Atlas |
 |---|---|---|
 | Custom title bar, file name, window buttons | Title bar | Done (N4.3) |
-| Quick Access Toolbar: Open, Save, Print, Create, Undo, Redo, Hand/Select, Mouse/Touch | Title bar | Done: Open, Undo, Redo (N5.3), Mouse/Touch · N5.4: Save · N7: Print · Hand/Select on the Home tab Done (N4.5) |
+| Quick Access Toolbar: Open, Save, Print, Create, Undo, Redo, Hand/Select, Mouse/Touch | Title bar | Done: Open, Save (N5.4, bookmarks into the PDF), Undo, Redo (N5.3), Mouse/Touch · N7: Print · Hand/Select on the Home tab Done (N4.5) |
 | Customize Quick Access Toolbar (add, remove, order, above/below ribbon) | ▾ on QAT, right-click ribbon | N7 |
 | Customize ribbon (new tabs/groups, rename, reorder, import/export, reset) and keyboard shortcuts | Right-click ribbon → Customize | Track H |
 | Title-bar search (commands, text, help; Alt+Q), collapsed search option | Title bar | Done N5.3 (Command Center: commands, library books, bookmarks; collapsed magnifier) · help search with N12 |
@@ -130,7 +130,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 | Open → Recent Documents (pin, open a copy, copy path, remove), Computer, cloud places | Done: recent, Computer, remove · pin, copy path, open containing folder Done (N4.4) · open a copy N7 · cloud places Track J |
 | Create (blank, from file, scanner, clipboard, web page, template, portfolio, binder) | Track C (portfolio/binder Track H) |
 | Properties (Ctrl+D): description, security, fonts, initial view, custom, advanced, XMP | N7 (view and permitted edits) |
-| Save (Ctrl+S), Save As (Ctrl+Shift+S), Revert | N5 safe save |
+| Save (Ctrl+S), Save As (Ctrl+Shift+S), Revert | Save Done (N5.4: bookmarks, safe save with backup) · Save As and Revert N5.4 slice 3 |
 | Print (Ctrl+P), Print preview, Batch Print, print current/all tabs | N7 (batch print Track H) |
 | Share: e-mail current/all tabs (Ctrl+Shift+L / K) | Track I |
 | Export (to images, Office, HTML, text) | Track C |

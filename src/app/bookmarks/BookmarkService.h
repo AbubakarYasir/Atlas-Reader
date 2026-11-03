@@ -6,6 +6,7 @@
 // delivered back on the thread that owns the service (the UI thread). QML never
 // sees SQL, and nothing here blocks the UI.
 
+#include "app/bookmarks/OutlineSafeSave.h"
 #include "app/bookmarks/SqliteBookmarkOverlay.h"
 #include "core/bookmarks/BookmarkOverlay.h"
 
@@ -69,6 +70,12 @@ public:
     void reload(const std::string& documentId, QObject* receiver,
                 std::function<void(std::optional<bookmarks::OverlaySnapshot>)> done);
 
+    // N5.4 safe save into the PDF (ADR-0009), on the worker; queued after any
+    // pending writes. The password comes from the password source (the open
+    // reader session), never from QML. Backups go to <profile>/backups.
+    void save(SafeSaveInput input, QObject* receiver, std::function<void(SafeSaveOutcome)> done);
+    void setPasswordSource(std::function<QString(const QString& path)> source) { passwordSource_ = std::move(source); }
+
     // Blocks until every queued request has finished (tests and shutdown).
     void waitForIdle();
 
@@ -78,6 +85,7 @@ private:
 
     QThread thread_;
     QObject* worker_{}; // lives on thread_
+    std::function<QString(const QString& path)> passwordSource_;
     std::shared_ptr<Storage> storage_;
 };
 

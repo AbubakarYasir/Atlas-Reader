@@ -35,6 +35,14 @@ struct OverlayChangeSet final {
     std::vector<std::string> restores;
 };
 
+// N5.4: the outcome of a verified save (ADR-0009), applied in one transaction.
+struct SaveCommit final {
+    BaseSnapshot base;                // the outline as read back from the written file
+    std::vector<BookmarkNode> nodes;  // every live node afterwards (full records)
+    std::vector<std::string> removed; // hidden PDF nodes the save removed from the PDF
+    EmbedProof proof;                 // every flag must be true
+};
+
 enum class BaseAdoption : std::uint8_t {
     adopted,        // first outline seen: base stored, Embedded nodes created
     unchanged,      // same revision and outline as the stored base
@@ -83,12 +91,20 @@ public:
     // Returns the new overlay revision.
     std::int64_t apply(std::string_view documentId, std::int64_t expectedRevision, const OverlayChangeSet& change);
 
+    // N5.4 safe save: replaces the base snapshot with the outline read back
+    // from the written file and moves the saved nodes to Embedded (the only
+    // way local work becomes Embedded). Every live node must be accounted for;
+    // states may only stay as they are or take the embedVerified step with a
+    // complete proof; the result must pass "no false Embedded" against the new
+    // base. Returns the new overlay revision.
+    std::int64_t commitSave(std::string_view documentId, std::int64_t expectedRevision, const SaveCommit& commit);
+
     // Documents with local research that is not in the PDF (any state other
     // than Embedded): what a restart after a crash must offer to continue.
     [[nodiscard]] std::vector<std::string> documentsWithLocalWork() const;
 
     // Test hook: called at named steps inside a write transaction
-    // ("adoptBase:beforeCommit", "apply:beforeCommit"). Crash tests end the
+    // ("adoptBase:beforeCommit", "apply:beforeCommit", "commitSave:beforeCommit"). Crash tests end the
     // process there to prove the transaction leaves nothing half-written.
     void setFaultHookForTesting(std::function<void(std::string_view step)> hook);
 

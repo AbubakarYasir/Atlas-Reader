@@ -12,9 +12,11 @@ Rectangle {
     id: bar
 
     signal openPdfRequested()
+    signal saveRequested()
     signal undoRequested()
     signal redoRequested()
     property string placeTitle: ""
+    property bool canSave: false
     property bool canUndo: false
     property bool canRedo: false
     property bool hasDocument: false
@@ -80,8 +82,21 @@ Rectangle {
                 shortcutHint: "Ctrl+O"
                 onClicked: bar.openPdfRequested()
             }
-            // Undo/Redo act on this book's bookmark edits (N5.3); Save joins
-            // the toolbar with safe save in N5.4.
+            // Save puts this book's bookmarks into the PDF (N5.4); Undo/Redo
+            // act on its bookmark edits (N5.3).
+            AtlasIconButton {
+                implicitWidth: Theme.qatButton
+                implicitHeight: Theme.qatButton
+                iconSize: 16
+                iconName: "save"
+                iconColor: Theme.titleBarText
+                hoverColor: Theme.titleBarHover
+                cornerRadius: 2
+                enabled: bar.canSave
+                text: I18n.t("save.qat")
+                shortcutHint: "Ctrl+S"
+                onClicked: bar.saveRequested()
+            }
             AtlasIconButton {
                 implicitWidth: Theme.qatButton
                 implicitHeight: Theme.qatButton

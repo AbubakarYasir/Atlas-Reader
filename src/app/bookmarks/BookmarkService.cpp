@@ -1,5 +1,7 @@
 #include "app/bookmarks/BookmarkService.h"
 
+#include "app/bookmarks/OutlineSafeSave.h"
+
 #include "app/index/SqliteLibraryIndex.h"
 #include "core/bookmarks/LocationEnvelope.h"
 
@@ -24,14 +26,6 @@ namespace {
 [[nodiscard]] std::filesystem::path toPath(const QString& path) {
     return std::filesystem::path{reinterpret_cast<const char16_t*>(path.utf16()),
                                  reinterpret_cast<const char16_t*>(path.utf16()) + path.size()};
-}
-
-// Size and modification time: what the outline was read from.
-[[nodiscard]] std::string revisionOf(const QString& path) {
-    const QFileInfo info{path};
-    if (!info.exists()) return {};
-    return "size=" + std::to_string(info.size()) +
-           ";mtime=" + std::to_string(info.lastModified().toMSecsSinceEpoch());
 }
 
 } // namespace
@@ -122,7 +116,7 @@ void BookmarkService::open(const QString& path, const QVariantList& outline, QOb
     QPointer<BookmarkService> self{this};
     post([path, outline, target, self, callback = std::move(done)](Storage& storage) mutable {
         BookmarkOpenResult result;
-        result.base = baseFromOutline(outline, revisionOf(path));
+        result.base = baseFromOutline(outline, fileRevision(path));
         try {
             storage.ensureOpen();
             const auto documents = storage.library->documentsAtPath(toPath(path));
@@ -146,6 +140,29 @@ void BookmarkService::open(const QString& path, const QVariantList& outline, QOb
         QMetaObject::invokeMethod(
             self.data(),
             [target, reply = std::move(callback), answer = std::move(result)]() mutable {
+                if (target) reply(std::move(answer));
+            },
+            Qt::QueuedConnection);
+    });
+}
+
+void BookmarkService::save(SafeSaveInput input, QObject* receiver, std::function<void(SafeSaveOutcome)> done) {
+    QPointer<QObject> target{receiver};
+    QPointer<BookmarkService> self{this};
+    if (passwordSource_) input.password = passwordSource_(input.path);
+    post([request = std::move(input), target, self, callback = std::move(done)](Storage& storage) mutable {
+        SafeSaveOutcome outcome;
+        try {
+            storage.ensureOpen();
+            request.backupRoot = storage.databasePath.parent_path() / "backups";
+            outcome = saveOutlineSafely(*storage.overlay, request);
+        } catch (const std::exception&) {
+            outcome.reason = QStringLiteral("storageError");
+        }
+        request.password.fill(u'\0'); // as far as Qt allows: the copy dies here
+        QMetaObject::invokeMethod(
+            self.data(),
+            [target, reply = std::move(callback), answer = std::move(outcome)]() mutable {
                 if (target) reply(std::move(answer));
             },
             Qt::QueuedConnection);

@@ -6,7 +6,7 @@ Read this before changing anything. AI-written code gets no lower bar than human
 
 ## 1. Start every session
 
-1. Read [CHECKPOINTS.md](CHECKPOINTS.md) → **Status now**. Work only on the active sub-stage (currently **N5.3**), in order.
+1. Read [CHECKPOINTS.md](CHECKPOINTS.md) → **Status now**. Work only on the active sub-stage (currently **N5.4**), in order.
 2. Read the stage section, the [N5 evidence ledger](docs/baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md), and only the docs relevant to your change:
    - UI → [DESIGN.md](docs/DESIGN.md) and [FOXIT_PARITY.md](docs/FOXIT_PARITY.md) (layout, sizes, shortcuts; never Foxit's files or icons) · threads/engines/layers → [ARCHITECTURE.md](docs/ARCHITECTURE.md)
    - identity, bookmarks, saving, import/export, passwords → [DATA_AND_SAFETY.md](docs/DATA_AND_SAFETY.md)

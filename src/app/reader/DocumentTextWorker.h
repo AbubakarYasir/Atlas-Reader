@@ -39,6 +39,10 @@ public slots:
     void wordCount(quint64 requestId);
     // Bounding box of the page's visible content as fractions (Fit Visible).
     void contentBox(quint64 requestId, int page);
+    // N5.3 Auto Create Bookmarks: reads every page's text lines in short
+    // slices (other text work runs in between) and suggests headings.
+    void scanHeadings(quint64 scanId, int maxLevels);
+    void cancelScan();
 
 signals:
     void info(quint64 revision, const QVariantList& outline, const QStringList& pageLabels, bool hasText);
@@ -47,8 +51,15 @@ signals:
     void pageLinks(quint64 revision, int page, const QVariantList& links);
     void wordCountReady(quint64 requestId, int words, int characters, int pages);
     void contentBoxReady(quint64 requestId, int page, const QRectF& fraction);
+    void headingsProgress(quint64 scanId, int pagesDone, int pageCount);
+    // [{title, page, fx, fy, level, size}] in reading order.
+    void headingsReady(quint64 scanId, const QVariantList& headings, double bodySize, bool truncated);
 
 private:
+    void scanSlice();
+
+    struct HeadingScan;
+    std::unique_ptr<HeadingScan> scan_;
     std::shared_ptr<std::atomic<quint64>> latestSearch_;
     QByteArray bytes_;
     QBuffer buffer_;

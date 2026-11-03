@@ -85,6 +85,7 @@ add_library(atlas_bookmark_overlay STATIC
     src/core/bookmarks/BookmarkOverlay.cpp
     src/core/bookmarks/BookmarkOverlay.h
     src/core/bookmarks/BookmarkSearch.cpp
+    src/core/bookmarks/HeadingDetector.cpp
     src/core/bookmarks/BookmarkSearch.h
     src/core/bookmarks/LocationEnvelope.cpp
     src/core/bookmarks/LocationEnvelope.h
@@ -211,7 +212,7 @@ add_library(atlas_reader_ui STATIC
 )
 target_include_directories(atlas_reader_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(atlas_reader_ui PUBLIC atlas_document_policy
-    atlas_reader_session atlas_reader_viewport atlas_library_document_inspector
+    atlas_reader_session atlas_reader_viewport atlas_library_document_inspector atlas_bookmark_overlay
     Qt6::Core Qt6::Concurrent Qt6::Gui Qt6::Quick Qt6::Pdf
 )
 atlas_enable_warnings(atlas_reader_ui)
@@ -247,7 +248,7 @@ set(ATLAS_QML_FILES
     qml/AtlasButton.qml qml/AtlasIconButton.qml qml/AtlasTextField.qml qml/SidebarItem.qml
     qml/TitleBar.qml qml/LibraryView.qml qml/ReaderView.qml qml/ReaderTab.qml
     qml/RibbonButton.qml qml/RibbonBar.qml qml/DocumentTabBar.qml qml/Backstage.qml
-    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/SignaturesPanel.qml qml/CommandCenter.qml qml/AtlasCheckBox.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
+    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/SignaturesPanel.qml qml/CommandCenter.qml qml/AutoBookmarksDialog.qml qml/AtlasCheckBox.qml qml/AtlasRadioButton.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
 )
 # Place every QML file at the module root so the module's qmldir (and its
 # singletons) is the implicit import of each file.
@@ -405,6 +406,11 @@ target_link_libraries(atlas_reader_viewport_render_tests PRIVATE atlas_reader_ui
 atlas_enable_warnings(atlas_reader_viewport_render_tests)
 add_test(NAME atlas_reader_viewport_render COMMAND atlas_reader_viewport_render_tests)
 
+add_executable(atlas_heading_scan_tests tests/reader/heading_scan_tests.cpp)
+target_link_libraries(atlas_heading_scan_tests PRIVATE atlas_reader_ui Qt6::Gui)
+atlas_enable_warnings(atlas_heading_scan_tests)
+add_test(NAME atlas_heading_scan COMMAND atlas_heading_scan_tests)
+
 add_executable(atlas_reader_controller_tests tests/reader/reader_controller_tests.cpp)
 target_link_libraries(atlas_reader_controller_tests PRIVATE atlas_reader_ui)
 atlas_enable_warnings(atlas_reader_controller_tests)
@@ -428,6 +434,11 @@ add_executable(atlas_bookmark_editor_tests tests/bookmarks/bookmark_editor_tests
 target_link_libraries(atlas_bookmark_editor_tests PRIVATE atlas_bookmark_store atlas_library_index)
 atlas_enable_warnings(atlas_bookmark_editor_tests)
 add_test(NAME atlas_bookmark_editor COMMAND atlas_bookmark_editor_tests)
+
+add_executable(atlas_heading_detector_tests tests/bookmarks/heading_detector_tests.cpp)
+target_link_libraries(atlas_heading_detector_tests PRIVATE atlas_bookmark_overlay)
+atlas_enable_warnings(atlas_heading_detector_tests)
+add_test(NAME atlas_heading_detector COMMAND atlas_heading_detector_tests)
 
 add_executable(atlas_bookmark_model_tests tests/bookmarks/bookmark_model_tests.cpp)
 target_link_libraries(atlas_bookmark_model_tests PRIVATE atlas_bookmark_ui)

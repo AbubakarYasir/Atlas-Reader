@@ -33,6 +33,7 @@ Item {
         { id: "about", key: "cmd.about", keys: "", icon: "info", doc: false },
         { id: "fullScreen", key: "cmd.fullScreen", keys: "F11", icon: "full_screen_maximize", doc: false },
         { id: "bookmark", key: "bookmarks.add", keys: "Ctrl+B", icon: "bookmark", doc: true },
+        { id: "autoBookmarks", key: "autoBookmarks.title", keys: "", icon: "text_bullet_list_tree", doc: true },
         { id: "bookmarksPanel", key: "panel.bookmarks", keys: "", icon: "bookmark", doc: true },
         { id: "signaturesPanel", key: "panel.signatures", keys: "", icon: "signature", doc: true },
         { id: "pagesPanel", key: "panel.pages", keys: "", icon: "document_copy", doc: true },

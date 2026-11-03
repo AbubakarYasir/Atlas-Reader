@@ -48,6 +48,7 @@ std::string_view editKindName(EditKind kind) {
     case EditKind::unhide: return "unhide";
     case EditKind::requestEmbed: return "requestEmbed";
     case EditKind::cancelEmbed: return "cancelEmbed";
+    case EditKind::autoCreate: return "autoCreate";
     }
     return "unknown";
 }
@@ -416,6 +417,101 @@ EditResult BookmarkEditor::setEmbedRequested(std::string_view id, bool requested
     remember(touched, found->first);
     node.state = wanted;
     return finish(requested ? EditKind::requestEmbed : EditKind::cancelEmbed, touched, found->first);
+}
+
+EditResult BookmarkEditor::createBatch(std::vector<NewBookmark> items, BatchPlacement placement) {
+    if (pending_) return refuse("busy");
+    if (items.empty()) return refuse("nothingToAdd");
+    if (nodes_.size() + items.size() > OverlayLimits::maxNodesPerDocument) return refuse("tooManyNodes");
+
+    std::unordered_map<std::string, std::optional<BookmarkNode>> touched;
+    const std::string top = groupKey(std::nullopt);
+
+    if (placement == BatchPlacement::replace) {
+        // Hide every PDF bookmark; remove Atlas's own unless they hold PDF ones.
+        std::vector<std::string> localTops;
+        for (const auto* node : inOrder()) {
+            if (isSource(*node)) {
+                if (node->state != S::locallyHidden && node->state != S::conflict) {
+                    remember(touched, node->id);
+                    nodes_.at(node->id).state = S::locallyHidden;
+                }
+            }
+        }
+        for (const auto& id : children(std::nullopt)) {
+            if (!isSource(nodes_.at(id))) localTops.push_back(id);
+        }
+        for (const auto& id : localTops) {
+            std::vector<std::string> subtree{id};
+            bool holdsSource = false;
+            for (std::size_t i = 0; i < subtree.size() && !holdsSource; ++i) {
+                const auto kids = children_.find(subtree[i]);
+                if (kids == children_.end()) continue;
+                for (const auto& child : kids->second) {
+                    if (isSource(nodes_.at(child))) holdsSource = true;
+                    subtree.push_back(child);
+                }
+            }
+            if (holdsSource || frozen(nodes_.at(id))) continue;
+            for (const auto& member : subtree) remember(touched, member);
+            auto& list = children_[top];
+            list.erase(std::find(list.begin(), list.end(), id));
+            for (const auto& member : subtree) {
+                children_.erase(member);
+                nodes_.erase(member);
+            }
+        }
+    }
+
+    // Build the new nodes, then insert the top-level ones in one place.
+    std::vector<std::string> parents; // parents[level] = last node at that level
+    std::vector<std::string> newTops;
+    std::unordered_set<std::string> groups{top};
+    std::uint32_t previousLevel = 0;
+    bool first = true;
+    for (auto& item : items) {
+        std::uint32_t level = first ? 0 : std::min(item.level, previousLevel + 1);
+        level = std::min<std::uint32_t>(level, static_cast<std::uint32_t>(OverlayLimits::maxDepth - 1));
+        first = false;
+        previousLevel = level;
+        BookmarkNode node;
+        node.id = newBookmarkId();
+        while (nodes_.contains(node.id) || touched.contains(node.id)) node.id = newBookmarkId();
+        node.documentId = documentId_;
+        if (level > 0) node.parentId = parents[level - 1];
+        node.title = std::move(item.title);
+        node.location = std::move(item.location);
+        node.state = S::localOnly;
+        if (auto problem = validateNode(node); !problem.empty()) {
+            // Undo what this command did so far, then refuse.
+            for (auto& [id, previous] : touched) {
+                if (previous) nodes_.insert_or_assign(id, *previous);
+                else nodes_.erase(id);
+            }
+            rebuildIndex();
+            return refuse(problem);
+        }
+        remember(touched, node.id); // absent before
+        parents.resize(level + 1);
+        parents[level] = node.id;
+        const auto group = groupKey(node.parentId);
+        const auto id = node.id;
+        nodes_.emplace(id, std::move(node));
+        if (level == 0) newTops.push_back(id);
+        else {
+            children_[group].push_back(id);
+            groups.insert(group);
+        }
+    }
+    auto& list = children_[top];
+    const auto at = placement == BatchPlacement::before ? list.begin() : list.end();
+    list.insert(at, newTops.begin(), newTops.end());
+    for (const auto& group : groups) renumber(group, touched);
+    for (const auto& [id, _] : touched) {
+        auto found = nodes_.find(id);
+        if (found != nodes_.end()) settleSourceState(found->second);
+    }
+    return finish(EditKind::autoCreate, touched, newTops.empty() ? std::string{} : newTops.front());
 }
 
 std::optional<EditKind> BookmarkEditor::undoKind() const {

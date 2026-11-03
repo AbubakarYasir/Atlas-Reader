@@ -25,6 +25,7 @@ DYNAMIC = {
     "bookmarks.refused.": ["readOnly", "atTop", "atBottom", "atTopLevel", "nothingToIndentInto", "unhideFirst",
                            "resolveFirst", "containsSourceNodes", "cycle", "tooDeep", "tooManyNodes", "badTitle",
                            "historyStale", "other"],
+    "autoBookmarks.place.": ["after", "before", "replace"],
     "skins.color.": ["blue", "midnight", "sky", "teal", "plum", "graphite"],
     "capability.state.": ["restricted", "readOnly", "locked", "signed", "changed", "unknown", "writable"],
     "capability.reason.": ["missing", "offline", "cloudPlaceholder", "passwordRequired", "unsupportedSecurity",

@@ -126,6 +126,10 @@ public:
     // A new bookmark goes after `row` (as its sibling), inside it as the last
     // child when `asChild`, or at the end of the top level when row < 0.
     Q_INVOKABLE int addBookmark(int row, bool asChild, const QString& title, const QVariantMap& location);
+    // Auto Create Bookmarks: [{title, page, fx, fy, level}] in reading order,
+    // placed "after", "before" or "replace"; one undo step. Returns the row of
+    // the first new bookmark, or -1 (refused(reason) explains).
+    Q_INVOKABLE int addMany(const QVariantList& headings, const QString& placement);
     Q_INVOKABLE int rename(int row, const QString& title);
     Q_INVOKABLE int setDestination(int row, const QVariantMap& location);
     Q_INVOKABLE int setNotes(int row, const QString& notes, const QStringList& tags);

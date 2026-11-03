@@ -346,9 +346,78 @@ void checkSearch() {
 
 } // namespace
 
+// Auto Create Bookmarks: a whole tree in one step, three placements, one undo.
+void checkBatch() {
+    {
+        Fixture f;
+        const auto topsBefore = f.editor->children(std::nullopt);
+        std::vector<NewBookmark> items{{"Chapter 1", at(2), 0}, {"1.1 Methods", at(3), 1}, {"1.1.1 Detail", at(3), 2},
+                                       {"Chapter 2", at(5), 0}, {"Too deep jumps clamp", at(6), 3}};
+        const auto result = f.persist(f.editor->createBatch(items, BatchPlacement::after));
+        f.requireInSync("batch after");
+        const auto& tops = f.editor->children(std::nullopt);
+        require(tops.size() == topsBefore.size() + 2 && tops[topsBefore.size()] == result.nodeId,
+                "New top-level bookmarks go after the existing ones.");
+        const auto& chapterOne = tops[topsBefore.size()];
+        const auto& kids = f.editor->children(chapterOne);
+        require(kids.size() == 1 && f.editor->find(kids[0])->title == "1.1 Methods" &&
+                    f.editor->children(kids[0]).size() == 1,
+                "Levels become a tree.");
+        const auto& chapterTwo = tops[topsBefore.size() + 1];
+        require(f.editor->children(chapterTwo).size() == 1, "A level that jumps two deeper is clamped to one deeper.");
+        for (const auto* node : f.editor->inOrder()) {
+            if (!node->baseKey) require(node->state == StorageState::localOnly, "New bookmarks are Atlas's own.");
+            else require(node->state == StorageState::embedded, "The PDF's bookmarks are untouched.");
+        }
+        require(f.editor->undoKind() == EditKind::autoCreate, "One undo step.");
+        f.persist(f.editor->undo());
+        f.requireInSync("batch undone");
+        require(f.editor->children(std::nullopt) == topsBefore && f.editor->size() == 5, "Undo removes the whole batch.");
+        f.persist(f.editor->redo());
+        require(f.editor->size() == 10, "Redo brings it back.");
+    }
+    {
+        Fixture f;
+        const auto topsBefore = f.editor->children(std::nullopt);
+        f.persist(f.editor->createBatch({{"Preface", at(0), 0}}, BatchPlacement::before));
+        const auto& tops = f.editor->children(std::nullopt);
+        require(f.editor->find(tops.front())->title == "Preface" && tops.size() == topsBefore.size() + 1,
+                "\"Before\" puts the batch first.");
+        require(f.source("0").state == StorageState::embedded,
+                "Atlas's own bookmarks may sit before the PDF's: they stay Embedded.");
+        f.requireInSync("batch before");
+    }
+    {
+        Fixture f;
+        const auto mine = f.persist(f.editor->create(std::nullopt, 9, "my note", at(7))).nodeId;
+        f.persist(f.editor->createBatch({{"الفصل الأول", at(1), 0}, {"مبحث", at(1), 1}}, BatchPlacement::replace));
+        f.requireInSync("batch replace");
+        require(f.editor->find(mine) == nullptr, "Replace removes Atlas's own bookmarks.");
+        for (const auto* node : f.editor->inOrder()) {
+            if (node->baseKey) require(node->state == StorageState::locallyHidden, "Replace hides the PDF's own.");
+        }
+        f.persist(f.editor->undo());
+        f.requireInSync("replace undone");
+        require(f.editor->find(mine) != nullptr && f.source("0").state == StorageState::embedded &&
+                    f.source("0/1").state == StorageState::embedded,
+                "Undo restores everything replace touched.");
+    }
+    {
+        Fixture f;
+        require(f.editor->createBatch({}, BatchPlacement::after).reason == "nothingToAdd", "An empty batch is refused.");
+        const auto before = f.editor->size();
+        const auto refused = f.editor->createBatch({{"ok", at(1), 0}, {"\xC0\xAF", at(1), 0}}, BatchPlacement::replace);
+        require(!refused.ok && refused.reason == "badTitle" && f.editor->size() == before && !f.editor->hasPending() &&
+                    f.source("0").state == StorageState::embedded,
+                "A refused batch leaves nothing behind.");
+        f.requireInSync("refused batch");
+    }
+}
+
 int main() {
     try {
         checkCommandsAndStates();
+        checkBatch();
         checkUndoRedo();
         checkStoreRestoreRules();
         checkSearch();

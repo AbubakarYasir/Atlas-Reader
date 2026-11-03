@@ -571,6 +571,29 @@ int BookmarkModel::addBookmark(int row, bool asChild, const QString& title, cons
     return run(std::move(result), id);
 }
 
+int BookmarkModel::addMany(const QVariantList& headings, const QString& placement) {
+    if (!editable() || !editor_) {
+        emit refused(QStringLiteral("readOnly"));
+        return -1;
+    }
+    std::vector<bookmarks::NewBookmark> items;
+    items.reserve(static_cast<std::size_t>(headings.size()));
+    for (const auto& value : headings) {
+        const QVariantMap heading = value.toMap();
+        const auto location = locationFrom(heading);
+        const QString title = heading.value(QStringLiteral("title")).toString().trimmed();
+        if (!location || title.isEmpty()) continue;
+        const int level = std::clamp(heading.value(QStringLiteral("level")).toInt(), 0, 31);
+        items.push_back({toUtf8(title), *location, static_cast<std::uint32_t>(level)});
+    }
+    const auto where = placement == QStringLiteral("before")    ? bookmarks::BatchPlacement::before
+                       : placement == QStringLiteral("replace") ? bookmarks::BatchPlacement::replace
+                                                                : bookmarks::BatchPlacement::after;
+    auto result = editor_->createBatch(std::move(items), where);
+    const auto id = result.nodeId;
+    return run(std::move(result), id);
+}
+
 int BookmarkModel::rename(int row, const QString& title) {
     const auto* node = nodeAt(row);
     if (!editable() || node == nullptr) {

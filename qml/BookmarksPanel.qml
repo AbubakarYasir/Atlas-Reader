@@ -20,6 +20,7 @@ Rectangle {
     required property var bookmarks     // BookmarkModel
     signal toastRequested(string text)
     signal addFolderRequested()
+    signal autoCreateRequested()
 
     color: Theme.panel
 
@@ -538,6 +539,7 @@ Rectangle {
         MenuItem { text: I18n.t("bookmarks.undo"); enabled: panel.bookmarks.canUndo; onTriggered: panel.bookmarks.undo() }
         MenuItem { text: I18n.t("bookmarks.redo"); enabled: panel.bookmarks.canRedo; onTriggered: panel.bookmarks.redo() }
         MenuSeparator {}
+        MenuItem { text: I18n.t("autoBookmarks.menu"); enabled: panel.canEdit; onTriggered: panel.autoCreateRequested() }
         MenuItem {
             text: I18n.t("bookmarks.showHidden")
             checkable: true

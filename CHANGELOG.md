@@ -4,6 +4,14 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N5.3 (part 4): Auto Create Bookmarks — 2026-11-03
+
+- In the Bookmarks panel's options (or the Command Center), choose **Auto Create Bookmarks…**. Atlas reads the whole book in the background and suggests headings: lines in larger type, and short lines that start like a heading in English, Arabic or Urdu (Chapter, الفصل, باب …). Running headers, footers and page numbers are left out, and a heading over two lines becomes one bookmark.
+- Check the preview, untick anything you don't want, choose how many levels (1–4) and whether the new bookmarks go after, before or instead of the existing ones, then create them. One Undo takes them all back. Nothing is written into the PDF.
+- Atlas estimates type size from what the PDF engine reports, so bold headings at body size are found only when they start like a heading; the preview is there so you decide.
+- Radio buttons in Preferences and Skins now match the check boxes in every skin.
+- With this, the bookmark editor (N5.3) is complete; next comes saving bookmarks into the PDF safely (N5.4).
+
 ## N5.3 (part 3): Command Center, Undo/Redo, Identity, Security, Signatures — 2026-11-03
 
 - **Command Center:** click the magnifier in the title bar or press **Alt+Q**, then type. Atlas lists matching commands (with their shortcuts), books in your library and bookmarks in the open book; use ↑/↓ and Enter, or Esc to close. Commands can be found by their English name in any interface language.

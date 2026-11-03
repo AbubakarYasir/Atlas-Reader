@@ -182,7 +182,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 |---|---|---|
 | Content | Edit Text, Edit Object (text, image, shape, shading), Link & Join Text, Check Spelling, Search & Replace (Ctrl+T) | Track D |
 | Add | Add Text, Add Images, Add Shapes, Reflow Editing, Add Article Box, Articles panel | Track D |
-| Links | Web Links ▾ (create from URLs, remove all), Link, Bookmark (Ctrl+B), Auto Create Bookmarks, Cross Reference (Ctrl+Shift+C) | Following links Done (N4.5) · Bookmark (Ctrl+B) Done (N5.3) · Auto Create Bookmarks from outline/headings N5 · creating links, web-link detection, cross reference Track D |
+| Links | Web Links ▾ (create from URLs, remove all), Link, Bookmark (Ctrl+B), Auto Create Bookmarks, Cross Reference (Ctrl+Shift+C) | Following links Done (N4.5) · Bookmark (Ctrl+B) Done (N5.3) · Auto Create Bookmarks Done (N5.3: headings by type size and wording, preview, levels, placement; Foxit's font/sample-text rules need engine font data, see CHECKPOINTS) · creating links, web-link detection, cross reference Track D |
 | Insert | File Attachment, Image Annotation, Audio & Video, Add 3D | Attachments panel (read, save copy) Track D · image annotation Track D · audio/video and 3D playback Track D (sandboxed, off by default) |
 | Image editing | Page Editor tools: magic wand, lasso, polygonal lasso, filters (dodge, greyen, sharpen, binarize, soften…), add image | Track D |
 
@@ -281,7 +281,7 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 | Panel | Atlas |
 |---|---|
 | Pages (thumbnails, page operations menu) | Done (view, N4.4) · Track C (operations) |
-| Bookmarks (Atlas's signature editor) | Editable panel Done (N5.3 slice 2: add, rename, delete/hide, move, nest, undo, find, states); Command Center Done (slice 3); Auto Create N5.3 slice 4 |
+| Bookmarks (Atlas's signature editor) | Editable panel Done (N5.3 slice 2: add, rename, delete/hide, move, nest, undo, find, states); Command Center Done (slice 3); Auto Create Done (slice 4) |
 | Outline / document bookmarks (read) | Done (N4.5) |
 | Comments | N6 |
 | Search (right panel; whole words, case, include bookmarks/comments, highlight all, save results to PDF/CSV) | Done: whole words, case, highlight all (always on), results with context (N4.5) · include bookmarks/comments N6 · save results Track H |

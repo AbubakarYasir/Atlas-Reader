@@ -81,6 +81,7 @@ ApplicationWindow {
         switch (command) {
         case "bookmark": tab.addBookmarkHere(); break
         case "bookmarksPanel": preferences.navPanel = "bookmarks"; break
+        case "autoBookmarks": tab.openAutoBookmarks(); return
         case "pagesPanel": preferences.navPanel = "pages"; break
         case "signaturesPanel": preferences.navPanel = "signatures"; break
         case "togglePanels": preferences.navPanel = preferences.navPanel === "" ? "bookmarks" : ""; break
@@ -215,6 +216,7 @@ ApplicationWindow {
             else if (qaShow.indexOf("bookmarks-") === 0 && reader.currentTab) reader.currentTab.bookmarksQa(qaShow.slice(10))
             else if (qaShow.indexOf("command:") === 0) { titleBar.openSearch(); titleBar.commandCenter.setQuery(qaShow.slice(8)) }
             else if (qaShow === "signatures") preferences.navPanel = "signatures"
+            else if (qaShow === "autobookmarks" && reader.currentTab) { preferences.navPanel = "bookmarks"; reader.currentTab.openAutoBookmarks() }
             else if (qaShow === "wordcount" && root.activeViewport) readerDialogs.openWordCount(root.activeViewport)
             else if (qaShow === "zoomto" && root.activeViewport) readerDialogs.openZoomTo(root.activeViewport)
             else if (qaShow === "link") readerDialogs.confirmLink("https://example.org/atlas")

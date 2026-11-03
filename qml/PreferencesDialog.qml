@@ -287,7 +287,7 @@ Popup {
                                 spacing: 2
                                 Repeater {
                                     model: ["cmd.singlePage", "cmd.continuous", "cmd.facing", "cmd.continuousFacing"]
-                                    delegate: RadioButton {
+                                    delegate: AtlasRadioButton {
                                         required property int index
                                         required property var modelData
                                         text: I18n.t(modelData)
@@ -305,7 +305,7 @@ Popup {
                                 spacing: 2
                                 Repeater {
                                     model: ["zoom.fitWidth", "zoom.fitPage", "zoom.actualSize"]
-                                    delegate: RadioButton {
+                                    delegate: AtlasRadioButton {
                                         required property int index
                                         required property var modelData
                                         text: I18n.t(modelData)
@@ -370,7 +370,7 @@ Popup {
                                 spacing: 2
                                 Repeater {
                                     model: I18n.languages
-                                    delegate: RadioButton {
+                                    delegate: AtlasRadioButton {
                                         required property var modelData
                                         text: modelData.name
                                         font.family: modelData.code === "ur" ? "Noto Nastaliq Urdu" : ""
@@ -493,7 +493,7 @@ Popup {
                                 spacing: 2
                                 Repeater {
                                     model: 4
-                                    delegate: RadioButton {
+                                    delegate: AtlasRadioButton {
                                         required property int index
                                         text: I18n.t("view.colors." + index)
                                         checked: preferences.readingColors === index

@@ -39,6 +39,13 @@ void ReaderViewport::ensureTextWorker() {
             [this](quint64 id, int words, int characters, int pages) {
                 if (id == wordCountRequest_) emit wordCountReady(words, characters, pages);
             });
+    connect(textWorker_, &DocumentTextWorker::headingsProgress, this, [this](quint64 id, int done, int count) {
+        if (id == headingScan_) emit headingsProgress(done, count);
+    });
+    connect(textWorker_, &DocumentTextWorker::headingsReady, this,
+            [this](quint64 id, const QVariantList& headings, double bodySize, bool truncated) {
+                if (id == headingScan_) emit headingsReady(headings, bodySize, truncated);
+            });
     connect(textWorker_, &DocumentTextWorker::contentBoxReady, this,
             [this](quint64 id, int page, const QRectF& fraction) {
                 if (id != contentBoxRequest_ || page < 0 || static_cast<std::size_t>(page) >= layout_.pageCount())
@@ -526,6 +533,22 @@ void ReaderViewport::requestWordCount() {
     const quint64 id = ++wordCountRequest_;
     QMetaObject::invokeMethod(textWorker_, [worker = textWorker_, id] { worker->wordCount(id); },
                               Qt::QueuedConnection);
+}
+
+void ReaderViewport::scanHeadings(int maxLevels) {
+    if (!textWorker_ || !textReady_) {
+        emit headingsReady({}, 0, false);
+        return;
+    }
+    const quint64 id = ++headingScan_;
+    QMetaObject::invokeMethod(textWorker_, [worker = textWorker_, id, maxLevels] { worker->scanHeadings(id, maxLevels); },
+                              Qt::QueuedConnection);
+}
+
+void ReaderViewport::cancelHeadingScan() {
+    ++headingScan_; // late answers are ignored
+    if (!textWorker_) return;
+    QMetaObject::invokeMethod(textWorker_, [worker = textWorker_] { worker->cancelScan(); }, Qt::QueuedConnection);
 }
 
 void ReaderViewport::fitVisible() {

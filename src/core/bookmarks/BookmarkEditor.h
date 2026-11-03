@@ -50,6 +50,22 @@ enum class EditKind : std::uint8_t {
     unhide,
     requestEmbed,
     cancelEmbed,
+    autoCreate,
+};
+
+// One bookmark of a batch (Auto Create Bookmarks). `level` 0 is the top; a
+// level may go at most one deeper than the bookmark before it.
+struct NewBookmark final {
+    std::string title;
+    std::string location;
+    std::uint32_t level{};
+};
+
+// Where a batch goes among the top-level bookmarks.
+enum class BatchPlacement : std::uint8_t {
+    after,   // after the existing bookmarks
+    before,  // before them
+    replace, // in place of them: the PDF's own are hidden, Atlas's own removed
 };
 
 class BookmarkEditor final {
@@ -83,6 +99,8 @@ public:
     EditResult remove(std::string_view id);
     EditResult setHidden(std::string_view id, bool hidden);
     EditResult setEmbedRequested(std::string_view id, bool requested);
+    // Adds a whole tree in one step (one undo). Refused if empty or too large.
+    EditResult createBatch(std::vector<NewBookmark> items, BatchPlacement placement);
 
     [[nodiscard]] bool canUndo() const noexcept { return !undo_.empty() && !pending_; }
     [[nodiscard]] bool canRedo() const noexcept { return !redo_.empty() && !pending_; }

@@ -1,5 +1,6 @@
 #include "app/reader/DocumentTextWorker.h"
 
+#include "core/bookmarks/HeadingDetector.h"
 #include "core/reader/TextSearch.h"
 
 #include <QEventLoop>
@@ -97,7 +98,123 @@ void collectOutline(const QPdfDocument& document, const QPdfBookmarkModel& model
     }
 }
 
+// One page's text lines with their boxes (points, y down). Fast path: the
+// page's text boxes, grouped into rows, line up one-to-one with its non-empty
+// text lines; otherwise each line is measured on its own.
+void collectLines(QPdfDocument& document, int page, std::vector<atlas::bookmarks::TextLine>& out) {
+    const QSizeF size = document.pagePointSize(page);
+    if (size.isEmpty()) return;
+    const QPdfSelection all = document.getAllText(page);
+    const QString text = all.text();
+    struct Span final { int start; int length; };
+    std::vector<Span> spans;
+    for (int i = 0, start = 0; i <= text.size(); ++i) {
+        if (i == text.size() || text[i] == u'\n' || text[i] == u'\r') {
+            const QString piece = text.mid(start, i - start);
+            if (!piece.trimmed().isEmpty()) spans.push_back({start, i - start});
+            start = i + 1;
+        }
+    }
+    if (spans.empty()) return;
+    std::vector<QRectF> rows;
+    for (const QPolygonF& polygon : all.bounds()) {
+        const QRectF r = polygon.boundingRect();
+        if (r.isEmpty()) continue;
+        if (!rows.empty()) {
+            QRectF& last = rows.back();
+            const double overlap = std::min(last.bottom(), r.bottom()) - std::max(last.top(), r.top());
+            if (overlap > 0.5 * std::min(last.height(), r.height())) {
+                last = last.united(r);
+                continue;
+            }
+        }
+        rows.push_back(r);
+    }
+    const bool aligned = rows.size() == spans.size();
+    for (std::size_t i = 0; i < spans.size(); ++i) {
+        QRectF box;
+        if (aligned) {
+            box = rows[i];
+        } else {
+            for (const QPolygonF& polygon : document.getSelectionAtIndex(page, spans[i].start, spans[i].length).bounds())
+                box = box.united(polygon.boundingRect());
+        }
+        if (box.isEmpty()) continue;
+        const QString line = displaySnippet(text.mid(spans[i].start, spans[i].length));
+        if (line.isEmpty()) continue;
+        atlas::bookmarks::TextLine entry;
+        entry.page = page;
+        entry.text = line.toStdString();
+        entry.top = box.top();
+        entry.left = box.left();
+        entry.width = box.width();
+        entry.height = box.height();
+        entry.pageWidth = size.width();
+        entry.pageHeight = size.height();
+        out.push_back(std::move(entry));
+    }
+}
+
 } // namespace
+
+struct DocumentTextWorker::HeadingScan final {
+    quint64 id{};
+    int maxLevels{3};
+    int nextPage{};
+    std::vector<atlas::bookmarks::TextLine> lines;
+    std::chrono::steady_clock::time_point lastProgress{};
+};
+
+void DocumentTextWorker::scanHeadings(quint64 scanId, int maxLevels) {
+    if (!document_) {
+        emit headingsReady(scanId, {}, 0, false);
+        return;
+    }
+    scan_ = std::make_unique<HeadingScan>();
+    scan_->id = scanId;
+    scan_->maxLevels = maxLevels;
+    scanSlice();
+}
+
+void DocumentTextWorker::cancelScan() { scan_.reset(); }
+
+void DocumentTextWorker::scanSlice() {
+    if (!scan_ || !document_) return;
+    const int count = document_->pageCount();
+    const auto sliceStart = std::chrono::steady_clock::now();
+    while (scan_->nextPage < count && std::chrono::steady_clock::now() - sliceStart < std::chrono::milliseconds{40}) {
+        collectLines(*document_, scan_->nextPage++, scan_->lines);
+    }
+    const auto now = std::chrono::steady_clock::now();
+    if (scan_->nextPage < count) {
+        if (now - scan_->lastProgress > std::chrono::milliseconds{100}) {
+            scan_->lastProgress = now;
+            emit headingsProgress(scan_->id, scan_->nextPage, count);
+        }
+        // Let queued selection, link and search requests run, then go on.
+        QMetaObject::invokeMethod(this, &DocumentTextWorker::scanSlice, Qt::QueuedConnection);
+        return;
+    }
+    atlas::bookmarks::HeadingOptions options;
+    options.maxLevels = scan_->maxLevels;
+    const auto result = atlas::bookmarks::detectHeadings(scan_->lines, options);
+    QVariantList headings;
+    headings.reserve(static_cast<qsizetype>(result.headings.size()));
+    for (const auto& heading : result.headings) {
+        QVariantMap entry;
+        entry.insert(QStringLiteral("title"), QString::fromStdString(heading.title));
+        entry.insert(QStringLiteral("page"), heading.page);
+        entry.insert(QStringLiteral("fx"), heading.fx);
+        entry.insert(QStringLiteral("fy"), heading.fy);
+        entry.insert(QStringLiteral("level"), heading.level);
+        entry.insert(QStringLiteral("size"), heading.size);
+        headings.push_back(entry);
+    }
+    const auto id = scan_->id;
+    scan_.reset();
+    emit headingsProgress(id, count, count);
+    emit headingsReady(id, headings, result.bodySize, result.truncated);
+}
 
 DocumentTextWorker::DocumentTextWorker(std::shared_ptr<std::atomic<quint64>> latestSearch)
     : latestSearch_{std::move(latestSearch)} {}
@@ -105,6 +222,7 @@ DocumentTextWorker::DocumentTextWorker(std::shared_ptr<std::atomic<quint64>> lat
 DocumentTextWorker::~DocumentTextWorker() { close(); }
 
 void DocumentTextWorker::close() {
+    scan_.reset();
     delete document_;
     document_ = nullptr;
     buffer_.close();

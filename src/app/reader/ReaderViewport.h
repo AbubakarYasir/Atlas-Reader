@@ -163,6 +163,11 @@ public:
     Q_INVOKABLE void selectAllOnPage();
     Q_INVOKABLE void clearSelection();
     Q_INVOKABLE void requestWordCount();
+    // N5.3 Auto Create Bookmarks: suggests headings from the whole book in the
+    // background (headingsProgress, then headingsReady). A new scan or
+    // cancelHeadingScan stops the previous one.
+    Q_INVOKABLE void scanHeadings(int maxLevels);
+    Q_INVOKABLE void cancelHeadingScan();
     Q_INVOKABLE void fitVisible();
     Q_INVOKABLE bool goToLabel(const QString& label);
     Q_INVOKABLE void goToDestination(int zeroBasedPage, QPointF location);
@@ -212,6 +217,8 @@ signals:
     // An external link was clicked; QML asks the reader before anything opens.
     void externalLinkRequested(const QString& url);
     void wordCountReady(int words, int characters, int pages);
+    void headingsProgress(int pagesDone, int pageCount);
+    void headingsReady(const QVariantList& headings, double bodySize, bool truncated);
     void snapshotCopied();
     void contextMenuRequested(qreal x, qreal y);
 
@@ -318,6 +325,7 @@ private:
     QString pageText_;
     qreal autoScrollSpeed_{1.5}; // logical px per tick (16 ms)
     quint64 wordCountRequest_{};
+    quint64 headingScan_{};
     quint64 contentBoxRequest_{};
     FitMode fitMode_{FitMode::Width};
     qreal contentX_{};

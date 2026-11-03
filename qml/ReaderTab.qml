@@ -65,6 +65,25 @@ Rectangle {
                 tab.attachBookmarks()
         }
     }
+    // Auto Create Bookmarks (panel options, Command Center).
+    AutoBookmarksDialog {
+        id: autoBookmarks
+        view: view
+        bookmarks: bookmarkModel
+        pageLabel: (page) => tab.pageLabel(page)
+        onCreated: (count) => {
+            preferences.navPanel = "bookmarks"
+            tab.toastRequested(I18n.t("autoBookmarks.done", count))
+        }
+    }
+    function openAutoBookmarks() {
+        if (!tab.ready) return
+        if (!bookmarkModel.editable) {
+            tab.toastRequested(I18n.t("bookmarks.readOnly." + (bookmarkModel.statusReason || "storageError")))
+            return
+        }
+        autoBookmarks.start()
+    }
     // Command Center → bookmark: go there and show it in the panel.
     function goToBookmark(found) {
         if (!tab.ready || found.page < 0) return
@@ -86,6 +105,7 @@ Rectangle {
         else if (action === "expand") bookmarkModel.expandAll()
         else if (action === "menu") { bookmarkModel.expandAll(); bookmarksPanel.openMenu(1, 40, 60, null) }
         else if (action === "add") bookmarksPanel.addHere(false)
+        else if (action === "autocreate") { autoBookmarks.qaCreate = true; openAutoBookmarks() }
     }
     // Ctrl+B / Bookmark buttons: open the panel and add a bookmark for this view.
     function addBookmarkHere() {
@@ -217,6 +237,7 @@ Rectangle {
                 bookmarks: bookmarkModel
                 onToastRequested: (text) => tab.toastRequested(text)
                 onAddFolderRequested: libraryController.addFolderOf(tab.sourcePath)
+                onAutoCreateRequested: tab.openAutoBookmarks()
             }
             Rectangle { // splitter: drag to resize, double-click to hide (Foxit)
                 Layout.preferredWidth: 6

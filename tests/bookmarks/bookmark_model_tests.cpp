@@ -267,6 +267,36 @@ void checkEditing() {
     require(!reopened.outlineChangedOutside(), "An unchanged PDF needs no reconciling.");
 }
 
+// Auto Create Bookmarks: a previewed list becomes a tree in one write and one undo.
+void checkAddMany() {
+    Profile profile;
+    BookmarkService service{profile.database};
+    BookmarkModel model;
+    model.setService(&service);
+    model.attach(qpath(profile.book), outline());
+    waitFor([&] { return model.status() == QStringLiteral("editable"); }, "the overlay");
+    const auto heading = [](const QString& title, int page, int level) {
+        QVariantMap map = at(page, 0.12);
+        map.insert(QStringLiteral("title"), title);
+        map.insert(QStringLiteral("level"), level);
+        map.insert(QStringLiteral("fx"), 0.1);
+        return QVariant{map};
+    };
+    const int first = model.addMany({heading(QStringLiteral("الفصل الأول"), 2, 0), heading(QStringLiteral("مبحث"), 3, 1),
+                                     heading(QStringLiteral("  "), 3, 1), heading(QStringLiteral("Chapter 2"), 9, 0)},
+                                    QStringLiteral("before"));
+    waitIdle(model, service);
+    require(first == 0 && titleAt(model, 0) == QStringLiteral("الفصل الأول") && storageAt(model, 0) == QStringLiteral("local_only"),
+            "The batch goes first and is Atlas's own; blank titles are skipped.");
+    require(model.totalCount() == 8 && model.undoKind() == QStringLiteral("autoCreate"), "Three added, one undo step.");
+    model.undo();
+    waitIdle(model, service);
+    require(model.totalCount() == 5, "Undo removes the whole batch.");
+    Refusals refusals{model};
+    require(model.addMany({}, QStringLiteral("after")) == -1 && refusals.reasons.contains(QStringLiteral("nothingToAdd")),
+            "An empty batch is refused with a reason.");
+}
+
 void checkReadOnly() {
     Profile profile;
     BookmarkService service{profile.database};
@@ -387,6 +417,7 @@ int main(int argc, char** argv) {
     try {
         checkOutlineConversion();
         checkEditing();
+        checkAddMany();
         checkReadOnly();
         checkQueuedWritesAndRecovery();
     } catch (const std::exception& error) {

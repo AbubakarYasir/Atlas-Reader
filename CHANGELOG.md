@@ -6,6 +6,8 @@ All notable changes to Atlas Reader Native are documented here.
 
 ## N1–N5 repair pass — 2026-11-04 (in progress)
 
+- Local inspection package delivered from 0d6d726; both final 59-test Windows suites pass. Independent warm launches expose a 4.9–5.3 s startup target miss, which remains an open repair. Actual OS 175% and Night sky recovery screens verified in all three languages; real 200% and Narrator are not counted as passed.
+
 - Preflight raw outline references before Qt constructs its bookmark model; cyclic A016 now runs in the normal regression suite without exhausting memory. Unsupported outlines remain protected.
 - Normalize link and outline destinations for inherent page rotation, with production tests at all four right-angle rotations and a rotated bookmark save/reopen.
 - Consolidate recovery choices into one dialog, validate evidence before resolving, preserve displaced versions outside ordinary retention, and focus Cancel initially.

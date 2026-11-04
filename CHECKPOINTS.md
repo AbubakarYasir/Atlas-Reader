@@ -13,7 +13,7 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | Done | N4 Reader **Accepted** (`N4 PASS`, 2026-11-02; [acceptance](docs/baselines/N4_ACCEPTANCE.md)) |
 | Branch | `native-v2-n5-bookmarks-safety`, from `main` after the `2.0.0-beta.2` release |
 | Released | `2.0.0-beta.2` (Reader), 2026-11-02 · `2.0.0-beta.1` (Library), 2026-09-28 |
-| Next owner review | **N5, pending repairs and verification:** [N5 review guide](docs/N5_REVIEW.md); inspection build requested; acceptance only after closure gates |
+| Next owner review | **N5, pending repairs and verification:** [N5 review guide](docs/N5_REVIEW.md); local inspection build delivered; startup target miss and accessibility/storage gates remain open |
 | Evidence | [N5 evidence ledger](docs/baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md) |
 
 ## Roadmap

@@ -8,8 +8,8 @@ PR #8 stays Draft. No N6 work, release or merge is authorized by this pass.
 
 | ID | Requirement and implementation | Required evidence | Current result |
 |---|---|---|---|
-| N1-01 | Windows startup and deployed Qt runtime | Clean-PATH package launch, no console or missing DLL | Pending |
-| N1-02 | Settings, themes, three languages | `app_preferences_tests`, rendered matrix | Persistence suite passes; EN/AR/UR rendered; real OS scaling pending |
+| N1-01 | Windows startup and deployed Qt runtime | Clean-PATH package launch, no console or missing DLL | Local package launch passes; packaged qpdf runs; 1,519 file hashes verified |
+| N1-02 | Settings, themes, three languages | `app_preferences_tests`, rendered matrix | Persistence suite passes; EN/AR/UR at real OS 175% and Night sky contrast; real 200% still open |
 | N2-01 | Rendering and text correctness | Full nine PDF regression workflows on final head | Pending |
 | N2-02 | Passwords, restrictions, signatures | Capability/security/save suites; A018 OpenSSL integrity + tamper | Local tests pass, including encrypted save and real signed-original refusal |
 | N2-03 | Coordinates and preservation | Outline writer/save tests; nine PDF CI lanes | Local qpdf comparison + Qt PDF reopen pass; all-angle production regression passes; cloud CI unavailable |
@@ -19,20 +19,20 @@ PR #8 stays Draft. No N6 work, release or merge is authorized by this pass.
 | N4-01 | Open/tabs/password/restore | Reader controller/session tests | Automated open/password/session tests pass; full keyboard review still open |
 | N4-02 | Virtual viewport and navigation | Viewport layout/render suites, coordinate CI, Windows memory | Local mixed geometry/navigation pass; 2,000-page 400-jump memory measured; cloud CI unavailable (account billing) |
 | N4-03 | Search and selection | Text-search suite; 2k-page viewport measurement below | Local tests and 100-query measurement passed |
-| N4-04 | Windows accessibility | Narrator, keyboard, high contrast, real scaling | Pending |
+| N4-04 | Windows accessibility | Narrator, keyboard, high contrast, real scaling | Actual contrast and 175% recovery screens verified; Narrator/native tree state and real 200% remain open |
 | N5-01 | Capability and overlay persistence | Capability, overlay, store tests | Local state/transaction/crash corpus passes |
 | N5-02 | Editing, undo, auto headings | Editor/model/auto-bookmark tests, V01 | Local Unicode/tree/undo/10k tests pass; Add Bookmark rendered and fixed |
 | N5-03 | Late-save failures | Reindex/commit failure restore and failed-restore tests | Local Windows regression passed; cloud CI unavailable (account billing) |
 | N5-04 | Durable recovery | Journal, six process-termination boundaries, explicit keep-current | Local regression passes; V04 real UI choice verified; cloud CI unavailable (account billing) |
 | N5-05 | Safe copy | Source alias and destination race checks | Hard-link/during-generation changes tested locally; broader audit pending |
-| N5-06 | Reconcile external changes | `reconcile_tests`, `outline_safe_save_tests`; 10k benchmark | Ambiguity regression passes; worker timing p95 161.199 ms |
+| N5-06 | Reconcile external changes | `reconcile_tests`, `outline_safe_save_tests`; 10k benchmark | Ambiguity regression passes; latest worker timing p95 382.476 ms |
 | N5-07 | Exchange responsiveness | Worker import/export, cancel, stale answers, large workload | 10k workflow + cancellation/stale/one-undo tests pass locally; timings below |
 | N5-08 | Format fidelity | `bookmark_exchange_tests`, `bookmark_model_tests` | Local Unicode/limits/CSV/round-trip and asynchronous undo tests pass |
 | N5-09 | Malformed-outline safety (A016) | Opening A016 (outline `/Next` cycle) must not hang | Repaired: bounded raw-reference preflight rejects cycles before Qt traversal; A016 now runs in the normal safe-save regression |
 | N5-10 | Recovery choice after an unsettled save | Keep current / restore original / show backups; nothing deleted | Integrated recovery dialog; verified archives before Keep/Restore, Show backups and Cancel; local Windows regression passes |
 | UI-02 | Edit ribbon tab (Foxit placement of Bookmark, Auto Create Bookmarks) | Rendered EN/AR/UR | Edit ribbon rendered in EN/AR/UR; no extracted Foxit assets |
 | UI-01 | Reference-based Windows review | EN/AR/UR, wide/narrow, 100/200%, empty/error/protected/conflict | Pending |
-| PKG-01 | Correct review instructions | N5 START-HERE and guide in packaged ZIP | Script corrected; package pending |
+| PKG-01 | Correct review instructions | N5 START-HERE and guide in packaged ZIP | Local inspection ZIP built from 0d6d726; receipt below |
 | GIT-01 | Owner identity and signatures | Audit every N5 commit; GitHub Verified | All N5 commits valid; corrected history pushed and verified |
 | DOC-01 | Consistent contracts and status | Docs checker plus manual claim/evidence comparison | In progress |
 
@@ -319,3 +319,31 @@ p95 0.369 ms and undo p95 0.663 ms (limit 2). Reconciliation worker p95
 382.476 ms is recorded, not substituted by the search result. All defined
 benchmark gates pass. The four Qt/PDFium A003/A006 benchmark probes also pass
 and identify version `2.0.0-beta.2-n5-review.2`.
+
+### Local inspection delivery receipt — 2026-11-04
+
+Implementation: `0d6d7264f0441edd2025fa39e0245cf7b4cc1c71`, owner-authored,
+SSH signed, GitHub Verified. Exact-head local suites: Release **59/59 in
+50.09 s**, Debug **59/59 in 139.87 s**. Cloud CI remains unavailable.
+
+Portable version: `2.0.0-beta.2-n5-review.2`. Local folder, relative to the
+parent of the checkout: `review-builds/N5-repair-0d6d726/`. Archive:
+`atlas-reader-review-windows-x64.zip`, 51,126,748 bytes. SHA-256:
+`630d6910bfe196fe8f1680e4dd778246d0dac3b8e253edf680848631a71dbb89`.
+All 1,519 entries in SHA256SUMS verified. Clean-PATH GUI launch and standalone
+packaged qpdf 12.4.1 passed. Includes N5 guide, public samples, provenance,
+licenses and exact executable/source identity. Package was not uploaded.
+The archived guide/ledger reflects implementation-commit evidence; this receipt
+is a later documentation-only update, not different executable bytes.
+
+**New measured open defect N1-03:** startup misses QUALITY.md targets. After
+other tests finished, three warm clean-PATH launches took 5,306.381 / 4,885.479 /
+5,249.321 ms to first frame. The first run spent 4,687.606 ms loading QML.
+Do not describe startup as qualified or blame concurrent tests: the isolated
+recheck reproduced it. Package launch correctness is separate from launch speed.
+
+Outstanding engineering/owner gates: startup profiling and repair; native tree
+accessibility and Narrator speech/focus workflows; complete keyboard/state matrix;
+actual 200% scale; rendered 10k expand/jump latency; actual storage exhaustion
+and removable-media failure; requirement-by-requirement final closure and N5 PASS.
+This receipt does not label N5 complete or authorize merge/release/N6.

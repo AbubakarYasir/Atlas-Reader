@@ -18,11 +18,16 @@
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
+#include <QLockFile>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QPdfDocument>
 #include <QTemporaryDir>
 #include <QProcess>
+
+#ifdef Q_OS_WIN
+#include <qt_windows.h>
+#endif
 #include <cstdlib>
 
 #include <iostream>
@@ -271,6 +276,47 @@ void checkFailures() {
         require(book.save().reason == QStringLiteral("recoveryRequired") && sha(book.pdf) == changed,
                 "An unresolved journal blocks another save.");
     }
+    // The reader's way out of an unresolved journal: restore the original or keep
+    // the current file. Nothing is deleted either way.
+    for (const auto choice : {atlas::app::RecoveryChoice::restoreOriginal, atlas::app::RecoveryChoice::keepCurrent}) {
+        Book book{"A003_outlines_links.pdf"};
+        editA003(book);
+        const auto original = sha(book.pdf);
+        const auto revision = book.editor->revision();
+        const auto outcome = book.save({}, [](std::string_view step) { return step != "afterReplace" && step != "restore"; });
+        require(outcome.reason == QStringLiteral("recoveryRequired"), "set up an unresolved save");
+        QFile external{book.pdf};
+        require(external.open(QIODevice::Append), "Open external change.");
+        external.write("\n% external edit after interrupted save\n");
+        external.close();
+        const auto changed = sha(book.pdf);
+        const auto backups = fsPath(book.dir.filePath(QStringLiteral("backups")));
+        const QString folder = book.dir.filePath(QStringLiteral("backups/doc"));
+        {
+            QLockFile busy{QDir{folder}.filePath(QStringLiteral("save.lock"))};
+            require(busy.tryLock(0), "hold the save lock");
+            require(atlas::app::resolveSaveRecovery(*book.store, book.pdf, "doc", backups, choice) == QStringLiteral("busy"),
+                    "Recovery waits for a running save.");
+        }
+        const QString result = atlas::app::resolveSaveRecovery(*book.store, book.pdf, "doc", backups, choice);
+        const QStringList resolved = QDir{folder}.entryList({QStringLiteral("resolved-*.json")}, QDir::Files);
+        require(!QFileInfo::exists(QDir{folder}.filePath(QStringLiteral("pending-save.json"))) && resolved.size() == 1,
+                "The journal is kept as a resolved record, not deleted.");
+        require(book.store->load("doc").revision == revision, "Recovery never changes the reader's bookmarks.");
+        if (choice == atlas::app::RecoveryChoice::restoreOriginal) {
+            require(result == QStringLiteral("restored") && sha(book.pdf) == original, "The original is put back.");
+            bool keptChanged = false;
+            for (const auto& name : QDir{folder}.entryList({QStringLiteral("*.pdf")}, QDir::Files))
+                keptChanged = keptChanged || sha(QDir{folder}.filePath(name)) == changed;
+            require(keptChanged, "The file it replaced is kept among the backups.");
+        } else {
+            require(result == QStringLiteral("kept") && sha(book.pdf) == changed, "The current file is kept as it is.");
+        }
+        require(atlas::app::recoverOutlineSave(*book.store, book.pdf, "doc", backups) == atlas::app::SaveRecovery::none,
+                "Nothing is pending afterwards.");
+        require(atlas::app::resolveSaveRecovery(*book.store, book.pdf, "doc", backups, choice) == QStringLiteral("noJournal"),
+                "A second resolution finds nothing to do.");
+    }
     for (const char* failing : {"write", "verify", "reopen", "backup", "beforeReplace", "replace"}) {
         Book book{"A003_outlines_links.pdf"};
         editA003(book);
@@ -300,6 +346,36 @@ void checkFailures() {
         require(book.save().reason == QStringLiteral("changedOutside") && sha(book.pdf) == changed,
                 "A PDF changed outside Atlas is never overwritten.");
     }
+    {   // Too little free space: refused before anything is written.
+        Book book{"A003_outlines_links.pdf"};
+        editA003(book);
+        const QByteArray original = sha(book.pdf);
+        const auto revision = book.editor->revision();
+        const auto outcome = book.save({}, [](std::string_view step) { return step != "space"; });
+        require(outcome.reason == QStringLiteral("diskFull") && !outcome.pdfChanged && sha(book.pdf) == original &&
+                    book.store->load("doc").revision == revision && folderFiles(book.folder).size() == 1,
+                "No space: the PDF, overlay and folder are untouched.");
+    }
+#ifdef Q_OS_WIN
+    {   // Another program holds the PDF open without sharing write or delete
+        // (as an editor does): the save fails cleanly and nothing is lost.
+        Book book{"A003_outlines_links.pdf"};
+        editA003(book);
+        const QByteArray original = sha(book.pdf);
+        const auto revision = book.editor->revision();
+        const std::wstring native = QDir::toNativeSeparators(book.pdf).toStdWString();
+        HANDLE holder = CreateFileW(native.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+                                    FILE_ATTRIBUTE_NORMAL, nullptr);
+        require(holder != INVALID_HANDLE_VALUE, "hold the PDF open");
+        const auto outcome = book.save();
+        CloseHandle(holder);
+        require(!outcome.ok && !outcome.pdfChanged && sha(book.pdf) == original,
+                "A PDF locked by another program is left exactly as it was: " + outcome.reason.toStdString());
+        require(book.store->load("doc").revision == revision, "The overlay keeps the reader's work.");
+        require(folderFiles(book.folder).size() == 1, "No temporary file is left beside a locked PDF.");
+        require(book.save().ok, "Once the other program lets go, the save goes through.");
+    }
+#endif
 }
 
 void checkProtected() {
@@ -331,6 +407,104 @@ void checkProtected() {
                     "A read-only file is never written: " + outcome.reason.toStdString());
         }
         QFile::setPermissions(book.pdf, QFile::ReadOwner | QFile::WriteOwner | QFile::ReadUser | QFile::WriteUser);
+    }
+}
+
+// docs/QUALITY.md N5 corpus: every writable fixture takes a deep Arabic/English
+// tree with duplicate names under different parents, saves, verifies (qpdf and Qt
+// PDF inside the pipeline), reopens without a reconcile and has nothing left to
+// save. Protected originals are never written; a malformed outline never
+// leads to a write that is not verified.
+void growTree(Book& book, std::uint32_t page) {
+    std::optional<std::string> parent;
+    for (int depth = 0; depth < 12; ++depth) {
+        const std::string title = depth % 2 == 0 ? "Chapter — الفصل" : "الفصل · Chapter";
+        auto main = book.editor->create(parent, 0, title, at(page, 0.1 + 0.05 * (depth % 6)));
+        const auto id = main.nodeId;
+        book.run(std::move(main));
+        book.run(book.editor->create(parent, 1, title, at(page, 0.5))); // same name, same parent level
+        parent = id;
+    }
+}
+
+void checkCorpus() {
+    struct Case final { const char* file; const char* password; std::uint32_t page; };
+    const Case writable[] = {
+        {"A001_simple_text.pdf", "", 0},             // no outline
+        {"A002_geometry_labels.pdf", "", 2},         // page labels, mixed sizes, crop box
+        {"A003_outlines_links.pdf", "", 1},          // outline and links
+        {"A004_outlines_only.pdf", "", 0},           // outline without links
+        {"A005_links_only.pdf", "", 0},              // links, no outline
+        {"A006_unicode_semantics.pdf", "", 0},       // Arabic/Urdu outline (generated in CI)
+        {"A015_encrypted_outline_rc4_40.pdf", "atlas-user", 0},
+    };
+    int saved = 0;
+    for (const auto& entry : writable) {
+        if (!QFileInfo::exists(fixture(entry.file))) {
+            if (qEnvironmentVariableIsSet("CI")) throw std::runtime_error(std::string{"corpus fixture missing: "} + entry.file);
+            std::cout << "Corpus: " << entry.file << " not generated here; skipped (required in CI).\n";
+            continue;
+        }
+        Book book{entry.file, QString::fromLatin1(entry.password)};
+        const auto before = qtOutline(book.pdf, book.password).size();
+        growTree(book, entry.page);
+        const auto outcome = book.save();
+        require(outcome.ok, std::string{"Corpus save: "} + entry.file + " " + outcome.reason.toStdString());
+        require(qtOutline(book.pdf, book.password).size() == before + 24, std::string{"All 24 new bookmarks: "} + entry.file);
+        book.open();
+        require(book.lastAdoption != BaseAdoption::needsReconcile, std::string{"Reopens without reconcile: "} + entry.file);
+        require(book.save().reason == QStringLiteral("nothingToSave"), std::string{"Nothing left to save: "} + entry.file);
+        ++saved;
+    }
+    require(saved >= 6, "the corpus ran");
+
+    {   // A017: a real approval signature. Never written in place; a copy works and the original stays signed.
+        Book book{"A017_signed_approval.pdf"};
+        growTree(book, 1);
+        const QByteArray original = sha(book.pdf);
+        require(book.save().reason == QStringLiteral("notPermitted") && sha(book.pdf) == original,
+                "A signed PDF is never written in place.");
+        SafeSaveInput input;
+        input.path = book.pdf;
+        input.documentId = "doc";
+        input.overlayRevision = book.editor->revision();
+        for (const auto* node : book.editor->inOrder()) input.nodes.push_back(*node);
+        input.base = book.store->load("doc").base;
+        const QString copy = book.dir.filePath(QStringLiteral("signed copy.pdf"));
+        const auto outcome = atlas::app::saveOutlineCopy(input, copy);
+        require(outcome.ok && qtOutline(copy).size() == 2 + 24, "Save a Copy of a signed PDF: " + outcome.reason.toStdString());
+        require(sha(book.pdf) == original, "The signed original is byte-for-byte unchanged.");
+    }
+
+    // A016: readable pages, malformed outline (missing page, wrong type, a cycle).
+    // OPEN DEFECT (closure ledger N5-09): Qt PDF's outline reading follows the /Next
+    // cycle until memory runs out, so this probe runs only when asked for.
+    if (qEnvironmentVariableIsSet("ATLAS_RUN_A016")) {
+        QTemporaryDir dir;
+        const QString pdf = dir.filePath(QStringLiteral("malformed.pdf"));
+        require(QFile::copy(fixture("A016_malformed_outline.pdf"), pdf), "copy A016");
+        const QByteArray original = sha(pdf);
+        QPdfDocument document;
+        document.load(pdf);
+        require(document.status() == QPdfDocument::Status::Ready && document.pageCount() == 3, "A016 pages are readable");
+        const auto outline = atlas::app::readOutline(document);
+        document.close();
+        const auto base = atlas::app::baseFromOutline(outline, atlas::app::fileRevision(pdf));
+        std::cout << "A016: Qt PDF reads " << outline.size() << " outline entries; base "
+                  << (base ? "accepted" : "refused (bookmarks read-only)") << ".\n";
+        if (base) {
+            Book book{"A016_malformed_outline.pdf"};
+            book.run(book.editor->create(std::nullopt, 0, "Atlas note", at(1, 0.3)));
+            const auto outcome = book.save();
+            if (outcome.ok) {
+                require(qtOutline(book.pdf).size() >= 2, "A saved malformed outline reads back.");
+            } else {
+                require(sha(book.pdf) == original && !outcome.pdfChanged,
+                        "A refused save leaves the malformed PDF exactly as it was: " + outcome.reason.toStdString());
+            }
+            std::cout << "A016 save: " << (outcome.ok ? "saved and verified" : outcome.reason.toStdString()) << ".\n";
+        }
+        require(sha(pdf) == original, "Reading a malformed outline never changes the file.");
     }
 }
 
@@ -507,6 +681,7 @@ int main(int argc, char** argv) {
         checkFailures();
         checkProtected();
         checkCopy();
+        checkCorpus();
         checkReconcileOnOpen();
         checkThroughModel();
     } catch (const std::exception& error) {

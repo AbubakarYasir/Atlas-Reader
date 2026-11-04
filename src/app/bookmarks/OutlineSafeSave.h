@@ -36,6 +36,20 @@ enum class SaveRecovery { none, completed, restored, required };
 [[nodiscard]] SaveRecovery recoverOutlineSave(bookmarks::SqliteBookmarkOverlay& store,
     const QString& path, const std::string& documentId, const std::filesystem::path& backupRoot);
 
+// The reader's way out of `required` (ADR-0009 "Recovery journal"). Nothing is
+// deleted: the journal is renamed `resolved-<time>.json` and every backup stays.
+// - keepCurrent: accept the PDF as it is now; the overlay keeps the reader's work
+//   and reconciles with the file on reopen.
+// - restoreOriginal: put back the verified pre-save backup, after a hash-checked
+//   copy of the current file is added to the backups. Only while the overlay is
+//   still at the journal's revision (the save was never committed), so restoring
+//   cannot drop bookmarks the overlay believes are in the PDF.
+// Result: kept, restored, or a refusal (busy, noJournal, backupMissing,
+// notSafe, copyFailed, replaceFailed).
+enum class RecoveryChoice { keepCurrent, restoreOriginal };
+[[nodiscard]] QString resolveSaveRecovery(bookmarks::SqliteBookmarkOverlay& store, const QString& path,
+    const std::string& documentId, const std::filesystem::path& backupRoot, RecoveryChoice choice);
+
 struct SafeSaveInput final {
     QString path;                                   // the PDF to save into
     QString password;                               // session only; never stored
@@ -67,7 +81,8 @@ struct SafeSaveOutcome final {
 };
 
 // Test hook: return false at a named step to make it fail there
-// ("write", "verify", "reopen", "backup", "beforeReplace", "replace", "afterReplace").
+// ("space" = too little free space, "write", "verify", "reopen", "backup", "beforeReplace",
+// "replace", "afterReplace", "reindex", "commitOverlay", "restore").
 using SafeSaveFault = std::function<bool(std::string_view step)>;
 
 [[nodiscard]] SafeSaveOutcome saveOutlineSafely(bookmarks::SqliteBookmarkOverlay& store, const SafeSaveInput& input,

@@ -241,6 +241,115 @@ void checkFixtures() {
     require(importJson(fixture("damaged-item.atlas-bookmarks.json")).error == QStringLiteral("badItem"), "damaged item");
 }
 
+// docs/QUALITY.md: Atlas-owned parsers are fuzzed. Deterministic, so a failure
+// reproduces; any crash, hang or broken invariant fails the test.
+void checkInvariants(const ImportResult& result) {
+    if (!result.ok) {
+        require(result.items.empty() && !result.error.isEmpty(), "a refusal carries a reason and nothing else");
+        return;
+    }
+    require(result.items.size() <= OverlayLimits::maxNodesPerDocument, "count limit");
+    std::uint32_t previous = 0;
+    for (std::size_t i = 0; i < result.items.size(); ++i) {
+        const auto& item = result.items[i];
+        require(i == 0 ? item.level == 0 : item.level <= previous + 1, "levels form a tree in reading order");
+        require(item.level < OverlayLimits::maxDepth, "depth limit");
+        BookmarkNode probe;
+        probe.id = "probe";
+        probe.documentId = "probe";
+        probe.title = item.title;
+        probe.location = item.location;
+        probe.description = item.description;
+        probe.tags = item.tags;
+        require(validateNode(probe).empty(), "every accepted item is a valid bookmark");
+        previous = item.level;
+    }
+}
+
+void checkFuzz() {
+    std::uint64_t state = 0x9E3779B97F4A7C15ULL;
+    const auto next = [&state] {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        return state;
+    };
+    const auto nodes = sample();
+    const QByteArray seed =
+        exportJson(exportSelection(pointers(nodes), ExportScope::all), {QStringLiteral("كتاب"), {}, 3}, ExportScope::all, {}, {});
+    static const char raw[] = "{}[]\":,\\ 0123456789-.eEtrufalsn\x00\xff\xd8\xa7" "atlas-location/1;=%";
+    const QByteArray alphabet{raw, static_cast<qsizetype>(sizeof raw - 1)}; // keeps the NUL byte
+    int accepted = 0;
+    int refused = 0;
+    for (int round = 0; round < 20000; ++round) {
+        QByteArray bytes = seed;
+        const int edits = 1 + static_cast<int>(next() % 8);
+        for (int e = 0; e < edits && !bytes.isEmpty(); ++e) {
+            const auto at = static_cast<qsizetype>(next() % static_cast<std::uint64_t>(bytes.size()));
+            switch (next() % 4) {
+            case 0: bytes[at] = alphabet[static_cast<qsizetype>(next() % static_cast<std::uint64_t>(alphabet.size()))]; break;
+            case 1: bytes.remove(at, static_cast<qsizetype>(1 + next() % 16)); break;
+            case 2: bytes.insert(at, alphabet.mid(static_cast<qsizetype>(next() % static_cast<std::uint64_t>(alphabet.size())), 4)); break;
+            default: bytes.truncate(at); break;
+            }
+        }
+        const auto result = importJson(bytes);
+        checkInvariants(result);
+        (result.ok ? accepted : refused) += 1;
+    }
+    std::cout << "fuzz: " << accepted << " accepted, " << refused << " refused\n";
+    require(accepted > 100 && refused > 1000, "the fuzz exercises both outcomes");
+
+    // Structured: random trees of random JSON values in every member.
+    const auto randomValue = [&next](int depth, const auto& self) -> QJsonValue {
+        switch (next() % (depth > 3 ? 5 : 7)) {
+        case 0: return QJsonValue{};
+        case 1: return static_cast<double>(static_cast<std::int64_t>(next() % 2001) - 1000);
+        case 2: return (next() % 2) == 0;
+        case 3: return QString::fromUtf8("عنوان ") + QString::number(next() % 100);
+        case 4: return QStringLiteral("atlas-location/1;scheme=pdf;page=%1;kind=fit").arg(static_cast<int>(next() % 5) - 1);
+        case 5: {
+            QJsonArray list;
+            for (int i = 0, n = static_cast<int>(next() % 4); i < n; ++i) list.append(self(depth + 1, self));
+            return list;
+        }
+        default: {
+            QJsonObject item;
+            const char* keys[] = {"title", "location", "notes", "tags", "children", "id", "state", "x"};
+            for (int i = 0, n = static_cast<int>(next() % 6); i < n; ++i)
+                item.insert(QString::fromLatin1(keys[next() % 8]), self(depth + 1, self));
+            return item;
+        }
+        }
+    };
+    for (int round = 0; round < 5000; ++round) {
+        QJsonObject root{{QStringLiteral("format"), QStringLiteral("atlas-bookmarks")},
+                         {QStringLiteral("schemaVersion"), QStringLiteral("1.0.0")}};
+        QJsonArray list;
+        for (int i = 0, n = static_cast<int>(next() % 5); i < n; ++i) list.append(randomValue(0, randomValue));
+        root.insert(QStringLiteral("bookmarks"), list);
+        if (next() % 10 == 0) root.insert(QStringLiteral("document"), randomValue(0, randomValue));
+        checkInvariants(importJson(QJsonDocument{root}.toJson(QJsonDocument::Compact)));
+    }
+
+    // Location envelopes: a decoded envelope always encodes and decodes to itself.
+    const std::string valid = "atlas-location/1;scheme=pdf;page=3;label=iv;kind=xyz;left=0.25;top=0.5;zoom=1.5";
+    for (int round = 0; round < 50000; ++round) {
+        std::string text = valid;
+        for (int e = 0, n = 1 + static_cast<int>(next() % 4); e < n && !text.empty(); ++e) {
+            const auto at = static_cast<std::size_t>(next() % text.size());
+            if (next() % 2 == 0) text[at] = static_cast<char>(alphabet[static_cast<qsizetype>(next() % static_cast<std::uint64_t>(alphabet.size()))]);
+            else text.erase(at, 1 + static_cast<std::size_t>(next() % 6));
+        }
+        const auto decoded = decodeLocation(text);
+        if (decoded.status != LocationDecodeStatus::ok) continue;
+        require(decoded.envelope.has_value(), "ok carries an envelope");
+        const auto again = decodeLocation(encodeLocation(*decoded.envelope));
+        require(again.status == LocationDecodeStatus::ok && encodeLocation(*again.envelope) == encodeLocation(*decoded.envelope),
+                "a decoded location re-encodes stably");
+    }
+}
+
 } // namespace
 
 int main() {
@@ -251,6 +360,7 @@ int main() {
         checkReadable();
         checkPlacement();
         checkFixtures();
+        checkFuzz();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: " << error.what() << '\n';
         return 1;

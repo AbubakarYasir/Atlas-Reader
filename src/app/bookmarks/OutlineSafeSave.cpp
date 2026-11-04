@@ -171,6 +171,47 @@ SaveRecovery recoverOutlineSave(SqliteBookmarkOverlay& store, const QString& pat
     return QFile::remove(journal) ? SaveRecovery::restored : SaveRecovery::required;
 }
 
+QString resolveSaveRecovery(SqliteBookmarkOverlay& store, const QString& path, const std::string& documentId,
+                            const std::filesystem::path& backupRoot, RecoveryChoice choice) {
+    const QString folder = qpath(backupRoot / documentId);
+    const QString journal = QDir{folder}.filePath(QStringLiteral("pending-save.json"));
+    if (!QFileInfo::exists(journal)) return QStringLiteral("noJournal");
+    QLockFile lock{QDir{folder}.filePath(QStringLiteral("save.lock"))};
+    if (!lock.tryLock(0)) return QStringLiteral("busy");
+    const auto settle = [&journal, &folder](const char* outcome) {
+        const QString resolved = QDir{folder}.filePath(
+            QStringLiteral("resolved-") +
+            QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMdd-HHmmss-zzz")) + QStringLiteral(".json"));
+        return QFile::rename(journal, resolved) ? QString::fromLatin1(outcome) : QStringLiteral("replaceFailed");
+    };
+    if (choice == RecoveryChoice::keepCurrent) return settle("kept");
+
+    QFile file{journal};
+    if (!file.open(QIODevice::ReadOnly) || file.size() > 16384) return QStringLiteral("backupMissing");
+    const auto record = QJsonDocument::fromJson(file.readAll()).object();
+    file.close();
+    const QByteArray original = QByteArray::fromHex(record.value("original").toString().toLatin1());
+    const QString name = record.value("backup").toString();
+    bool validRevision = false;
+    const auto revision = record.value("revision").toString().toLongLong(&validRevision);
+    if (record.value("document").toString() != utf8(documentId) || original.size() != 32 || name.isEmpty() ||
+        QFileInfo{name}.fileName() != name)
+        return QStringLiteral("backupMissing");
+    const QString source = QDir{folder}.filePath(name);
+    if (sha256(source) != original) return QStringLiteral("backupMissing");
+    if (!validRevision || store.load(documentId).revision != revision) return QStringLiteral("notSafe");
+    const QByteArray current = sha256(path);
+    if (current == original) return settle("restored"); // already the original
+    // Keep what is there now before replacing it.
+    if (!current.isEmpty() && backup(path, backupRoot, documentId, current).isEmpty()) return QStringLiteral("copyFailed");
+    TempFile restored{path + QStringLiteral(".atlas-recover-") + QUuid::createUuid().toString(QUuid::Id128)};
+    if (!QFile::copy(source, restored.path) || sha256(restored.path) != original) return QStringLiteral("copyFailed");
+    if (sha256(path) != current || !replaceFile(path, restored.path) || sha256(path) != original)
+        return QStringLiteral("replaceFailed");
+    restored.path.clear();
+    return settle("restored");
+}
+
 std::string fileRevision(const QString& path) {
     const QFileInfo info{path};
     if (!info.exists()) return {};
@@ -224,7 +265,8 @@ SafeSaveOutcome saveOutlineCopy(const SafeSaveInput& input, const QString& targe
     const QString qpdf = input.qpdf.isEmpty() ? QpdfInspector::locate() : input.qpdf;
     if (qpdf.isEmpty()) return fail("qpdfUnavailable");
     const QStorageInfo volume{targetInfo.absolutePath()};
-    if (volume.bytesAvailable() >= 0 && volume.bytesAvailable() < 2 * QFileInfo{input.path}.size() + (4 << 20))
+    if (!step("space") ||
+        (volume.bytesAvailable() >= 0 && volume.bytesAvailable() < 2 * QFileInfo{input.path}.size() + (4 << 20)))
         return fail("diskFull");
 
     TempFile temp;
@@ -306,7 +348,8 @@ SafeSaveOutcome saveOutlineSafely(SqliteBookmarkOverlay& store, const SafeSaveIn
     const auto capabilities = checkDocumentCapabilities(input.path, input.password, {});
     if (!capabilities.assessment.capabilities.canEmbedOutline) return fail("notPermitted");
     const QStorageInfo volume{info.absolutePath()};
-    if (volume.bytesAvailable() >= 0 && volume.bytesAvailable() < 2 * info.size() + (4 << 20)) return fail("diskFull");
+    if (!step("space") || (volume.bytesAvailable() >= 0 && volume.bytesAvailable() < 2 * info.size() + (4 << 20)))
+        return fail("diskFull");
     const QString qpdf = input.qpdf.isEmpty() ? QpdfInspector::locate() : input.qpdf;
     if (qpdf.isEmpty()) return fail("qpdfUnavailable");
     const QByteArray originalHash = sha256(input.path);

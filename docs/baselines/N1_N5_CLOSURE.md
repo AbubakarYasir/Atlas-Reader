@@ -28,6 +28,9 @@ PR #8 stays Draft. No N6 work, release or merge is authorized by this pass.
 | N5-06 | Reconcile external changes | `reconcile_tests`, `outline_safe_save_tests`; 10k benchmark | Ambiguity regression passes; worker timing p95 161.199 ms |
 | N5-07 | Exchange responsiveness | Worker import/export, cancel, stale answers, large workload | Implemented; repair-head tests and Windows review in progress |
 | N5-08 | Format fidelity | `bookmark_exchange_tests`, `bookmark_model_tests` | Local Unicode/limits/CSV/round-trip and asynchronous undo tests pass |
+| N5-09 | Malformed-outline safety (A016) | Opening A016 (outline `/Next` cycle) must not hang | **Open defect:** Atlas's outline reading through Qt PDF follows the cycle until memory runs out; probe gated by `ATLAS_RUN_A016` |
+| N5-10 | Recovery choice after an unsettled save | Keep current / restore original / show backups; nothing deleted | Implemented (panel buttons, `resolveSaveRecovery`); core tests pass locally; Windows CI pending |
+| UI-02 | Edit ribbon tab (Foxit placement of Bookmark, Auto Create Bookmarks) | Rendered EN/AR/UR | Implemented; rendered review pending |
 | UI-01 | Reference-based Windows review | EN/AR/UR, wide/narrow, 100/200%, empty/error/protected/conflict | Pending |
 | PKG-01 | Correct review instructions | N5 START-HERE and guide in packaged ZIP | Script corrected; package pending |
 | GIT-01 | Owner identity and signatures | Audit every N5 commit; GitHub Verified | All N5 commits valid; corrected history pushed and verified |
@@ -133,3 +136,30 @@ The final local Debug suite passes 42/42 (64.30 s), Release 42/42 (27.45 s).
 A separate 20-run 10k reconciliation benchmark reports p50 143.365 ms and p95
 161.199 ms on the worker. Final publication and clean-package checks remain pending
 until recorded in PR #8; do not substitute earlier head results.
+
+## Cloud audit — 2026-11-04 (in progress)
+
+Head `cc12803`: all 11 workflows green (Windows CI Debug/Release, nine N2 PDF
+workflows). Local Qt 6.4 Linux suite 25/25; qpdf 12.4.1 suites pass. The audit
+compared every N5 promise (CHECKPOINTS N5, QUALITY.md N5 corpus and fuzzing,
+DATA_AND_SAFETY, FOXIT_PARITY N5 rows, N4 items carried into N5) with code and tests.
+Added in this pass:
+
+- Edit ribbon tab (Hand, Select Text | Bookmark, Auto Create Bookmarks), as in Foxit's Edit → Links.
+- Recovery choice for an unsettled save (N5-10) with tests (busy lock, restore keeps the
+  replaced file among the backups, keep current, journal kept as `resolved-*.json`).
+- Safe-save tests: too little free space (`space` fault) and, on Windows, a PDF held
+  open by another program without write/delete sharing.
+- Fuzzing of the bookmarks file and location envelopes (20,000 byte mutations,
+  5,000 random trees, 50,000 envelope mutations); AddressSanitizer/UBSan clean.
+- Fixtures A016 (malformed outline, readable pages) and A017 (real approval
+  signature, pyHanko, throwaway certificate) with generators and manifest entries.
+- Corpus sweep: A001–A006 and A015 take a 24-bookmark deep Arabic/English tree with
+  duplicate names, save, reopen without reconcile; A017 is never written in place and
+  Save a Copy works. A016 found defect N5-09 (above).
+
+Still open from this audit: N5-09 fix; 10,000-bookmark panel navigation timing
+(expand/collapse/reveal) in the benchmark; FOXIT_PARITY rows for security status and
+add-bookmark-from-selection to update; rendered review of the Edit tab and recovery
+buttons; Windows CI for these changes; the Windows-only rows above (Narrator, real
+200% scaling, contrast, clean-package smoke) and the owner review.

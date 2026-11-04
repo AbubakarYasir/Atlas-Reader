@@ -23,6 +23,7 @@ Rectangle {
     signal autoCreateRequested()
     signal exportRequested()
     signal importRequested()
+    signal recoveryRequested()
     readonly property int currentRow: list.currentIndex
 
     color: Theme.panel
@@ -276,6 +277,16 @@ Rectangle {
             }
         }
 
+        AtlasButton {
+            Layout.leftMargin: Theme.sm
+            Layout.rightMargin: Theme.sm
+            Layout.bottomMargin: Theme.sm
+            visible: panel.bookmarks.statusReason === "recoveryRequired"
+            enabled: !panel.bookmarks.saving
+            text: I18n.t("recovery.review")
+            onClicked: panel.recoveryRequested()
+        }
+
         // Not in the library: one click adds the book's folder; the panel
         // re-opens the bookmarks when the scan finishes (ReaderTab).
         AtlasButton {
@@ -290,30 +301,6 @@ Rectangle {
             onClicked: panel.addFolderRequested()
         }
 
-        // An interrupted save Atlas could not settle (ADR-0009): the reader
-        // chooses which PDF to keep; nothing is deleted either way.
-        Flow {
-            Layout.fillWidth: true
-            Layout.leftMargin: Theme.sm
-            Layout.rightMargin: Theme.sm
-            Layout.bottomMargin: Theme.sm
-            spacing: Theme.sm
-            visible: panel.bookmarks.status === "readOnly" && panel.bookmarks.statusReason === "recoveryRequired"
-            AtlasButton { text: I18n.t("recovery.keep"); onClicked: panel.bookmarks.resolveRecovery("keep") }
-            AtlasButton { text: I18n.t("recovery.restore"); onClicked: panel.bookmarks.resolveRecovery("restore") }
-            AtlasButton {
-                text: I18n.t("recovery.show")
-                iconName: "folder_open"
-                onClicked: if (!panel.bookmarks.showBackups()) panel.toastRequested(I18n.t("recovery.noBackups"))
-            }
-        }
-        Connections {
-            target: panel.bookmarks
-            function onRecoveryResolved(result) {
-                if (result === "kept") panel.toastRequested(I18n.t("recovery.kept"))
-                else if (result !== "restored") panel.toastRequested(I18n.t("recovery.failed." + (["busy", "backupMissing", "notSafe", "copyFailed", "replaceFailed", "noJournal"].indexOf(result) >= 0 ? result : "other")))
-            }
-        }
 
         Label {
             Layout.fillWidth: true

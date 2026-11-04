@@ -166,3 +166,11 @@ Vulnerability reporting: [SECURITY.md](../SECURITY.md).
 Writable mixed Arabic/English outline · open-password · permission-restricted · read-only copy · file held by another process · signed/certified · externally modified · removable/offline folder · corrupt outline with readable pages · image-only · duplicate/copy/rename identity cases · 10,000-bookmark document. No core stage is complete while any applicable fixture can silently lose research or change the wrong file.
 
 > **Invariant:** if a transformation can't be proved safe, keep the local state and show it as unresolved. Never guess and overwrite. This outranks convenience.
+
+### Explicit recovery resolution
+
+**Keep current file** is an explicit choice for a held interrupted save. The worker
+checks the current PDF can open and archives verified original/current copies and
+a receipt before clearing the pending journal. It leaves the PDF and overlay
+unchanged and requires reopening to reconcile. Invalid evidence or another change
+keeps the hold. Archives are retained outside ordinary three-backup pruning.

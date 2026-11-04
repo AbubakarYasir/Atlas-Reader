@@ -557,7 +557,8 @@ void BookmarkModel::followPdf() {
 }
 
 void BookmarkModel::resolveRecovery(const QString& choice) {
-    if (!service_ || path_.isEmpty() || documentId_.empty() || statusReason_ != QStringLiteral("recoveryRequired")) return;
+    if (!service_ || saving_ || path_.isEmpty() || documentId_.empty() || statusReason_ != QStringLiteral("recoveryRequired") ||
+        (choice != QStringLiteral("keep") && choice != QStringLiteral("restore"))) return;
     const auto which = choice == QStringLiteral("restore") ? RecoveryChoice::restoreOriginal : RecoveryChoice::keepCurrent;
     const auto generation = ++generation_;
     setStatus(QStringLiteral("loading"), {});
@@ -565,7 +566,7 @@ void BookmarkModel::resolveRecovery(const QString& choice) {
         if (generation != generation_) return;
         emit recoveryResolved(result);
         if (result == QStringLiteral("kept")) {
-            open(false); // reconcile with the PDF as it is now
+            setStatus(QStringLiteral("readOnly"), QStringLiteral("recoveredReopen"));
         } else if (result == QStringLiteral("restored")) {
             setStatus(QStringLiteral("readOnly"), QStringLiteral("recoveredReopen"));
         } else {
@@ -717,9 +718,10 @@ void BookmarkModel::rebuildSearch() {
                               : search_->find(toUtf8(filter_), 500, showHidden_);
 }
 
-void BookmarkModel::rebuildRows() {
+void BookmarkModel::rebuildRows(bool contentChanged) {
     std::vector<Row> next;
     if (editor_) {
+        next.reserve(editor_->size());
         if (!filter_.isEmpty()) {
             rebuildSearch();
             next.reserve(hits_.size());
@@ -769,8 +771,12 @@ void BookmarkModel::rebuildRows() {
         endInsertRows();
     }
     if (!rows_.empty()) emit dataChanged(index(0), index(static_cast<int>(rows_.size()) - 1));
-    updateCounts();
-    updateCurrent();
+    if (contentChanged) {
+        updateCounts();
+        updateCurrent();
+    } else {
+        emit countsChanged(); // expansion changes, content and reading position do not
+    }
 }
 
 void BookmarkModel::updateCounts() {
@@ -888,12 +894,12 @@ void BookmarkModel::expandAll() {
     for (const auto* node : editor_->inOrder()) {
         if (!editor_->children(node->id).empty()) expanded_.insert(fromUtf8(node->id));
     }
-    rebuildRows();
+    rebuildRows(false);
 }
 
 void BookmarkModel::collapseAll() {
     expanded_.clear();
-    rebuildRows();
+    rebuildRows(false);
 }
 
 int BookmarkModel::rowOf(const QString& id) const {
@@ -925,7 +931,7 @@ int BookmarkModel::reveal(const QString& id) {
         const auto* up = editor_->find(*parent);
         parent = up == nullptr ? std::nullopt : up->parentId;
     }
-    if (changed) rebuildRows();
+    if (changed) rebuildRows(false);
     return rowOf(id);
 }
 

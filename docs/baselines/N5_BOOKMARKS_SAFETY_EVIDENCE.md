@@ -6,7 +6,7 @@ Evidence for N5 ([CHECKPOINTS.md](../../CHECKPOINTS.md#n5--bookmarks--document-s
 
 ## Start — 2026-11-02
 
-Current correction (2026-11-04): the [N1–N5 closure ledger](N1_N5_CLOSURE.md) supersedes readiness claims below. Historical evidence is retained; final-head regression, crash recovery, responsiveness and Windows accessibility remain open. Late-failure restoration and recovery messages are being repaired with regression tests.
+Current correction (2026-11-04): the [N1–N5 closure ledger](N1_N5_CLOSURE.md) supersedes readiness claims below. Historical evidence is retained; recovery, exchange and save regressions now pass locally. Final local Debug/Release qualification is recorded separately from unavailable billing-blocked CI; the explicitly listed Windows accessibility/hardware checks still control readiness.
 
 - Owner wrote `N4 PASS` on 2026-11-02; see [N4 acceptance](N4_ACCEPTANCE.md). `2.0.0-beta.2` is released from `main`.
 - Stage branch `native-v2-n5-bookmarks-safety` opened from `main`. First sub-stage: N5.1 capability check.

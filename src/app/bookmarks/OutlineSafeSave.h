@@ -48,7 +48,7 @@ enum class SaveRecovery { none, completed, restored, required };
 // notSafe, copyFailed, replaceFailed).
 enum class RecoveryChoice { keepCurrent, restoreOriginal };
 [[nodiscard]] QString resolveSaveRecovery(bookmarks::SqliteBookmarkOverlay& store, const QString& path,
-    const std::string& documentId, const std::filesystem::path& backupRoot, RecoveryChoice choice);
+    const std::string& documentId, const std::filesystem::path& backupRoot, RecoveryChoice choice, const QString& password = {});
 
 struct SafeSaveInput final {
     QString path;                                   // the PDF to save into
@@ -84,6 +84,13 @@ struct SafeSaveOutcome final {
 // ("space" = too little free space, "write", "verify", "reopen", "backup", "beforeReplace",
 // "replace", "afterReplace", "reindex", "commitOverlay", "restore").
 using SafeSaveFault = std::function<bool(std::string_view step)>;
+
+// Explicit user choice after an unresolved interrupted save. Never changes the
+// PDF or overlay. Archives hash-verified copies of both versions and the journal
+// before clearing the hold; the reader must reopen and reconcile afterwards.
+[[nodiscard]] bool keepCurrentAfterRecovery(const QString& path, const QString& password,
+    const std::string& documentId, const std::filesystem::path& backupRoot,
+    const SafeSaveFault& fault = {});
 
 [[nodiscard]] SafeSaveOutcome saveOutlineSafely(bookmarks::SqliteBookmarkOverlay& store, const SafeSaveInput& input,
                                                 const SafeSaveFault& fault = {});

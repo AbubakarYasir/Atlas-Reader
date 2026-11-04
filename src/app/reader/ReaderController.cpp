@@ -96,6 +96,9 @@ ReaderController::~ReaderController() {
         pending->watcher->waitForFinished();
     }
     for (auto& pending : retired_) pending->watcher->waitForFinished();
+    // Permission probes run qpdf too; discarding their futures allowed them to
+    // outlive the controller and keep a source file in use after shutdown.
+    for (auto& job : capabilityJobs_) job.waitForFinished();
     pending_.clear();
     retired_.clear();
 }
@@ -408,11 +411,13 @@ void ReaderController::startCapabilityCheck(std::uint64_t sessionId) {
     const auto passwordIt = sessionPasswords_.find(sessionId);
     const QString password = passwordIt == sessionPasswords_.end() ? QString{} : passwordIt->second;
     auto& state = capabilities_[sessionId];
-    const quint64 generation = ++state.generation;
+    const quint64 generation = ++capabilityGeneration_;
+    state.generation = generation;
     const RevisionStamp baseline = state.baseline;
     QPointer<ReaderController> self{this};
     // Runs qpdf and file probes off the UI thread; only reads.
-    (void)QtConcurrent::run([self, sessionId, generation, path, password, baseline] {
+    std::erase_if(capabilityJobs_, [](const auto& job) { return job.isFinished(); });
+    capabilityJobs_.push_back(QtConcurrent::run([self, sessionId, generation, path, password, baseline] {
         const auto result = checkDocumentCapabilities(path, password, baseline);
         QMetaObject::invokeMethod(qApp, [self, sessionId, generation, result] {
             if (!self) return;
@@ -427,7 +432,7 @@ void ReaderController::startCapabilityCheck(std::uint64_t sessionId) {
                 emit self->dataChanged(changed, changed, {CapabilityRole});
             }
         }, Qt::QueuedConnection);
-    });
+    }));
 }
 
 void ReaderController::refreshModel(int previousActiveIndex, int previousCount) {

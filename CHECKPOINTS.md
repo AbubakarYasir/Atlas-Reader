@@ -9,7 +9,7 @@ This file owns **order and status**. Direction and scope are in [PLAN.md](PLAN.m
 | | |
 |---|---|
 | Active stage | **N5: Bookmarks + document safety**, planned `2.0.0-beta.3` |
-| Active sub-stage | **N1–N5 repair audit**; [closure ledger](docs/baselines/N1_N5_CLOSURE.md), no N6 work |
+| Active sub-stage | **N1–N5 repair audit** (integrated recovery, cyclic-outline and rotated-navigation repairs under local Windows verification); [closure ledger](docs/baselines/N1_N5_CLOSURE.md), no N6 work |
 | Done | N4 Reader **Accepted** (`N4 PASS`, 2026-11-02; [acceptance](docs/baselines/N4_ACCEPTANCE.md)) |
 | Branch | `native-v2-n5-bookmarks-safety`, from `main` after the `2.0.0-beta.2` release |
 | Released | `2.0.0-beta.2` (Reader), 2026-11-02 · `2.0.0-beta.1` (Library), 2026-09-28 |

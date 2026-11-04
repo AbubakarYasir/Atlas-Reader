@@ -23,7 +23,7 @@ namespace atlas::app {
 // The outline as the reader and the bookmark overlay see it: one entry per
 // item, depth first, with key, parentKey, position, title, page, fx/fy/hasPoint
 // and zoom. Used on open and by safe save to re-read a written file.
-[[nodiscard]] QVariantList readOutline(const QPdfDocument& document);
+[[nodiscard]] QVariantList readOutline(const QPdfDocument& document, const QByteArray& sourceBytes, const QString& password = {}, QList<int>* pageRotations = nullptr);
 
 class DocumentTextWorker final : public QObject {
     Q_OBJECT
@@ -67,6 +67,7 @@ private:
     std::unique_ptr<HeadingScan> scan_;
     std::shared_ptr<std::atomic<quint64>> latestSearch_;
     QByteArray bytes_;
+    QList<int> pageRotations_;
     QBuffer buffer_;
     QPdfDocument* document_{};
     quint64 revision_{};

@@ -94,6 +94,7 @@ public:
                          QObject* receiver, std::function<void(QString)> done);
     // <profile>/backups/<document>: where recovery backups are kept.
     [[nodiscard]] QString backupFolder(const std::string& documentId) const;
+
     void setPasswordSource(std::function<QString(const QString& path)> source) { passwordSource_ = std::move(source); }
 
     // Blocks until every queued request has finished (tests and shutdown).

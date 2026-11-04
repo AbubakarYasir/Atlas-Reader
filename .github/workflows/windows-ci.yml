@@ -231,6 +231,13 @@ jobs:
             throw "Independent N2 fixture validation failed with exit code $LASTEXITCODE"
           }
 
+      - name: Verify synthetic signed PDF integrity independently
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          python tests/fixtures/pdf/source/signed_fixture.py --openssl 'C:/Program Files/Git/usr/bin/openssl.exe'
+          if ($LASTEXITCODE -ne 0) { throw 'Signed fixture integrity or tamper test failed.' }
+
       - name: Acquire pinned qpdf 12.4.1 runtime (N5 capability check)
         shell: pwsh
         run: |
@@ -268,7 +275,7 @@ jobs:
           -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
           -DPDFium_DIR="$env:PDFium_DIR"
           -DATLAS_ENABLE_PDFIUM_PROBE=ON
-          "-DATLAS_PRERELEASE:STRING=beta.2-n5-review.1"
+          "-DATLAS_PRERELEASE:STRING=beta.2-n5-review.2"
           -DATLAS_WARNINGS_AS_ERRORS=ON
 
       - name: Build
@@ -480,7 +487,7 @@ jobs:
 
           @(
             'Atlas Reader Native inherited N2 PDF qualification probes'
-            'Version: 2.0.0-beta.2-n5-review.1'
+            'Version: 2.0.0-beta.2-n5-review.2'
             'Checkpoint evidence origin: N2 PDF engine qualification spike'
             "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
             "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
@@ -560,7 +567,7 @@ jobs:
             -QpdfCompliance $env:QPDF_COMPLIANCE `
             -PackageName 'atlas-reader-review-windows-x64' `
             -Checkpoint 'N5' `
-            -Version '2.0.0-beta.2-n5-review.1' `
+            -Version '2.0.0-beta.2-n5-review.2' `
             -Purpose 'Owner review build; the stage is in progress'
 
       - name: Upload owner review package (on request)

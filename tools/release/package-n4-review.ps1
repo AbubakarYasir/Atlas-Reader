@@ -61,7 +61,7 @@ The build identity is in BUILD-INFO.json; file hashes are in SHA256SUMS.txt.
 The samples are synthetic, redistributable fixtures; their provenance is in samples/PROVENANCE.md.
 N5 acceptance remains subject to the open checks in docs/baselines/N1_N5_CLOSURE.md.
 "@ | Set-Content -LiteralPath (Join-Path $stage 'START-HERE.md') -Encoding utf8
-foreach ($fixture in @('A001_simple_text.pdf','A002_geometry_labels.pdf','A003_outlines_links.pdf','A006_unicode_semantics.pdf','A008_password_rc4_40.pdf','A010_certification_structure.pdf')) {
+foreach ($fixture in @('A001_simple_text.pdf','A002_geometry_labels.pdf','A003_outlines_links.pdf','A006_unicode_semantics.pdf','A008_password_rc4_40.pdf','A010_certification_structure.pdf','A012_xyz_destinations.pdf','A016_malformed_outline.pdf','A017_signed_approval.pdf','A018_self_signed.pdf')) {
     Copy-Item -LiteralPath (Join-Path $repo "tests/fixtures/pdf/generated/$fixture") -Destination $samples
 }
 Copy-Item -LiteralPath (Join-Path $repo 'tests/fixtures/pdf/README.md') -Destination (Join-Path $samples 'PROVENANCE.md')

@@ -46,6 +46,57 @@ Rectangle {
         service: bookmarkService
     }
     readonly property alias bookmarks: bookmarkModel
+    Popup {
+        id: recoveryDialog
+        parent: Overlay.overlay
+        modal: true
+        focus: true
+        width: Math.min(460, parent.width - Theme.xl * 2)
+        height: Math.min(recoveryBody.implicitHeight + padding * 2, parent.height - Theme.xl * 2)
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        padding: Theme.lg
+        closePolicy: Popup.CloseOnEscape
+        onOpened: recoveryCancel.forceActiveFocus(Qt.TabFocusReason)
+        background: Rectangle { color: Theme.raised; radius: Theme.radiusSurface; border.color: Theme.chromeLine }
+        contentItem: ScrollView {
+            id: recoveryScroll
+            contentWidth: availableWidth
+            clip: true
+            ColumnLayout {
+                id: recoveryBody
+                width: recoveryScroll.availableWidth
+                spacing: Theme.md
+                Accessible.role: Accessible.Dialog
+                Accessible.name: I18n.t("recovery.review")
+                Label {
+                    Layout.fillWidth: true
+                    text: I18n.t("recovery.review")
+                    color: Theme.ink
+                    font.family: I18n.uiFamily
+                    font.bold: true
+                    wrapMode: Text.WordWrap
+                }
+                Label {
+                    Layout.fillWidth: true
+                    text: I18n.t("recovery.explain")
+                    color: Theme.ink
+                    font.family: I18n.uiFamily
+                    wrapMode: Text.WordWrap
+                }
+                AtlasButton { text: I18n.t("recovery.keep"); onClicked: { recoveryDialog.close(); bookmarkModel.resolveRecovery("keep") } }
+                AtlasButton { text: I18n.t("recovery.restore"); onClicked: { recoveryDialog.close(); bookmarkModel.resolveRecovery("restore") } }
+                AtlasButton { text: I18n.t("recovery.show"); onClicked: { if (!bookmarkModel.showBackups()) tab.toastRequested(I18n.t("recovery.noBackups")) } }
+                AtlasButton { id: recoveryCancel; text: I18n.t("prefs.cancel"); onClicked: recoveryDialog.close() }
+            }
+        }
+    }
+    Connections {
+        target: bookmarkModel
+        function onRecoveryResolved(result) {
+            tab.toastRequested(I18n.t((result === "kept" || result === "restored") ? "bookmarks.readOnly.recoveredReopen" : "save.reason.recoveryRequired"))
+        }
+    }
     // The current bookmark follows the top of the view, not just the page, so
     // a chapter starting mid-page lights up once it reaches the top.
     function trackPosition() {
@@ -325,6 +376,7 @@ Rectangle {
         else if (action === "autocreate") { autoBookmarks.qaCreate = true; openAutoBookmarks() }
         else if (action === "save") saveBookmarks()
         else if (action === "export") exportBookmarks()
+        else if (action === "recovery" && bookmarkModel.statusReason === "recoveryRequired") recoveryDialog.open()
         else if (action.indexOf("import:") === 0) { preferences.navPanel = "bookmarks"; previewImport("file://" + action.slice(7)) }
         else if (action.indexOf("autocreate-save") === 0) {
             tab.qaSave = action === "autocreate-save-confirm" ? "confirm" : "ask"
@@ -465,6 +517,7 @@ Rectangle {
                 onAutoCreateRequested: tab.openAutoBookmarks()
                 onExportRequested: tab.exportBookmarks()
                 onImportRequested: tab.importBookmarks()
+                onRecoveryRequested: recoveryDialog.open()
             }
             Rectangle { // splitter: drag to resize, double-click to hide (Foxit)
                 Layout.preferredWidth: 6

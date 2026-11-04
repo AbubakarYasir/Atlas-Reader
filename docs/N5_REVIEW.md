@@ -15,7 +15,7 @@ Accessibility review explicitly includes Windows Narrator: complete an edit, sav
 
 - Extract the whole review ZIP into a new folder and run `atlas_reader.exe`.
 - **Use copies of your PDFs.** N5 is the first stage that writes into PDFs (only when you press Save); every save keeps a backup in Atlas's profile, but copies keep the review stress-free.
-- Have ready: an Arabic or Urdu book with bookmarks, a long book (1,000+ pages), one PDF without bookmarks that has clear chapter headings, a password-protected PDF (`A008_password_rc4_40.pdf` in `samples`, password **atlas-user**), a signed or certified PDF if you have one, and Foxit (or another reader) to check results.
+- Have ready: an Arabic or Urdu book with bookmarks, a long book (1,000+ pages), one PDF without bookmarks that has clear chapter headings, a password-protected PDF (`A008_password_rc4_40.pdf` in `samples`, password **atlas-user**), the synthetic signed sample `A018_self_signed.pdf` (its test signer is intentionally not trusted), or a signed/certified copy of your own, and Foxit (or another reader) to check results.
 - Add the folder with your copies to the Library first: bookmarks are kept per book in the Library.
 
 ## Checks
@@ -29,6 +29,8 @@ Accessibility review explicitly includes Windows Narrator: complete an edit, sav
 7. **Export and import** (N5.5). Panel ⋯ → *Export Bookmarks…* as an Atlas bookmarks file, Markdown and CSV; open the Markdown in a text editor and the CSV in Excel (Arabic shows correctly, no formulas run). Then *Import Bookmarks…* the Atlas file into another copy of the book: try *at the end*, *skipping ones already here*, and undo.
 8. **Languages and accessibility, including Narrator.** Repeat checks 1, 4 and 7 briefly in العربية and اردو (Ctrl+K): dialogs mirror, nothing is left in English, Urdu is in Nastaliq. Do one edit-and-save with the keyboard only; try Windows 200% scale, high contrast and dark mode. With Narrator, check the selected bookmark, open/closed branches, focus and save/error announcements. Report skipped checks as SKIPPED.
 9. **Workspace clarity.** Compare the Bookmarks panel, its menu, Ctrl+B, F2, the title-bar search and Save with Foxit side by side. Check that commands are easy to find and the document remains the main focus. Atlas uses its own licensed assets.
+
+If an interrupted save asks for recovery, open **Review recovery**. **Keep current file** retains the PDF currently on disk; **Restore original** replaces it with the verified original backup. Both choices preserve copies of the two versions before resolving the hold. **Show backups** opens those files for inspection. Close and reopen the book afterwards to review bookmark conflicts. **Cancel** keeps saving blocked. If validation fails, the hold stays in place; do not delete the backups.
 
 ## Your reply
 

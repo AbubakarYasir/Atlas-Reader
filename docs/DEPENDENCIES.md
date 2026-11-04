@@ -60,6 +60,8 @@ These never become runtime dependencies.
 
 | Tool | Use |
 |---|---|
+| pypdf 6.12.2 + cryptography 46.0.5 (generator only) | Synthetic A016 self-signed fixture; BSD-3-Clause / Apache-2.0 or BSD-3-Clause. Existing local developer tools, no shipped code, ephemeral key never saved; pinned fixture bytes avoid a CI generation dependency |
+| OpenSSL bundled with Git for Windows (verification only) | Independent detached-CMS integrity and tamper test; no certificate trust claim, no runtime dependency |
 | Qt QML Profiler | Bindings, QML creation, frame timing |
 | Tracy | C++ zones, queues, locks, thread timing |
 | RenderDoc | GPU frames, textures, overdraw |

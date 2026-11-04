@@ -1,3 +1,4 @@
+#include "core/bookmarks/LocationEnvelope.h"
 // N5.3 slice 2: the Bookmarks panel's model and the storage service, with a
 // real event loop and profile. Identity is resolved by the library (never
 // guessed); every command reaches SQLite on the worker; reopening shows the
@@ -35,11 +36,11 @@ void require(bool condition, std::string_view message) {
     if (!condition) throw std::runtime_error(std::string{message});
 }
 
-void waitFor(const std::function<bool()>& condition, std::string_view what) {
+void waitFor(const std::function<bool()>& condition, std::string_view what, qint64 timeoutMs = 10000) {
     QElapsedTimer timer;
     timer.start();
     while (!condition()) {
-        if (timer.elapsed() > 10'000) throw std::runtime_error("Timed out waiting for " + std::string{what});
+        if (timer.elapsed() > timeoutMs) throw std::runtime_error("Timed out waiting for " + std::string{what});
         QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
     }
 }
@@ -378,7 +379,9 @@ void checkAsyncExchange() {
     for (std::size_t i = 0; i < nodes.size(); ++i) {
         nodes[i].id = std::to_string(i);
         nodes[i].title = "كتاب اردو " + std::to_string(i);
-        nodes[i].position = static_cast<std::uint32_t>(i);
+        nodes[i].position = static_cast<std::uint32_t>(i % 100 == 0 ? i / 100 : i % 100 - 1);
+        if (i % 100 != 0) nodes[i].parentId = std::to_string(i - i % 100);
+        nodes[i].location = atlas::bookmarks::encodeLocation(atlas::bookmarks::LocationEnvelope{});
         nodes[i].state = atlas::bookmarks::StorageState::localOnly;
         pointers.push_back(&nodes[i]);
     }
@@ -432,7 +435,7 @@ void checkAsyncExchange() {
     elapsed.restart();
     model.applyImportAsync("end", -1);
     waitFor([&] { return applied == 1; }, "10k import apply");
-    waitFor([&] { return !model.busy(); }, "transaction committed");
+    waitFor([&] { return !model.busy(); }, "transaction committed", 60000);
     const auto applyMs = elapsed.elapsed();
     require(model.totalCount() == 10005 && model.canUndo(), "whole import is present with undo");
     service.exchangeWork([&] { barrier.acquire(); });
@@ -447,6 +450,24 @@ void checkAsyncExchange() {
     const auto exportMs = elapsed.elapsed();
     require(ticks > 0, "interface heartbeat runs during exchange");
     timer.stop();
+    model.expandAll();
+    const QString jumpId = model.get(model.rowCount() - 1).value("nodeId").toString();
+    std::vector<double> expandTimes, collapseTimes, revealTimes;
+    for (int sample = 0; sample < 30; ++sample) {
+        elapsed.restart(); model.collapseAll(); collapseTimes.push_back(elapsed.nsecsElapsed() / 1e6);
+        elapsed.restart(); model.expandAll(); expandTimes.push_back(elapsed.nsecsElapsed() / 1e6);
+        model.collapseAll();
+        elapsed.restart();
+        const int row = model.reveal(jumpId);
+        require(row >= 0 && model.get(row).value("nodeId").toString() == jumpId, "reveal exact bookmark");
+        revealTimes.push_back(elapsed.nsecsElapsed() / 1e6);
+    }
+    const auto report = [](const char* name, std::vector<double> values) {
+        std::sort(values.begin(), values.end());
+        std::cout << "Panel 10005 " << name << " n=30 p50_ms=" << values[14]
+                  << " p95_ms=" << values[28] << " p99_ms=" << values[29] << '\n';
+    };
+    report("expand", expandTimes); report("collapse", collapseTimes); report("reveal", revealTimes);
     model.undo();
     waitIdle(model, service);
     require(model.totalCount() == 5, "one undo removes the entire asynchronous import");

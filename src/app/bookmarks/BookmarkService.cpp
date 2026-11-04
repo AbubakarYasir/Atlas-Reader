@@ -38,6 +38,7 @@ std::optional<bookmarks::BaseSnapshot> baseFromOutline(const QVariantList& outli
     base.nodes.reserve(static_cast<std::size_t>(outline.size()));
     for (const QVariant& item : outline) {
         const QVariantMap entry = item.toMap();
+        if (entry.value(QStringLiteral("outlineUnsupported")).toBool()) return std::nullopt;
         bookmarks::BaseNode node;
         node.key = toUtf8(entry.value(QStringLiteral("key")).toString());
         const QString parentKey = entry.value(QStringLiteral("parentKey")).toString();
@@ -216,15 +217,17 @@ void BookmarkService::resolveRecovery(const QString& path, const std::string& do
                                       QObject* receiver, std::function<void(QString)> done) {
     QPointer<QObject> target{receiver};
     QPointer<BookmarkService> self{this};
-    post([path, documentId, choice, target, self, callback = std::move(done)](Storage& storage) mutable {
+    QString password = passwordSource_ ? passwordSource_(path) : QString{};
+    post([path, documentId, choice, password, target, self, callback = std::move(done)](Storage& storage) mutable {
         QString result;
         try {
             storage.ensureOpen();
             result = resolveSaveRecovery(*storage.overlay, path, documentId,
-                                         storage.databasePath.parent_path() / "backups", choice);
+                                         storage.databasePath.parent_path() / "backups", choice, password);
         } catch (const std::exception&) {
             result = QStringLiteral("storageError");
         }
+        password.fill(u'\0');
         QMetaObject::invokeMethod(
             self.data(),
             [target, reply = std::move(callback), result]() mutable {

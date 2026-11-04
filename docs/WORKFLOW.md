@@ -13,9 +13,13 @@ push. GitHub verification must also be checked after push (a local signature alo
 does not prove GitHub recognizes the key).
 
 Owner review packages are on request only, not on every stage push. The repair
-delivery includes one package after its gates pass. See the
+delivery includes one inspection package on request; it must explicitly list open gates. See the
 [closure ledger](baselines/N1_N5_CLOSURE.md) for open work; earlier readiness claims
 do not override it.
+
+The owner requested local Windows verification while Actions is blocked by account
+billing. Record cloud checks as unavailable; do not substitute an older green run.
+Source pushes do not authorize uploading a review package or merging.
 
 ## 1. Branches
 
@@ -23,7 +27,7 @@ do not override it.
 |---|---|
 | `main` | Default branch. Accepted stage state only. Permanent name. |
 | `legacy/flutter` | Stopped Flutter app, kept as a reference. Permanent name. Never revived. |
-| `native-v2-n<#>-<name>` | The **one** active stage branch, created from the exact accepted `main` commit. Today: `native-v2-n4-reader-foundation`. |
+| `native-v2-n<#>-<name>` | The **one** active stage branch, created from the exact accepted `main` commit. Today: `native-v2-n5-bookmarks-safety`. |
 | `<area>/<short-name>` | Short-lived task branch from the stage branch, merged back into it (for example `docs/focused-2-0-plan`, `reader/viewport-cache`). |
 | `spike/<name>` | Experiments, never merged silently into production architecture. |
 
@@ -58,7 +62,7 @@ Documentation-only changes don't bump the product version, but they still need t
 ## 4. Push, pull requests and merge
 
 1. Push the branch. It is not "on GitHub" until `git rev-parse HEAD` equals `git rev-parse origin/<branch>`.
-2. The stage PR stays **Draft** until the stage's owner review passes. N4 was PR #6 (merged); N5 gets its own PR.
+2. The stage PR stays **Draft** until the stage's owner review passes. N4 was PR #6 (merged); N5 is PR #8 (Draft).
 3. CI must pass on the **exact** head; an older green run doesn't count.
 4. After **`N# PASS`**: update the ADR and status files, merge stage → `main`, verify ancestry, tag the release, delete the stage branch, then open the next stage branch from the merge commit. The owner may direct an earlier merge when a stage's build is complete (N4, 2026-11-02); the review then runs on `main`, and the release tag still waits for `N# PASS`.
 5. Never force-push a published branch without explicit owner permission; prefer corrective commits.
@@ -107,7 +111,7 @@ Every pushed handoff states: branch and PR · local and remote SHA (equal) · wo
 
 ## N5 repair delivery
 
-The repair candidate identifies itself as `2.0.0-beta.2-n5-review.1`. Package metadata
+The repair candidate identifies itself as `2.0.0-beta.2-n5-review.2`. Package metadata
 must equal the executable's ProductVersion. N5 packaging requires qpdf plus its
 pinned notices, selects N5 instructions, includes outline/security fixtures and
 records the executable hash and source commit. Clean-PATH smoke clears development

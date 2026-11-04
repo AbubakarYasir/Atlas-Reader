@@ -240,7 +240,7 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 
 | Foxit commands | Atlas |
 |---|---|
-| Show security, permissions, signature status of a file | N5 |
+| Show security, permissions, signature status of a file | Implemented N5: protection label, capability reasons and signature fields/status. Certificate trust validation remains Track F. Final Windows review is recorded in the closure ledger. |
 | Mark for Redaction (text, area, page, search & redact, smart redact patterns), Apply, Whiteout, Mosaic | Track F (to a new copy, verified unrecoverable) |
 | Hidden Data: remove hidden information, sanitize document | Track F |
 | Secure Document: password protection, certificate protection, permissions, remove security (with the password only), security policies | Track F (never bypasses; removing security needs the owner password) |
@@ -297,7 +297,7 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 |---|---|
 | Page background (paste, add bookmark, read mode, zoom, fit, rotate, reverse view, print, rulers, navigation panels, look up, preferences) | Done for current features (N4.4/N4.5); more items appear as their features land |
 | Document tab (close, others, left, right, copy path, open folder, print, tab groups) | Done (N4.4) · print N7 · tab groups Track A |
-| Text selection (copy, highlight, underline, strikeout, add bookmark, search) | copy and search Done (N4.5) · bookmark N5 · markup N6 |
+| Text selection (copy, highlight, underline, strikeout, add bookmark, search) | copy and search Done (N4.5) · bookmark implemented N5.3: Ctrl+B uses selected text up to 200 characters · markup N6 |
 | Link (open in browser after confirmation, copy link location; open in tab/new document for PDFs) | Done (N4.5) · open PDF links in a tab N7 |
 | Image (copy, save image as, bookmark, extract text, edit image) | N7 (copy, save as; SnapShot copies any area now) · Track D/G |
 | Recent file (open, open a copy, pin, copy path, remove) | Done (N4.4) · open a copy N7 |

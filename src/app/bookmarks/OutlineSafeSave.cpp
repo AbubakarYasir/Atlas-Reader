@@ -68,7 +68,9 @@ std::optional<QVariantList> reopen(const QString& path, const QString& password)
     if (!password.isEmpty()) document.setPassword(password);
     document.load(path);
     if (document.status() != QPdfDocument::Status::Ready) return std::nullopt;
-    return readOutline(document);
+    QFile source{path};
+    if (!source.open(QIODevice::ReadOnly)) return std::nullopt;
+    return readOutline(document, source.readAll(), password);
 }
 
 bool sameAsPlan(const QVariantList& outline, const SavePlan& plan, const std::vector<std::string>& keys) {
@@ -172,7 +174,7 @@ SaveRecovery recoverOutlineSave(SqliteBookmarkOverlay& store, const QString& pat
 }
 
 QString resolveSaveRecovery(SqliteBookmarkOverlay& store, const QString& path, const std::string& documentId,
-                            const std::filesystem::path& backupRoot, RecoveryChoice choice) {
+                            const std::filesystem::path& backupRoot, RecoveryChoice choice, const QString& password) {
     const QString folder = qpath(backupRoot / documentId);
     const QString journal = QDir{folder}.filePath(QStringLiteral("pending-save.json"));
     if (!QFileInfo::exists(journal)) return QStringLiteral("noJournal");
@@ -184,7 +186,11 @@ QString resolveSaveRecovery(SqliteBookmarkOverlay& store, const QString& path, c
             QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMdd-HHmmss-zzz")) + QStringLiteral(".json"));
         return QFile::rename(journal, resolved) ? QString::fromLatin1(outcome) : QStringLiteral("replaceFailed");
     };
-    if (choice == RecoveryChoice::keepCurrent) return settle("kept");
+    if (choice == RecoveryChoice::keepCurrent) {
+        lock.unlock();
+        return keepCurrentAfterRecovery(path, password, documentId, backupRoot)
+            ? QStringLiteral("kept") : QStringLiteral("copyFailed");
+    }
 
     QFile file{journal};
     if (!file.open(QIODevice::ReadOnly) || file.size() > 16384) return QStringLiteral("backupMissing");
@@ -194,16 +200,24 @@ QString resolveSaveRecovery(SqliteBookmarkOverlay& store, const QString& path, c
     const QString name = record.value("backup").toString();
     bool validRevision = false;
     const auto revision = record.value("revision").toString().toLongLong(&validRevision);
-    if (record.value("document").toString() != utf8(documentId) || original.size() != 32 || name.isEmpty() ||
+    if (record.value("schema").toInt() != 1 ||
+        record.value("path").toString() != QFileInfo{path}.absoluteFilePath() ||
+        record.value("document").toString() != utf8(documentId) || original.size() != 32 || name.isEmpty() ||
         QFileInfo{name}.fileName() != name)
         return QStringLiteral("backupMissing");
     const QString source = QDir{folder}.filePath(name);
-    if (sha256(source) != original) return QStringLiteral("backupMissing");
+    if (sha256(source) != original || !reopen(source, password)) return QStringLiteral("backupMissing");
     if (!validRevision || store.load(documentId).revision != revision) return QStringLiteral("notSafe");
     const QByteArray current = sha256(path);
     if (current == original) return settle("restored"); // already the original
     // Keep what is there now before replacing it.
-    if (!current.isEmpty() && backup(path, backupRoot, documentId, current).isEmpty()) return QStringLiteral("copyFailed");
+    const QDir archive{QDir{folder}.filePath(QStringLiteral("restored-") + QUuid::createUuid().toString(QUuid::Id128))};
+    if (current.isEmpty() || !QDir{}.mkpath(archive.path()) ||
+        !QFile::copy(path, archive.filePath(QStringLiteral("displaced-current.pdf"))) ||
+        sha256(archive.filePath(QStringLiteral("displaced-current.pdf"))) != current ||
+        !QFile::copy(source, archive.filePath(QStringLiteral("before-save.pdf"))) ||
+        sha256(archive.filePath(QStringLiteral("before-save.pdf"))) != original ||
+        !QFile::copy(journal, archive.filePath(QStringLiteral("resolution-source.json")))) return QStringLiteral("copyFailed");
     TempFile restored{path + QStringLiteral(".atlas-recover-") + QUuid::createUuid().toString(QUuid::Id128)};
     if (!QFile::copy(source, restored.path) || sha256(restored.path) != original) return QStringLiteral("copyFailed");
     if (sha256(path) != current || !replaceFile(path, restored.path) || sha256(path) != original)
@@ -216,6 +230,47 @@ std::string fileRevision(const QString& path) {
     const QFileInfo info{path};
     if (!info.exists()) return {};
     return "size=" + std::to_string(info.size()) + ";mtime=" + std::to_string(info.lastModified().toMSecsSinceEpoch());
+}
+
+bool keepCurrentAfterRecovery(const QString& path, const QString& password,
+                              const std::string& documentId, const std::filesystem::path& backupRoot,
+                              const SafeSaveFault& fault) {
+    const QDir folder{qpath(backupRoot / documentId)};
+    QLockFile lock{folder.filePath(QStringLiteral("save.lock"))};
+    if (!lock.tryLock(0)) return false;
+    QFile journal{folder.filePath(QStringLiteral("pending-save.json"))};
+    if (!journal.open(QIODevice::ReadOnly) || journal.size() > 16384) return false;
+    const QByteArray bytes = journal.readAll();
+    const auto record = QJsonDocument::fromJson(bytes).object();
+    journal.close();
+    const QString name = record.value("backup").toString();
+    const QByteArray original = QByteArray::fromHex(record.value("original").toString().toLatin1());
+    if (record.value("schema").toInt() != 1 || record.value("document").toString() != utf8(documentId) ||
+        record.value("path").toString() != QFileInfo{path}.absoluteFilePath() || original.size() != 32 ||
+        name.isEmpty() || QFileInfo{name}.fileName() != name || sha256(folder.filePath(name)) != original)
+        return false;
+    const QByteArray current = sha256(path);
+    if (current.size() != 32 || !reopen(path, password)) return false;
+    // Subdirectories are deliberately outside ordinary successful-save retention.
+    // A failed attempt also retains its copies for inspection, never deletes them.
+    const QDir archive{folder.filePath(QStringLiteral("resolved-") + QUuid::createUuid().toString(QUuid::Id128))};
+    if (!QDir{}.mkpath(archive.path())) return false;
+    const QString originalCopy = archive.filePath(QStringLiteral("before-save.pdf"));
+    const QString currentCopy = archive.filePath(QStringLiteral("kept-current.pdf"));
+    if (!QFile::copy(folder.filePath(name), originalCopy) || sha256(originalCopy) != original ||
+        !QFile::copy(path, currentCopy) || sha256(currentCopy) != current) return false;
+    QJsonObject resolution = record;
+    resolution.insert(QStringLiteral("resolution"), QStringLiteral("owner-kept-current"));
+    resolution.insert(QStringLiteral("keptHash"), QString::fromLatin1(current.toHex()));
+    QSaveFile receipt{archive.filePath(QStringLiteral("resolution.json"))};
+    const QByteArray receiptBytes = QJsonDocument{resolution}.toJson();
+    if (!receipt.open(QIODevice::WriteOnly) || receipt.write(receiptBytes) != receiptBytes.size() || !receipt.commit())
+        return false;
+    if ((fault && !fault("beforeRecoveryResolution")) || sha256(path) != current) return false;
+    // Recheck the pending record too: a failed/changed record never clears a hold.
+    if (!journal.open(QIODevice::ReadOnly) || journal.readAll() != bytes) return false;
+    journal.close();
+    return journal.remove();
 }
 
 SafeSaveOutcome saveOutlineCopy(const SafeSaveInput& input, const QString& target, const SafeSaveFault& fault) {
@@ -416,6 +471,10 @@ SafeSaveOutcome saveOutlineSafely(SqliteBookmarkOverlay& store, const SafeSaveIn
     if (sha256(input.path) != originalHash || fileRevision(input.path) != originalRevision)
         return fail("recoveryRequired");
     if (!step("replace") || !replaceFile(input.path, temp.path)) {
+        if (sha256(input.path) != originalHash) {
+            out.pdfChanged = true;
+            return fail("recoveryRequired");
+        }
         QFile::remove(journal);
         return fail("replaceFailed");
     }
@@ -434,6 +493,7 @@ SafeSaveOutcome saveOutlineSafely(SqliteBookmarkOverlay& store, const SafeSaveIn
             return fail("recoveryRequired");
         }
         recovery.path.clear();
+        if (!step("afterRestore")) return fail("recoveryRequired");
         out.pdfChanged = false;
         out.disposition = SaveDisposition::restored;
         if (!QFile::remove(journal)) return fail("recoveryRequired");

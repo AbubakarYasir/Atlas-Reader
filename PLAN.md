@@ -245,9 +245,17 @@ Every change to scope, priority or release gates is added here with its reason.
 
 ## N1–N5 repair implementation, 2026-11-04
 
+Explicit recovery can retain the current PDF after preserving both versions; independent
+signed-fixture verification and a real Windows navigation memory series qualify that
+repair without adding a signing feature or changing engines.
 Recovery uses a versioned journal beside profile backups, not a destructive database
 migration. Bookmark exchange uses the existing worker and an isolated editor snapshot;
 the published exchange format stays 1.0.0. Ambiguous external matches are held without
 guessing. The owner requested a runnable inspection build while engineering closure
-continues. Its version is `2.0.0-beta.2-n5-review.1`; this does not accept N5, authorize
+continues. Its version is `2.0.0-beta.2-n5-review.2`; this does not accept N5, authorize
 N6, or authorize merging PR #8. See the [closure ledger](docs/baselines/N1_N5_CLOSURE.md).
+
+The integrated audit also repairs cyclic outline loading and rotated destinations.
+The owner requested local verification after GitHub refused to start Actions for
+account billing reasons. Local evidence does not turn unavailable cloud checks or
+unverified Narrator, real display settings and physical media faults into passes.

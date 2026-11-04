@@ -1,7 +1,7 @@
 # PDF files are binary containers even when their streams happen to be ASCII.
 # Prevent Git/core.autocrlf from rewriting line endings and invalidating xref
 # offsets or deterministic SHA-256 evidence on Windows runners.
-*.pdf -text
+*.pdf binary
 assets/fonts/OFL.txt -whitespace
 *.ttf binary
 .githooks/* text eol=lf

@@ -35,6 +35,10 @@
 #include <stdexcept>
 #include <string>
 
+#ifdef Q_OS_WIN
+#include <qt_windows.h>
+#endif
+
 namespace {
 
 using namespace atlas::bookmarks;
@@ -69,7 +73,9 @@ QVariantList qtOutline(const QString& path, const QString& password = {}) {
     if (!password.isEmpty()) document.setPassword(password);
     document.load(path);
     require(document.status() == QPdfDocument::Status::Ready, "Qt PDF opens " + path.toStdString());
-    return atlas::app::readOutline(document);
+    QFile source{path};
+    require(source.open(QIODevice::ReadOnly), "read outline source");
+    return atlas::app::readOutline(document, source.readAll(), password);
 }
 
 QStringList titles(const QVariantList& outline) {
@@ -177,7 +183,8 @@ void checkSave() {
 
 void checkProcessRecovery() {
     for (const QString& phase : {QStringLiteral("journalPrepared"), QStringLiteral("afterReplace"),
-                                 QStringLiteral("commitSave:beforeCommit"), QStringLiteral("afterOverlayCommit")}) {
+                                 QStringLiteral("commitSave:beforeCommit"), QStringLiteral("afterOverlayCommit"),
+                                 QStringLiteral("restore"), QStringLiteral("afterRestore")}) {
         Book book{"A003_outlines_links.pdf"};
         editA003(book);
         const auto original = sha(book.pdf);
@@ -193,7 +200,7 @@ void checkProcessRecovery() {
         const auto result = atlas::app::recoverOutlineSave(*book.store, book.pdf, "doc",
             fsPath(book.dir.filePath(QStringLiteral("backups"))));
         const bool committed = phase == QStringLiteral("afterOverlayCommit");
-        require(result == (phase == QStringLiteral("journalPrepared") || committed
+        require(result == (phase == QStringLiteral("journalPrepared") || phase == QStringLiteral("afterRestore") || committed
                     ? atlas::app::SaveRecovery::completed : atlas::app::SaveRecovery::restored),
                 "Restart resolves the exact interrupted boundary.");
         require((sha(book.pdf) == original) != committed, "Restart preserves the correct PDF version.");
@@ -231,6 +238,21 @@ void checkHidden() {
 }
 
 void checkFailures() {
+    {
+        Book book{"A003_outlines_links.pdf"};
+        editA003(book);
+        const auto original = sha(book.pdf);
+        const auto outcome = book.save({}, [&](std::string_view step) {
+            if (step != "replace") return true;
+            QFile external{book.pdf};
+            require(external.open(QIODevice::Append), "Simulate a changed destination on failed replacement.");
+            external.write("\n% changed at replacement\n");
+            return false;
+        });
+        require(outcome.disposition == atlas::app::SaveDisposition::recoveryRequired && outcome.pdfChanged &&
+                    sha(outcome.backupPath) == original,
+                "A failed replacement cannot claim unchanged when the file differs; retain recovery.");
+    }
     {
         Book book{"A003_outlines_links.pdf"};
         editA003(book);
@@ -275,6 +297,28 @@ void checkFailures() {
                 "Recovery preserves an unknown external revision.");
         require(book.save().reason == QStringLiteral("recoveryRequired") && sha(book.pdf) == changed,
                 "An unresolved journal blocks another save.");
+        const auto backupRoot = fsPath(book.dir.filePath(QStringLiteral("backups")));
+        const auto overlayRevision = book.store->load("doc").revision;
+        require(!atlas::app::keepCurrentAfterRecovery(book.pdf, {}, "doc", backupRoot, [](std::string_view) { return false; }),
+                "A failure after archiving preserves the recovery hold.");
+        require(atlas::app::recoverOutlineSave(*book.store, book.pdf, "doc", backupRoot) == atlas::app::SaveRecovery::required,
+                "An incomplete resolution does not permit another save.");
+        require(atlas::app::keepCurrentAfterRecovery(book.pdf, {}, "doc", backupRoot),
+                "Explicit keep-current archives both versions and resolves the hold.");
+        require(sha(book.pdf) == changed && sha(outcome.backupPath) == original &&
+                book.store->load("doc").revision == overlayRevision,
+                "Keeping current never changes the PDF, old backup or local research.");
+        const QDir recoveryFolder{book.dir.filePath(QStringLiteral("backups/doc"))};
+        const auto archives = recoveryFolder.entryList({QStringLiteral("resolved-*")}, QDir::Dirs);
+        require(archives.size() == 2, "Failed and completed resolution evidence is retained.");
+        for (const auto& archiveName : archives) {
+            const QDir archive{recoveryFolder.filePath(archiveName)};
+            require(sha(archive.filePath(QStringLiteral("before-save.pdf"))) == original &&
+                    sha(archive.filePath(QStringLiteral("kept-current.pdf"))) == changed,
+                    "The resolution archive contains verified copies of both revisions.");
+        }
+        require(atlas::app::recoverOutlineSave(*book.store, book.pdf, "doc", backupRoot) == atlas::app::SaveRecovery::none,
+                "The next open can reconcile the chosen file.");
     }
     // The reader's way out of an unresolved journal: restore the original or keep
     // the current file. Nothing is deleted either way.
@@ -299,15 +343,17 @@ void checkFailures() {
                     "Recovery waits for a running save.");
         }
         const QString result = atlas::app::resolveSaveRecovery(*book.store, book.pdf, "doc", backups, choice);
-        const QStringList resolved = QDir{folder}.entryList({QStringLiteral("resolved-*.json")}, QDir::Files);
+        const QStringList resolved = choice == atlas::app::RecoveryChoice::keepCurrent
+            ? QDir{folder}.entryList({QStringLiteral("resolved-*")}, QDir::Dirs)
+            : QDir{folder}.entryList({QStringLiteral("resolved-*.json")}, QDir::Files);
         require(!QFileInfo::exists(QDir{folder}.filePath(QStringLiteral("pending-save.json"))) && resolved.size() == 1,
                 "The journal is kept as a resolved record, not deleted.");
         require(book.store->load("doc").revision == revision, "Recovery never changes the reader's bookmarks.");
         if (choice == atlas::app::RecoveryChoice::restoreOriginal) {
             require(result == QStringLiteral("restored") && sha(book.pdf) == original, "The original is put back.");
             bool keptChanged = false;
-            for (const auto& name : QDir{folder}.entryList({QStringLiteral("*.pdf")}, QDir::Files))
-                keptChanged = keptChanged || sha(QDir{folder}.filePath(name)) == changed;
+            for (const auto& name : QDir{folder}.entryList({QStringLiteral("restored-*")}, QDir::Dirs))
+                keptChanged = keptChanged || sha(QDir{QDir{folder}.filePath(name)}.filePath(QStringLiteral("displaced-current.pdf"))) == changed;
             require(keptChanged, "The file it replaced is kept among the backups.");
         } else {
             require(result == QStringLiteral("kept") && sha(book.pdf) == changed, "The current file is kept as it is.");
@@ -379,6 +425,45 @@ void checkFailures() {
 }
 
 void checkProtected() {
+#ifdef Q_OS_WIN
+    {
+        Book book{"A003_outlines_links.pdf"};
+        editA003(book);
+        const auto original = sha(book.pdf);
+        HANDLE held = INVALID_HANDLE_VALUE;
+        const auto outcome = book.save({}, [&](std::string_view step) {
+            if (step == "afterReplace") {
+                held = CreateFileW(reinterpret_cast<LPCWSTR>(book.pdf.utf16()), GENERIC_READ,
+                                   FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, 0, nullptr);
+            }
+            return true; // no injected failure: the actual Windows lock denies reopen
+        });
+        const bool locked = held != INVALID_HANDLE_VALUE;
+        if (locked) CloseHandle(held);
+        require(locked && outcome.disposition == atlas::app::SaveDisposition::recoveryRequired,
+                "A real sharing lock prevents final reopen and retains recovery evidence.");
+        require(atlas::app::recoverOutlineSave(*book.store, book.pdf, "doc",
+                    fsPath(book.dir.filePath(QStringLiteral("backups")))) == atlas::app::SaveRecovery::restored &&
+                    sha(book.pdf) == original,
+                "After releasing the real sharing lock, restart restores the verified original.");
+    }
+#endif
+    {
+        Book book{"A018_self_signed.pdf"};
+        book.run(book.editor->create(std::nullopt, 0, "signed original stays intact", at(0, 0.2)));
+        const auto original = sha(book.pdf);
+        require(book.save().reason == QStringLiteral("notPermitted") && sha(book.pdf) == original,
+                "A cryptographically signed original is never changed in place.");
+        SafeSaveInput input;
+        input.path = book.pdf;
+        input.documentId = "doc";
+        input.base = book.store->load("doc").base;
+        for (const auto* node : book.editor->inOrder()) input.nodes.push_back(*node);
+        const QString target = book.dir.filePath(QStringLiteral("unsigned-working-copy.pdf"));
+        const auto copy = atlas::app::saveOutlineCopy(input, target);
+        require(copy.ok && sha(book.pdf) == original && !qtOutline(target).isEmpty(),
+                "A signed file permits a working copy, with no signature-validity claim: " + copy.reason.toStdString());
+    }
     {
         Book book{"A015_encrypted_outline_rc4_40.pdf", QStringLiteral("atlas-user")};
         book.run(book.editor->rename(book.id("0"), "جذر محفوظ"));
@@ -477,9 +562,9 @@ void checkCorpus() {
     }
 
     // A016: readable pages, malformed outline (missing page, wrong type, a cycle).
-    // OPEN DEFECT (closure ledger N5-09): Qt PDF's outline reading follows the /Next
-    // cycle until memory runs out, so this probe runs only when asked for.
-    if (qEnvironmentVariableIsSet("ATLAS_RUN_A016")) {
+    // N5-09 regression: raw-link preflight rejects the cycle before Qt's eager
+    // bookmark model is created. Always runs in the normal suite.
+    {
         QTemporaryDir dir;
         const QString pdf = dir.filePath(QStringLiteral("malformed.pdf"));
         require(QFile::copy(fixture("A016_malformed_outline.pdf"), pdf), "copy A016");
@@ -487,11 +572,14 @@ void checkCorpus() {
         QPdfDocument document;
         document.load(pdf);
         require(document.status() == QPdfDocument::Status::Ready && document.pageCount() == 3, "A016 pages are readable");
-        const auto outline = atlas::app::readOutline(document);
+        QFile source{pdf};
+        require(source.open(QIODevice::ReadOnly), "read malformed source");
+        const auto outline = atlas::app::readOutline(document, source.readAll());
         document.close();
         const auto base = atlas::app::baseFromOutline(outline, atlas::app::fileRevision(pdf));
         std::cout << "A016: Qt PDF reads " << outline.size() << " outline entries; base "
                   << (base ? "accepted" : "refused (bookmarks read-only)") << ".\n";
+        require(!base, "Cyclic outline is rejected before Qt builds its model.");
         if (base) {
             Book book{"A016_malformed_outline.pdf"};
             book.run(book.editor->create(std::nullopt, 0, "Atlas note", at(1, 0.3)));
@@ -506,6 +594,52 @@ void checkCorpus() {
         }
         require(sha(pdf) == original, "Reading a malformed outline never changes the file.");
     }
+}
+
+// N4 carried-forward regression: raw Qt link destinations omit inherent rotation.
+void checkRotatedNavigation() {
+    QFile source{fixture("A012_xyz_destinations.pdf")};
+    require(source.open(QIODevice::ReadOnly), "A012 navigation fixture");
+    atlas::app::DocumentTextWorker worker{std::make_shared<std::atomic<quint64>>(0)};
+    QVariantList links;
+    QObject::connect(&worker, &atlas::app::DocumentTextWorker::pageLinks,
+                     [&](quint64, int, const QVariantList& value) { links = value; });
+    worker.open(source.readAll(), {}, 1);
+    worker.links(0);
+    require(links.size() == 2, "Both A012 links available");
+    for (const auto& value : links) {
+        const auto link = value.toMap();
+        const auto point = link.value("location").toPointF();
+        const auto expected = link.value("page").toInt() == 1 ? QPointF{40, 50} : QPointF{250, 40};
+        require((point - expected).manhattanLength() < 1.0, "Link destination includes inherent page rotation");
+    }
+    QTemporaryDir variants;
+    for (const int angle : {0, 180, 270}) {
+        const QString output = variants.filePath(QStringLiteral("rotation-%1.pdf").arg(angle));
+        QProcess rotate;
+        rotate.start(atlas::app::QpdfInspector::locate(),
+                     {QStringLiteral("--rotate=%1:3").arg(angle), QStringLiteral("--"),
+                      fixture("A012_xyz_destinations.pdf"), output});
+        require(rotate.waitForFinished(10000) && rotate.exitCode() == 0, "Generate rotation variant");
+        QFile variant{output};
+        require(variant.open(QIODevice::ReadOnly), "Read rotation variant");
+        worker.open(variant.readAll(), {}, 2);
+        links.clear(); worker.links(0);
+        bool found = false;
+        for (const auto& value : links) {
+            const auto link = value.toMap();
+            if (link.value("page").toInt() != 2) continue;
+            const auto expected = angle == 0 ? QPointF{40, 50} : angle == 180 ? QPointF{160, 250} : QPointF{50, 160};
+            require((link.value("location").toPointF() - expected).manhattanLength() < 1.0,
+                    "Destination normalized for every quarter-turn");
+            found = true;
+        }
+        require(found, "Rotated destination link present");
+    }
+    Book book{"A012_xyz_destinations.pdf"};
+    book.run(book.editor->create(std::nullopt, 0, "Rotated target", at(2, 0.3)));
+    const auto saved = book.save();
+    require(saved.ok, "Rotated bookmark saves and reopens at the same normalized point: " + saved.reason.toStdString());
 }
 
 // Another program changes the PDF's outline; opening the book reconciles.
@@ -665,16 +799,18 @@ int main(int argc, char** argv) {
         store.setFaultHookForTesting([phase](std::string_view step) { if (step == phase) std::_Exit(73); });
         const auto outcome = atlas::app::saveOutlineSafely(store, input, [phase](std::string_view step) {
             if (step == phase) std::_Exit(73);
+            if ((phase == "restore" || phase == "afterRestore") && step == "afterReplace") return false;
             return true;
         });
         std::cerr << outcome.reason.toStdString();
         return 74;
     }
     if (atlas::app::QpdfInspector::locate().isEmpty()) {
-        std::cout << "qpdf not found; safe save tests skipped.\n";
-        return 0;
+        std::cerr << "Required qpdf runtime not found; safe-save tests cannot pass.\n";
+        return 1;
     }
     try {
+        checkRotatedNavigation();
         checkSave();
         checkProcessRecovery();
         checkHidden();

@@ -5,7 +5,15 @@
 
 #include <QEventLoop>
 #include <QImage>
+#include "app/document/DocumentCapabilityCheck.h"
 #include <QPdfBookmarkModel>
+#include <QTemporaryDir>
+#include <QFile>
+#include <QProcess>
+#include <QElapsedTimer>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QPdfDocument>
 #include <QPdfDocumentRenderOptions>
 #include <QPdfSelection>
@@ -64,17 +72,108 @@ QVariantList rectsOf(const QPdfSelection& selection) {
     return rects;
 }
 
+// Validate raw tree links before Qt constructs its eager bookmark model. Qt's
+// model can loop indefinitely on a /Next cycle, before our traversal runs.
+// qpdf only emits raw objects here: it is not asked to traverse outlines.
+bool safeOutlineStructure(const QByteArray& bytes, const QString& password, QList<int>& rotations) {
+    const QString executable = QpdfInspector::locate();
+    if (executable.isEmpty() || bytes.isEmpty()) return false;
+    QTemporaryDir directory;
+    if (!directory.isValid()) return false;
+    const QString path = directory.filePath(QStringLiteral("outline-input.pdf"));
+    QFile input{path};
+    if (!input.open(QIODevice::WriteOnly) || input.write(bytes) != bytes.size() || !input.flush()) return false;
+    input.close();
+    QStringList args{QStringLiteral("--json=2"), QStringLiteral("--json-key=qpdf"), QStringLiteral("--json-key=pages")};
+    if (!password.isEmpty()) args << QStringLiteral("--password-file=-");
+    args << QStringLiteral("--") << path;
+    QProcess process;
+    process.start(executable, args);
+    if (!process.waitForStarted(5000)) return false;
+    if (!password.isEmpty()) process.write(password.toUtf8() + '\n');
+    process.closeWriteChannel();
+    QByteArray output;
+    QElapsedTimer timer;
+    timer.start();
+    do {
+        process.waitForFinished(25);
+        output += process.readAllStandardOutput();
+        (void)process.readAllStandardError();
+        if (output.size() > 128 * 1024 * 1024 || timer.elapsed() > 15000) {
+            process.kill();
+            process.waitForFinished(2000);
+            return false;
+        }
+    } while (process.state() != QProcess::NotRunning);
+    if (process.exitStatus() != QProcess::NormalExit || (process.exitCode() != 0 && process.exitCode() != 3)) return false;
+    QJsonParseError error;
+    const auto result = QJsonDocument::fromJson(output, &error).object();
+    const auto json = result.value("qpdf").toArray();
+    if (error.error != QJsonParseError::NoError || json.size() < 2) return false;
+    const auto objects = json.at(1).toObject();
+    const auto resolve = [&objects](const QJsonValue& ref) {
+        return ref.isObject() ? ref.toObject() : objects.value("obj:" + ref.toString()).toObject().value("value").toObject();
+    };
+    const auto root = resolve(objects.value("trailer").toObject().value("value").toObject().value("/Root"));
+    if (root.isEmpty()) return false;
+    for (const auto& page : result.value("pages").toArray()) {
+        auto dict = resolve(page.toObject().value("object"));
+        QSet<QString> parents;
+        for (int depth = 0; depth < 64 && !dict.contains("/Rotate"); ++depth) {
+            const auto parent = dict.value("/Parent");
+            if (!parent.isString() || parents.contains(parent.toString())) break;
+            parents.insert(parent.toString());
+            dict = resolve(parent);
+        }
+        const int rotate = ((dict.value("/Rotate").toInt() % 360) + 360) % 360;
+        if (rotate % 90 != 0) return false;
+        rotations.append(rotate);
+    }
+    const auto outlineRef = root.value("/Outlines");
+    if (outlineRef.isNull() || outlineRef.isUndefined()) return true;
+    const auto outline = resolve(outlineRef);
+    if (outline.isEmpty()) return false;
+    struct Link { QJsonValue ref; int depth; };
+    QList<Link> pending{{outline.value("/First"), 0}};
+    QSet<QString> visited;
+    while (!pending.isEmpty()) {
+        const auto link = pending.takeLast();
+        if (link.ref.isNull() || link.ref.isUndefined()) continue;
+        if (!link.ref.isString() || link.depth > 32 || visited.size() >= 100000 || visited.contains(link.ref.toString())) return false;
+        visited.insert(link.ref.toString());
+        const auto node = resolve(link.ref);
+        if (node.isEmpty()) return false;
+        pending.append({node.value("/Next"), link.depth});
+        pending.append({node.value("/First"), link.depth + 1});
+    }
+    return true;
+}
+
+// Qt reports destination points before the target page's inherent /Rotate.
+// QPdfDocument's size already includes that rotation; apply it exactly once.
+QPointF rotatedDestination(const QPdfDocument& document, int page, QPointF point, const QList<int>& rotations) {
+    if (page < 0 || page >= rotations.size()) return point;
+    const QSizeF size = document.pagePointSize(page);
+    switch (rotations[page]) {
+    case 90: return {size.width() - point.y(), point.x()};
+    case 180: return {size.width() - point.x(), size.height() - point.y()};
+    case 270: return {point.y(), size.height() - point.x()};
+    default: return point;
+    }
+}
+
 // N5.3 also records, for the bookmark overlay: `key` (the entry's place in the
 // outline tree, "0/3/1"), `position` among its siblings, and the destination
 // as fractions of the unrotated page (`fx`, `fy`, `hasPoint`) plus `zoom`.
 void collectOutline(const QPdfDocument& document, const QPdfBookmarkModel& model, const QModelIndex& parent,
-                    int depth, const QString& parentKey, QVariantList& out) {
+                    int depth, const QString& parentKey, QVariantList& out, const QList<int>& rotations) {
     const int rows = model.rowCount(parent);
     for (int row = 0; row < rows; ++row) {
         const QModelIndex index = model.index(row, 0, parent);
         const QString key = parentKey.isEmpty() ? QString::number(row) : parentKey + u'/' + QString::number(row);
         const int page = model.data(index, static_cast<int>(QPdfBookmarkModel::Role::Page)).toInt();
-        const QPointF location = model.data(index, static_cast<int>(QPdfBookmarkModel::Role::Location)).toPointF();
+        const QPointF location = rotatedDestination(document, page,
+            model.data(index, static_cast<int>(QPdfBookmarkModel::Role::Location)).toPointF(), rotations);
         QVariantMap entry;
         entry.insert(QStringLiteral("title"), model.data(index, static_cast<int>(QPdfBookmarkModel::Role::Title)));
         entry.insert(QStringLiteral("level"), depth);
@@ -94,7 +193,7 @@ void collectOutline(const QPdfDocument& document, const QPdfBookmarkModel& model
         entry.insert(QStringLiteral("fx"), hasPoint ? location.x() / size.width() : 0.0);
         entry.insert(QStringLiteral("fy"), hasPoint ? location.y() / size.height() : 0.0);
         out.push_back(entry);
-        if (depth < 32) collectOutline(document, model, index, depth + 1, key, out); // flat, depth-first
+        if (depth < 32) collectOutline(document, model, index, depth + 1, key, out, rotations); // flat, depth-first
     }
 }
 
@@ -216,11 +315,16 @@ void DocumentTextWorker::scanSlice() {
     emit headingsReady(id, headings, result.bodySize, result.truncated);
 }
 
-QVariantList readOutline(const QPdfDocument& document) {
+QVariantList readOutline(const QPdfDocument& document, const QByteArray& sourceBytes, const QString& password, QList<int>* pageRotations) {
+    QList<int> rotations;
+    const bool safe = safeOutlineStructure(sourceBytes, password, rotations);
+    if (pageRotations) *pageRotations = rotations;
+    if (!safe || rotations.size() != document.pageCount())
+        return {QVariantMap{{QStringLiteral("outlineUnsupported"), true}}};
     QVariantList outline;
     QPdfBookmarkModel model;
     model.setDocument(const_cast<QPdfDocument*>(&document));
-    collectOutline(document, model, {}, 0, {}, outline);
+    collectOutline(document, model, {}, 0, {}, outline, rotations);
     return outline;
 }
 
@@ -235,6 +339,7 @@ void DocumentTextWorker::close() {
     document_ = nullptr;
     buffer_.close();
     bytes_.clear();
+    pageRotations_.clear();
 }
 
 void DocumentTextWorker::open(const QByteArray& bytes, const QString& password, quint64 revision) {
@@ -258,12 +363,7 @@ void DocumentTextWorker::open(const QByteArray& bytes, const QString& password, 
         return;
     }
 
-    QVariantList outline;
-    {
-        QPdfBookmarkModel model;
-        model.setDocument(document_);
-        collectOutline(*document_, model, {}, 0, {}, outline);
-    }
+    const QVariantList outline = readOutline(*document_, bytes_, password, &pageRotations_);
     const int count = document_->pageCount();
     QStringList labels;
     labels.reserve(count);
@@ -348,7 +448,8 @@ void DocumentTextWorker::links(int page) {
         const QRectF rect = model.data(index, static_cast<int>(QPdfLinkModel::Role::Rectangle)).toRectF();
         const QUrl url = model.data(index, static_cast<int>(QPdfLinkModel::Role::Url)).toUrl();
         const int target = model.data(index, static_cast<int>(QPdfLinkModel::Role::Page)).toInt();
-        const QPointF location = model.data(index, static_cast<int>(QPdfLinkModel::Role::Location)).toPointF();
+        const QPointF location = rotatedDestination(*document_, target,
+            model.data(index, static_cast<int>(QPdfLinkModel::Role::Location)).toPointF(), pageRotations_);
         const QString key = QStringLiteral("%1,%2,%3,%4|%5|%6")
                                 .arg(rect.x()).arg(rect.y()).arg(rect.width()).arg(rect.height())
                                 .arg(url.toString()).arg(target);

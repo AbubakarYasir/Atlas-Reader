@@ -222,7 +222,7 @@ private:
     void setStatus(const QString& status, const QString& reason);
     void adoptSnapshot(std::vector<bookmarks::BookmarkNode> nodes, std::optional<bookmarks::BaseSnapshot> base,
                        std::int64_t revision);
-    void rebuildRows();
+    void rebuildRows(bool contentChanged = true);
     void rebuildSearch();
     void updateCurrent();
     void updateCounts();

@@ -113,6 +113,8 @@ private:
         quint64 generation{};
     };
     std::unordered_map<std::uint64_t, CapabilityState> capabilities_;
+    std::vector<QFuture<void>> capabilityJobs_;
+    quint64 capabilityGeneration_{}; // never reused when a tab's state is reset
     void saveSessions() const;
     [[nodiscard]] QString settingsPath() const;
     [[nodiscard]] static QString normalizedSourceKey(const QString& sourcePath);

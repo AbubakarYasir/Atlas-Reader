@@ -27,6 +27,11 @@
 #include <stdexcept>
 #include <string>
 
+#ifdef Q_OS_WIN
+#include <qt_windows.h>
+#include <psapi.h>
+#endif
+
 namespace {
 
 void require(bool condition, const std::string& message) {
@@ -203,6 +208,32 @@ int main(int argc, char** argv) {
         require(viewport->pageLabels().size() == kPages,
                 "Page labels must be read (got " + std::to_string(viewport->pageLabels().size()) + ").");
         if (kPages >= 1000) {
+#ifdef Q_OS_WIN
+            // Actual Windows private committed bytes during repeated navigation,
+            // including render/text workers, not just a cache bookkeeping counter.
+            const auto privateBytes = [] {
+                PROCESS_MEMORY_COUNTERS_EX counters{};
+                require(GetProcessMemoryInfo(GetCurrentProcess(),
+                            reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&counters), sizeof(counters)) != 0,
+                        "Windows memory measurement succeeds.");
+                return static_cast<std::size_t>(counters.PrivateUsage);
+            };
+            std::vector<std::size_t> memory;
+            for (int batch = 0; batch < 8; ++batch) {
+                for (int jump = 0; jump < 50; ++jump) {
+                    viewport->goToPage(1 + ((batch * 50 + jump) * 17) % kPages);
+                    settle(35);
+                }
+                settle(150);
+                memory.push_back(privateBytes());
+            }
+            std::cout << "2000-page navigation private MiB (50 jumps per sample):";
+            for (const auto bytes : memory) std::cout << ' ' << bytes / (1024 * 1024);
+            std::cout << '\n';
+            const auto latePeak = *std::max_element(memory.begin() + 4, memory.end());
+            require(latePeak <= memory[3] + 96ULL * 1024ULL * 1024ULL,
+                    "After 200 warm-up jumps, 200 more jumps stay within 96 MiB growth.");
+#endif
             std::vector<double> samples;
             for (int i = 0; i < 100; ++i) {
                 QElapsedTimer measurement;

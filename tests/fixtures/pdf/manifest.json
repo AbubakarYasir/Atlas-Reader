@@ -263,6 +263,38 @@
       "notes": "A real PKCS#7 approval signature (pyHanko, RSA-2048, SHA-256) by a throwaway self-signed test certificate; valid and intact over the entire file when the PEM is trusted. Not deterministic: regenerating makes new bytes and a new certificate, so the committed bytes are the fixture. The private key was discarded.",
       "mutation_allowed": false,
       "password_fixture": false
+    },
+    {
+      "id": "A018",
+      "file": "generated/A018_self_signed.pdf",
+      "sha256": "9ae28ff59bb46c037321bda5bc647ea3082e10f50296b00d341fbb5aec547a2b",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "source/signed_fixture.py; pypdf 6.12.2; cryptography 46.0.5",
+      "purpose": [
+        "signed-original-refusal",
+        "signed-working-copy",
+        "detached-cms-integrity"
+      ],
+      "expected_pages": 1,
+      "password_fixture": false,
+      "mutation_allowed": true,
+      "notes": "Self-signed test identity, not publicly trusted. OpenSSL verifies CMS integrity and rejects a tampered byte stream. Mutate copies only; working copies do not preserve signature validity. Generation uses an ephemeral private key kept in memory only."
+    },
+    {
+      "id": "A012",
+      "file": "generated/A012_xyz_destinations.pdf",
+      "sha256": "0c710f3f6e4457a44b8d2dbaa42a476a5c5b429764a0a7569002b66222ef069d",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "source/generate_a012_xyz_destinations.py",
+      "purpose": [
+        "normal-and-rotated-xyz-destinations",
+        "production-navigation-regression"
+      ],
+      "expected_pages": 3,
+      "mutation_allowed": true,
+      "password_fixture": false
     }
   ]
 }

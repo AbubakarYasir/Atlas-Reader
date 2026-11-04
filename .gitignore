@@ -51,3 +51,7 @@ vcpkg_installed/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Regenerated raster qualification fixtures (sources remain tracked)
+tests/fixtures/pdf/generated/A011_visual_geometry.pdf
+tests/fixtures/pdf/generated/A013_image_only.pdf

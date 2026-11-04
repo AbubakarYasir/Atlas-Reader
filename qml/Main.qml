@@ -209,6 +209,7 @@ ApplicationWindow {
             else if (qaShow === "skins") { backstage.page = "skins"; backstage.visible = true }
             else if (qaShow.indexOf("preferences") === 0) preferencesDialog.openPage(qaShow.split(":")[1] || "general")
             else if (qaShow === "about") aboutDialog.open()
+            else if (qaShow === "highcontrast") { Theme.qaHighContrast = true; preferences.navPanel = "bookmarks" }
             else if (qaShow.indexOf("display:") === 0 && root.activeViewport) {
                 const parts = qaShow.split(":")
                 root.activeViewport.pageDisplay = parseInt(parts[1])

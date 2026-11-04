@@ -6,11 +6,24 @@ All notable changes to Atlas Reader Native are documented here.
 
 ## N1–N5 repair pass — 2026-11-04 (in progress)
 
-- Added a versioned recovery journal, per-book save lock and four actual process-termination recovery tests; unknown external revisions are preserved and block further saves.
+- Preflight raw outline references before Qt constructs its bookmark model; cyclic A016 now runs in the normal regression suite without exhausting memory. Unsupported outlines remain protected.
+- Normalize link and outline destinations for inherent page rotation, with production tests at all four right-angle rotations and a rotated bookmark save/reopen.
+- Consolidate recovery choices into one dialog, validate evidence before resolving, preserve displaced versions outside ordinary retention, and focus Cancel initially.
+- Measure nested 10,000-bookmark import/export and panel model operations; avoid recomputing document-wide counts during expand/collapse. Measurements distinguish model work from rendered frames.
+- Integrate the three published audit commits without rewriting history; perform Windows verification locally at the owner's request while GitHub Actions is blocked by account billing.
+
+- Reader shutdown now waits for background capability probes; globally increasing request IDs prevent an old probe from updating a reopened tab. The full-suite cancellation test exposed the lifetime bug.
+- Custom theme colours now honor Windows high-contrast preferences through the system palette.
+- Explicit **Review recovery → Keep current file** preserves verified copies of both versions and a resolution receipt before clearing a recovery hold; local research is unchanged and the reader must reopen. Invalid backups or another concurrent edit leave the hold in place.
+- Added a cryptographically signed synthetic PDF, independent OpenSSL integrity/tamper checks, signed-original refusal and working-copy regression. No production signing feature or trusted-identity claim is added.
+- Added actual Windows private-memory sampling during 400 jumps in a 2,000-page document. The last 200 jumps grew from 294 to 309 MiB; this sparse-fixture check does not qualify every complex book.
+
+
+- Added a versioned recovery journal, per-book save lock and six actual process-termination recovery tests; unknown external revisions are preserved and block further saves.
 - Import/export and import merge preparation now run on the existing worker, with busy/cancel state and stale-result rejection. Tested a 10,000-bookmark import/export, single-step undo and tab closure.
 - Ambiguous outline identities no longer match by order. Fixed the bookmark panel's duplicate `currentRow` property/function name; added selectable accessibility state and spoken toast announcements.
 - Arabic UI now explicitly uses the bundled Naskh font. Save/Import/Export dialogs keep actions visible with scrollable content in short windows, including Urdu.
-- Added an opt-in 2,000-page end-to-end search measurement. Review binaries use `beta.2-n5-review.1`, not the accepted beta.2 or a released beta.3.
+- Added an opt-in 2,000-page end-to-end search measurement. Review binaries use `beta.2-n5-review.2`, not the accepted beta.2 or a released beta.3.
 
 - Late save failures now attempt verified atomic restoration without deleting the current PDF first. A failed restoration has an explicit recovery-required message in all three languages.
 - Added regression checks for final reopen, overlay commit and failed restoration, including a real database transaction exception.
@@ -24,7 +37,7 @@ All notable changes to Atlas Reader Native are documented here.
 - **Import Bookmarks…**: Atlas checks the file first and shows what it holds (and warns if it came from another book). Add the bookmarks at the end, under the selected bookmark, at the end without the ones already here, or instead of the current ones. One Undo takes the whole import out; the PDF changes only when you save.
 - Files from a newer Atlas Reader are refused with a clear message, and a damaged file imports nothing.
 - The file format is published (`docs/formats/atlas-bookmarks.md`).
-- N5 is complete and ready for the owner review.
+- Historical readiness claim withdrawn by the 2026-11-04 repair audit; see the closure ledger.
 
 ## N5.4 (part 3): bookmarks changed elsewhere, and Save a Copy — 2026-11-03
 
@@ -35,7 +48,7 @@ All notable changes to Atlas Reader Native are documented here.
 ## N5.4 (part 2): Save bookmarks into the PDF — 2026-11-03
 
 - Press **Ctrl+S** (or the Save button at the top left) to put the bookmarks you see into the PDF itself, so other PDF readers show them too. The first time for a book, Atlas says how many will be added and changed, and offers to also remove the PDF's own bookmarks you deleted in Atlas (they are kept unless you choose this).
-- Saving is careful: Atlas writes a copy, checks it, compares it with the original, opens it again, keeps a backup of the original in your profile, and only then replaces the PDF. If anything goes wrong, the PDF and your bookmarks stay exactly as they were, and Atlas tells you why in plain words.
+- Saving is careful: Atlas writes a copy, checks it, compares it with the original, opens it again, keeps a backup of the original in your profile, and only then replaces the PDF. Failures before replacement preserve the original. Later failures attempt validated restoration; unresolved recovery retains the files and blocks another save.
 - Protected, signed, certified, read-only or in-use PDFs are never changed; your bookmarks stay in Atlas. A PDF changed by another program since Atlas read it is never overwritten.
 - After saving, the bookmarks show as being in the PDF; notes and tags stay in Atlas. Undo starts fresh after a save.
 - Auto Create Bookmarks now keeps headings of the same level side by side when a level is missing.
@@ -409,3 +422,9 @@ The native successor belongs to the `2.0.0` release line.
 - `2.0.0` — accepted stable Windows release
 
 See `docs/RELEASE_STRATEGY.md` for the binding rules.
+
+A failed operating-system replacement is now hash-checked before clearing its
+journal: if the destination differs from the original, the result is recovery
+required and the backup/journal remain. A regression simulates a destination change
+at this failure boundary. This avoids treating the OS error code as proof that
+nothing changed.

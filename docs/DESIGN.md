@@ -276,3 +276,13 @@ available window and keep their action row outside scrollable options. Toasts us
 Qt accessibility announcements. Qt 6.10 does not expose QML expanded/expandable
 properties; descriptions currently convey that state and a real Narrator review
 is still required (see [Qt Accessible properties](https://doc.qt.io/qt-6.10/qml-qtquick-accessible.html)).
+
+
+### Windows contrast preference repair (N5)
+
+Atlas's custom theme now observes `Qt.styleHints.accessibility.contrastPreference`
+and uses `SystemPalette` colours under high contrast, even if a custom skin was
+selected. The [Qt 6.10 accessibility contract](https://doc.qt.io/qt-6.10/qstylehints.html#accessibility-prop)
+is used without changing the PDF colours. `--show highcontrast` exercises the
+branch for visual QA without changing or persisting Windows settings; it is not
+proof of a real Windows contrast-theme switch. Text buttons keep an outline.

@@ -93,6 +93,14 @@ database with that record:
   revision: preserve the file, overlay, journal and backup; make the book read-only
   for bookmark editing and explain that explicit recovery is required.
 
+The explicit **Review recovery → Keep current file** action validates that the current
+PDF opens, archives hash-verified copies of the original backup and current PDF plus
+a resolution receipt in `backups/<document>/resolved-<uuid>/`, rechecks the current
+hash and journal, then clears the hold. It never changes the PDF or overlay. It
+requires reopening before reconciliation/editing. A bad backup, unreadable current
+PDF, failed archive or changed source keeps the hold. Cancel performs no work.
+Resolution archives are outside normal retention; failure archives are retained too.
+
 Retention runs only after a conclusive successful save. Pending backups cannot be
 pruned by later saves. Process-termination tests cover prepared, replaced,
 pre-database-commit and post-database-commit boundaries. These tests do not prove
@@ -123,7 +131,7 @@ an uncooperative writer changing bytes at the exact replacement instant.
   certified PDFs are never written (their signatures would break).
 - A save of a large book costs several qpdf runs (read, write, check, read
   back) on a worker thread; the UI shows progress and stays responsive.
-- Recovery backups use profile space; three per book are kept.
+- Recovery backups use profile space; the three ordinary completed-save backups are kept, while pending recovery and explicit-resolution archives are retained.
 
 ## Revisit when
 
@@ -135,3 +143,21 @@ an uncooperative writer changing bytes at the exact replacement instant.
 
 [DATA_AND_SAFETY.md](../DATA_AND_SAFETY.md) (safe save, capability table),
 [QUALITY.md §3–4](../QUALITY.md), ADR-0004, ADR-0005, ADR-0008, CHECKPOINTS N5.4.
+
+### Combined audit repair (2026-11-04)
+
+Before constructing Qt's eager bookmark model, inspect raw outline links through
+the already bundled qpdf process boundary, with a 15-second process timeout,
+128 MiB JSON ceiling, 100,000-node and 32-level tree bounds. Repeated references
+and malformed links fail closed: pages remain readable and bookmarks stay
+unsupported/read-only. No partial tree is adopted as a new authoritative base.
+The worker uses a temporary copy of the exact encrypted/source bytes, removes it
+on return, and supplies the session password through standard input only.
+
+Explicit Keep current recovery validates the journal identity/path and backup
+hash, checks the current PDF, preserves both versions and a receipt in a resolved
+subdirectory, rechecks the current file and journal, then clears the pending hold.
+Restore original validates the original hash and expected overlay revision,
+archives the displaced current PDF, original and recovery record outside ordinary
+retention, and uses validated temporary copy plus atomic replacement. Neither
+choice edits local bookmarks. Both require closing/reopening before editing.

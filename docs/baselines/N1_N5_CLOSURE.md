@@ -347,3 +347,15 @@ accessibility and Narrator speech/focus workflows; complete keyboard/state matri
 actual 200% scale; rendered 10k expand/jump latency; actual storage exhaustion
 and removable-media failure; requirement-by-requirement final closure and N5 PASS.
 This receipt does not label N5 complete or authorize merge/release/N6.
+
+### Owner clarification: language and Foxit sizing — 2026-11-04
+
+**Open N5 UI-LANG-01:** audit existing Arabic/Urdu labels for common software vocabulary and inspect shaping/marks/line height in actual controls. First corrections replace Urdu literary import/export terms with امپورٹ / ایکسپورٹ, clarify the bookmark destination action, and standardize Arabic bookmark wording. Translation completeness alone is not rendering or usability evidence.
+
+**Open N5 UI-SIZE-01:** measure existing context menus, submenus and dialogs against the supplied Foxit runtime reference at matched scale. Record dimensions and justified language/accessibility differences; the existing 200–480 px bookmark-menu width is not yet qualified by measurement. Apply the detailed gate in DESIGN.md before N5 completion. Earlier screenshots do not close these expanded checks.
+
+Initial UI-LANG-01/UI-SIZE-01 repair evidence: explicit Windows system-family fallback replaces empty UI font families (GDI had selected MS Sans Serif); Arabic remains Noto Naskh and Urdu Noto Nastaliq. This does not resolve the separately measured startup delay. The bookmark menu uses content-driven row height with a 28 px desktop minimum and bounds its height to the window; overflow has an active scrollbar. English and Arabic menu screenshots at 1000×700 show all commands fitting after repair; Urdu retains larger shaped text and requires scrolling. Other context menus/dialogs, precise Foxit comparisons, dark/scaled variants and keyboard/Narrator behavior remain open. Screenshots are local under artifacts/n5-integrated-qa/*menu-language*.png. No claim of full language or sizing qualification.
+
+Release regression runs after the UI changes: 59/59 passed in 39.87 s and again in 39.56 s with ATLAS_QPDF explicitly set. An earlier invocation omitted that required runtime and correctly failed the safe-save test; it is not counted as a product failure or as a pass. Final Urdu menu-height/scrollbar adjustment was rendered at 1000×700: the menu stays within 8 px window margins and the scrollbar is visible on the RTL leading edge. Mouse/keyboard traversal through the overflow still requires an interaction check. String governance: 494 keys × 3 languages; Markdown governance passed. The existing inspection ZIP is unchanged and does not contain these later UI changes.
+
+Both Release and Debug application targets rebuilt successfully for this UI repair. Full Debug regression evidence predates these UI-only adjustments; no new Debug-suite pass is claimed.

@@ -80,6 +80,11 @@ QtObject {
     readonly property int radiusControl: 8
     readonly property int radiusSurface: 12
 
+    // Desktop menus retain shaped text height; touch mode keeps larger targets.
+    readonly property int menuRowMinimum: touch ? 40 : 28
+    readonly property int menuMinimumWidth: 200
+    readonly property int menuMaximumWidth: 480
+
     // ---- sizes
     readonly property int controlHeight: (touch ? 40 : 32) + scriptExtra
     readonly property int iconButton: touch ? 40 : 32

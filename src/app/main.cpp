@@ -11,6 +11,7 @@
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QGuiApplication>
+#include <QFont>
 #include <QDir>
 #include <QFileInfo>
 #include <QImage>
@@ -179,6 +180,10 @@ int main(int argc, char* argv[]) {
     // Declared after the objects it exposes so it is destroyed first: QML
     // bindings never see a destroyed context object during shutdown.
     QQmlApplicationEngine engine;
+    // An empty QML font family selects a legacy Windows bitmap font under GDI.
+    // Preserve the actual platform interface font instead of clearing it.
+    engine.rootContext()->setContextProperty(QStringLiteral("atlasSystemFontFamily"),
+                                            QGuiApplication::font().family());
     metrics.recordStage(QStringLiteral("startup.qml_engine_ready_ms"));
     QObject::connect(
         &libraryController,

@@ -296,7 +296,7 @@ Item {
                                     anchors.centerIn: parent
                                     text: (bookCell.fileExtension || "FILE").toUpperCase()
                                     color: bookCell.canOpen ? Theme.accent : Theme.warning
-                                    font.family: ""
+                                    font.family: I18n.systemFamily
                                     font.pixelSize: 11
                                     font.weight: Font.DemiBold
                                 }
@@ -330,7 +330,7 @@ Item {
                                     Layout.fillWidth: true
                                     text: I18n.ltr(bookCell.sourcePath)
                                     color: Theme.muted
-                                    font.family: ""
+                                    font.family: I18n.systemFamily
                                     font.pixelSize: 12
                                     horizontalAlignment: Text.AlignLeft
                                     elide: Text.ElideMiddle
@@ -392,7 +392,7 @@ Item {
                                     anchors.margins: Theme.sm
                                     text: (bookCell.fileExtension || "FILE").toUpperCase()
                                     color: bookCell.canOpen ? Theme.accent : Theme.warning
-                                    font.family: ""
+                                    font.family: I18n.systemFamily
                                     font.pixelSize: 11
                                     font.weight: Font.DemiBold
                                 }
@@ -413,7 +413,7 @@ Item {
                                 Layout.fillWidth: true
                                 text: bookCell.detailLine.length > 0 ? bookCell.detailLine : I18n.ltr(bookCell.sourcePath)
                                 color: Theme.muted
-                                font.family: bookCell.detailLine.length > 0 ? I18n.contentFamily(text) : ""
+                                font.family: bookCell.detailLine.length > 0 ? I18n.contentFamily(text) : I18n.systemFamily
                                 font.pixelSize: 12
                                 horizontalAlignment: Text.AlignLeft
                                 elide: bookCell.detailLine.length > 0 ? Text.ElideRight : Text.ElideMiddle

@@ -143,3 +143,5 @@ The historical N5 test runs above do not qualify the repaired head. The current
 restart recovery, cancellable worker exchange, conservative ambiguous matching,
 bookmark Add/Rename UI correction, accessibility announcements, and honest review
 version labelling. No N5 PASS has been recorded.
+
+Owner clarification (2026-11-04): UI-LANG-01 and UI-SIZE-01 in the closure ledger block N5 completion. Common Arabic/Urdu wording, joined text/marks, and measured existing context-menu/dialog sizing must be checked in the Windows build; do not defer these defects to N9.

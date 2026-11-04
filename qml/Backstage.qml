@@ -219,7 +219,7 @@ Rectangle {
                                     text: I18n.ltr(row.modelData)
                                     color: Theme.muted
                                     elide: Text.ElideMiddle
-                                    font.family: ""
+                                    font.family: I18n.systemFamily
                                     font.pixelSize: 12
                                 }
                             }

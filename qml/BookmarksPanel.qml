@@ -571,9 +571,43 @@ Rectangle {
         }
     }
 
+    component BookmarkMenuItem: MenuItem {
+        // Ignore Basic's fixed 40 px background minimum, but never crop glyphs.
+        topPadding: Theme.xs
+        bottomPadding: Theme.xs
+        leftPadding: Theme.sm
+        rightPadding: Theme.sm
+        implicitHeight: Math.max(Theme.menuRowMinimum,
+            implicitContentHeight + topPadding + bottomPadding,
+            implicitIndicatorHeight + topPadding + bottomPadding)
+        implicitWidth: Math.max(Theme.menuMinimumWidth,
+            implicitContentWidth + leftPadding + rightPadding)
+    }
+
     // ---- bookmark menu (right-click, Shift+F10, Menu key, Options button)
     Menu {
         id: rowMenu
+        margins: Theme.sm
+        height: Math.min(implicitHeight, Math.max(Theme.menuRowMinimum,
+            (panel.Window.window ? panel.Window.window.height : panel.height) - 2 * margins))
+        contentItem: ListView {
+            id: menuList
+            implicitHeight: contentHeight
+            model: rowMenu.contentModel
+            currentIndex: rowMenu.currentIndex
+            clip: true
+            interactive: contentHeight > height
+            ScrollBar.vertical: ScrollBar {
+                policy: menuList.contentHeight > menuList.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+                active: menuList.contentHeight > menuList.height
+                contentItem: Rectangle {
+                    implicitWidth: Theme.xs
+                    implicitHeight: Theme.xs
+                    radius: Theme.radiusSmall
+                    color: Theme.muted
+                }
+            }
+        }
         property int row: -1
         readonly property var data: row >= 0 ? panel.rowData(row) : ({})
         readonly property bool hasRow: row >= 0 && data.nodeId !== undefined
@@ -585,19 +619,19 @@ Rectangle {
                 const item = itemAt(i)
                 if (item && item.visible) widest = Math.max(widest, item.implicitWidth)
             }
-            return Math.min(Math.max(200, widest + leftPadding + rightPadding), 480)
+            return Math.min(Math.max(Theme.menuMinimumWidth, widest + leftPadding + rightPadding), Theme.menuMaximumWidth)
         }
 
-        MenuItem { text: I18n.t("bookmarks.goTo"); enabled: rowMenu.hasRow && rowMenu.data.page >= 0; onTriggered: panel.go(rowMenu.row) }
+        BookmarkMenuItem { text: I18n.t("bookmarks.goTo"); enabled: rowMenu.hasRow && rowMenu.data.page >= 0; onTriggered: panel.go(rowMenu.row) }
         // N5.4 conflicts: the reader decides.
-        MenuItem {
+        BookmarkMenuItem {
             text: I18n.t("reconcile.keepMine")
             visible: rowMenu.data.storage === "conflict"
             height: visible ? implicitHeight : 0
             enabled: panel.canEdit
             onTriggered: panel.select(panel.bookmarks.resolveConflict(rowMenu.row, true))
         }
-        MenuItem {
+        BookmarkMenuItem {
             text: I18n.t("reconcile.takePdf")
             visible: rowMenu.data.storage === "conflict" && rowMenu.data.fromPdf === true
             height: visible ? implicitHeight : 0
@@ -605,18 +639,18 @@ Rectangle {
             onTriggered: panel.select(panel.bookmarks.resolveConflict(rowMenu.row, false))
         }
         MenuSeparator {}
-        MenuItem { text: I18n.t("bookmarks.add"); enabled: panel.canEdit; onTriggered: panel.addHere(false) }
-        MenuItem { text: I18n.t("bookmarks.addChild"); enabled: panel.canEdit && rowMenu.hasRow && !rowMenu.frozen; onTriggered: panel.addHere(true) }
-        MenuItem { text: I18n.t("bookmarks.rename"); enabled: panel.canEdit && rowMenu.hasRow && !rowMenu.frozen; onTriggered: panel.startRename(rowMenu.row) }
-        MenuItem { text: I18n.t("bookmarks.setDestination"); enabled: panel.canEdit && rowMenu.hasRow && !rowMenu.frozen; onTriggered: panel.select(panel.bookmarks.setDestination(rowMenu.row, panel.view.viewLocation())) }
-        MenuItem {
+        BookmarkMenuItem { text: I18n.t("bookmarks.add"); enabled: panel.canEdit; onTriggered: panel.addHere(false) }
+        BookmarkMenuItem { text: I18n.t("bookmarks.addChild"); enabled: panel.canEdit && rowMenu.hasRow && !rowMenu.frozen; onTriggered: panel.addHere(true) }
+        BookmarkMenuItem { text: I18n.t("bookmarks.rename"); enabled: panel.canEdit && rowMenu.hasRow && !rowMenu.frozen; onTriggered: panel.startRename(rowMenu.row) }
+        BookmarkMenuItem { text: I18n.t("bookmarks.setDestination"); enabled: panel.canEdit && rowMenu.hasRow && !rowMenu.frozen; onTriggered: panel.select(panel.bookmarks.setDestination(rowMenu.row, panel.view.viewLocation())) }
+        BookmarkMenuItem {
             text: rowMenu.data.fromPdf ? I18n.t("bookmarks.hide") : I18n.t("bookmarks.delete")
             visible: !(rowMenu.data.storage === "locally_hidden")
             height: visible ? implicitHeight : 0
             enabled: panel.canEdit && rowMenu.hasRow && rowMenu.data.storage !== "conflict"
             onTriggered: panel.select(panel.bookmarks.remove(rowMenu.row))
         }
-        MenuItem {
+        BookmarkMenuItem {
             text: I18n.t("bookmarks.unhide")
             visible: rowMenu.data.storage === "locally_hidden"
             height: visible ? implicitHeight : 0
@@ -624,18 +658,18 @@ Rectangle {
             onTriggered: panel.select(panel.bookmarks.setHidden(rowMenu.row, false))
         }
         MenuSeparator {}
-        MenuItem { text: I18n.t("bookmarks.moveUp"); enabled: panel.canEdit && rowMenu.hasRow && panel.bookmarks.filter.length === 0; onTriggered: panel.select(panel.bookmarks.moveUp(rowMenu.row)) }
-        MenuItem { text: I18n.t("bookmarks.moveDown"); enabled: panel.canEdit && rowMenu.hasRow && panel.bookmarks.filter.length === 0; onTriggered: panel.select(panel.bookmarks.moveDown(rowMenu.row)) }
-        MenuItem { text: I18n.t("bookmarks.indent"); enabled: panel.canEdit && rowMenu.hasRow && panel.bookmarks.filter.length === 0; onTriggered: panel.select(panel.bookmarks.indent(rowMenu.row)) }
-        MenuItem { text: I18n.t("bookmarks.outdent"); enabled: panel.canEdit && rowMenu.hasRow && rowMenu.data.depth > 0 && panel.bookmarks.filter.length === 0; onTriggered: panel.select(panel.bookmarks.outdent(rowMenu.row)) }
+        BookmarkMenuItem { text: I18n.t("bookmarks.moveUp"); enabled: panel.canEdit && rowMenu.hasRow && panel.bookmarks.filter.length === 0; onTriggered: panel.select(panel.bookmarks.moveUp(rowMenu.row)) }
+        BookmarkMenuItem { text: I18n.t("bookmarks.moveDown"); enabled: panel.canEdit && rowMenu.hasRow && panel.bookmarks.filter.length === 0; onTriggered: panel.select(panel.bookmarks.moveDown(rowMenu.row)) }
+        BookmarkMenuItem { text: I18n.t("bookmarks.indent"); enabled: panel.canEdit && rowMenu.hasRow && panel.bookmarks.filter.length === 0; onTriggered: panel.select(panel.bookmarks.indent(rowMenu.row)) }
+        BookmarkMenuItem { text: I18n.t("bookmarks.outdent"); enabled: panel.canEdit && rowMenu.hasRow && rowMenu.data.depth > 0 && panel.bookmarks.filter.length === 0; onTriggered: panel.select(panel.bookmarks.outdent(rowMenu.row)) }
         MenuSeparator {}
-        MenuItem { text: I18n.t("bookmarks.undo"); enabled: panel.bookmarks.canUndo; onTriggered: panel.bookmarks.undo() }
-        MenuItem { text: I18n.t("bookmarks.redo"); enabled: panel.bookmarks.canRedo; onTriggered: panel.bookmarks.redo() }
+        BookmarkMenuItem { text: I18n.t("bookmarks.undo"); enabled: panel.bookmarks.canUndo; onTriggered: panel.bookmarks.undo() }
+        BookmarkMenuItem { text: I18n.t("bookmarks.redo"); enabled: panel.bookmarks.canRedo; onTriggered: panel.bookmarks.redo() }
         MenuSeparator {}
-        MenuItem { text: I18n.t("autoBookmarks.menu"); enabled: panel.canEdit; onTriggered: panel.autoCreateRequested() }
-        MenuItem { text: I18n.t("exchange.import"); enabled: panel.canEdit; onTriggered: panel.importRequested() }
-        MenuItem { text: I18n.t("exchange.export"); enabled: panel.bookmarks.totalCount > 0; onTriggered: panel.exportRequested() }
-        MenuItem {
+        BookmarkMenuItem { text: I18n.t("autoBookmarks.menu"); enabled: panel.canEdit; onTriggered: panel.autoCreateRequested() }
+        BookmarkMenuItem { text: I18n.t("exchange.import"); enabled: panel.canEdit; onTriggered: panel.importRequested() }
+        BookmarkMenuItem { text: I18n.t("exchange.export"); enabled: panel.bookmarks.totalCount > 0; onTriggered: panel.exportRequested() }
+        BookmarkMenuItem {
             text: I18n.t("bookmarks.showHidden")
             checkable: true
             checked: panel.bookmarks.showHidden

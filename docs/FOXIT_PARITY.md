@@ -351,3 +351,5 @@ Single-key accelerators (H hand, V select, Z zoom, …) are off by default and e
 ## 5. Translation of the layout to Arabic and Urdu
 
 Foxit has no Arabic or Urdu interface. Atlas mirrors the whole workspace in Arabic and Urdu: title bar, ribbon tab order, command order within groups, rail on the right, status bar navigation on the right, ‹ › meaning previous/next in reading direction. Ribbon labels use the translated text; buttons grow to the label (Urdu Nastaliq adds 10 px to fixed heights). Shortcuts are the same physical keys in every language.
+
+N5 sizing follow-up (2026-11-04): context menus, submenus and existing dialogs require matched-scale runtime measurements, with reference/Atlas dimensions and reasons for differences. Arabic/Urdu shaped text must fit without clipping or shrinking; see DESIGN.md, closure UI-SIZE-01. Existing anatomy measurements do not establish context-menu parity.

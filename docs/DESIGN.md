@@ -114,11 +114,12 @@ The storage states (Embedded, Local only, Pending, Conflict, Signed, Read-only, 
 | `caption` | 12 / 18 | Regular | Metadata, hints (never smaller) |
 | `label` | 12 / 16 | Semibold | Small caps-free section labels |
 
-- **Latin UI:** Segoe UI Variable (Windows system font, so nothing is bundled).
-- **Arabic UI:** Segoe UI's Arabic glyphs as the baseline. Noto Sans Arabic UI (OFL) is a candidate if the N4.5 rendered comparison shows better joining and diacritic clarity at 12–14 px. Bundling needs the [dependency gate](DEPENDENCIES.md).
-- **Urdu UI and Urdu content:** **Noto Nastaliq Urdu** (bundled, OFL, the same pinned file as the N2 evidence). Nastaliq needs room: Urdu body text uses 15 px on 30 px line height, controls grow to fit (never clip), and labels are kept short.
-- **Arabic content** (bookmark titles, notes, document titles): **Noto Naskh Arabic** (bundled, OFL) at +1 px; Arabic UI chrome uses Segoe UI.
-- **Any other script** in user content falls back to Windows system fonts automatically (Segoe UI, Nirmala UI for Devanagari, Microsoft YaHei/Yu Gothic/Malgun Gothic for CJK, Segoe UI Emoji), so nothing renders as empty boxes.
+- **Latin UI:** the Windows application system font, explicitly selected rather than an empty font family. Verify the actual family in the running build; do not assume Segoe UI Variable is installed or selected.
+- **Arabic UI and Arabic content:** bundled **Noto Naskh Arabic** (OFL). Check joining, marks, baseline and small menu labels in the running build.
+- **Urdu UI and Urdu content:** bundled **Noto Nastaliq Urdu** (OFL). Allow the actual shaped text height, including descending strokes and marks; never shrink text to force Foxit's English row height.
+- **User content:** script detection is a heuristic, not a language detector. Arabic and Urdu share letters; text without Urdu-specific letters can use the Arabic family. Include these ambiguous names in review and do not claim automatic language detection is perfect.
+- **PDF pages:** retain the document's own fonts and layout through the PDF renderer. Interface font choices must not replace fonts inside a PDF.
+- **Other scripts:** use system fallback; verify the intended test corpus. Font fallback is not a guarantee that every possible character exists on every PC.
 - **Arabic rules:** line height +15–20% (body 14/24); no letter-spacing ever (it breaks joining); no faux italics; avoid semibold below 13 px; keep diacritics clear of underlines and focus rings.
 - Numbers in page labels and counts use tabular figures where available.
 
@@ -286,3 +287,12 @@ selected. The [Qt 6.10 accessibility contract](https://doc.qt.io/qt-6.10/qstyleh
 is used without changing the PDF colours. `--show highcontrast` exercises the
 branch for visual QA without changing or persisting Windows settings; it is not
 proof of a real Windows contrast-theme switch. Text buttons keep an outline.
+
+## N5 language and size closure (owner clarification, 2026-11-04)
+
+These are N5 repair gates for existing N1–N5 screens, not work deferred to N9.
+Use familiar software terms and short action labels. Urdu uses بُک مارک، فائل، فولڈر، سیٹنگز، امپورٹ، ایکسپورٹ، بیک اپ where appropriate; avoid literary substitutes merely to translate every word. Arabic keeps familiar إشارة مرجعية، ملف، مجلد، إعدادات، استيراد، تصدير، نسخة احتياطية. Explain recovery consequences in plain sentences. Preserve distinct meanings for save, copy, restore and overwrite.
+
+Compare right-click menus, submenus, dialogs, toolbars, panels and buttons to runtime Foxit evidence at matched scale. Record the reference image, measured size, Atlas size and reason for any difference. Match English density where practical; enlarge only as needed for readable Arabic/Urdu, accessibility or viewport fit. Never clip marks, silently truncate commands or shrink text to claim parity. Keep Atlas assets and existing layout.
+
+Before closure, render existing workflows in English/Arabic/Urdu, light/dark, wide/narrow and required display scales. Check joined letters, vowel marks, Urdu line height, mixed Latin paths/numbers, punctuation, focus, menu opening near screen edges and long labels. Review the wording in context, not just translation-key coverage. Save before/after evidence and list unverified cases explicitly. Owner language review complements automated checks; neither a font filename nor a successful build proves perfect rendering.

@@ -259,3 +259,5 @@ The integrated audit also repairs cyclic outline loading and rotated destination
 The owner requested local verification after GitHub refused to start Actions for
 account billing reasons. Local evidence does not turn unavailable cloud checks or
 unverified Narrator, real display settings and physical media faults into passes.
+
+Owner clarification 2026-11-04: Arabic/Urdu readability, common software wording, and measured Foxit context-menu/dialog/control sizing are mandatory repairs of existing N1–N5 UI before N5 completion. See DESIGN.md and closure items UI-LANG-01/UI-SIZE-01; no later-stage features are authorized.

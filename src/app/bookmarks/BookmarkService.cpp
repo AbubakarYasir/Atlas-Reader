@@ -212,6 +212,33 @@ void BookmarkService::save(SafeSaveInput input, QObject* receiver, std::function
     });
 }
 
+void BookmarkService::resolveRecovery(const QString& path, const std::string& documentId, RecoveryChoice choice,
+                                      QObject* receiver, std::function<void(QString)> done) {
+    QPointer<QObject> target{receiver};
+    QPointer<BookmarkService> self{this};
+    post([path, documentId, choice, target, self, callback = std::move(done)](Storage& storage) mutable {
+        QString result;
+        try {
+            storage.ensureOpen();
+            result = resolveSaveRecovery(*storage.overlay, path, documentId,
+                                         storage.databasePath.parent_path() / "backups", choice);
+        } catch (const std::exception&) {
+            result = QStringLiteral("storageError");
+        }
+        QMetaObject::invokeMethod(
+            self.data(),
+            [target, reply = std::move(callback), result]() mutable {
+                if (target) reply(result);
+            },
+            Qt::QueuedConnection);
+    });
+}
+
+QString BookmarkService::backupFolder(const std::string& documentId) const {
+    const auto folder = storage_->databasePath.parent_path() / "backups" / documentId;
+    return QString::fromStdU16String(folder.u16string());
+}
+
 void BookmarkService::saveCopy(SafeSaveInput input, QString target, QObject* receiver,
                                std::function<void(SafeSaveOutcome)> done) {
     QPointer<QObject> target_{receiver};

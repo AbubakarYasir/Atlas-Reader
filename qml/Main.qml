@@ -213,7 +213,7 @@ ApplicationWindow {
                 const parts = qaShow.split(":")
                 root.activeViewport.pageDisplay = parseInt(parts[1])
                 root.activeViewport.rightToLeft = parts[2] === "rtl"
-                ribbon.currentTab = 2
+                ribbon.currentTab = 3
             }
             else if (qaShow.indexOf("find:") === 0 && reader.currentTab) { reader.currentTab.openFind(); reader.currentTab.findBarRun(qaShow.slice(5)) }
             else if (qaShow.indexOf("search:") === 0 && reader.currentTab) { reader.currentTab.openSearch(); reader.currentTab.searchRun(qaShow.slice(7)) }
@@ -227,7 +227,7 @@ ApplicationWindow {
             else if (qaShow === "zoomto" && root.activeViewport) readerDialogs.openZoomTo(root.activeViewport)
             else if (qaShow === "link") readerDialogs.confirmLink("https://example.org/atlas")
             else if (qaShow === "selectall" && root.activeViewport) { root.activeViewport.goToPage(4); root.activeViewport.selectAllOnPage() }
-            else if (qaShow.indexOf("ribbon-") === 0) ribbon.currentTab = ({ home: 1, view: 2, accessibility: 3, help: 4 })[qaShow.slice(7)] || 1
+            else if (qaShow.indexOf("ribbon-") === 0) ribbon.currentTab = ({ home: 1, edit: 2, view: 3, accessibility: 4, help: 5 })[qaShow.slice(7)] || 1
         }
     }
     AboutDialog { id: aboutDialog }
@@ -301,6 +301,7 @@ ApplicationWindow {
             onPreferencesRequested: (page) => preferencesDialog.openPage(page)
             onFindRequested: if (reader.currentTab) reader.currentTab.openFind()
             onBookmarkRequested: if (reader.currentTab) reader.currentTab.addBookmarkHere()
+            onAutoBookmarksRequested: if (reader.currentTab) { preferences.navPanel = "bookmarks"; reader.currentTab.openAutoBookmarks() }
             onSearchRequested: if (reader.currentTab) reader.currentTab.openSearch()
             onZoomToRequested: if (root.activeViewport) readerDialogs.openZoomTo(root.activeViewport)
             onWordCountRequested: if (root.activeViewport) readerDialogs.openWordCount(root.activeViewport)

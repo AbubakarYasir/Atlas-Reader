@@ -88,6 +88,12 @@ public:
     void save(SafeSaveInput input, QObject* receiver, std::function<void(SafeSaveOutcome)> done);
     // Save a Copy (N5.4): the same, into `target`; the source and overlay stay as they are.
     void saveCopy(SafeSaveInput input, QString target, QObject* receiver, std::function<void(SafeSaveOutcome)> done);
+    // The reader's choice after an interrupted save that Atlas could not settle
+    // (resolveSaveRecovery); answers kept, restored or a refusal reason.
+    void resolveRecovery(const QString& path, const std::string& documentId, RecoveryChoice choice,
+                         QObject* receiver, std::function<void(QString)> done);
+    // <profile>/backups/<document>: where recovery backups are kept.
+    [[nodiscard]] QString backupFolder(const std::string& documentId) const;
     void setPasswordSource(std::function<QString(const QString& path)> source) { passwordSource_ = std::move(source); }
 
     // Blocks until every queued request has finished (tests and shutdown).

@@ -123,6 +123,12 @@ public:
     Q_INVOKABLE void attach(const QString& path, const QVariantList& outline);
     // After "most of the PDF's bookmarks are gone": follow the PDF anyway.
     Q_INVOKABLE void followPdf();
+    // After an interrupted save Atlas could not settle (status readOnly,
+    // reason recoveryRequired): "keep" the PDF as it is now, or "restore" the
+    // original from the recovery backup. Answer in recoveryResolved().
+    Q_INVOKABLE void resolveRecovery(const QString& choice);
+    // Opens the folder with this book's recovery backups.
+    Q_INVOKABLE bool showBackups() const;
     // Conflict on this row: keep Atlas's version, or take the PDF's.
     Q_INVOKABLE int resolveConflict(int row, bool keepMine);
     Q_INVOKABLE void dismissReconcileInfo();
@@ -202,6 +208,7 @@ signals:
     // ok, or a stable reason (SafeSaveOutcome); pdfChanged when the file was replaced.
     void saveFinished(bool ok, const QString& reason, bool pdfChanged, int added, int changed, int removed);
     void copySaved(bool ok, const QString& reason, const QString& path);
+    void recoveryResolved(const QString& result);
     void importRead(const QVariantMap& result);
     void exportFinished(const QString& error, const QUrl& target);
     void importApplied(int row);

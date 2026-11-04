@@ -12,7 +12,7 @@ Rectangle {
     id: ribbon
 
     property var viewport: null          // active ReaderViewport or null
-    property int currentTab: 1           // 0 File, 1 Home, 2 View, 3 Accessibility, 4 Help
+    property int currentTab: 1           // 0 File, 1 Home, 2 Edit, 3 View, 4 Accessibility, 5 Help
     property bool backstageOpen: false
     property bool peek: false            // collapsed ribbon shown temporarily
     readonly property bool hasDocument: viewport !== null
@@ -24,6 +24,7 @@ Rectangle {
     signal preferencesRequested(string page)
     signal findRequested()
     signal bookmarkRequested()
+    signal autoBookmarksRequested()
     signal searchRequested()
     signal zoomToRequested()
     signal wordCountRequested()
@@ -34,7 +35,7 @@ Rectangle {
     color: Theme.chrome
 
     readonly property var tabs: [
-        { key: "ribbon.file" }, { key: "ribbon.home" }, { key: "ribbon.view" },
+        { key: "ribbon.file" }, { key: "ribbon.home" }, { key: "ribbon.edit" }, { key: "ribbon.view" },
         { key: "ribbon.accessibility" }, { key: "ribbon.help" }
     ]
 
@@ -199,9 +200,51 @@ Rectangle {
             }
         }
 
-        // View
+        // Edit (Foxit: Hand, Select | Content | Add | Links: …, Bookmark, Auto Create
+        // Bookmarks | Insert). Only the commands Atlas can do today are shown.
         RowLayout {
             visible: ribbon.currentTab === 2
+            anchors.left: parent.left
+            anchors.leftMargin: 4
+            height: parent.height
+            spacing: 2
+            RibbonButton {
+                iconName: "hand_left"
+                text: I18n.t("cmd.hand")
+                shortcutHint: "Alt+3"
+                checkable: true
+                checked: !ribbon.hasDocument || ribbon.viewport.tool === ReaderViewport.HandTool
+                enabled: ribbon.hasDocument
+                onClicked: ribbon.setTool(ReaderViewport.HandTool)
+            }
+            RibbonButton {
+                iconName: "cursor"
+                text: I18n.t("cmd.selectText")
+                shortcutHint: "Alt+6"
+                checkable: true
+                checked: ribbon.hasDocument && ribbon.viewport.tool === ReaderViewport.SelectTool
+                enabled: ribbon.hasDocument
+                onClicked: ribbon.setTool(ReaderViewport.SelectTool)
+            }
+            Separator {}
+            RibbonButton {
+                iconName: "bookmark"
+                text: I18n.t("cmd.bookmark")
+                shortcutHint: "Ctrl+B"
+                enabled: ribbon.hasDocument
+                onClicked: ribbon.bookmarkRequested()
+            }
+            RibbonButton {
+                iconName: "text_bullet_list_tree"
+                text: I18n.t("cmd.autoBookmarks")
+                enabled: ribbon.hasDocument
+                onClicked: ribbon.autoBookmarksRequested()
+            }
+        }
+
+        // View
+        RowLayout {
+            visible: ribbon.currentTab === 3
             anchors.left: parent.left
             anchors.leftMargin: 4
             height: parent.height
@@ -302,7 +345,7 @@ Rectangle {
 
         // Accessibility
         RowLayout {
-            visible: ribbon.currentTab === 3
+            visible: ribbon.currentTab === 4
             anchors.left: parent.left
             anchors.leftMargin: 4
             height: parent.height
@@ -323,7 +366,7 @@ Rectangle {
 
         // Help
         RowLayout {
-            visible: ribbon.currentTab === 4
+            visible: ribbon.currentTab === 5
             anchors.left: parent.left
             anchors.leftMargin: 4
             height: parent.height

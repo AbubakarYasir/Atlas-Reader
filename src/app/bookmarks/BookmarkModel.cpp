@@ -2,6 +2,9 @@
 
 #include "core/bookmarks/OutlineSavePlan.h"
 
+#include <QDesktopServices>
+#include <QDir>
+#include <QUrl>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QFile>
@@ -551,6 +554,30 @@ void BookmarkModel::followPdf() {
     ++generation_;
     setStatus(QStringLiteral("loading"), {});
     open(true);
+}
+
+void BookmarkModel::resolveRecovery(const QString& choice) {
+    if (!service_ || path_.isEmpty() || documentId_.empty() || statusReason_ != QStringLiteral("recoveryRequired")) return;
+    const auto which = choice == QStringLiteral("restore") ? RecoveryChoice::restoreOriginal : RecoveryChoice::keepCurrent;
+    const auto generation = ++generation_;
+    setStatus(QStringLiteral("loading"), {});
+    service_->resolveRecovery(path_, documentId_, which, this, [this, generation](QString result) {
+        if (generation != generation_) return;
+        emit recoveryResolved(result);
+        if (result == QStringLiteral("kept")) {
+            open(false); // reconcile with the PDF as it is now
+        } else if (result == QStringLiteral("restored")) {
+            setStatus(QStringLiteral("readOnly"), QStringLiteral("recoveredReopen"));
+        } else {
+            setStatus(QStringLiteral("readOnly"), QStringLiteral("recoveryRequired"));
+        }
+    });
+}
+
+bool BookmarkModel::showBackups() const {
+    if (!service_ || documentId_.empty()) return false;
+    const QString folder = service_->backupFolder(documentId_);
+    return QDir{folder}.exists() && QDesktopServices::openUrl(QUrl::fromLocalFile(folder));
 }
 
 void BookmarkModel::open(bool followPdf) {

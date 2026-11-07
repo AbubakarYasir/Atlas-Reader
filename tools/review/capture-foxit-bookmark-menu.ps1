@@ -78,23 +78,31 @@ try {
     $items = Find-All $window ([System.Windows.Automation.ControlType]::TreeItem)
     $target = $null
     foreach ($i in $items) { if ($i.Current.Name -match 'Chapter') { $target = $i; break } }
+    $wr = $window.Current.BoundingRectangle
+    $report.windowRect = [ordered]@{ x = $wr.X; y = $wr.Y; w = $wr.Width; h = $wr.Height }
     if (-not $target) {
-        # Open the Bookmarks panel from the left navigation bar (named "Bookmarks").
-        $buttons = $window.FindAll($TS::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
-        foreach ($b in $buttons) {
-            if ($b.Current.Name -match '^Bookmarks?$') {
-                $r = $b.Current.BoundingRectangle
-                [AtlasInput]::Click([int]($r.X + $r.Width / 2), [int]($r.Y + $r.Height / 2)); Start-Sleep -Seconds 3; break
-            }
-        }
+        # Open the Bookmarks panel: the first icon of the left navigation bar
+        # (Foxit gives it no UI Automation name), 22 px in and 231 px down.
+        [AtlasInput]::Click([int]($wr.X + 22), [int]($wr.Y + 231)); Start-Sleep -Seconds 3
         $items = Find-All $window ([System.Windows.Automation.ControlType]::TreeItem)
         foreach ($i in $items) { if ($i.Current.Name -match 'Chapter') { $target = $i; break } }
     }
     Shot '02-bookmarks'
-    if (-not $target) { throw 'No bookmark row found in Foxit' }
-    $r = $target.Current.BoundingRectangle
-    $report.row = [ordered]@{ name = $target.Current.Name; x = $r.X; y = $r.Y; w = $r.Width; h = $r.Height }
-    [AtlasInput]::RightClick([int]($r.X + 30), [int]($r.Y + $r.Height / 2))
+    # Everything Foxit exposes, for calibrating this script.
+    $all = $window.FindAll($TS::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+    $report.elements = @(foreach ($e in $all) {
+        $b = $e.Current.BoundingRectangle
+        if ($b.Width -gt 0) { '{0} | {1} | {2},{3} {4}x{5}' -f ($e.Current.ControlType.ProgrammaticName -replace 'ControlType\.', ''), $e.Current.Name, $b.X, $b.Y, $b.Width, $b.Height }
+    })
+    if ($target) {
+        $r = $target.Current.BoundingRectangle
+        $report.row = [ordered]@{ name = $target.Current.Name; x = $r.X; y = $r.Y; w = $r.Width; h = $r.Height }
+        [AtlasInput]::RightClick([int]($r.X + 30), [int]($r.Y + $r.Height / 2))
+    } else {
+        # Rows not exposed: right-click where the first row sits in the panel.
+        $report.row = 'not exposed; right-clicked at the first row position'
+        [AtlasInput]::RightClick([int]($wr.X + 90), [int]($wr.Y + 262))
+    }
     Start-Sleep -Seconds 2
     Shot '03-menu'
     $menuItems = Find-All $AE::RootElement ([System.Windows.Automation.ControlType]::MenuItem)

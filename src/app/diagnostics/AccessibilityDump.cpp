@@ -34,6 +34,10 @@ void walk(QAccessibleInterface* node, int depth, QFile& out, int& count) {
         {QStringLiteral("disabled"), bool(state.disabled)},
         {QStringLiteral("expanded"), bool(state.expanded)},
         {QStringLiteral("collapsed"), bool(state.collapsed)},
+        {QStringLiteral("x"), node->rect().x()},
+        {QStringLiteral("y"), node->rect().y()},
+        {QStringLiteral("w"), node->rect().width()},
+        {QStringLiteral("h"), node->rect().height()},
         {QStringLiteral("class"), node->object() ? QString::fromLatin1(node->object()->metaObject()->className()) : QString{}},
     };
     out.write(QJsonDocument{line}.toJson(QJsonDocument::Compact));

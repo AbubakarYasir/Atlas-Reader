@@ -12,7 +12,10 @@ ItemDelegate {
     property bool selected: false
 
     Layout.fillWidth: true
-    implicitHeight: Theme.controlHeight + 4
+    // Grows with the shaped text (Nastaliq lines are tall), never shorter than a control.
+    topPadding: Theme.xs + Theme.scriptExtra / 2
+    bottomPadding: Theme.xs + Theme.scriptExtra / 2
+    implicitHeight: Math.max(Theme.controlHeight + 4, implicitContentHeight + topPadding + bottomPadding)
     leftPadding: Theme.sm
     rightPadding: Theme.sm
     hoverEnabled: true

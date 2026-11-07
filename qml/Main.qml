@@ -224,6 +224,7 @@ ApplicationWindow {
                 if (surface === "bookmarks" && reader.currentTab) reader.currentTab.bookmarksQa("select:2")
                 else if (surface.indexOf("tab-") === 0 && reader.currentTab) reader.currentTab.bookmarksQa(surface.slice(4))
                 else if (surface === "command") titleBar.openSearch()
+                else if (surface === "autobookmarks" && reader.currentTab) { preferences.navPanel = "bookmarks"; reader.currentTab.openAutoBookmarks() }
                 else if (surface === "preferences") preferencesDialog.openPage("general")
                 else if (surface === "backstage") { backstage.page = "open"; backstage.visible = true }
                 else if (surface === "about") aboutDialog.open()

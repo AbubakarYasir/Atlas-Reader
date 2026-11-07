@@ -18,6 +18,19 @@ Rectangle {
     color: Theme.raised
     Keys.onEscapePressed: closeRequested()
 
+    // Keyboard and screen-reader focus moves into the page while it is shown
+    // (otherwise keys went to the hidden document) and returns afterwards.
+    property Item returnFocus: null
+    onVisibleChanged: {
+        if (visible) {
+            returnFocus = Window.activeFocusItem
+            Qt.callLater(() => openItem.forceActiveFocus(Qt.OtherFocusReason))
+        } else if (returnFocus && returnFocus.visible && returnFocus.enabled) {
+            returnFocus.forceActiveFocus(Qt.OtherFocusReason)
+            returnFocus = null
+        }
+    }
+
     component StageItem: AbstractButton {
         id: stageItem
         property bool selected: false
@@ -69,7 +82,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.topMargin: 12
                 spacing: 2
-                StageItem { text: I18n.t("backstage.open"); selected: stage.page === "open"; onClicked: stage.page = "open" }
+                StageItem { id: openItem; text: I18n.t("backstage.open"); selected: stage.page === "open"; onClicked: stage.page = "open" }
                 StageDivider {}
                 StageItem {
                     text: I18n.t("backstage.close")

@@ -11,6 +11,21 @@ Item {
     property bool gridMode: false
     property alias searchField: searchField
 
+    // Keyboard and screen-reader focus starts in the library: the first book
+    // when there are books, otherwise the search field. Without this nothing
+    // was focused, so Narrator announced nothing and arrow keys did nothing.
+    function focusDefault() {
+        if (!visible) return
+        if (bookView.count > 0) {
+            if (bookView.currentIndex < 0) bookView.currentIndex = 0
+            bookView.forceActiveFocus(Qt.OtherFocusReason)
+        } else {
+            searchField.forceActiveFocus(Qt.OtherFocusReason)
+        }
+    }
+    onVisibleChanged: if (visible) Qt.callLater(focusDefault)
+    Component.onCompleted: if (visible) Qt.callLater(focusDefault)
+
     // Book names can use any supported script regardless of interface language.
     // Reserve both title lines and metadata from actual font metrics, not a
     // fixed card height that lets the layout push actions outside the border.
@@ -249,6 +264,9 @@ Item {
                 cellWidth: library.gridMode ? Math.max(220, width / Math.max(1, Math.floor(width / 260))) : width
                 cellHeight: library.gridMode ? library.gridCardHeight : 84 + 2 * Theme.scriptExtra
                 keyNavigationEnabled: true
+                // Focus ring only once the keyboard is in use (Windows convention);
+                // focus itself starts here so Narrator and arrow keys work at once.
+                readonly property bool showFocus: activeFocus && atlasAccessibility.keyboardInUse
                 activeFocusOnTab: true
                 ScrollBar.vertical: ScrollBar {}
 
@@ -283,8 +301,8 @@ Item {
                         anchors.margins: Theme.xs
                         radius: Theme.radiusSurface
                         color: hoverArea.hovered ? Theme.hover : Theme.raised
-                        border.color: bookView.activeFocus && bookCell.GridView.isCurrentItem ? Theme.focusRing : Theme.line
-                        border.width: bookView.activeFocus && bookCell.GridView.isCurrentItem ? 2 : 1
+                        border.color: bookView.showFocus && bookCell.GridView.isCurrentItem ? Theme.focusRing : Theme.line
+                        border.width: bookView.showFocus && bookCell.GridView.isCurrentItem ? 2 : 1
                         Behavior on color { ColorAnimation { duration: Theme.fast } }
                         HoverHandler { id: hoverArea }
                         TapHandler {

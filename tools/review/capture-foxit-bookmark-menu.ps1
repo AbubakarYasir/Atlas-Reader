@@ -101,7 +101,7 @@ try {
     } else {
         # Rows not exposed: right-click where the first row sits in the panel.
         $report.row = 'not exposed; right-clicked at the first row position'
-        [AtlasInput]::RightClick([int]($wr.X + 90), [int]($wr.Y + 262))
+        [AtlasInput]::RightClick([int]($wr.X + 100), [int]($wr.Y + 300))
     }
     Start-Sleep -Seconds 2
     Shot '03-menu'

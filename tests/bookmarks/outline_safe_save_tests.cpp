@@ -708,7 +708,7 @@ void checkRealStorage() {
         Book book{"A003_outlines_links.pdf"};
         g_bookRoot.clear();
         editA003(book);
-        const QByteArray originalBytes = [&] { QFile f{book.pdf}; f.open(QIODevice::ReadOnly); return f.readAll(); }();
+        const QByteArray originalBytes = [&] { QFile f{book.pdf}; return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray{}; }();
         const QDateTime originalTime = QFileInfo{book.pdf}.lastModified();
         const auto revision = book.editor->revision();
         const auto outcome = book.save({}, [&removable](std::string_view step) {

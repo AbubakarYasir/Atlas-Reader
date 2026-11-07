@@ -229,6 +229,8 @@ ApplicationWindow {
                 else if (surface === "backstage") { backstage.page = "open"; backstage.visible = true }
                 else if (surface === "about") aboutDialog.open()
                 a11yTimer.file = file
+                // Flows that run work first (auto-create, then the Save dialog) need longer.
+                a11yTimer.interval = surface.indexOf("autocreate") >= 0 ? 3000 : 800
                 a11yTimer.start()
             }
             else if (qaShow === "library-grid") { readerController.showLibrary(); libraryView.gridMode = true }

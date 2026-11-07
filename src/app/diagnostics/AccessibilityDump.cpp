@@ -7,6 +7,7 @@
 #include <QMetaEnum>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QRect>
 
 namespace atlas::diagnostics {
 
@@ -32,6 +33,7 @@ void walk(QAccessibleInterface* node, int depth, QFile& out, int& count) {
         {QStringLiteral("selected"), bool(state.selected)},
         {QStringLiteral("checked"), bool(state.checked)},
         {QStringLiteral("disabled"), bool(state.disabled)},
+        {QStringLiteral("expandable"), bool(state.expandable)},
         {QStringLiteral("expanded"), bool(state.expanded)},
         {QStringLiteral("collapsed"), bool(state.collapsed)},
         {QStringLiteral("x"), node->rect().x()},
@@ -56,6 +58,23 @@ bool AccessibilityDump::write(QObject* root, const QString& path) const {
     if (!top || !out.open(QIODevice::WriteOnly | QIODevice::Truncate)) return false;
     int count = 0;
     walk(top, 0, out, count);
+    // What a screen reader treats as focused (UI Automation GetFocus asks the
+    // window for its focus child, as here).
+    QJsonObject focus{{QStringLiteral("focusReport"), true}};
+    if (auto* window = qobject_cast<QQuickWindow*>(target); window && window->activeFocusItem()) {
+        QQuickItem* item = window->activeFocusItem();
+        focus.insert(QStringLiteral("item"), QString::fromLatin1(item->metaObject()->className()));
+        if (QQuickItem* parent = item->parentItem())
+            focus.insert(QStringLiteral("itemParent"), QString::fromLatin1(parent->metaObject()->className()));
+    }
+    if (QAccessibleInterface* focused = top->focusChild()) {
+        focus.insert(QStringLiteral("role"), roleName(focused->role()));
+        focus.insert(QStringLiteral("name"), focused->text(QAccessible::Name));
+        const QRect r = focused->rect();
+        focus.insert(QStringLiteral("rect"), QStringLiteral("%1,%2 %3x%4").arg(r.x()).arg(r.y()).arg(r.width()).arg(r.height()));
+    }
+    out.write(QJsonDocument{focus}.toJson(QJsonDocument::Compact));
+    out.write("\n");
     return count > 0;
 }
 

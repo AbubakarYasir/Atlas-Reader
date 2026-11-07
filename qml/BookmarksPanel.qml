@@ -581,18 +581,7 @@ Rectangle {
         }
     }
 
-    component BookmarkMenuItem: AtlasMenuItem {
-        // Ignore Basic's fixed 40 px background minimum, but never crop glyphs.
-        topPadding: Theme.xs
-        bottomPadding: Theme.xs
-        leftPadding: Theme.sm
-        rightPadding: Theme.sm
-        implicitHeight: Math.max(Theme.menuRowMinimum,
-            implicitContentHeight + topPadding + bottomPadding,
-            implicitIndicatorHeight + topPadding + bottomPadding)
-        implicitWidth: Math.max(Theme.menuMinimumWidth,
-            implicitContentWidth + leftPadding + rightPadding)
-    }
+    component BookmarkMenuItem: AtlasMenuItem {}
 
     // ---- bookmark menu (right-click, Shift+F10, Menu key, Options button)
     Menu {

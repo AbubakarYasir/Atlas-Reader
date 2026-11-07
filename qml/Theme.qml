@@ -82,7 +82,7 @@ QtObject {
 
     // Desktop menus retain shaped text height; touch mode keeps larger targets.
     readonly property int libraryCoverHeight: 108
-    readonly property int menuRowMinimum: touch ? 40 : 28
+    readonly property int menuRowMinimum: touch ? 40 : 24 // Foxit 23 px, WCAG 2.2 target 24 px
     readonly property int menuMinimumWidth: 200
     readonly property int menuMaximumWidth: 480
 

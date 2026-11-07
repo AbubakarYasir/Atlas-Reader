@@ -642,7 +642,7 @@ var tables = {
         "ribbon.pin": "تثبيت الشريط",
         "group.tools": "أدوات",
         "cmd.hand": "اليد",
-        "cmd.zoom": "تكبير",
+        "cmd.zoom": "تكبير/تصغير",
         "cmd.pageFit": "خيارات ملاءمة الصفحة",
         "cmd.rotateView": "تدوير العرض",
         "cmd.rotateClockwise": "تدوير باتجاه عقارب الساعة",

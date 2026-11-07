@@ -175,16 +175,16 @@ Rectangle {
                         Keys.onMenuPressed: recentMenu.popup(row, 0, row.height)
                         Menu {
                             id: recentMenu
-                            MenuItem { text: I18n.t("action.open"); onTriggered: { readerController.openLocalPath(row.modelData); stage.closeRequested() } }
-                            MenuItem {
+                            AtlasMenuItem { text: I18n.t("action.open"); onTriggered: { readerController.openLocalPath(row.modelData); stage.closeRequested() } }
+                            AtlasMenuItem {
                                 text: row.pinned ? I18n.t("backstage.unpin") : I18n.t("backstage.pin")
                                 onTriggered: preferences.setPinned(row.modelData, !row.pinned)
                             }
                             MenuSeparator {}
-                            MenuItem { text: I18n.t("tab.copyPath"); onTriggered: readerController.copyText(row.modelData) }
-                            MenuItem { text: I18n.t("tab.showInFolder"); onTriggered: readerController.showPathInFolder(row.modelData) }
+                            AtlasMenuItem { text: I18n.t("tab.copyPath"); onTriggered: readerController.copyText(row.modelData) }
+                            AtlasMenuItem { text: I18n.t("tab.showInFolder"); onTriggered: readerController.showPathInFolder(row.modelData) }
                             MenuSeparator {}
-                            MenuItem { text: I18n.t("backstage.removeRecent"); onTriggered: preferences.removeRecentFile(row.modelData) }
+                            AtlasMenuItem { text: I18n.t("backstage.removeRecent"); onTriggered: preferences.removeRecentFile(row.modelData) }
                         }
                         background: Rectangle {
                             color: row.hovered ? Theme.hover : "transparent"

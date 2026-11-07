@@ -1,5 +1,6 @@
 #include "app/bookmarks/BookmarkModel.h"
 #include "app/bookmarks/BookmarkService.h"
+#include "app/diagnostics/AccessibilityDump.h"
 #include "app/diagnostics/ShellMetrics.h"
 #include "app/library/LibraryController.h"
 #include "app/logging/Logging.h"
@@ -221,6 +222,8 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty(QStringLiteral("preferences"), &preferences);
     engine.rootContext()->setContextProperty(QStringLiteral("nativeFrame"), parser.isSet(nativeFrameOption));
     engine.rootContext()->setContextProperty(QStringLiteral("qaShow"), parser.value(showOption));
+    atlas::diagnostics::AccessibilityDump accessibilityDump;
+    engine.rootContext()->setContextProperty(QStringLiteral("qaAccessibility"), &accessibilityDump);
     engine.rootContext()->setContextProperty(QStringLiteral("libraryController"), &libraryController);
     engine.rootContext()->setContextProperty(QStringLiteral("readerController"), &readerController);
     engine.rootContext()->setContextProperty(QStringLiteral("bookmarkService"), &bookmarkService);

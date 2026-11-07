@@ -371,6 +371,7 @@ Rectangle {
         preferences.navPanel = "bookmarks"
         if (action.indexOf("find:") === 0) bookmarkModel.filter = action.slice(5)
         else if (action === "expand") bookmarkModel.expandAll()
+        else if (action.indexOf("select:") === 0) { bookmarkModel.expandAll(); bookmarksPanel.select(parseInt(action.slice(7))); bookmarksPanel.focusTree() }
         else if (action === "perf" && !tab.qaPerfRunning) { tab.qaPerfRunning = true; tab.qaPanelPerf(0) }
         else if (action === "menu") { bookmarkModel.expandAll(); bookmarksPanel.openMenu(1, 40, 60, null) }
         else if (action === "add") bookmarksPanel.addHere(false)
@@ -1010,9 +1011,9 @@ Rectangle {
                             }
                         }
                         MenuSeparator {}
-                        MenuItem { text: I18n.t("zoom.actualSize"); onTriggered: view.actualSize() }
-                        MenuItem { text: I18n.t("zoom.fitPage"); onTriggered: view.fitMode = ReaderViewport.Page }
-                        MenuItem { text: I18n.t("zoom.fitWidth"); onTriggered: view.fitMode = ReaderViewport.Width }
+                        AtlasMenuItem { text: I18n.t("zoom.actualSize"); onTriggered: view.actualSize() }
+                        AtlasMenuItem { text: I18n.t("zoom.fitPage"); onTriggered: view.fitMode = ReaderViewport.Page }
+                        AtlasMenuItem { text: I18n.t("zoom.fitWidth"); onTriggered: view.fitMode = ReaderViewport.Width }
                     }
                 }
                 Rectangle { width: 1; Layout.preferredHeight: 16; color: Theme.chromeLine; Layout.leftMargin: 4; Layout.rightMargin: 4 }
@@ -1136,40 +1137,40 @@ Rectangle {
     Menu {
         id: pageMenu
         property string link: ""
-        MenuItem {
+        AtlasMenuItem {
             visible: pageMenu.link.length > 0
             height: visible ? implicitHeight : 0
             text: I18n.t("link.copy")
             onTriggered: readerController.copyText(pageMenu.link)
         }
-        MenuItem {
+        AtlasMenuItem {
             visible: pageMenu.link.length > 0
             height: visible ? implicitHeight : 0
             text: I18n.t("link.open")
             onTriggered: tab.linkConfirmRequested(pageMenu.link)
         }
         MenuSeparator { visible: pageMenu.link.length > 0; height: visible ? implicitHeight : 0 }
-        MenuItem {
+        AtlasMenuItem {
             text: I18n.t("action.copy") + "\tCtrl+C"
             enabled: view.selectedText.length > 0
             onTriggered: view.copySelection()
         }
-        MenuItem { text: I18n.t("action.selectAll") + "\tCtrl+A"; enabled: view.hasText; onTriggered: view.selectAllOnPage() }
-        MenuItem { text: I18n.t("bookmarks.add") + "\tCtrl+B"; onTriggered: tab.addBookmarkHere() }
+        AtlasMenuItem { text: I18n.t("action.selectAll") + "\tCtrl+A"; enabled: view.hasText; onTriggered: view.selectAllOnPage() }
+        AtlasMenuItem { text: I18n.t("bookmarks.add") + "\tCtrl+B"; onTriggered: tab.addBookmarkHere() }
         MenuSeparator {}
-        MenuItem { text: I18n.t("cmd.hand") + "\tAlt+3"; checkable: true; checked: view.tool === ReaderViewport.HandTool; onTriggered: view.tool = ReaderViewport.HandTool }
-        MenuItem { text: I18n.t("cmd.selectText") + "\tAlt+6"; checkable: true; checked: view.tool === ReaderViewport.SelectTool; onTriggered: view.tool = ReaderViewport.SelectTool }
-        MenuItem { text: I18n.t("cmd.marqueeZoom"); checkable: true; checked: view.tool === ReaderViewport.MarqueeTool; onTriggered: view.tool = ReaderViewport.MarqueeTool }
-        MenuItem { text: I18n.t("cmd.snapshot") + "\tAlt+7"; checkable: true; checked: view.tool === ReaderViewport.SnapshotTool; onTriggered: view.tool = ReaderViewport.SnapshotTool }
+        AtlasMenuItem { text: I18n.t("cmd.hand") + "\tAlt+3"; checkable: true; checked: view.tool === ReaderViewport.HandTool; onTriggered: view.tool = ReaderViewport.HandTool }
+        AtlasMenuItem { text: I18n.t("cmd.selectText") + "\tAlt+6"; checkable: true; checked: view.tool === ReaderViewport.SelectTool; onTriggered: view.tool = ReaderViewport.SelectTool }
+        AtlasMenuItem { text: I18n.t("cmd.marqueeZoom"); checkable: true; checked: view.tool === ReaderViewport.MarqueeTool; onTriggered: view.tool = ReaderViewport.MarqueeTool }
+        AtlasMenuItem { text: I18n.t("cmd.snapshot") + "\tAlt+7"; checkable: true; checked: view.tool === ReaderViewport.SnapshotTool; onTriggered: view.tool = ReaderViewport.SnapshotTool }
         MenuSeparator {}
-        MenuItem { text: I18n.t("nav.previousPage"); enabled: view.currentPage > 1; onTriggered: view.previousPage() }
-        MenuItem { text: I18n.t("nav.nextPage"); enabled: view.currentPage < view.pageCount; onTriggered: view.nextPage() }
-        MenuItem { text: I18n.t("nav.previousView") + "\tAlt+Left"; enabled: view.canGoBack; onTriggered: view.goBack() }
+        AtlasMenuItem { text: I18n.t("nav.previousPage"); enabled: view.currentPage > 1; onTriggered: view.previousPage() }
+        AtlasMenuItem { text: I18n.t("nav.nextPage"); enabled: view.currentPage < view.pageCount; onTriggered: view.nextPage() }
+        AtlasMenuItem { text: I18n.t("nav.previousView") + "\tAlt+Left"; enabled: view.canGoBack; onTriggered: view.goBack() }
         MenuSeparator {}
-        MenuItem { text: I18n.t("find.title") + "\tCtrl+F"; onTriggered: tab.openFind() }
-        MenuItem { text: I18n.t("panel.search") + "\tCtrl+Shift+F"; onTriggered: tab.openSearch() }
+        AtlasMenuItem { text: I18n.t("find.title") + "\tCtrl+F"; onTriggered: tab.openFind() }
+        AtlasMenuItem { text: I18n.t("panel.search") + "\tCtrl+Shift+F"; onTriggered: tab.openSearch() }
         MenuSeparator {}
-        MenuItem { text: I18n.t("cmd.rotateClockwise"); onTriggered: view.rotateView(1) }
-        MenuItem { text: I18n.t("cmd.rotateCounterclockwise"); onTriggered: view.rotateView(-1) }
+        AtlasMenuItem { text: I18n.t("cmd.rotateClockwise"); onTriggered: view.rotateView(1) }
+        AtlasMenuItem { text: I18n.t("cmd.rotateCounterclockwise"); onTriggered: view.rotateView(-1) }
     }
 }

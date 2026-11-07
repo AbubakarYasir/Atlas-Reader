@@ -82,6 +82,7 @@ Rectangle {
         list.currentIndex = row
         list.positionViewAtIndex(row, ListView.Contain)
     }
+    function focusTree() { list.forceActiveFocus() }
     function removeCurrent() {
         const row = list.currentIndex
         if (row < 0) return
@@ -403,17 +404,31 @@ Rectangle {
                 implicitHeight: Math.max(panel.rowHeight, column.implicitHeight + 6)
                 hoverEnabled: true
                 focusPolicy: Qt.NoFocus
-                Accessible.role: Accessible.TreeItem
-                Accessible.name: title
-                // Level, open/closed, page and storage state, for screen readers.
-                Accessible.description: [
+                // Qt Quick Controls report every ItemDelegate as a Button, whatever
+                // role is set here, so screen readers would hear a list of buttons.
+                // The row is exposed through rowAccessible below instead.
+                Accessible.ignored: true
+                readonly property string a11yDescription: [
                     I18n.t("bookmarks.levelA11y", depth + 1),
                     hasChildren ? I18n.t(expanded ? "bookmarks.expandedA11y" : "bookmarks.collapsedA11y") : "",
                     page >= 0 ? I18n.t("panel.pageA11y", page + 1) : "",
                     marked ? I18n.t("bookmarks.state." + storage) : ""
                 ].filter(s => s.length > 0).join(", ")
-                Accessible.selectable: true
-                Accessible.selected: ListView.isCurrentItem
+
+                Item { // the row as screen readers see it: a tree item
+                    id: rowAccessible
+                    anchors.fill: parent
+                    Accessible.role: Accessible.TreeItem
+                    Accessible.name: row.title
+                    // Level, open/closed, page and storage state (native expanded
+                    // state needs Qt 6.12's Accessible.expanded).
+                    Accessible.description: row.a11yDescription
+                    Accessible.selectable: true
+                    Accessible.selected: row.ListView.isCurrentItem
+                    Accessible.focusable: true
+                    Accessible.focused: row.ListView.isCurrentItem && list.activeFocus
+                    Accessible.onPressAction: { list.currentIndex = row.index; panel.go(row.index) }
+                }
 
                 onClicked: { list.currentIndex = index; list.forceActiveFocus(); panel.go(index) }
                 onDoubleClicked: if (hasChildren) panel.bookmarks.toggle(index)
@@ -571,7 +586,7 @@ Rectangle {
         }
     }
 
-    component BookmarkMenuItem: MenuItem {
+    component BookmarkMenuItem: AtlasMenuItem {
         // Ignore Basic's fixed 40 px background minimum, but never crop glyphs.
         topPadding: Theme.xs
         bottomPadding: Theme.xs

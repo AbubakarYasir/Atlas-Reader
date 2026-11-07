@@ -7,6 +7,14 @@ RadioButton {
     id: control
     font.family: I18n.uiFamily
     spacing: Theme.sm
+    // Explicit, so screen readers find the option even before Qt Quick
+    // Controls registers its own accessibility role (found by the a11y dump).
+    Accessible.role: Accessible.RadioButton
+    Accessible.name: text
+    Accessible.checkable: true
+    Accessible.checked: checked
+    Accessible.focusable: true
+    Accessible.onPressAction: if (enabled) { checked = true; clicked() }
 
     indicator: Rectangle {
         implicitWidth: 16

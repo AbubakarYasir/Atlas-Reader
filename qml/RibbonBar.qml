@@ -403,17 +403,17 @@ Rectangle {
     // ---- menus
     Menu {
         id: clipboardMenu
-        MenuItem {
+        AtlasMenuItem {
             text: I18n.t("action.copy") + "\tCtrl+C"
             enabled: ribbon.hasDocument && ribbon.viewport.selectedText.length > 0
             onTriggered: ribbon.viewport.copySelection()
         }
-        MenuItem {
+        AtlasMenuItem {
             text: I18n.t("action.selectAll") + "\tCtrl+A"
             enabled: ribbon.hasDocument && ribbon.viewport.hasText
             onTriggered: ribbon.viewport.selectAllOnPage()
         }
-        MenuItem {
+        AtlasMenuItem {
             text: I18n.t("action.deselectAll")
             enabled: ribbon.hasDocument && ribbon.viewport.selectedText.length > 0
             onTriggered: ribbon.viewport.clearSelection()
@@ -421,15 +421,15 @@ Rectangle {
     }
     Menu {
         id: zoomMenu
-        MenuItem { text: I18n.t("zoom.in") + "\tCtrl+="; onTriggered: ribbon.viewport.zoomBy(1.25) }
-        MenuItem { text: I18n.t("zoom.out") + "\tCtrl+-"; onTriggered: ribbon.viewport.zoomBy(0.8) }
-        MenuItem {
+        AtlasMenuItem { text: I18n.t("zoom.in") + "\tCtrl+="; onTriggered: ribbon.viewport.zoomBy(1.25) }
+        AtlasMenuItem { text: I18n.t("zoom.out") + "\tCtrl+-"; onTriggered: ribbon.viewport.zoomBy(0.8) }
+        AtlasMenuItem {
             text: I18n.t("cmd.marqueeZoom")
             checkable: true
             checked: ribbon.hasDocument && ribbon.viewport.tool === ReaderViewport.MarqueeTool
             onTriggered: ribbon.setTool(ReaderViewport.MarqueeTool)
         }
-        MenuItem { text: I18n.t("zoom.zoomTo") + "\tCtrl+M"; onTriggered: ribbon.zoomToRequested() }
+        AtlasMenuItem { text: I18n.t("zoom.zoomTo") + "\tCtrl+M"; onTriggered: ribbon.zoomToRequested() }
         MenuSeparator {}
         Repeater {
             // Foxit's zoom list, 1 % to 6400 %
@@ -443,33 +443,33 @@ Rectangle {
     }
     Menu {
         id: fitMenu
-        MenuItem {
+        AtlasMenuItem {
             text: I18n.t("zoom.actualSize") + "\tCtrl+1"
             checkable: true
             checked: ribbon.viewport !== null && ribbon.viewport.fitMode === ReaderViewport.None && Math.abs(ribbon.viewport.zoom - 1) < 0.001
             onTriggered: ribbon.viewport.actualSize()
         }
-        MenuItem {
+        AtlasMenuItem {
             text: I18n.t("zoom.fitPage") + "\tCtrl+0"
             checkable: true
             checked: ribbon.viewport !== null && ribbon.viewport.fitMode === ReaderViewport.Page
             onTriggered: ribbon.viewport.fitMode = ReaderViewport.Page
         }
-        MenuItem {
+        AtlasMenuItem {
             text: I18n.t("zoom.fitWidth") + "\tCtrl+2"
             checkable: true
             checked: ribbon.viewport !== null && ribbon.viewport.fitMode === ReaderViewport.Width
             onTriggered: ribbon.viewport.fitMode = ReaderViewport.Width
         }
-        MenuItem {
+        AtlasMenuItem {
             text: I18n.t("zoom.fitVisible") + "\tCtrl+3"
             onTriggered: ribbon.viewport.fitVisible()
         }
     }
     Menu {
         id: rotateMenu
-        MenuItem { text: I18n.t("cmd.rotateClockwise") + "\tCtrl+Shift++"; onTriggered: ribbon.viewport.rotateView(1) }
-        MenuItem { text: I18n.t("cmd.rotateCounterclockwise") + "\tCtrl+Shift+-"; onTriggered: ribbon.viewport.rotateView(-1) }
+        AtlasMenuItem { text: I18n.t("cmd.rotateClockwise") + "\tCtrl+Shift++"; onTriggered: ribbon.viewport.rotateView(1) }
+        AtlasMenuItem { text: I18n.t("cmd.rotateCounterclockwise") + "\tCtrl+Shift+-"; onTriggered: ribbon.viewport.rotateView(-1) }
     }
     Menu {
         id: colorsMenu
@@ -488,25 +488,25 @@ Rectangle {
         id: viewSettingMenu
         Menu {
             title: I18n.t("cmd.statusBar")
-            MenuItem { text: I18n.t("cmd.statusShow"); checkable: true; checked: preferences.statusBarMode === 0; onTriggered: preferences.statusBarMode = 0 }
-            MenuItem { text: I18n.t("cmd.statusAuto"); checkable: true; checked: preferences.statusBarMode === 1; onTriggered: preferences.statusBarMode = 1 }
-            MenuItem { text: I18n.t("cmd.statusHide"); checkable: true; checked: preferences.statusBarMode === 2; onTriggered: preferences.statusBarMode = 2 }
+            AtlasMenuItem { text: I18n.t("cmd.statusShow"); checkable: true; checked: preferences.statusBarMode === 0; onTriggered: preferences.statusBarMode = 0 }
+            AtlasMenuItem { text: I18n.t("cmd.statusAuto"); checkable: true; checked: preferences.statusBarMode === 1; onTriggered: preferences.statusBarMode = 1 }
+            AtlasMenuItem { text: I18n.t("cmd.statusHide"); checkable: true; checked: preferences.statusBarMode === 2; onTriggered: preferences.statusBarMode = 2 }
         }
         Menu {
             title: I18n.t("panel.navigation")
-            MenuItem { text: I18n.t("panel.show") + "\tF4"; enabled: preferences.navPanel === ""; onTriggered: preferences.navPanel = "bookmarks" }
+            AtlasMenuItem { text: I18n.t("panel.show") + "\tF4"; enabled: preferences.navPanel === ""; onTriggered: preferences.navPanel = "bookmarks" }
             MenuSeparator {}
-            MenuItem { text: I18n.t("panel.bookmarks"); checkable: true; checked: preferences.navPanel === "bookmarks"; onTriggered: preferences.navPanel = checked ? "bookmarks" : "" }
-            MenuItem { text: I18n.t("panel.pages"); checkable: true; checked: preferences.navPanel === "pages"; onTriggered: preferences.navPanel = checked ? "pages" : "" }
+            AtlasMenuItem { text: I18n.t("panel.bookmarks"); checkable: true; checked: preferences.navPanel === "bookmarks"; onTriggered: preferences.navPanel = checked ? "bookmarks" : "" }
+            AtlasMenuItem { text: I18n.t("panel.pages"); checkable: true; checked: preferences.navPanel === "pages"; onTriggered: preferences.navPanel = checked ? "pages" : "" }
             MenuSeparator {}
-            MenuItem {
+            AtlasMenuItem {
                 text: I18n.t("panel.reset")
                 onTriggered: { preferences.navPanel = "bookmarks"; preferences.navPanelWidth = 240; preferences.rightPanel = "" }
             }
-            MenuItem { text: I18n.t("panel.hide") + "\tF4"; enabled: preferences.navPanel !== ""; onTriggered: preferences.navPanel = "" }
+            AtlasMenuItem { text: I18n.t("panel.hide") + "\tF4"; enabled: preferences.navPanel !== ""; onTriggered: preferences.navPanel = "" }
         }
-        MenuItem { text: I18n.t("nav.library"); onTriggered: readerController.showLibrary() }
-        MenuItem {
+        AtlasMenuItem { text: I18n.t("nav.library"); onTriggered: readerController.showLibrary() }
+        AtlasMenuItem {
             text: I18n.t("cmd.fullScreen") + "\tF11"
             checkable: true
             checked: AppState.fullScreen

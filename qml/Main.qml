@@ -214,7 +214,23 @@ ApplicationWindow {
         interval: 1500
         running: qaShow.length > 0
         onTriggered: {
-            if (qaShow === "library-grid") { readerController.showLibrary(); libraryView.gridMode = true }
+            if (qaShow.indexOf("a11y:") === 0) {
+                // a11y:<surface>@<file> — open a surface (library, bookmarks, preferences,
+                // backstage, about), then dump the accessibility tree to <file>.
+                const spec = qaShow.slice(5)
+                const at = spec.indexOf("@")
+                const surface = spec.slice(0, at)
+                const file = spec.slice(at + 1)
+                if (surface === "bookmarks" && reader.currentTab) reader.currentTab.bookmarksQa("select:2")
+                else if (surface.indexOf("tab-") === 0 && reader.currentTab) reader.currentTab.bookmarksQa(surface.slice(4))
+                else if (surface === "command") titleBar.openSearch()
+                else if (surface === "preferences") preferencesDialog.openPage("general")
+                else if (surface === "backstage") { backstage.page = "open"; backstage.visible = true }
+                else if (surface === "about") aboutDialog.open()
+                a11yTimer.file = file
+                a11yTimer.start()
+            }
+            else if (qaShow === "library-grid") { readerController.showLibrary(); libraryView.gridMode = true }
             else if (qaShow === "backstage") { backstage.page = "open"; backstage.visible = true }
             else if (qaShow === "skins") { backstage.page = "skins"; backstage.visible = true }
             else if (qaShow.indexOf("preferences") === 0) preferencesDialog.openPage(qaShow.split(":")[1] || "general")
@@ -240,6 +256,12 @@ ApplicationWindow {
             else if (qaShow === "selectall" && root.activeViewport) { root.activeViewport.goToPage(4); root.activeViewport.selectAllOnPage() }
             else if (qaShow.indexOf("ribbon-") === 0) ribbon.currentTab = ({ home: 1, edit: 2, view: 3, accessibility: 4, help: 5 })[qaShow.slice(7)] || 1
         }
+    }
+    Timer { // lets the opened surface finish drawing before the dump
+        id: a11yTimer
+        property string file: ""
+        interval: 800
+        onTriggered: console.info("ATLAS_A11Y_DUMP", qaAccessibility.write(root.contentItem, file), file)
     }
     AboutDialog { id: aboutDialog }
 

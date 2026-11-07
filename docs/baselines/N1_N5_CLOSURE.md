@@ -19,12 +19,12 @@ PR #8 stays Draft. No N6 work, release or merge is authorized by this pass.
 | N4-01 | Open/tabs/password/restore | Reader controller/session tests | Automated open/password/session tests pass; full keyboard review still open |
 | N4-02 | Virtual viewport and navigation | Viewport layout/render suites, coordinate CI, Windows memory | Local mixed geometry/navigation pass; 2,000-page 400-jump memory measured; cloud CI unavailable (account billing) |
 | N4-03 | Search and selection | Text-search suite; 2k-page viewport measurement below | Local tests and 100-query measurement passed |
-| N4-04 | Windows accessibility | Narrator, keyboard, high contrast, real scaling | Actual contrast and 175% recovery screens verified; Narrator/native tree state and real 200% remain open |
+| N4-04 | Windows accessibility | Narrator, keyboard, high contrast, real scaling | Bookmark rows now real tree items (level/open/page/state, current row selected+focused); radio buttons, check boxes and all menu commands exposed; automated a11y sweep EN/AR/UR × 10 surfaces passes. Native expanded state needs Qt 6.12 (owner decision); Narrator speech and real 200% need the Windows PC |
 | N5-01 | Capability and overlay persistence | Capability, overlay, store tests | Local state/transaction/crash corpus passes |
 | N5-02 | Editing, undo, auto headings | Editor/model/auto-bookmark tests, V01 | Local Unicode/tree/undo/10k tests pass; Add Bookmark rendered and fixed |
 | N5-03 | Late-save failures | Reindex/commit failure restore and failed-restore tests | Local Windows regression passed; cloud CI unavailable (account billing) |
 | N5-04 | Durable recovery | Journal, six process-termination boundaries, explicit keep-current | Local regression passes; V04 real UI choice verified; cloud CI unavailable (account billing) |
-| N5-05 | Safe copy | Source alias and destination race checks | Hard-link/during-generation changes tested locally; broader audit pending |
+| N5-05 | Safe copy | Source alias and destination race checks | Broader audit done (2026-11-07): every failure step leaves no file; failed overwrites keep the existing file; source edited mid-copy writes nothing; symlink = same file; read-only folder refused; encrypted source keeps its password; plus earlier hard-link/race checks |
 | N5-06 | Reconcile external changes | `reconcile_tests`, `outline_safe_save_tests`; 10k benchmark | Ambiguity regression passes; latest worker timing p95 382.476 ms |
 | N5-07 | Exchange responsiveness | Worker import/export, cancel, stale answers, large workload | 10k workflow + cancellation/stale/one-undo tests pass locally; timings below |
 | N5-08 | Format fidelity | `bookmark_exchange_tests`, `bookmark_model_tests` | Local Unicode/limits/CSV/round-trip and asynchronous undo tests pass |
@@ -367,3 +367,28 @@ Both Release and Debug application targets rebuilt successfully for this UI repa
 Library covers are not an N5 regression: N3_ACCEPTANCE.md explicitly deferred grid covers and richer metadata editing, and both the archived and current checkpoint plans assign them to N7. N7-LIB-01–04 now specify covers, a remembered Book title (default) / File name choice, separate Atlas-local versus PDF metadata editing, and extension-protected physical rename. This supersedes the earlier filename-first direction for the planned N7 behavior, not the historical N3 acceptance. Current N5 remains filename-first; no planned library feature is claimed implemented.
 
 **N1-03 continued investigation:** eliminating ribbon arrow text did not resolve startup and was reverted. Diagnostic DirectWrite/FreeType runs also missed the target; qt.conf is unchanged. Creating Preferences only on first request reduced three English warm first frames to 2565/2377/2504 ms, still above the 800 ms target. The popup keeps the window content as its parent; EN/AR/UR language-page captures at 1000×800 verify centered 780×540 layout. It is a measured partial repair, not a startup pass. Its opening/cancel/persistence keyboard checks remain in the follow-up matrix.
+
+
+## Cloud repair pass — 2026-11-07
+
+Repo head before: `9aa821f`. GitHub-hosted CI has been refused since 2026-11-04
+for account billing; the owner chose to make the repository public (free
+standard runners). History was scanned first: no keys or tokens in any commit
+(test passwords only). Until it is public, evidence below is from the Linux
+Qt 6.4 scratch build (25/25) plus the Windows-only steps that CI will run.
+
+| Item | Result |
+|---|---|
+| Codex's uncommitted Windows work | Committed: grid card heights from AR/UR/Latin metrics, Preferences loaded on request, Urdu سیٹنگز, N7 library name-source plan |
+| N1-03 startup | Root cause candidate fixed: QML FontLoaders added fonts after the font database was in use, which makes Qt enumerate all installed fonts again (2,639 font files on the owner PC; GDI engine). Fonts are now registered once in main.cpp before the engine. `tools/perf/measure-startup.ps1` (Windows CI, Release) reports EN/AR/UR warm first frames and the largest gaps in a Qt font/QML trace. Windows numbers pending CI or the owner PC |
+| Real storage | Opt-in Linux RAM-disk tests (`ATLAS_REAL_STORAGE_TESTS=1`): full book drive → diskFull; full backup drive → **was a false "interrupted save"**, now backupFailed; drive unplugged mid-save → journal **was unresolvable**, now settles once the untouched original is back and the next save succeeds. Windows USB check stays with the owner |
+| 10k panel | Model gate added (100 ms p95; measured expand 6.1, collapse 0.05, jump 0.11 ms). On screen to the next frame, 10,100 bookmarks, software rendering: expand 62, collapse 47, jump 39 ms p95 (`--show bookmarks-perf`) |
+| Accessibility | New `--show a11y:<surface>@<file>` dump + `tools/a11y/check_accessibility.py`. Found and fixed: bookmark rows announced as buttons; radio buttons, check boxes and menu commands missing |
+| UI-LANG-01 | Full AR/UR string review: zoom vs window words, محفوظ = Saved vs Protected, one spelling for PDF/بُک مارک/computer/certified, clearer recovery and disk-space sentences |
+| Grid / sidebar | Grid checked at 760×560 and 200% in EN/AR/UR (actions inside cards). Urdu sidebar rows overlapped; fixed |
+| UI-SIZE-01 | See `N5_UI_SIZE_COMPARISON.md`. Preferences 780×540 vs Foxit 770×548 (runtime). Menus need one Foxit runtime capture |
+
+Still needs the Windows PC or the owner: Windows startup numbers (CI once
+public), Narrator speech/focus walk-through, real 200% scaling, a Foxit
+bookmark-menu screenshot for the menu size comparison, the Windows review
+package smoke test, and the N5 owner review.

@@ -438,3 +438,9 @@ N5 language review in progress: simplified Urdu import/export and bookmark-desti
 - Clarified N7 library scope after owner feedback: covers, selectable title/filename display (book-title default), separate local/PDF metadata editing, and extension-safe file rename now have explicit N7-LIB-01–04 requirements and tests. These are planned, not features in the N5 build.
 
 - Repair library grid card height using Arabic/Urdu/Latin font metrics so the action row has reserved space; add a grid QA entry point. Load Preferences on request to reduce startup work, preserving its window-relative placement. Startup remains above target. Urdu Preferences now uses the familiar سیٹنگز label.
+
+- Startup: the bundled Arabic/Urdu fonts are registered once before the interface loads, instead of from QML after text had already used the font list (which made Windows re-read every installed font). Windows startup is now measured in CI.
+- Safe save: a full backup drive no longer locks the book behind a false "interrupted save"; a save cut off by an unplugged drive settles by itself when the drive comes back unchanged.
+- Screen readers: bookmark rows are announced as a tree (level, open/closed, page, state); option buttons, check boxes and every menu command are reachable. A new automated accessibility check covers ten screens in three languages.
+- Arabic and Urdu wording made consistent (zoom vs window size, "protected" vs "saved", one spelling of PDF and bookmark).
+- Urdu library sidebar rows no longer overlap.

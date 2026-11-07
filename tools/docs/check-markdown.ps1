@@ -51,7 +51,8 @@ $liveStatusFiles = @(
     'CHANGELOG.md',
     'docs/README.md',
     'docs/baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md',
-    'docs/N5_REVIEW.md'
+    'docs/N5_REVIEW.md',
+    'docs/baselines/N5_UI_SIZE_COMPARISON.md'
 )
 
 $expectedStatus = $null

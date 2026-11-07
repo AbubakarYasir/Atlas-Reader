@@ -160,6 +160,10 @@ public:
     // placed "after", "before" or "replace"; one undo step. Returns the row of
     // the first new bookmark, or -1 (refused(reason) explains).
     Q_INVOKABLE int addMany(const QVariantList& headings, const QString& placement);
+    // For each heading, whether a visible bookmark already has the same title
+    // (ignoring case and outer spaces) on the same page, so Auto Create can
+    // leave it unchecked instead of adding a duplicate when run again.
+    Q_INVOKABLE QVariantList alreadyBookmarked(const QVariantList& headings) const;
     Q_INVOKABLE int rename(int row, const QString& title);
     Q_INVOKABLE int setDestination(int row, const QVariantMap& location);
     Q_INVOKABLE int setNotes(int row, const QString& notes, const QStringList& tags);

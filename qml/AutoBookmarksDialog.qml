@@ -36,8 +36,10 @@ Popup {
         return n
     }
 
+    property var existing: []
     function start() {
         headings = []
+        existing = []
         checks = []
         truncated = false
         pagesDone = 0
@@ -74,7 +76,10 @@ Popup {
         function onHeadingsReady(found, bodySize, truncated) {
             if (!dialog.scanning) return
             dialog.headings = found
-            dialog.checks = found.map(() => true)
+            // Headings that are already bookmarks start unchecked, so running
+            // Auto Create again does not add duplicates.
+            dialog.existing = bookmarks ? bookmarks.alreadyBookmarked(found) : found.map(() => false)
+            dialog.checks = found.map((heading, i) => dialog.existing[i] !== true)
             dialog.truncated = truncated
             dialog.scanning = false
             if (dialog.qaCreate) { dialog.qaCreate = false; dialog.create() }
@@ -89,7 +94,8 @@ Popup {
     x: Math.round(((parent ? parent.width : 800) - width) / 2)
     y: Math.round(((parent ? parent.height : 600) - height) / 2)
     width: Math.min(560, (parent ? parent.width : 800) - 40)
-    height: Math.min(600, (parent ? parent.height : 600) - 40)
+    // Tall enough for the options plus a few headings in Urdu's Nastaliq too.
+    height: Math.min(Math.round(760 * Math.max(1, I18n.sizeScale)), (parent ? parent.height : 600) - 40)
     padding: Theme.xl
     closePolicy: Popup.CloseOnEscape
     background: Rectangle { color: Theme.raised; radius: Theme.radiusSurface; border.color: Theme.chromeLine }
@@ -119,7 +125,11 @@ Popup {
             keyNavigationEnabled: true
             activeFocusOnTab: true
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar {}
+            // Always shown when the list overflows: the headings can start below
+            // the options (Urdu, small windows), and a hidden bar gave no hint.
+            ScrollBar.vertical: ScrollBar {
+                policy: preview.contentHeight > preview.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+            }
             Accessible.role: Accessible.List
             Accessible.name: I18n.t("autoBookmarks.preview")
             Keys.onSpacePressed: if (currentIndex >= 0) dialog.toggle(dialog.rows[currentIndex])
@@ -247,6 +257,7 @@ Popup {
                 Accessible.checked: dialog.checks[modelData] === true
                 Accessible.name: heading.title
                 Accessible.description: I18n.t("autoBookmarks.rowA11y", heading.level + 1, dialog.pageLabel(heading.page + 1))
+                    + (dialog.existing[modelData] === true ? ", " + I18n.t("autoBookmarks.already") : "")
                 background: Rectangle {
                     color: row.highlighted ? Theme.accentSoft : row.hovered ? Theme.hover : "transparent"
                     border.width: row.visualFocus ? 2 : 0
@@ -280,6 +291,13 @@ Popup {
                         font.family: I18n.contentFamily(text) || I18n.uiFamily
                         font.pixelSize: Math.round(13 * I18n.sizeScale)
                         font.weight: row.heading.level === 0 ? Font.DemiBold : Font.Normal
+                    }
+                    Text {
+                        visible: dialog.existing[row.modelData] === true
+                        text: I18n.t("autoBookmarks.already")
+                        color: Theme.muted
+                        font.family: I18n.uiFamily
+                        font.pixelSize: Math.round(11 * I18n.sizeScale)
                     }
                     Text {
                         text: dialog.pageLabel(row.heading.page + 1)

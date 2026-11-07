@@ -293,6 +293,14 @@ void checkAddMany() {
     require(first == 0 && titleAt(model, 0) == QStringLiteral("الفصل الأول") && storageAt(model, 0) == QStringLiteral("local_only"),
             "The batch goes first and is Atlas's own; blank titles are skipped.");
     require(model.totalCount() == 8 && model.undoKind() == QStringLiteral("autoCreate"), "Three added, one undo step.");
+    // Running Auto Create again: headings already bookmarked (same page, same
+    // title ignoring case and outer spaces) are recognised, others are not.
+    const auto again = model.alreadyBookmarked({heading(QStringLiteral("الفصل الأول"), 2, 0),
+                                                heading(QStringLiteral("  chapter 2 "), 9, 0),
+                                                heading(QStringLiteral("Chapter 2"), 8, 0),
+                                                heading(QStringLiteral("New heading"), 2, 0)});
+    require(again.size() == 4 && again.at(0).toBool() && again.at(1).toBool() && !again.at(2).toBool() && !again.at(3).toBool(),
+            "Auto Create recognises headings that are already bookmarks on the same page.");
     model.undo();
     waitIdle(model, service);
     require(model.totalCount() == 5, "Undo removes the whole batch.");

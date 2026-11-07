@@ -10,6 +10,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSaveFile>
+#include <QSet>
 
 #include "core/bookmarks/LocationEnvelope.h"
 
@@ -1055,6 +1056,28 @@ int BookmarkModel::addMany(const QVariantList& headings, const QString& placemen
     auto result = editor_->createBatch(std::move(items), where);
     const auto id = result.nodeId;
     return run(std::move(result), id);
+}
+
+QVariantList BookmarkModel::alreadyBookmarked(const QVariantList& headings) const {
+    QSet<QString> existing; // "page|title" of every visible bookmark
+    if (editor_) {
+        for (const auto* node : editor_->inOrder()) {
+            if (node->state == bookmarks::StorageState::locallyHidden) continue;
+            const auto decoded = bookmarks::decodeLocation(node->location);
+            if (decoded.status != bookmarks::LocationDecodeStatus::ok) continue;
+            existing.insert(QString::number(decoded.envelope->pdf.pageIndex) + QLatin1Char('|')
+                            + fromUtf8(node->title).trimmed().toCaseFolded());
+        }
+    }
+    QVariantList result;
+    result.reserve(headings.size());
+    for (const auto& value : headings) {
+        const QVariantMap heading = value.toMap();
+        const QString key = QString::number(heading.value(QStringLiteral("page")).toInt()) + QLatin1Char('|')
+                            + heading.value(QStringLiteral("title")).toString().trimmed().toCaseFolded();
+        result.append(existing.contains(key));
+    }
+    return result;
 }
 
 int BookmarkModel::rename(int row, const QString& title) {

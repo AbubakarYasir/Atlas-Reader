@@ -29,7 +29,7 @@ Each topic has exactly one home. If two documents seem to disagree, fix the wron
 
 ## Records
 
-- [decisions/](decisions/README.md): architecture decision records (ADR-0001 to ADR-0009).
+- [decisions/](decisions/README.md): architecture decision records (ADR-0001 to ADR-0010).
 - [formats/](formats/atlas-bookmarks.md): Atlas-owned file formats (the bookmarks file, schema 1.0.0, with its JSON Schema).
 - [baselines/](baselines/): measured evidence per stage. The active ledger is [N5_BOOKMARKS_SAFETY_EVIDENCE.md](baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md); N4 is closed ([acceptance](baselines/N4_ACCEPTANCE.md)).
 - [tests/fixtures/pdf](../tests/fixtures/pdf/README.md): PDF fixture provenance, privacy and checksum contract.

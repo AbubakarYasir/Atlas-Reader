@@ -889,6 +889,12 @@ void BookmarkModel::setExpanded(int row, bool open) {
     rebuildRows();
 }
 
+QString BookmarkModel::lastNodeIdForQa() const {
+    if (!editor_) return {};
+    const auto order = editor_->inOrder();
+    return order.empty() ? QString{} : QString::fromStdString(order.back()->id);
+}
+
 void BookmarkModel::expandAll() {
     if (!editor_) return;
     for (const auto* node : editor_->inOrder()) {

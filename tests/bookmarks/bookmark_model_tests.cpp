@@ -468,6 +468,11 @@ void checkAsyncExchange() {
                   << " p95_ms=" << values[28] << " p99_ms=" << values[29] << '\n';
     };
     report("expand", expandTimes); report("collapse", collapseTimes); report("reveal", revealTimes);
+    // CHECKPOINTS N5 automated QA: 10,000-node navigation under 100 ms p95.
+    for (auto* values : {&expandTimes, &collapseTimes, &revealTimes}) {
+        std::sort(values->begin(), values->end());
+        require((*values)[28] < 100.0, "10,000-bookmark panel navigation under 100 ms p95");
+    }
     model.undo();
     waitIdle(model, service);
     require(model.totalCount() == 5, "one undo removes the entire asynchronous import");

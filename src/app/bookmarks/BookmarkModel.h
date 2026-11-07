@@ -143,6 +143,8 @@ public:
     Q_INVOKABLE QVariantMap get(int row) const;
     // Expands the ancestors so the bookmark has a row; returns it (or -1).
     Q_INVOKABLE int reveal(const QString& id);
+    // The last bookmark in reading order (QA timing of a deep jump).
+    Q_INVOKABLE QString lastNodeIdForQa() const;
     // The reading position: page (zero-based) and fraction down that page.
     Q_INVOKABLE void setPosition(int page, qreal fy);
     // N5.3 Command Center: matching bookmarks of this book, reading order,

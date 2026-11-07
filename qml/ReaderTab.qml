@@ -371,6 +371,7 @@ Rectangle {
         preferences.navPanel = "bookmarks"
         if (action.indexOf("find:") === 0) bookmarkModel.filter = action.slice(5)
         else if (action === "expand") bookmarkModel.expandAll()
+        else if (action === "perf" && !tab.qaPerfRunning) { tab.qaPerfRunning = true; tab.qaPanelPerf(0) }
         else if (action === "menu") { bookmarkModel.expandAll(); bookmarksPanel.openMenu(1, 40, 60, null) }
         else if (action === "add") bookmarksPanel.addHere(false)
         else if (action === "autocreate") { autoBookmarks.qaCreate = true; openAutoBookmarks() }
@@ -383,6 +384,36 @@ Rectangle {
             autoBookmarks.qaCreate = true
             openAutoBookmarks()
         }
+    }
+    // QA (--show bookmarks-perf): time from a panel action to the next drawn
+    // frame, 20 rounds each of expand all, collapse all and jump to the last
+    // bookmark. Printed as "ATLAS_PERF panel.<action> p50/p95/max".
+    property var qaPerfSamples: ({ expand: [], collapse: [], jump: [] })
+    property bool qaPerfRunning: false
+    function qaPanelPerf(round) {
+        const actions = ["expand", "collapse", "jump"]
+        const action = actions[round % 3]
+        if (round >= 60) {
+            for (const name of actions) {
+                const values = qaPerfSamples[name].slice().sort(function(a, b) { return a - b })
+                console.info("ATLAS_PERF panel." + name + " n=" + values.length + " p50=" + values[Math.floor(values.length / 2)]
+                             + " p95=" + values[Math.ceil(values.length * 0.95) - 1] + " max=" + values[values.length - 1]
+                             + " rows=" + bookmarkModel.rowCount() + " total=" + bookmarkModel.totalCount)
+            }
+            return
+        }
+        const win = tab.Window.window
+        const start = Date.now()
+        const done = function() {
+            win.frameSwapped.disconnect(done)
+            tab.qaPerfSamples[action].push(Date.now() - start)
+            Qt.callLater(function() { tab.qaPanelPerf(round + 1) })
+        }
+        win.frameSwapped.connect(done)
+        if (action === "expand") bookmarkModel.expandAll()
+        else if (action === "collapse") { bookmarkModel.collapseAll(); bookmarksPanel.select(0) }
+        else bookmarksPanel.select(bookmarkModel.reveal(bookmarkModel.lastNodeIdForQa()))
+        win.requestUpdate()
     }
     // Ctrl+B / Bookmark buttons: open the panel and add a bookmark for this view.
     function addBookmarkHere() {

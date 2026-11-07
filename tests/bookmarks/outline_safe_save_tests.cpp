@@ -844,6 +844,114 @@ void checkCopy() {
     }
 }
 
+// N5-05 broader Save a Copy audit: every outcome leaves the source untouched,
+// never leaves a temporary file, and never damages an existing destination
+// unless the copy fully succeeded.
+SafeSaveInput copyInput(Book& book) {
+    SafeSaveInput input;
+    input.path = book.pdf;
+    input.password = book.password;
+    input.documentId = "doc";
+    for (const auto* node : book.editor->inOrder()) input.nodes.push_back(*node);
+    input.base = book.store->load("doc").base;
+    return input;
+}
+
+void checkCopyAudit() {
+    Book book{"A003_outlines_links.pdf"};
+    editA003(book);
+    const QByteArray original = sha(book.pdf);
+    const auto input = copyInput(book);
+    QTemporaryDir out;
+    const QString target = QDir{out.path()}.filePath(QStringLiteral("نسخة — copy.pdf"));
+    const auto onlyExpected = [&out](const QStringList& names) {
+        QStringList actual = QDir{out.path()}.entryList(QDir::Files | QDir::Hidden);
+        actual.sort();
+        QStringList wanted = names;
+        wanted.sort();
+        return actual == wanted;
+    };
+
+    // Each failure step: the folder stays empty, the source unchanged.
+    for (const char* failing : {"space", "write", "verify", "reopen", "beforeCopyReplace"}) {
+        const auto outcome = atlas::app::saveOutlineCopy(input, target, [failing](std::string_view step) {
+            return step != failing;
+        });
+        require(!outcome.ok && onlyExpected({}) && sha(book.pdf) == original,
+                std::string{"Copy failure at "} + failing + " leaves nothing behind: " + outcome.reason.toStdString());
+    }
+
+    // Overwriting an existing file (the dialog confirmed it): failures keep the
+    // old file exactly; success replaces it with a verified copy.
+    QFile existing{target};
+    require(existing.open(QIODevice::WriteOnly) && existing.write("old file kept until a verified copy exists") > 0, "existing");
+    existing.close();
+    const QByteArray old = sha(target);
+    for (const char* failing : {"write", "verify", "reopen", "beforeCopyReplace"}) {
+        const auto outcome = atlas::app::saveOutlineCopy(input, target, [failing](std::string_view step) {
+            return step != failing;
+        });
+        require(!outcome.ok && sha(target) == old && onlyExpected({QFileInfo{target}.fileName()}),
+                std::string{"A failed overwrite at "} + failing + " keeps the existing file");
+    }
+    const auto replaced = atlas::app::saveOutlineCopy(input, target);
+    require(replaced.ok && sha(target) != old && qtOutline(target).size() == qtOutline(book.pdf).size() + 2 && onlyExpected({QFileInfo{target}.fileName()}),
+            "A confirmed overwrite holds the verified copy: " + replaced.reason.toStdString());
+    require(sha(book.pdf) == original, "The source is never touched by a copy.");
+
+    // The source changes while the copy is being made: nothing is written.
+    const QString second = QDir{out.path()}.filePath(QStringLiteral("second.pdf"));
+    {
+        Book raced{"A003_outlines_links.pdf"};
+        editA003(raced);
+        const auto racedInput = copyInput(raced);
+        const auto outcome = atlas::app::saveOutlineCopy(racedInput, second, [&raced](std::string_view step) {
+            if (step == "beforeCopyReplace") {
+                QFile source{raced.pdf};
+                require(source.open(QIODevice::Append), "edit the source");
+                source.write("\n% edited elsewhere\n");
+            }
+            return true;
+        });
+        require(outcome.reason == QStringLiteral("changedDuringSave") && !QFileInfo::exists(second),
+                "A source edited during the copy produces no copy");
+    }
+
+#ifndef Q_OS_WIN
+    // A symbolic link to the source is the source, not a new destination.
+    const QString link = QDir{out.path()}.filePath(QStringLiteral("link.pdf"));
+    require(QFile::link(book.pdf, link), "make a symlink");
+    require(atlas::app::saveOutlineCopy(input, link).reason == QStringLiteral("sameFile") && sha(book.pdf) == original,
+            "A symlink to the source is refused as the same file");
+    QFile::remove(link);
+
+    // A read-only destination folder: refused, nothing left.
+    QTemporaryDir locked;
+    QFile::setPermissions(locked.path(), QFile::ReadOwner | QFile::ExeOwner);
+    const auto readOnly = atlas::app::saveOutlineCopy(input, QDir{locked.path()}.filePath(QStringLiteral("x.pdf")));
+    const bool rootIgnoresPermissions = readOnly.ok;
+    if (!rootIgnoresPermissions)
+        require(readOnly.reason == QStringLiteral("folderReadOnly") &&
+                    QDir{locked.path()}.entryList(QDir::Files | QDir::Hidden).isEmpty(),
+                "A read-only folder: refused, nothing left: " + readOnly.reason.toStdString());
+    QFile::setPermissions(locked.path(), QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
+#endif
+
+    // An encrypted source: the copy keeps its encryption and password.
+    {
+        Book locked{"A015_encrypted_outline_rc4_40.pdf", QStringLiteral("atlas-user")};
+        locked.run(locked.editor->rename(locked.id("0"), "نسخة مشفرة"));
+        const QString encrypted = QDir{out.path()}.filePath(QStringLiteral("encrypted copy.pdf"));
+        const auto outcome = atlas::app::saveOutlineCopy(copyInput(locked), encrypted);
+        require(outcome.ok, "An encrypted PDF copies: " + outcome.reason.toStdString());
+        QPdfDocument withoutPassword;
+        withoutPassword.load(encrypted);
+        require(withoutPassword.status() != QPdfDocument::Status::Ready, "The copy still needs its password");
+        require(titles(qtOutline(encrypted, QStringLiteral("atlas-user"))).first() == QStringLiteral("0 نسخة مشفرة"),
+                "The encrypted copy opens with the same password and holds the bookmarks");
+    }
+}
+
 // The app's path: BookmarkModel → BookmarkService worker → safe save → reload.
 void checkThroughModel() {
     Book book{"A003_outlines_links.pdf"};
@@ -913,6 +1021,7 @@ int main(int argc, char** argv) {
         checkFailures();
         checkProtected();
         checkCopy();
+        checkCopyAudit();
         checkCorpus();
         checkReconcileOnOpen();
 #ifdef Q_OS_LINUX

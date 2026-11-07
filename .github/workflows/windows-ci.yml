@@ -299,6 +299,11 @@ jobs:
           & "build/ci-Release/Release/atlas_n5_bookmark_benchmark.exe" (Join-Path $env:RUNNER_TEMP 'atlas-n5-benchmark')
           if ($LASTEXITCODE -ne 0) { throw "N5 bookmark benchmark missed a gate." }
 
+      - name: Accessibility sweep on Windows (EN/AR/UR, ten surfaces)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: pwsh -NoProfile -File tools/a11y/run-a11y-check.ps1 -Exe build/ci-Release/Release/atlas_reader.exe -Pdf tests/fixtures/pdf/generated/A003_outlines_links.pdf
+
       - name: Startup time on Windows (N1-03; report, not a gate on CI hardware)
         if: matrix.configuration == 'Release'
         shell: pwsh

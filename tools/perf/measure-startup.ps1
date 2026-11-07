@@ -72,6 +72,7 @@ $log = Join-Path $work 'trace.log'
 Invoke-Atlas 'en' (Join-Path $work 'trace.jsonl') @{
     QT_LOGGING_RULES   = 'qt.qpa.fonts.debug=true;qt.text.font.db.debug=true;qt.qml.diskcache.debug=true;qt.scenegraph.general=true'
     QT_MESSAGE_PATTERN = '%{time process} %{category}: %{message}'
+    QT_FORCE_STDERR_LOGGING = '1'
 } $log
 $events = foreach ($line in Get-Content -LiteralPath $log -ErrorAction SilentlyContinue) {
     if ($line -match '^\s*(\d+\.\d+)\s+(.*)$') { [pscustomobject]@{ T = [double]$Matches[1]; Text = $Matches[2] } }

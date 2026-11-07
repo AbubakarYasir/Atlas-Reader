@@ -218,13 +218,16 @@ On real pen/touch hardware, draw short, long and fast strokes while scrolling, z
 - Printing with preview, ranges, labels, layout and grayscale (File → Print, Ctrl+P); source hash unchanged.
 - Moved from N4.4/N4.5: Open a Copy; image context menu (copy, save image as); Destinations panel; open PDF links in a new tab; thumbnail size; single-key accelerators (off by default); Preferences → Full Screen, Reading (reading order, caret browsing) and rendering options.
 - Foxit File page and Preferences completed: Properties (Ctrl+D), Preferences categories for every shipped feature, Quick Access Toolbar customization (above/below ribbon), Help tab (offline User Guide F1, Command Line Help, Set as default PDF reader, Report Error as a local diagnostic bundle); optional classic menu bar (File, Edit, View, Tools, Help); minimize to tray; print current/all tabs; Preferences → Print, File Associations.
-- Covers queue with invalidation; details panel; selected metadata/XMP editing with preview and preservation.
+- **N7-LIB-01 Covers:** queued first-page library previews, cancellation, invalidation on content change, bounded disk/memory cache, and explicit locked/offline/error fallbacks. N4 reader page thumbnails do not satisfy this item.
+- **N7-LIB-02 Name source:** remembered Book title (default) / File name setting. Title mode: explicit local title → usable embedded title → filename stem; filename mode: filename stem. Alternate name remains available in details, extension stays separate. Setting changes must not alter file bytes or paths; define migration for existing profiles.
+- **N7-LIB-03 Edit details:** clearly separate Atlas-only title/author/tags from PDF metadata. Permit selected metadata/XMP edits with preview through N5 safe save; preserve unrelated metadata and refuse unsafe protected-original writes.
+- **N7-LIB-04 Rename file:** separate action with extension protected, collision/error recovery, and retained book identity/research. No hidden rename when editing the display title.
 - Sorting, filters, safe rename, collections and tags (C09, C10, C21).
 - Open With, drag and drop, clipboard, long and Unicode paths, session-end safety; settings; privacy-safe logs and diagnostic bundle.
 
 ### Automated QA
 
-- Cover cancellation and cache bounds; print range model and hash invariance; metadata preservation fixtures.
+- Cover cancellation and cache bounds; missing/locked/offline/corrupt/changed first pages; name-mode persistence and migration; missing/garbled/generic embedded titles; custom-title precedence, Arabic/Urdu names and unchanged file bytes when switching names; print range model and hash invariance; metadata preservation fixtures.
 - Sorting with ties, missing metadata, 10k entries and RTL; rename collision and recovery; collections that survive rescans and moves.
 - Launch, Open With, drag and drop, clipboard and long-path behavior; settings defaults and reset; log redaction.
 - Full Index/Reader/Bookmarks regression suite.

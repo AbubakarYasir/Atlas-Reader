@@ -68,7 +68,7 @@ Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after
 - Background, progressive, cancellable scanning; safe overlapping folders; protection against junction/symlink loops.
 - Guarded document identity: moves and renames keep research; copies stay separate; ambiguous matches are never guessed.
 - Clear per-book states: available, locked, read-only/restricted, signed, offline, missing, cloud placeholder, unreadable, changed, unsupported.
-- Filename-first names (extension kept separately and protected); embedded title and author shown as secondary.
+- Current N3–N5 build: filename-first names, with extension kept separate and embedded title/author secondary. Latest owner direction for N7: selectable name source, defaulting to a usable internal book title with filename fallback; see §4.5.
 - Search across metadata, with a documented Arabic/Unicode normalization policy; Favorites, Recents and folders.
 - Global **Command Center** in the title-bar search box (`Alt+Q`, Foxit's key) for commands, books and bookmarks [N5].
 - The Library is the pinned first document tab (Foxit's *Start* tab) [N4.3].
@@ -114,6 +114,8 @@ Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after
 - Printing: printer choice, preview, page and label ranges, copies, orientation, paper size, scaling, grayscale. The source file stays byte-identical.
 - Covers: generated from page one, with correct cache invalidation and a fallback for locked or offline books.
 - Book details panel that separates PDF values from Atlas-local values; selected metadata editing with preview through the N5 safe-save path.
+- Library name source preference: **Book title** (default) or **File name**. Book-title mode uses an explicit user-edited Atlas title, otherwise usable embedded title, otherwise filename stem. File-name mode always uses the filename stem. Show the other distinct name and author in details; keep extension in the format badge/details. Display preference changes never rename files or write PDF metadata.
+- Keep three separate actions: edit Atlas-local book details; preview/save permitted metadata into the PDF; rename the physical file with its extension protected. Explain the scope before applying and preserve research identity. Missing, corrupt, source-program and generic metadata must have tested fallbacks. Existing profiles receive an explicit migration rule and can choose either display mode.
 - Sort (filename, title, author, last opened), filters with one-step clear, safe filename rename separate from metadata editing.
 - Local collections and tags that never move or delete files.
 - Windows integration: Open With, drag and drop, clipboard, long and Unicode paths, and no lost work when Windows shuts down or the session ends.
@@ -261,3 +263,5 @@ account billing reasons. Local evidence does not turn unavailable cloud checks o
 unverified Narrator, real display settings and physical media faults into passes.
 
 Owner clarification 2026-11-04: Arabic/Urdu readability, common software wording, and measured Foxit context-menu/dialog/control sizing are mandatory repairs of existing N1–N5 UI before N5 completion. See DESIGN.md and closure items UI-LANG-01/UI-SIZE-01; no later-stage features are authorized.
+
+2026-11-04 owner clarification: library name display must be selectable, defaulting to the internal book title rather than forcing filenames. N7 owns the preference and details/rename actions alongside library covers. N3 acceptance explicitly deferred covers; N4 page thumbnails are separate. Current N5 behavior remains filename-first until that planned implementation.

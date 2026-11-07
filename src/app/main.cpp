@@ -12,6 +12,7 @@
 #include <QCommandLineParser>
 #include <QGuiApplication>
 #include <QFont>
+#include <QFontDatabase>
 #include <QDir>
 #include <QFileInfo>
 #include <QImage>
@@ -41,6 +42,18 @@ std::filesystem::path filesystemPath(const QString& value) {
 
 } // namespace
 
+// assets/fonts (OFL), compiled into the AtlasReader QML module's resources.
+static void registerBundledFonts() {
+    static const char* const fonts[] = {"NotoNastaliqUrdu-wght.ttf", "NotoNaskhArabic-Regular.ttf",
+                                        "NotoNaskhArabic-SemiBold.ttf"};
+    for (const char* name : fonts) {
+        const QString file = QString::fromLatin1(name);
+        int id = QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/AtlasReader/assets/fonts/") + file);
+        if (id < 0) id = QFontDatabase::addApplicationFont(QStringLiteral(":/AtlasReader/assets/fonts/") + file);
+        if (id < 0) qCWarning(atlas::logging::startup) << "Bundled font not registered:" << file;
+    }
+}
+
 int main(int argc, char* argv[]) {
     using MetricsClock = atlas::diagnostics::ShellMetrics::Clock;
     const auto processStart = MetricsClock::now();
@@ -50,6 +63,14 @@ int main(int argc, char* argv[]) {
     // the deployed package (windeployqt follows real module imports).
     static_cast<void>(QSvgRenderer::staticMetaObject.className());
     const auto applicationReady = MetricsClock::now();
+    MetricsClock::time_point metrics_fontsRegistered{};
+
+    // Bundled Arabic/Urdu fonts are registered once, before anything asks for
+    // a font. Adding an application font later (QML FontLoader) invalidates
+    // Qt's font database, which then enumerates every installed font again:
+    // seconds on font-heavy Windows machines (N1-03).
+    registerBundledFonts();
+    metrics_fontsRegistered = MetricsClock::now();
 
     QGuiApplication::setApplicationName(QStringLiteral("Atlas Reader Native"));
     QGuiApplication::setOrganizationName(QStringLiteral("Atlas Reader"));
@@ -150,6 +171,7 @@ int main(int argc, char* argv[]) {
         parser.isSet(benchmarkShellOption),
         &app);
     metrics.recordCheckpoint(QStringLiteral("startup.qgui_application_ready_ms"), applicationReady);
+    metrics.recordCheckpoint(QStringLiteral("startup.fonts_registered_ms"), metrics_fontsRegistered);
     metrics.recordCheckpoint(QStringLiteral("startup.arguments_ready_ms"), argumentsReady);
     metrics.recordStage(QStringLiteral("startup.metrics_ready_ms"));
 

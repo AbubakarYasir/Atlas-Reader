@@ -299,6 +299,11 @@ jobs:
           & "build/ci-Release/Release/atlas_n5_bookmark_benchmark.exe" (Join-Path $env:RUNNER_TEMP 'atlas-n5-benchmark')
           if ($LASTEXITCODE -ne 0) { throw "N5 bookmark benchmark missed a gate." }
 
+      - name: Startup time on Windows (N1-03; report, not a gate on CI hardware)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: pwsh -NoProfile -File tools/perf/measure-startup.ps1 -Exe build/ci-Release/Release/atlas_reader.exe
+
       - name: N4 long-book search qualification (2,000 pages)
         if: matrix.configuration == 'Release'
         shell: pwsh

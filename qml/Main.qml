@@ -46,10 +46,8 @@ ApplicationWindow {
     LayoutMirroring.enabled: I18n.rtl
     LayoutMirroring.childrenInherit: true
 
-    // Bundled fonts (assets/fonts, OFL): Urdu interface and Arabic/Urdu content.
-    FontLoader { source: "assets/fonts/NotoNastaliqUrdu-wght.ttf" }
-    FontLoader { source: "assets/fonts/NotoNaskhArabic-Regular.ttf" }
-    FontLoader { source: "assets/fonts/NotoNaskhArabic-SemiBold.ttf" }
+    // Bundled fonts (assets/fonts, OFL) are registered in main.cpp before the
+    // engine starts; a FontLoader here would rebuild the font database (N1-03).
 
     Binding { target: I18n; property: "language"; value: preferences.language }
     Binding { target: Theme; property: "dark"; value: preferences.dark }

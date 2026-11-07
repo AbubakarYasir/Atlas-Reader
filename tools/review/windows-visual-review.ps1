@@ -4,10 +4,10 @@
   surfaces and states in EN/AR/UR at 100 % and 200 %, wide and narrow, and
   with Windows high contrast switched on, for a person to review.
 
-  200 %: switches the Windows display scale itself (the per-monitor DPI the
-  Settings app sets) and confirms from the screenshot size that Qt drew at
-  2x. Only if Windows refuses does it fall back to QT_SCALE_FACTOR=2, and the
-  summary says which one ran. High contrast: switches Windows high contrast on
+  Scaling: asks Windows for 200 % (the per-monitor scale the Settings app
+  sets); Windows grants what the screen allows (125 % on the 1024x768 CI
+  screen), confirmed from the screenshot size. 200 % itself uses Qt's 2x
+  device pixel ratio. The summary records both. High contrast: switches Windows high contrast on
   (SPI_SETHIGHCONTRAST) and off again afterwards.
 
     pwsh -NoProfile -File tools/review/windows-visual-review.ps1 -Exe <atlas_reader.exe> -Fixtures tests/fixtures/pdf/generated -Out <dir>
@@ -37,6 +37,7 @@ public static class AtlasDisplay {
         hc.lpszDefaultScheme = "High Contrast Black";
         return SystemParametersInfo(0x0043, hc.cbSize, ref hc, 3); // SPI_SETHIGHCONTRAST
     }
+    [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
     // Relative scale step from the recommended value (+4 = 200 % on a 100 % screen).
     public static bool ScaleSteps(int steps) { return SystemParametersInfo(0x009F, steps, IntPtr.Zero, 1); }
 }
@@ -54,6 +55,7 @@ function Book([string]$fixture, [string]$name) {
 }
 $outline = Book 'A003_outlines_links.pdf' 'Outline Sample.pdf'
 $headings = Book 'A001_simple_text.pdf' 'Heading Sample.pdf'
+$certified = Book 'A010_certification_structure.pdf' 'Certified Sample.pdf'
 $restricted = Book 'A009_restricted_permissions_rc4_40.pdf' 'Restricted Sample.pdf'
 $password = Book 'A015_encrypted_outline_rc4_40.pdf' 'Password Sample.pdf'
 $malformed = Book 'A016_malformed_outline.pdf' 'Damaged Outline Sample.pdf'
@@ -65,11 +67,13 @@ function Shot([string]$name, [string]$lang, [string[]]$extra, [int]$w, [int]$h, 
     $profileDir = Join-Path $work "profile-$profileKind-$lang"
     if (-not (Test-Path $profileDir)) {
         $seed = @('--language', $lang, '--profile-directory', $profileDir, '--quit-after-ms', '5000')
-        if ($profileKind -eq 'books') { $seed += @('--add-library-root', $books) }
+        if ($profileKind -ne 'empty') { $seed += @('--add-library-root', $books) }
         $p = Start-Process -FilePath $exePath -PassThru -ArgumentList (Quote $seed)
         if (-not $p.WaitForExit(90000)) { $p.Kill() }
     }
     $file = Join-Path $Out "$name.png"
+    # Park the pointer in a corner so no hover state shows in the screenshot.
+    $sb = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; [AtlasDisplay]::SetCursorPos($sb.Width - 1, $sb.Height - 1) | Out-Null
     $argList = @('--language', $lang, '--profile-directory', $profileDir, '--window-width', "$w", '--window-height', "$h",
                  '--screenshot-file', $file, '--screenshot-delay-ms', "$delay", '--quit-after-ms', "$($delay + 4000)") + $extra
     $p = Start-Process -FilePath $exePath -PassThru -ArgumentList (Quote $argList)
@@ -98,7 +102,8 @@ $surfaces = @(
     @('save', 'bookmarks-autocreate-save', $headings, 5000),
     @('export', 'bookmarks-export', $outline, 2500),
     @('backstage', 'backstage', $outline, 2500),
-    @('restricted', 'capability', $restricted, 3000),
+    @('certified', 'bookmarks', $certified, 3000),
+    @('password-restricted', $null, $restricted, 2500),
     @('password', $null, $password, 2500),
     @('damaged-outline', 'bookmarks', $malformed, 3000))
 $narrow = @('bookmarks', 'preferences', 'autocreate', 'save', 'menu', 'library')
@@ -110,7 +115,9 @@ function Pass([string]$tag, [int]$w, [int]$h, [string[]]$only) {
             $extra = @()
             if ($s[1]) { $extra += @('--show', $s[1]) }
             if ($s[2]) { $extra += $s[2] }
-            $kind = if ($s[0] -eq 'library-empty') { 'empty' } else { 'books' }
+            # Auto Create skips headings already bookmarked, so each pass creates
+            # them in a profile of its own.
+            $kind = if ($s[0] -eq 'library-empty') { 'empty' } elseif ($s[0] -in @('autocreate', 'save')) { "fresh-$tag-$($s[0])" } else { 'books' }
             Shot "$tag-$lang-$($s[0])" $lang $extra $w $h $s[3] $kind | Out-Null
         }
     }
@@ -124,20 +131,23 @@ try {
     Pass 'p100-wide' 1280 820 $null
     Pass 'p100-narrow' 760 560 $narrow
 
-    # 200 %: Windows display scale, confirmed by the screenshot's pixel size.
+    # Windows display scale: ask for 200 %; Windows caps it by screen size (the
+    # 1024x768 CI screen allows 125 %). Whatever it grants is confirmed from the
+    # screenshot's pixel size and reviewed as real Windows scaling.
     $real = [AtlasDisplay]::ScaleSteps(4)
     Start-Sleep -Seconds 3
-    $probe = Shot 'p200-probe' 'en' @() 760 560 2500
-    $mode = if ($real -and $probe -eq '1520x1120') { 'windows-200' } else { 'qt-scale-2' }
-    if ($mode -ne 'windows-200') {
-        [AtlasDisplay]::ScaleSteps(0) | Out-Null
-        $env:QT_SCALE_FACTOR = '2'
-    }
-    $summary.Add("200% mode: $mode (probe $probe)")
-    Pass "p200-$mode" 760 560 $narrow
-    Remove-Item Env:QT_SCALE_FACTOR -ErrorAction SilentlyContinue
+    $probe = Shot 'scale-probe' 'en' @() 760 560 2500
+    $granted = if ($probe -match '^(\d+)x') { [math]::Round([int]$Matches[1] / 760 * 100) } else { 0 }
+    $summary.Add("Windows scale granted: $granted % (probe $probe, request ok: $real)")
+    if ($granted -gt 100) { Pass "windows-$granted" 760 560 $narrow }
     [AtlasDisplay]::ScaleSteps(0) | Out-Null
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 3
+
+    # 200 %: Qt's 2x device pixel ratio (the same high-DPI path a 200 % screen
+    # uses), since the CI screen cannot be set to 200 %.
+    $env:QT_SCALE_FACTOR = '2'
+    Pass 'p200-qt-scale-2' 760 560 $narrow
+    Remove-Item Env:QT_SCALE_FACTOR -ErrorAction SilentlyContinue
 
     # Windows high contrast.
     $hc = [AtlasDisplay]::HighContrast($true)

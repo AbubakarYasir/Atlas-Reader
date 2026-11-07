@@ -404,31 +404,24 @@ Rectangle {
                 implicitHeight: Math.max(panel.rowHeight, column.implicitHeight + 6)
                 hoverEnabled: true
                 focusPolicy: Qt.NoFocus
-                // Qt Quick Controls report every ItemDelegate as a Button, whatever
-                // role is set here, so screen readers would hear a list of buttons.
-                // The row is exposed through rowAccessible below instead.
-                Accessible.ignored: true
+                // The row as screen readers see it: a tree item with level,
+                // open/closed, page and storage state in the description (native
+                // expanded state needs Qt 6.12's Accessible.expanded). Qt 6.10 keeps
+                // an explicit role on a control, so the delegate carries it directly.
                 readonly property string a11yDescription: [
                     I18n.t("bookmarks.levelA11y", depth + 1),
                     hasChildren ? I18n.t(expanded ? "bookmarks.expandedA11y" : "bookmarks.collapsedA11y") : "",
                     page >= 0 ? I18n.t("panel.pageA11y", page + 1) : "",
                     marked ? I18n.t("bookmarks.state." + storage) : ""
                 ].filter(s => s.length > 0).join(", ")
-
-                Item { // the row as screen readers see it: a tree item
-                    id: rowAccessible
-                    anchors.fill: parent
-                    Accessible.role: Accessible.TreeItem
-                    Accessible.name: row.title
-                    // Level, open/closed, page and storage state (native expanded
-                    // state needs Qt 6.12's Accessible.expanded).
-                    Accessible.description: row.a11yDescription
-                    Accessible.selectable: true
-                    Accessible.selected: row.ListView.isCurrentItem
-                    Accessible.focusable: true
-                    Accessible.focused: row.ListView.isCurrentItem && list.activeFocus
-                    Accessible.onPressAction: { list.currentIndex = row.index; panel.go(row.index) }
-                }
+                Accessible.role: Accessible.TreeItem
+                Accessible.name: title
+                Accessible.description: a11yDescription
+                Accessible.selectable: true
+                Accessible.selected: ListView.isCurrentItem
+                Accessible.focusable: true
+                Accessible.focused: ListView.isCurrentItem && list.activeFocus
+                Accessible.onPressAction: { list.currentIndex = index; panel.go(index) }
 
                 onClicked: { list.currentIndex = index; list.forceActiveFocus(); panel.go(index) }
                 onDoubleClicked: if (hasChildren) panel.bookmarks.toggle(index)

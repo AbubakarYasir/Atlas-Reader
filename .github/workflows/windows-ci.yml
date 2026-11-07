@@ -302,7 +302,26 @@ jobs:
       - name: Accessibility sweep on Windows (EN/AR/UR, ten surfaces)
         if: matrix.configuration == 'Release'
         shell: pwsh
-        run: pwsh -NoProfile -File tools/a11y/run-a11y-check.ps1 -Exe build/ci-Release/Release/atlas_reader.exe -Pdf tests/fixtures/pdf/generated/A003_outlines_links.pdf
+        run: pwsh -NoProfile -File tools/a11y/run-a11y-check.ps1 -Exe build/ci-Release/Release/atlas_reader.exe -Pdf tests/fixtures/pdf/generated/A003_outlines_links.pdf -HeadingPdf tests/fixtures/pdf/generated/A001_simple_text.pdf
+
+      - name: Keyboard and Narrator review through UI Automation (EN/AR/UR)
+        if: matrix.configuration == 'Release'
+        shell: powershell
+        run: powershell -NoProfile -File tools/a11y/windows-uia-review.ps1 -Exe build/ci-Release/Release/atlas_reader.exe -Pdf tests/fixtures/pdf/generated/A003_outlines_links.pdf -Out "$env:RUNNER_TEMP/atlas-review/uia"
+
+      - name: Rendered review screenshots (100 %, 200 %, narrow, high contrast)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: pwsh -NoProfile -File tools/review/windows-visual-review.ps1 -Exe build/ci-Release/Release/atlas_reader.exe -Fixtures tests/fixtures/pdf/generated -Out "$env:RUNNER_TEMP/atlas-review/screens"
+
+      - name: Upload review evidence
+        if: always() && matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-windows-review
+          path: ${{ runner.temp }}/atlas-review
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Startup time on Windows (N1-03; report, not a gate on CI hardware)
         if: matrix.configuration == 'Release'
@@ -562,6 +581,48 @@ jobs:
             artifacts/beta/atlas-reader-2.0.0-beta.2-windows-x64.zip.sha256
           if-no-files-found: error
           retention-days: 90
+
+      - name: Review package smoke test (built and launched, not uploaded)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'pkg-smoke'
+          ./tools/release/package-n4-review.ps1 `
+            -Executable build/ci-Release/Release/atlas_reader.exe `
+            -QtRoot $env:QT_ROOT_DIR `
+            -OutputDirectory $out `
+            -ImplementationSha $env:ATLAS_IMPLEMENTATION_SHA `
+            -CheckoutSha $env:ATLAS_CHECKOUT_SHA `
+            -QpdfBin $env:QPDF_BIN `
+            -QpdfCompliance $env:QPDF_COMPLIANCE `
+            -PackageName 'atlas-reader-review-windows-x64' `
+            -Checkpoint 'N5' `
+            -Version '2.0.0-beta.2-n5-review.2' `
+            -Purpose 'CI smoke test only; not uploaded'
+          $zip = Join-Path $out 'atlas-reader-review-windows-x64.zip'
+          $expected = ((Get-Content "$zip.sha256" -Raw).Trim() -split '\s+')[0].ToLowerInvariant()
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Package checksum mismatch' }
+          $run = Join-Path $env:RUNNER_TEMP 'pkg-run'
+          Expand-Archive -LiteralPath $zip -DestinationPath $run
+          $exe = @(Get-ChildItem $run -Recurse -Filter atlas_reader.exe)[0].FullName
+          $qpdf = @(Get-ChildItem (Split-Path $exe) -Recurse -Filter qpdf.exe)[0].FullName
+          # Clean PATH: only Windows itself, so a missing DLL in the package fails here.
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+          Remove-Item Env:ATLAS_QPDF -ErrorAction SilentlyContinue
+          $qpdfVersion = (& $qpdf --version 2>&1 | Out-String)
+          if ($LASTEXITCODE -ne 0 -or $qpdfVersion -notmatch '12\.4\.1') { throw "Packaged qpdf did not run: $qpdfVersion" }
+          $sample = @(Get-ChildItem (Join-Path (Split-Path $exe) 'samples') -Filter *.pdf -ErrorAction SilentlyContinue)[0]
+          $book = if ($sample) { $sample.FullName } else { (Resolve-Path tests/fixtures/pdf/generated/A003_outlines_links.pdf).Path }
+          foreach ($lang in 'en', 'ar', 'ur') {
+            $metrics = Join-Path $env:RUNNER_TEMP "pkg-$lang.jsonl"
+            $p = Start-Process -FilePath $exe -PassThru -ArgumentList "--language $lang --profile-directory `"$env:RUNNER_TEMP\pkg-profile-$lang`" --metrics-file `"$metrics`" --quit-after-ms 8000 `"$book`""
+            if (-not $p.WaitForExit(90000)) { $p.Kill(); throw "Packaged app did not exit ($lang)" }
+            if ($p.ExitCode -ne 0) { throw "Packaged app exited with $($p.ExitCode) ($lang)" }
+            $frame = Select-String -Path $metrics -Pattern 'first_frame' -Quiet
+            if (-not $frame) { throw "Packaged app drew no first frame ($lang)" }
+            Write-Host "Packaged app ($lang): started from a clean PATH, drew its first frame and exited 0."
+          }
+          Write-Host "Package: $((Get-Item $zip).Length) bytes, SHA-256 verified; qpdf: $($qpdfVersion.Trim().Split([Environment]::NewLine)[0])"
 
       - name: Stage owner review package (on request)
         if: matrix.configuration == 'Release' && github.event_name == 'workflow_dispatch' && inputs.review_build

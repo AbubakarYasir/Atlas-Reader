@@ -9,17 +9,17 @@ PR #8 stays Draft. No N6 work, release or merge is authorized by this pass.
 | ID | Requirement and implementation | Required evidence | Current result |
 |---|---|---|---|
 | N1-01 | Windows startup and deployed Qt runtime | Clean-PATH package launch, no console or missing DLL | Local package launch passes; packaged qpdf runs; 1,519 file hashes verified |
-| N1-02 | Settings, themes, three languages | `app_preferences_tests`, rendered matrix | Persistence suite passes; EN/AR/UR at real OS 175% and Night sky contrast; real 200% still open |
+| N1-02 | Settings, themes, three languages | `app_preferences_tests`, rendered matrix | Persistence suite passes; EN/AR/UR at real OS 175% and Night sky contrast. Windows CI review (2026-11-08): real Windows display scaling at 125 % (the most the 1024×768 runner allows, confirmed from pixel size) and Qt's 2× device pixel ratio for 200 %, narrow window, EN/AR/UR; nothing clipped, dialogs and menus scroll when taller than the window. Real 200 % on a physical screen: owner |
 | N2-01 | Rendering and text correctness | Full nine PDF regression workflows on final head | All nine N2 workflows and Windows CI (Debug + Release) green on `f0cbc5f` (2026-11-07). Production Route had been failing because its job never told the safe-save tests where qpdf was (`ATLAS_QPDF`); fixed |
 | N2-02 | Passwords, restrictions, signatures | Capability/security/save suites; A018 OpenSSL integrity + tamper | Local tests pass, including encrypted save and real signed-original refusal |
 | N2-03 | Coordinates and preservation | Outline writer/save tests; nine PDF CI lanes | Local qpdf comparison + Qt PDF reopen pass; all-angle production regression passes; cloud CI unavailable |
 | N3-01 | Background scanning and cancellation | `library_scanner_tests` and scan-service integration | Local Debug/Release passed; cloud CI unavailable (account billing) |
 | N3-02 | Identity and offline roots | `document_identity_reconciler_tests`, `native_file_identity_tests` | Local moves/copies/ambiguity/offline checks passed |
 | N3-03 | Filename-first metadata and library state | Library index/model/query/inspector suites | Local automated Unicode, metadata, Favorites/Recents and profile tests pass |
-| N4-01 | Open/tabs/password/restore | Reader controller/session tests | Automated open/password/session tests pass; full keyboard review still open |
+| N4-01 | Open/tabs/password/restore | Reader controller/session tests | Automated open/password/session tests pass. Windows CI keyboard review (`windows-uia-review.ps1`, real key presses, EN/AR/UR, every run): bookmark tree Up/Down/Home/End and open/close with mirrored keys in RTL; Tab walks 45 stops with no trap, no unnamed and no look-alike stops; library arrows; About closes with Escape. Fixed on the way: nothing focused at startup, File page left focus on the hidden document, Arabic Zoom and Zoom in sounded the same |
 | N4-02 | Virtual viewport and navigation | Viewport layout/render suites, coordinate CI, Windows memory | Local mixed geometry/navigation pass; 2,000-page 400-jump memory measured; cloud CI unavailable (account billing) |
 | N4-03 | Search and selection | Text-search suite; 2k-page viewport measurement below | Local tests and 100-query measurement passed |
-| N4-04 | Windows accessibility | Narrator, keyboard, high contrast, real scaling | Bookmark rows now real tree items (level/open/page/state, current row selected+focused); radio buttons, check boxes and all menu commands exposed; automated a11y sweep EN/AR/UR × 10 surfaces passes on Windows CI (Qt 6.10.3, every run) and a local Qt 6.10.3 build. The Windows run found the rows still exposed as unnamed buttons on 6.10 (6.4 behaved differently); fixed. Native expanded state needs Qt 6.12 (owner decision); Narrator speech and real 200% need the Windows PC |
+| N4-04 | Windows accessibility | Narrator, keyboard, high contrast, real scaling | UI Automation (what Narrator reads) verified on Windows CI every run, EN/AR/UR: bookmark rows are TreeItems with native Expanded/Collapsed (ExpandCollapse pattern works), level/page as help text; focus follows the current row and book (Qt reported only the list); dialogs are announced by name (Qt left the focused container unnamed). ADR-0010. Windows high contrast switched on in CI and rendered: honoured. Remaining for the owner: listening to Narrator itself |
 | N5-01 | Capability and overlay persistence | Capability, overlay, store tests | Local state/transaction/crash corpus passes |
 | N5-02 | Editing, undo, auto headings | Editor/model/auto-bookmark tests, V01 | Local Unicode/tree/undo/10k tests pass; Add Bookmark rendered and fixed |
 | N5-03 | Late-save failures | Reindex/commit failure restore and failed-restore tests | Local Windows regression passed; cloud CI unavailable (account billing) |
@@ -31,8 +31,8 @@ PR #8 stays Draft. No N6 work, release or merge is authorized by this pass.
 | N5-09 | Malformed-outline safety (A016) | Opening A016 (outline `/Next` cycle) must not hang | Repaired: bounded raw-reference preflight rejects cycles before Qt traversal; A016 now runs in the normal safe-save regression |
 | N5-10 | Recovery choice after an unsettled save | Keep current / restore original / show backups; nothing deleted | Integrated recovery dialog; verified archives before Keep/Restore, Show backups and Cancel; local Windows regression passes |
 | UI-02 | Edit ribbon tab (Foxit placement of Bookmark, Auto Create Bookmarks) | Rendered EN/AR/UR | Edit ribbon rendered in EN/AR/UR; no extracted Foxit assets |
-| UI-01 | Reference-based Windows review | EN/AR/UR, wide/narrow, 100/200%, empty/error/protected/conflict | Pending |
-| PKG-01 | Correct review instructions | N5 START-HERE and guide in packaged ZIP | Local inspection ZIP built from 0d6d726; receipt below |
+| UI-01 | Reference-based Windows review | EN/AR/UR, wide/narrow, 100/200%, empty/error/protected/conflict | Windows CI rendered review (`windows-visual-review.ps1`, artifact `atlas-windows-review`): library, empty library, bookmarks, menu, Preferences, About, Auto Create, Save, Export, File page, certified read-only, password, damaged outline; EN/AR/UR; wide 1280×820 and narrow 760×560; 100 %, Windows 125 %, 200 %; high contrast. Reviewed 2026-11-08; fixed: count wording ("1 bookmarks"), Auto Create re-adding existing headings, Urdu Auto Create list below the fold without a scrollbar, menu density. The conflict state is not in the matrix (V04 verified the conflict choice on the real UI) |
+| PKG-01 | Correct review instructions | N5 START-HERE and guide in packaged ZIP | Every Release CI run builds the N5 review package, checks its SHA-256 and that START-HERE, the N5 review guide and this ledger are inside, runs the packaged qpdf 12.4.1 and launches the app in EN/AR/UR from a clean PATH (first frame drawn, exit 0); nothing uploaded. The review ZIP itself is built only on request |
 | GIT-01 | Owner identity and signatures | Audit every N5 commit; GitHub Verified | All N5 commits valid; corrected history pushed and verified |
 | DOC-01 | Consistent contracts and status | Docs checker plus manual claim/evidence comparison | In progress |
 
@@ -386,18 +386,19 @@ Qt 6.4 scratch build (25/25) plus the Windows-only steps that CI will run.
 | Accessibility | New `--show a11y:<surface>@<file>` dump + `tools/a11y/check_accessibility.py`. Found and fixed: bookmark rows announced as buttons; radio buttons, check boxes and menu commands missing |
 | UI-LANG-01 | Full AR/UR string review: zoom vs window words, محفوظ = Saved vs Protected, one spelling for PDF/بُک مارک/computer/certified, clearer recovery and disk-space sentences |
 | Grid / sidebar | Grid checked at 760×560 and 200% in EN/AR/UR (actions inside cards). Urdu sidebar rows overlapped; fixed |
-| UI-SIZE-01 | See `N5_UI_SIZE_COMPARISON.md`. Preferences 780×540 vs Foxit 770×548 (runtime). Menus need one Foxit runtime capture |
+| UI-SIZE-01 | See `N5_UI_SIZE_COMPARISON.md`. Preferences 780×540 vs Foxit 770×548 (runtime). Bookmark menu vs Foxit Reader runtime capture (CI): width 224 vs 235, rows 25 vs 23 (24 px WCAG minimum); every Atlas menu now uses that density |
 
 ### After the repository went public (CI evidence, 2026-11-07)
 
 | Item | Result |
 |---|---|
 | CI | Windows CI (Debug, Release) and all nine N2 workflows green on `f0cbc5f` |
-| N1-03 startup (Windows CI hardware, Release, 3 warm runs per language) | First frame EN 470–535 ms, AR 524–611 ms, UR 660–767 ms; slowest 767 ms against the 800 ms target. Before the font fix the owner PC measured 4.9–5.3 s. The Qt trace (1,828 events) shows no font-database rebuild during startup. The owner PC still needs one measurement |
+| N1-03 startup (Windows CI hardware, Release, 3 warm runs per language) | First frame EN 470–535 ms, AR 524–611 ms, UR 660–767 ms; slowest 767 ms against the 800 ms target. Before the font fix the owner PC measured 4.9–5.3 s. The Qt trace (1,828 events) shows no font-database rebuild during startup. Later CI runs on other runners measured UR 832–881 ms; a same-machine A/B (607596a vs current, 12 runs) shows no regression (EN median 430 vs 407 ms), so CI runner speed varies by ±15 %. Urdu stays the slowest (Nastaliq). The owner PC still needs one measurement |
 | Accessibility on Windows | New CI step `tools/a11y/run-a11y-check.ps1`: EN/AR/UR × 10 surfaces through the Windows accessibility bridge. First run found bookmark rows as unnamed buttons on Qt 6.10; fixed and passing |
 | Qt 6.10.3 locally | The cloud build now also uses Qt 6.10.3 (not only the 6.4 scratch build): 42/42 tests pass, including the rotated-link check 6.4 could not run |
 | Debug timing gate | The 10,000-bookmark 100 ms p95 gate applies to optimised builds; Debug reports the numbers |
 
-Still needs the Windows PC or the owner: startup on the owner PC, Narrator speech/focus walk-through, real 200% scaling, a Foxit
-bookmark-menu screenshot for the menu size comparison, the Windows review
-package smoke test, and the N5 owner review.
+Still needs the owner (2026-11-08): startup on the owner PC, listening to
+Narrator itself (UI Automation is verified in CI), real 200 % on a physical
+screen, and the N5 owner review. Done since: Foxit menu capture, package smoke
+test, keyboard review, rendered Windows review, high contrast.

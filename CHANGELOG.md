@@ -6,6 +6,11 @@ All notable changes to Atlas Reader Native are documented here.
 
 ## N1–N5 repair pass — 2026-11-04 (in progress)
 
+- 2026-11-08 — Narrator: bookmark rows report open/closed natively (Expand/Collapse work), focus follows the current bookmark or book instead of staying on the list, and dialogs are announced by name ([ADR-0010](docs/decisions/ADR-0010-screen-reader-interfaces.md)). Focus starts on the first book and moves into the File page.
+- 2026-11-08 — Windows CI now presses real keys through UI Automation (EN/AR/UR), renders the main screens at 100 %, Windows 125 %, 200 % and in high contrast, and smoke-tests the review package from a clean PATH.
+- 2026-11-08 — Auto Create leaves headings that are already bookmarks unchecked; in Urdu its list of headings is visible again. Counts read correctly for any number ("Results: 1"). Arabic Zoom menu renamed so it differs from Zoom in.
+- 2026-11-08 — Every menu uses one density, measured against Foxit Reader's bookmark menu (23 px rows; Atlas 25 px in English, growing for Arabic and Urdu).
+
 - 2026-11-07 — Startup: bundled fonts are registered once before the interface loads instead of by QML FontLoaders, which made Qt rebuild its list of every installed font. Windows CI first frame is now 470–767 ms (EN/AR/UR, target 800 ms); it was 4.9–5.3 s on the owner PC.
 - 2026-11-07 — Saving: a full backup drive no longer reports an interrupted save; a drive removed mid-save leaves a recovery that settles once the original is back. New RAM-disk tests for full and unplugged drives, and a broader Save a Copy audit.
 - 2026-11-07 — Accessibility: bookmark rows are tree items (level, open/closed, page, state) instead of buttons; radio buttons, check boxes and menu commands are exposed. A new accessibility dump and checker runs on Windows CI in EN/AR/UR across ten surfaces.

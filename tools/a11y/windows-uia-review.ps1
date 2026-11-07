@@ -129,6 +129,7 @@ function Check-Bookmarks([string]$lang) {
             Record $lang 'bookmarks' $s[0] $f
             if ($f.type -ne 'TreeItem' -or $f.name -ne $s[2]) { Fail $lang "$($s[0]): focus $($f.type) '$($f.name)', expected TreeItem '$($s[2])'" }
             if (-not $f.help) { Fail $lang "$($s[0]): tree item has no help text (level/page)" }
+            elseif ($f.help -notmatch '\d') { Fail $lang "$($s[0]): help text '$($f.help)' has no level or page number" }
             if ($s[3] -and $f.state -ne $s[3]) { Fail $lang "$($s[0]): state $($f.state), expected $($s[3])" }
         }
         # The ExpandCollapse pattern behind Narrator's expand/collapse commands.
@@ -166,6 +167,9 @@ function Check-TabOrder([string]$lang) {
     }
     Write-Host ("  Tab order ({0} stops): {1}" -f $seen.Count, (($seen | ForEach-Object { $_ -replace '\|', ':' }) -join ' | '))
     if (-not $moved) { Fail $lang 'Tab never moved focus (keyboard trap)' }
+    # Two different controls with the same name and type sound identical to Narrator.
+    $dupes = @($seen | Group-Object | Where-Object { $_.Count -gt 1 } | ForEach-Object { $_.Name })
+    foreach ($d in $dupes) { Fail $lang "two Tab stops are announced the same: $($d -replace '\|', ' ')" }
 }
 
 function Check-Library([string]$lang) {

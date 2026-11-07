@@ -70,6 +70,7 @@ jobs:
           }
           "QPDF_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           "QPDF_EXE=$($qpdf[0].FullName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "ATLAS_QPDF=$($qpdf[0].FullName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           "QPDF_BIN=$($qpdf[0].DirectoryName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           "QPDF_ARCHIVE_SHA256=$actual" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Verified first-party qpdf asset $env:QPDF_ASSET_ID: $actual"

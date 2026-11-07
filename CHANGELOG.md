@@ -434,3 +434,7 @@ nothing changed.
 N5 language review in progress: simplified Urdu import/export and bookmark-destination labels, standardized Arabic bookmark wording, corrected the font contract, and added explicit language/rendering/menu-size closure gates. Runtime qualification remains open.
 
 - N5 UI repair: keep an explicit system font for Latin text, preserve the bundled Arabic/Urdu fonts, and size bookmark-menu rows from shaped text instead of the Basic style background minimum. Constrain overflow to the window with a visible scrollbar; wider language/size qualification remains open.
+
+- Clarified N7 library scope after owner feedback: covers, selectable title/filename display (book-title default), separate local/PDF metadata editing, and extension-safe file rename now have explicit N7-LIB-01–04 requirements and tests. These are planned, not features in the N5 build.
+
+- Repair library grid card height using Arabic/Urdu/Latin font metrics so the action row has reserved space; add a grid QA entry point. Load Preferences on request to reduce startup work, preserving its window-relative placement. Startup remains above target. Urdu Preferences now uses the familiar سیٹنگز label.

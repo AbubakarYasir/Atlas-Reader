@@ -11,6 +11,20 @@ Item {
     property bool gridMode: false
     property alias searchField: searchField
 
+    // Book names can use any supported script regardless of interface language.
+    // Reserve both title lines and metadata from actual font metrics, not a
+    // fixed card height that lets the layout push actions outside the border.
+    FontMetrics { id: latinTitleMetrics; font.family: I18n.systemFamily; font.pixelSize: 15; font.weight: Font.DemiBold }
+    FontMetrics { id: arabicTitleMetrics; font.family: library.gridMode ? "Noto Naskh Arabic" : I18n.systemFamily; font.pixelSize: 15; font.weight: Font.DemiBold }
+    FontMetrics { id: urduTitleMetrics; font.family: library.gridMode ? "Noto Nastaliq Urdu" : I18n.systemFamily; font.pixelSize: 15; font.weight: Font.DemiBold }
+    FontMetrics { id: latinDetailMetrics; font.family: I18n.systemFamily; font.pixelSize: 12 }
+    FontMetrics { id: arabicDetailMetrics; font.family: library.gridMode ? "Noto Naskh Arabic" : I18n.systemFamily; font.pixelSize: 12 }
+    FontMetrics { id: urduDetailMetrics; font.family: library.gridMode ? "Noto Nastaliq Urdu" : I18n.systemFamily; font.pixelSize: 12 }
+    readonly property real gridTitleLineHeight: Math.ceil(Math.max(latinTitleMetrics.height, arabicTitleMetrics.height, urduTitleMetrics.height))
+    readonly property real gridDetailHeight: Math.ceil(Math.max(latinDetailMetrics.height, arabicDetailMetrics.height, urduDetailMetrics.height))
+    readonly property real gridCardHeight: Theme.libraryCoverHeight + 2 * gridTitleLineHeight
+        + gridDetailHeight + Theme.controlHeight + 4 * Theme.sm + 2 * Theme.md + 2 * Theme.xs
+
     function statusText(value) {
         if (value === "scanning") return I18n.t("library.status.scanning")
         if (value === "complete") return I18n.t("library.status.complete", libraryController.lastAddedCount)
@@ -233,7 +247,7 @@ Item {
                 clip: true
                 model: libraryController
                 cellWidth: library.gridMode ? Math.max(220, width / Math.max(1, Math.floor(width / 260))) : width
-                cellHeight: library.gridMode ? 252 + 2 * Theme.scriptExtra : 84 + 2 * Theme.scriptExtra
+                cellHeight: library.gridMode ? library.gridCardHeight : 84 + 2 * Theme.scriptExtra
                 keyNavigationEnabled: true
                 activeFocusOnTab: true
                 ScrollBar.vertical: ScrollBar {}
@@ -376,7 +390,9 @@ Item {
 
                             Rectangle {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 108
+                                Layout.preferredHeight: Theme.libraryCoverHeight
+                                Layout.minimumHeight: Theme.libraryCoverHeight
+                                Layout.maximumHeight: Theme.libraryCoverHeight
                                 radius: Theme.radiusControl
                                 color: bookCell.canOpen ? Theme.accentSoft : Theme.warningSoft
                                 IconImage {

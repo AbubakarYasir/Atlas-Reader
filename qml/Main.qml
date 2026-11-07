@@ -197,7 +197,18 @@ ApplicationWindow {
         }
     }
 
-    PreferencesDialog { id: preferencesDialog }
+    Loader {
+        id: preferencesDialog
+        active: false
+        property string requestedPage: "general"
+        sourceComponent: PreferencesDialog { parent: root.contentItem }
+        function openPage(page) {
+            requestedPage = page
+            if (item) item.openPage(page)
+            else active = true
+        }
+        onLoaded: item.openPage(requestedPage)
+    }
     ReaderDialogs { id: readerDialogs; z: 50 }
 
     // Visual QA (--show): open one surface after startup.
@@ -205,7 +216,8 @@ ApplicationWindow {
         interval: 1500
         running: qaShow.length > 0
         onTriggered: {
-            if (qaShow === "backstage") { backstage.page = "open"; backstage.visible = true }
+            if (qaShow === "library-grid") { readerController.showLibrary(); libraryView.gridMode = true }
+            else if (qaShow === "backstage") { backstage.page = "open"; backstage.visible = true }
             else if (qaShow === "skins") { backstage.page = "skins"; backstage.visible = true }
             else if (qaShow.indexOf("preferences") === 0) preferencesDialog.openPage(qaShow.split(":")[1] || "general")
             else if (qaShow === "about") aboutDialog.open()

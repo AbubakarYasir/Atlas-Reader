@@ -52,6 +52,17 @@ public:
         return result;
     }
 
+    // Level, page and storage state: Qt sends the description to UI
+    // Automation's FullDescription; mirror it as help text (HelpText) too,
+    // which older clients and Narrator's help command read.
+    QString text(QAccessible::Text kind) const override {
+        if (kind == QAccessible::Help) {
+            const QString help = ControlAccessible::text(QAccessible::Help);
+            return help.isEmpty() ? ControlAccessible::text(QAccessible::Description) : help;
+        }
+        return ControlAccessible::text(kind);
+    }
+
     QStringList actionNames() const override {
         QStringList names = ControlAccessible::actionNames();
         if (expandable() && !names.contains(showMenuAction())) names.append(showMenuAction());

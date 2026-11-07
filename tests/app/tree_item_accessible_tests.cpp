@@ -77,6 +77,7 @@ Window {
             function a11yToggle() { rows.setProperty(index, "expanded", !expanded) }
             Accessible.role: Accessible.TreeItem
             Accessible.name: title
+            Accessible.description: "Level 1"
         }
     }
 }
@@ -112,6 +113,8 @@ void checkTreeRow(QQmlEngine& engine) {
     QAccessibleInterface* row = QAccessible::queryAccessibleInterface(first);
     require(row && row->role() == QAccessible::TreeItem, "row is a TreeItem");
     require(row->text(QAccessible::Name) == QStringLiteral("Chapter 1"), "row is named");
+    require(row->text(QAccessible::Help) == QStringLiteral("Level 1"),
+            "row description is also its help text (UI Automation HelpText)");
     QAccessible::State state = row->state();
     require(state.expandable && state.expanded && !state.collapsed, "open parent row reports expandable + expanded");
 

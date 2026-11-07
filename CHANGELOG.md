@@ -6,6 +6,12 @@ All notable changes to Atlas Reader Native are documented here.
 
 ## N1–N5 repair pass — 2026-11-04 (in progress)
 
+- 2026-11-07 — Startup: bundled fonts are registered once before the interface loads instead of by QML FontLoaders, which made Qt rebuild its list of every installed font. Windows CI first frame is now 470–767 ms (EN/AR/UR, target 800 ms); it was 4.9–5.3 s on the owner PC.
+- 2026-11-07 — Saving: a full backup drive no longer reports an interrupted save; a drive removed mid-save leaves a recovery that settles once the original is back. New RAM-disk tests for full and unplugged drives, and a broader Save a Copy audit.
+- 2026-11-07 — Accessibility: bookmark rows are tree items (level, open/closed, page, state) instead of buttons; radio buttons, check boxes and menu commands are exposed. A new accessibility dump and checker runs on Windows CI in EN/AR/UR across ten surfaces.
+- 2026-11-07 — Arabic and Urdu wording review; Urdu sidebar rows no longer overlap.
+- 2026-11-07 — The repository is public so GitHub-hosted CI runs again. All nine N2 workflows and Windows CI pass.
+
 - Local inspection package delivered from 0d6d726; both final 59-test Windows suites pass. Independent warm launches expose a 4.9–5.3 s startup target miss, which remains an open repair. Actual OS 175% and Night sky recovery screens verified in all three languages; real 200% and Narrator are not counted as passed.
 
 - Preflight raw outline references before Qt constructs its bookmark model; cyclic A016 now runs in the normal regression suite without exhausting memory. Unsupported outlines remain protected.

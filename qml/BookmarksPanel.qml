@@ -404,13 +404,15 @@ Rectangle {
                 implicitHeight: Math.max(panel.rowHeight, column.implicitHeight + 6)
                 hoverEnabled: true
                 focusPolicy: Qt.NoFocus
-                // The row as screen readers see it: a tree item with level,
-                // open/closed, page and storage state in the description (native
-                // expanded state needs Qt 6.12's Accessible.expanded). Qt 6.10 keeps
-                // an explicit role on a control, so the delegate carries it directly.
+                // The row as screen readers see it: a tree item. Open/closed is a
+                // native state (src/app/accessibility/TreeItemAccessible), so
+                // Narrator announces it and can expand/collapse; level, page and
+                // storage state are in the description.
+                readonly property bool a11yTreeRow: true
+                function a11yToggle() { panel.bookmarks.toggle(index) }
+                onExpandedChanged: atlasAccessibility.expandedChanged(row)
                 readonly property string a11yDescription: [
                     I18n.t("bookmarks.levelA11y", depth + 1),
-                    hasChildren ? I18n.t(expanded ? "bookmarks.expandedA11y" : "bookmarks.collapsedA11y") : "",
                     page >= 0 ? I18n.t("panel.pageA11y", page + 1) : "",
                     marked ? I18n.t("bookmarks.state." + storage) : ""
                 ].filter(s => s.length > 0).join(", ")

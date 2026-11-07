@@ -17,7 +17,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent Gui Quick Qml QuickControls2 Pdf Svg)
+find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent Gui Quick QuickPrivate Qml QuickControls2 Pdf Svg)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 qt_standard_project_setup(REQUIRES 6.10)
 
@@ -175,6 +175,8 @@ target_link_libraries(atlas_library_ingestion PUBLIC
 atlas_enable_warnings(atlas_library_ingestion)
 
 add_library(atlas_app_support STATIC
+    src/app/accessibility/TreeItemAccessible.cpp
+    src/app/accessibility/TreeItemAccessible.h
     src/app/diagnostics/AccessibilityDump.cpp
     src/app/diagnostics/AccessibilityDump.h
     src/app/diagnostics/ShellMetrics.cpp
@@ -185,7 +187,7 @@ add_library(atlas_app_support STATIC
     src/app/settings/AppPreferences.h
 )
 target_include_directories(atlas_app_support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(atlas_app_support PUBLIC Qt6::Core Qt6::Gui Qt6::Quick)
+target_link_libraries(atlas_app_support PUBLIC Qt6::Core Qt6::Gui Qt6::Quick PRIVATE Qt6::QuickPrivate)
 atlas_enable_warnings(atlas_app_support)
 
 add_library(atlas_library_ui STATIC
@@ -497,6 +499,12 @@ target_link_libraries(atlas_app_preferences_tests PRIVATE atlas_app_support)
 atlas_enable_warnings(atlas_app_preferences_tests)
 add_test(NAME atlas_app_preferences COMMAND atlas_app_preferences_tests)
 set_tests_properties(atlas_app_preferences PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(atlas_tree_item_accessible_tests tests/app/tree_item_accessible_tests.cpp)
+target_link_libraries(atlas_tree_item_accessible_tests PRIVATE atlas_app_support Qt6::Qml Qt6::Quick)
+atlas_enable_warnings(atlas_tree_item_accessible_tests)
+add_test(NAME atlas_tree_item_accessible COMMAND atlas_tree_item_accessible_tests)
+set_tests_properties(atlas_tree_item_accessible PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
 add_executable(atlas_document_identity_tests tests/index/document_identity_reconciler_tests.cpp)
 target_link_libraries(atlas_document_identity_tests PRIVATE atlas_document_identity)

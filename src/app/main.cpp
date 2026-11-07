@@ -1,3 +1,4 @@
+#include "app/accessibility/TreeItemAccessible.h"
 #include "app/bookmarks/BookmarkModel.h"
 #include "app/bookmarks/BookmarkService.h"
 #include "app/diagnostics/AccessibilityDump.h"
@@ -71,6 +72,7 @@ int main(int argc, char* argv[]) {
     // Qt's font database, which then enumerates every installed font again:
     // seconds on font-heavy Windows machines (N1-03).
     registerBundledFonts();
+    atlas::accessibility::installTreeItemAccessibility(); // before any QML exists
     metrics_fontsRegistered = MetricsClock::now();
 
     QGuiApplication::setApplicationName(QStringLiteral("Atlas Reader Native"));
@@ -202,6 +204,8 @@ int main(int argc, char* argv[]) {
 
     // Declared after the objects it exposes so it is destroyed first: QML
     // bindings never see a destroyed context object during shutdown.
+    // Before the engine, so it outlives every QML binding that reads it.
+    atlas::accessibility::AccessibilityNotifier accessibilityNotifier;
     QQmlApplicationEngine engine;
     // An empty QML font family selects a legacy Windows bitmap font under GDI.
     // Preserve the actual platform interface font instead of clearing it.
@@ -224,6 +228,7 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty(QStringLiteral("qaShow"), parser.value(showOption));
     atlas::diagnostics::AccessibilityDump accessibilityDump;
     engine.rootContext()->setContextProperty(QStringLiteral("qaAccessibility"), &accessibilityDump);
+    engine.rootContext()->setContextProperty(QStringLiteral("atlasAccessibility"), &accessibilityNotifier);
     engine.rootContext()->setContextProperty(QStringLiteral("libraryController"), &libraryController);
     engine.rootContext()->setContextProperty(QStringLiteral("readerController"), &readerController);
     engine.rootContext()->setContextProperty(QStringLiteral("bookmarkService"), &bookmarkService);

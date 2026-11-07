@@ -17,6 +17,7 @@
 #include <QCryptographicHash>
 #include <QDir>
 #include <QElapsedTimer>
+#include <QDateTime>
 #include <QFile>
 #include <QLockFile>
 #include <QFileInfo>
@@ -90,8 +91,12 @@ QStringList titles(const QVariantList& outline) {
 QStringList folderFiles(const QString& folder) { return QDir{folder}.entryList(QDir::Files | QDir::Hidden); }
 
 // A book in a library folder, its overlay opened the way the app opens it.
+// Where Book puts its library folder (real-storage tests use a tiny volume).
+QString g_bookRoot;
+
 struct Book final {
     QTemporaryDir dir;
+    QString backupOverride; // a separate backup volume, when set
     QString folder;
     QString pdf;
     QString password;
@@ -101,7 +106,9 @@ struct Book final {
 
     explicit Book(const char* source, QString pass = {}) : password{std::move(pass)} {
         require(dir.isValid(), "temporary folder");
-        folder = dir.filePath(QStringLiteral("books"));
+        // The book folder may sit on its own (test) volume; the profile stays in dir.
+        folder = g_bookRoot.isEmpty() ? dir.filePath(QStringLiteral("books"))
+                                      : QDir{g_bookRoot}.filePath(QStringLiteral("books"));
         QDir{}.mkpath(folder);
         pdf = QDir{folder}.filePath(QStringLiteral("كتاب البحث.pdf"));
         require(QFile::copy(fixture(source), pdf), "copy fixture");
@@ -144,7 +151,7 @@ struct Book final {
         for (const auto* node : editor->inOrder()) input.nodes.push_back(*node);
         input.base = store->load("doc").base;
         input.options = options;
-        input.backupRoot = fsPath(dir.filePath(QStringLiteral("backups")));
+        input.backupRoot = fsPath(backupOverride.isEmpty() ? dir.filePath(QStringLiteral("backups")) : backupOverride);
         return atlas::app::saveOutlineSafely(*store, input, fault);
     }
 };
@@ -642,6 +649,95 @@ void checkRotatedNavigation() {
     require(saved.ok, "Rotated bookmark saves and reopens at the same normalized point: " + saved.reason.toStdString());
 }
 
+#ifdef Q_OS_LINUX
+// Real storage, not fault hooks (closure ledger: "actual storage exhaustion and
+// removable-media failure"). Needs root to mount tiny RAM disks, so it runs only
+// with ATLAS_REAL_STORAGE_TESTS=1; Windows USB-drive checks stay with the owner.
+bool shell(const QString& command) { return QProcess::execute(QStringLiteral("sh"), {QStringLiteral("-c"), command}) == 0; }
+
+struct Volume final {
+    QTemporaryDir mountPoint;
+    bool mounted = false;
+    explicit Volume(const char* size) {
+        mounted = shell(QStringLiteral("mount -t tmpfs -o size=%1 tmpfs '%2'").arg(QString::fromLatin1(size), mountPoint.path()));
+        require(mounted, "mount a test volume");
+    }
+    void fill() { shell(QStringLiteral("dd if=/dev/zero of='%1/filler' bs=64k 2>/dev/null; sync").arg(mountPoint.path())); }
+    void unplug() {
+        if (mounted) mounted = !shell(QStringLiteral("umount -l '%1'").arg(mountPoint.path()));
+    }
+    ~Volume() { unplug(); }
+};
+
+void checkRealStorage() {
+    {   // The book's own drive is nearly full: refused before anything is written.
+        Volume tiny{"2m"};
+        g_bookRoot = tiny.mountPoint.path();
+        {
+            Book book{"A003_outlines_links.pdf"};
+            g_bookRoot.clear();
+            editA003(book);
+            tiny.fill();
+            const QByteArray original = sha(book.pdf);
+            const auto revision = book.editor->revision();
+            const auto outcome = book.save();
+            require(outcome.reason == QStringLiteral("diskFull") && !outcome.pdfChanged && sha(book.pdf) == original &&
+                        book.store->load("doc").revision == revision && folderFiles(book.folder).size() == 1,
+                    "A full drive: refused, nothing written: " + outcome.reason.toStdString());
+        }
+        g_bookRoot.clear();
+    }
+    {   // The backup drive is full: the save stops before the PDF is touched.
+        Volume backups{"1m"};
+        backups.fill();
+        Book book{"A003_outlines_links.pdf"};
+        book.backupOverride = backups.mountPoint.path();
+        editA003(book);
+        const QByteArray original = sha(book.pdf);
+        const auto revision = book.editor->revision();
+        const auto outcome = book.save();
+        require(outcome.reason == QStringLiteral("backupFailed") && !outcome.pdfChanged && sha(book.pdf) == original &&
+                    book.store->load("doc").revision == revision && folderFiles(book.folder).size() == 1,
+                "A full backup drive: a backup error, nothing changed, no false recovery: " +
+                    outcome.reason.toStdString());
+        std::cout << "Full backup drive: refused with " << outcome.reason.toStdString() << ".\n";
+    }
+    {   // The drive with the PDF is unplugged in the middle of the save.
+        Volume removable{"8m"};
+        g_bookRoot = removable.mountPoint.path();
+        Book book{"A003_outlines_links.pdf"};
+        g_bookRoot.clear();
+        editA003(book);
+        const QByteArray originalBytes = [&] { QFile f{book.pdf}; f.open(QIODevice::ReadOnly); return f.readAll(); }();
+        const QDateTime originalTime = QFileInfo{book.pdf}.lastModified();
+        const auto revision = book.editor->revision();
+        const auto outcome = book.save({}, [&removable](std::string_view step) {
+            if (step == "beforeReplace") removable.unplug();
+            return true;
+        });
+        require(!outcome.ok, "An unplugged drive cannot be written: " + outcome.reason.toStdString());
+        require(book.store->load("doc").revision == revision, "The reader's bookmarks are untouched.");
+        std::cout << "Drive unplugged mid-save: " << outcome.reason.toStdString() << ".\n";
+        // Plugged back in, unchanged (the replace never reached it): the
+        // interrupted save settles by itself and the next save works.
+        removable.mounted = shell(QStringLiteral("mount -t tmpfs -o size=8m tmpfs '%1'").arg(removable.mountPoint.path()));
+        require(removable.mounted && QDir{}.mkpath(book.folder), "plug the drive back in");
+        QFile back{book.pdf};
+        require(back.open(QIODevice::WriteOnly) && back.write(originalBytes) == originalBytes.size(), "the same file again");
+        back.close();
+        // A real drive keeps the file's modification time; the RAM disk needs it set back.
+        require(back.open(QIODevice::ReadWrite) && back.setFileTime(originalTime, QFileDevice::FileModificationTime),
+                "keep the file time");
+        back.close();
+        const auto settled = atlas::app::recoverOutlineSave(*book.store, book.pdf, "doc",
+                                                            fsPath(book.dir.filePath(QStringLiteral("backups"))));
+        require(settled != atlas::app::SaveRecovery::required, "An unchanged file settles the journal by itself.");
+        const auto again = book.save();
+        require(again.ok, "After re-plugging, the save goes through: " + again.reason.toStdString());
+    }
+}
+#endif
+
 // Another program changes the PDF's outline; opening the book reconciles.
 void checkReconcileOnOpen() {
     Book book{"A003_outlines_links.pdf"};
@@ -819,6 +915,9 @@ int main(int argc, char** argv) {
         checkCopy();
         checkCorpus();
         checkReconcileOnOpen();
+#ifdef Q_OS_LINUX
+        if (qEnvironmentVariableIsSet("ATLAS_REAL_STORAGE_TESTS")) checkRealStorage();
+#endif
         checkThroughModel();
     } catch (const std::exception& error) {
         std::cerr << "Safe save test failed: " << error.what() << '\n';

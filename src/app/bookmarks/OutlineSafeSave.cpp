@@ -147,20 +147,24 @@ SaveRecovery recoverOutlineSave(SqliteBookmarkOverlay& store, const QString& pat
         record.value("path").toString() != QFileInfo{path}.absoluteFilePath()) return SaveRecovery::required;
     const QByteArray original = QByteArray::fromHex(record.value("original").toString().toLatin1());
     const QByteArray replacement = QByteArray::fromHex(record.value("replacement").toString().toLatin1());
-    if (original.size() != 32 || replacement.size() != 32) return SaveRecovery::required;
+    if (original.size() != 32) return SaveRecovery::required;
+    // A save interrupted before its replacement was hashed (e.g. the drive was
+    // unplugged) has no replacement fingerprint; the original can still be proven.
+    const bool knownReplacement = replacement.size() == 32;
+    if (!replacement.isEmpty() && !knownReplacement) return SaveRecovery::required;
     bool validRevision = false;
     const auto revision = record.value("revision").toString().toLongLong(&validRevision);
     if (!validRevision || revision < 0 || revision == std::numeric_limits<qint64>::max()) return SaveRecovery::required;
     const auto snapshot = store.load(documentId);
     const QByteArray current = sha256(path);
-    if (current == replacement && snapshot.revision == revision + 1 && snapshot.base &&
+    if (knownReplacement && current == replacement && snapshot.revision == revision + 1 && snapshot.base &&
         snapshot.base->sourceRevision == fileRevision(path)) {
         return QFile::remove(journal) ? SaveRecovery::completed : SaveRecovery::required;
     }
     if (snapshot.revision != revision) return SaveRecovery::required;
     if (current == original)
         return QFile::remove(journal) ? SaveRecovery::completed : SaveRecovery::required;
-    if (current != replacement) return SaveRecovery::required; // preserve external edits
+    if (!knownReplacement || current != replacement) return SaveRecovery::required; // preserve external edits
     const QString name = record.value("backup").toString();
     if (name.isEmpty() || QFileInfo{name}.fileName() != name) return SaveRecovery::required;
     const QString source = QDir{folder}.filePath(name);
@@ -383,7 +387,11 @@ SafeSaveOutcome saveOutlineSafely(SqliteBookmarkOverlay& store, const SafeSaveIn
     const QString recoveryFolder = qpath(input.backupRoot / input.documentId);
     if (!QDir{}.mkpath(recoveryFolder)) return fail("backupFailed");
     QLockFile saveLock{QDir{recoveryFolder}.filePath(QStringLiteral("save.lock"))};
-    if (!saveLock.tryLock(0)) return fail("recoveryRequired");
+    // Held by another save of this book: settle that first. Could not be created
+    // at all (full, read-only or missing backup drive): nothing happened yet, so
+    // report the backup problem rather than an interrupted save.
+    if (!saveLock.tryLock(0))
+        return fail(saveLock.error() == QLockFile::LockFailedError ? "recoveryRequired" : "backupFailed");
     const QString journal = QDir{recoveryFolder}.filePath(QStringLiteral("pending-save.json"));
     if (QFileInfo::exists(journal)) return fail("recoveryRequired");
 

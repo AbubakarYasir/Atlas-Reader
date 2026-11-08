@@ -11,7 +11,9 @@
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFontDatabase>
+#include <QClipboard>
 #include <QGuiApplication>
+#include <QMouseEvent>
 #include <QPageSize>
 #include <QPainter>
 #include <QPdfWriter>
@@ -278,6 +280,39 @@ int main(int argc, char** argv) {
         // Garbage destinations (NaN, off-page) fall back to the top of the target page.
         viewport->goToDestination(4, QPointF{std::nan(""), 1e30});
         require(viewport->currentPage() == 5, "An unusable destination must still reach its page.");
+
+        // SnapShot copies the page as drawn, without the blue selection box
+        // (owner report 2026-11-08: every snapshot had the box's tint).
+        {
+            viewport->setTool(atlas::app::ReaderViewport::SnapshotTool);
+            settle(300);
+            bool copied = false;
+            QObject::connect(viewport, &atlas::app::ReaderViewport::snapshotCopied, [&] { copied = true; });
+            const QPointF from{200, 220}, to{600, 420}; // window coordinates, inside the viewport
+            auto send = [&](QEvent::Type type, QPointF at, Qt::MouseButtons buttons) {
+                QMouseEvent event{type, at, at, window.mapToGlobal(at), Qt::LeftButton, buttons, Qt::NoModifier};
+                QGuiApplication::sendEvent(&window, &event);
+            };
+            send(QEvent::MouseButtonPress, from, Qt::LeftButton);
+            for (int step = 1; step <= 8; ++step) {
+                send(QEvent::MouseMove, from + (to - from) * (step / 8.0), Qt::LeftButton);
+                settle(20);
+            }
+            send(QEvent::MouseButtonRelease, to, Qt::NoButton);
+            require(waitFor([&] { return copied; }), "SnapShot must copy an image.");
+            const QImage snap = QGuiApplication::clipboard()->image().convertToFormat(QImage::Format_RGB32);
+            require(snap.width() >= 395 && snap.height() >= 195, "SnapShot must copy the dragged area.");
+            settle(200);
+            const QImage clean = window.grabWindow().copy(QRect{QPoint{200, 220}, snap.size()})
+                                     .convertToFormat(QImage::Format_RGB32);
+            int differing = 0;
+            for (int y = 0; y < snap.height(); ++y)
+                for (int x = 0; x < snap.width(); ++x)
+                    if (snap.pixel(x, y) != clean.pixel(x, y)) ++differing;
+            require(differing < snap.width() * snap.height() / 100,
+                    "SnapShot must not include the selection box (copied image differs from the page).");
+            viewport->setTool(atlas::app::ReaderViewport::HandTool);
+        }
 
         // The renderer holds the document in memory, not the file.
         const QString moved = dir.filePath(QStringLiteral("moved book.pdf"));

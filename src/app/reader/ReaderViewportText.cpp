@@ -459,7 +459,7 @@ void ReaderViewport::mouseReleaseEvent(QMouseEvent* event) {
             else if (page >= 0) goToDestination(page, link->value(QStringLiteral("location")).toPointF());
         }
     } else if (tool_ == SnapshotTool && rubberBand_.width() > 4 && rubberBand_.height() > 4) {
-        finishSnapshot(rubberBand_);
+        finishSnapshot(QRectF{rubberBand_}); // a copy: finishSnapshot clears the box
     } else if (tool_ == MarqueeTool && rubberBand_.width() > 4 && rubberBand_.height() > 4) {
         finishMarquee(rubberBand_);
     }
@@ -501,6 +501,10 @@ void ReaderViewport::hoverMoveEvent(QHoverEvent* event) {
 void ReaderViewport::finishSnapshot(const QRectF& itemRect) {
     QQuickWindow* w = window();
     if (!w) return;
+    // Remove the blue selection box first: grabWindow() renders the scene as
+    // it stands, so the box (fill and border) was copied into every snapshot.
+    rubberBand_ = {};
+    update();
     const QImage frame = w->grabWindow();
     if (frame.isNull()) return;
     const qreal dpr = frame.devicePixelRatio() > 0 ? frame.devicePixelRatio() : 1.0;

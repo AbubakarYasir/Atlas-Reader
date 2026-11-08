@@ -6,6 +6,8 @@ All notable changes to Atlas Reader Native are documented here.
 
 ## N1–N5 repair pass — 2026-11-04 (in progress)
 
+- 2026-11-08 — SnapShot copied the blue selection box into every image (owner report); the box is now removed before the page is captured. Regression test in `atlas_reader_viewport_render`.
+
 - 2026-11-08 — Narrator: bookmark rows report open/closed natively (Expand/Collapse work), focus follows the current bookmark or book instead of staying on the list, and dialogs are announced by name ([ADR-0010](docs/decisions/ADR-0010-screen-reader-interfaces.md)). Focus starts on the first book and moves into the File page.
 - 2026-11-08 — Windows CI now presses real keys through UI Automation (EN/AR/UR), renders the main screens at 100 %, Windows 125 %, 200 % and in high contrast, and smoke-tests the review package from a clean PATH.
 - 2026-11-08 — Auto Create leaves headings that are already bookmarks unchecked; in Urdu its list of headings is visible again. Counts read correctly for any number ("Results: 1"). Arabic Zoom menu renamed so it differs from Zoom in.

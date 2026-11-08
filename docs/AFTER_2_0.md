@@ -42,7 +42,7 @@ Each track is a release line (`2.x`) with its own stages, Automated QA, owner re
 
 ## Track B: More formats
 
-Every admitted format shares the Library rules: filename-first name, protected extension, the same Favorites/Recents/search/identity, distinct states for unsupported/damaged/encrypted/DRM/missing, off-thread parsing with bounded memory, and Arabic/accessibility gates. **An extension is never "supported" just because it's recognized.**
+Every admitted format shares the Library rules: selectable title/filename display (N7 book-title default with safe filename fallback), protected extension, the same Favorites/Recents/search/identity, distinct states for unsupported/damaged/encrypted/DRM/missing, off-thread parsing with bounded memory, and Arabic/accessibility gates. **An extension is never "supported" just because it's recognized.**
 
 | ID | Formats | Level | Binding limits |
 |---|---|---|---|

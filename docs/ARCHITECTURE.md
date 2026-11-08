@@ -57,7 +57,8 @@ The GUI thread owns the Qt Quick scene and UI state. Heavy work runs on **bounde
 | near-view | Neighbor pages, visible thumbnails |
 | background | Scanning, covers, metadata refresh |
 | serialization | PDF save/validation, export |
-| database writer | Ordered, transactional, batched local writes |
+| database writer | Ordered, transactional, batched local writes (bookmarks: `BookmarkService`, one worker thread; edits apply in memory at once and their writes queue in order) |
+| document text thread | One per open book (`DocumentTextWorker`): outline, search, selection, links, word count, and the Auto Create Bookmarks scan in 40 ms slices so other text work is answered in between; heading rules are pure C++ (`core/bookmarks/HeadingDetector`) |
 
 Cancellation is first-class: a render that scrolled out of view loses priority or is cancelled. Foreground reading always outranks background scanning. No unbounded thread or task creation.
 

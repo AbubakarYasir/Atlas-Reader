@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from pypdf import PdfReader
+from pypdf import PdfReader, __version__ as pypdf_version
 
 ROOT = Path(__file__).resolve().parent
 MANIFEST = ROOT / "manifest.json"
@@ -299,7 +299,7 @@ def main() -> int:
     evidence = {
         "schema": "atlas.n2.fixture-validation.v1",
         "validator": "pypdf",
-        "validator_version": "5.9.0",
+        "validator_version": pypdf_version,
         "manifest_schema": manifest.get("schema"),
         "fixture_count": len(results),
         "passed": passed,

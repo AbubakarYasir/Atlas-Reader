@@ -16,7 +16,7 @@ namespace atlas::index {
 namespace {
 
 constexpr int applicationId = 0x41544C53; // "ATLS"
-constexpr int currentSchemaVersion = 4;
+constexpr int currentSchemaVersion = 5;
 constexpr int maxSearchResults = 100;
 
 [[nodiscard]] std::string pathToUtf8(const std::filesystem::path& path) {
@@ -332,7 +332,68 @@ CREATE TABLE reconciliation_proposals (
 CREATE INDEX reconciliation_proposals_state ON reconciliation_proposals(state, created_utc_ms);
 )sql";
 
-        const std::array<const char*, 4> migrations{migration1, migration2, migration3, migration4};
+        // N5.2 bookmark overlay (ADR-0008). Durable research state, never a
+        // cache: the PDF outline as last read (base), Atlas's own nodes with
+        // their storage state, and tombstones for removed local nodes. The
+        // overlay repository (app/bookmarks/SqliteBookmarkOverlay) owns all
+        // access; this file owns the schema so migrations stay monotonic.
+        constexpr const char* migration5 = R"sql(
+CREATE TABLE bookmark_overlays (
+    document_id TEXT PRIMARY KEY NOT NULL REFERENCES documents(document_id) ON DELETE RESTRICT,
+    revision INTEGER NOT NULL CHECK (revision >= 0),
+    updated_utc_ms INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000)
+);
+CREATE TABLE bookmark_base_snapshots (
+    document_id TEXT PRIMARY KEY NOT NULL REFERENCES bookmark_overlays(document_id) ON DELETE RESTRICT,
+    source_revision TEXT NOT NULL CHECK (length(source_revision) > 0),
+    captured_utc_ms INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000)
+);
+CREATE TABLE bookmark_base_nodes (
+    document_id TEXT NOT NULL REFERENCES bookmark_base_snapshots(document_id) ON DELETE CASCADE,
+    base_key TEXT NOT NULL,
+    parent_base_key TEXT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    title TEXT NOT NULL,
+    location TEXT NULL,
+    PRIMARY KEY (document_id, base_key)
+) WITHOUT ROWID;
+CREATE TABLE bookmark_nodes (
+    node_id TEXT PRIMARY KEY NOT NULL,
+    document_id TEXT NOT NULL REFERENCES bookmark_overlays(document_id) ON DELETE RESTRICT,
+    parent_id TEXT NULL REFERENCES bookmark_nodes(node_id) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    title TEXT NOT NULL,
+    location TEXT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    storage_state TEXT NOT NULL CHECK (storage_state IN (
+        'embedded', 'local_only', 'pending_embed', 'local_override', 'locally_hidden', 'conflict')),
+    base_key TEXT NULL,
+    local_revision INTEGER NOT NULL CHECK (local_revision >= 1),
+    conflict_reason TEXT NULL CHECK (conflict_reason IS NULL OR conflict_reason IN (
+        'source_changed', 'source_removed', 'location_unresolved')),
+    conflict_previous_state TEXT NULL,
+    conflict_source_revision TEXT NULL,
+    created_utc_ms INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000),
+    updated_utc_ms INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000),
+    deleted_utc_ms INTEGER NULL,
+    CHECK ((storage_state = 'conflict') = (conflict_reason IS NOT NULL)),
+    CHECK ((conflict_reason IS NULL) = (conflict_previous_state IS NULL)),
+    CHECK (storage_state NOT IN ('embedded', 'local_override', 'locally_hidden') OR base_key IS NOT NULL),
+    CHECK (storage_state NOT IN ('local_only', 'pending_embed') OR base_key IS NULL)
+);
+CREATE INDEX bookmark_nodes_children ON bookmark_nodes(document_id, parent_id, position)
+    WHERE deleted_utc_ms IS NULL;
+CREATE UNIQUE INDEX bookmark_nodes_base_key ON bookmark_nodes(document_id, base_key)
+    WHERE base_key IS NOT NULL AND deleted_utc_ms IS NULL;
+CREATE TABLE bookmark_node_tags (
+    node_id TEXT NOT NULL REFERENCES bookmark_nodes(node_id) ON DELETE CASCADE,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    tag TEXT NOT NULL CHECK (length(tag) > 0),
+    PRIMARY KEY (node_id, position)
+) WITHOUT ROWID;
+)sql";
+
+        const std::array<const char*, 5> migrations{migration1, migration2, migration3, migration4, migration5};
         while (version < currentSchemaVersion) {
             applyMigration(db, version + 1, migrations.at(static_cast<std::size_t>(version)));
             ++version;
@@ -951,6 +1012,14 @@ void SqliteLibraryIndex::rebuildSearchIndex() {
 }
 
 std::vector<LibraryRecord> SqliteLibraryIndex::search(std::string query) const {
+    return searchWith(std::move(query), false);
+}
+
+std::vector<LibraryRecord> SqliteLibraryIndex::searchPrefix(std::string query) const {
+    return searchWith(std::move(query), true);
+}
+
+std::vector<LibraryRecord> SqliteLibraryIndex::searchWith(std::string query, bool prefix) const {
     if (query.empty()) return {};
     std::scoped_lock lock{impl_->mutex};
     Statement statement{impl_->db,
@@ -958,7 +1027,8 @@ std::vector<LibraryRecord> SqliteLibraryIndex::search(std::string query) const {
         "(SELECT l.source_path FROM document_locations l WHERE l.document_id = d.document_id ORDER BY l.location_id LIMIT 1) "
         "FROM documents_fts f JOIN documents d ON d.rowid = f.rowid "
         "WHERE documents_fts MATCH ?1 ORDER BY rank LIMIT 100"};
-    statement.bindText(1, safeFtsPhrase(query));
+    // A quoted phrase, optionally with a prefix on its last word (FTS5 `"…"*`).
+    statement.bindText(1, safeFtsPhrase(query) + (prefix ? "*" : ""));
 
     std::vector<LibraryRecord> result;
     for (;;) {
@@ -978,6 +1048,27 @@ std::vector<LibraryRecord> SqliteLibraryIndex::search(std::string query) const {
             parseAvailability(availability),
         });
         if (result.size() == static_cast<std::size_t>(maxSearchResults)) break;
+    }
+    return result;
+}
+
+std::vector<std::string> SqliteLibraryIndex::documentsAtPath(const std::filesystem::path& source) const {
+    std::scoped_lock lock{impl_->mutex};
+    const auto key = pathToUtf8(source);
+    std::vector<std::string> result;
+    for (const char* sql : {"SELECT DISTINCT document_id FROM document_locations WHERE source_path = ?1 "
+                            "ORDER BY document_id",
+                            "SELECT DISTINCT document_id FROM document_locations "
+                            "WHERE source_path = ?1 COLLATE NOCASE ORDER BY document_id"}) {
+        Statement statement{impl_->db, sql};
+        statement.bindText(1, key);
+        for (;;) {
+            const int step = sqlite3_step(statement.get());
+            if (step == SQLITE_DONE) break;
+            if (step != SQLITE_ROW) fail(impl_->db, "Finding a document by path", step);
+            result.emplace_back(reinterpret_cast<const char*>(sqlite3_column_text(statement.get(), 0)));
+        }
+        if (!result.empty()) break;
     }
     return result;
 }

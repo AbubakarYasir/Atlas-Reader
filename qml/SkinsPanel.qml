@@ -30,7 +30,7 @@ ColumnLayout {
                     { mode: "dark", key: "skins.dark" },
                     { mode: "system", key: "skins.system" }
                 ]
-                delegate: RadioButton {
+                delegate: AtlasRadioButton {
                     required property var modelData
                     text: I18n.t(modelData.key)
                     checked: preferences.themeMode === modelData.mode
@@ -47,12 +47,12 @@ ColumnLayout {
         ColumnLayout {
             anchors.fill: parent
             spacing: 2
-            RadioButton {
+            AtlasRadioButton {
                 text: I18n.t("skins.classic")
                 checked: preferences.skin === "classic"
                 onClicked: preferences.skin = "classic"
             }
-            RadioButton {
+            AtlasRadioButton {
                 id: colorfulButton
                 text: I18n.t("skins.colorful")
                 checked: preferences.skin === "colorful"

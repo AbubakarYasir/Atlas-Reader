@@ -7,7 +7,7 @@ project(
     LANGUAGES CXX
 )
 
-set(ATLAS_PRERELEASE "beta.2" CACHE STRING "Atlas prerelease identifier")
+set(ATLAS_PRERELEASE "beta.2-n5-review.2" CACHE STRING "Atlas prerelease identifier")
 set(ATLAS_VERSION_STRING "${PROJECT_VERSION}-${ATLAS_PRERELEASE}")
 option(ATLAS_WARNINGS_AS_ERRORS "Treat Atlas compiler warnings as errors" OFF)
 option(ATLAS_ENABLE_PDFIUM_PROBE "Build the N2 PDFium qualification probe" OFF)
@@ -17,7 +17,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent Gui Quick Qml QuickControls2 Pdf Svg)
+find_package(Qt6 6.10 REQUIRED COMPONENTS Core Concurrent Gui Quick QuickPrivate Qml QuickControls2 Pdf Svg)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 qt_standard_project_setup(REQUIRES 6.10)
 
@@ -48,6 +48,15 @@ add_library(atlas_core INTERFACE)
 target_include_directories(atlas_core INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_features(atlas_core INTERFACE cxx_std_23)
 
+add_library(atlas_document_policy STATIC
+    src/core/document/CapabilityPolicy.cpp
+    src/core/document/CapabilityPolicy.h
+    src/core/document/DocumentCapabilities.h
+)
+target_include_directories(atlas_document_policy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_document_policy PUBLIC atlas_core)
+atlas_enable_warnings(atlas_document_policy)
+
 add_library(atlas_reader_session STATIC
     src/core/reader/ReaderSessionModel.cpp
     src/core/reader/ReaderSessionModel.h
@@ -69,6 +78,26 @@ add_library(atlas_reader_viewport STATIC
 target_include_directories(atlas_reader_viewport PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(atlas_reader_viewport PUBLIC atlas_core)
 atlas_enable_warnings(atlas_reader_viewport)
+
+add_library(atlas_bookmark_overlay STATIC
+    src/core/bookmarks/BookmarkEditor.cpp
+    src/core/bookmarks/BookmarkEditor.h
+    src/core/bookmarks/BookmarkOverlay.cpp
+    src/core/bookmarks/BookmarkOverlay.h
+    src/core/bookmarks/BookmarkSearch.cpp
+    src/core/bookmarks/HeadingDetector.cpp
+    src/core/bookmarks/OutlineSavePlan.cpp
+    src/core/bookmarks/Reconcile.cpp
+    src/core/bookmarks/BookmarkSearch.h
+    src/core/bookmarks/LocationEnvelope.cpp
+    src/core/bookmarks/LocationEnvelope.h
+    src/core/bookmarks/OverlayTreeIndex.cpp
+    src/core/bookmarks/OverlayTreeIndex.h
+    src/core/bookmarks/Utf8.h
+)
+target_include_directories(atlas_bookmark_overlay PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_bookmark_overlay PUBLIC atlas_core atlas_reader_viewport)
+atlas_enable_warnings(atlas_bookmark_overlay)
 
 add_library(atlas_document_identity STATIC
     src/core/index/DocumentIdentityReconciler.cpp
@@ -94,6 +123,14 @@ add_library(atlas_library_index STATIC
 target_include_directories(atlas_library_index PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(atlas_library_index PUBLIC atlas_core atlas_document_identity unofficial::sqlite3::sqlite3)
 atlas_enable_warnings(atlas_library_index)
+
+add_library(atlas_bookmark_store STATIC
+    src/app/bookmarks/SqliteBookmarkOverlay.cpp
+    src/app/bookmarks/SqliteBookmarkOverlay.h
+)
+target_include_directories(atlas_bookmark_store PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_bookmark_store PUBLIC atlas_core atlas_bookmark_overlay unofficial::sqlite3::sqlite3)
+atlas_enable_warnings(atlas_bookmark_store)
 
 add_library(atlas_library_scanner STATIC
     src/app/index/LibraryScanner.cpp
@@ -138,6 +175,10 @@ target_link_libraries(atlas_library_ingestion PUBLIC
 atlas_enable_warnings(atlas_library_ingestion)
 
 add_library(atlas_app_support STATIC
+    src/app/accessibility/TreeItemAccessible.cpp
+    src/app/accessibility/TreeItemAccessible.h
+    src/app/diagnostics/AccessibilityDump.cpp
+    src/app/diagnostics/AccessibilityDump.h
     src/app/diagnostics/ShellMetrics.cpp
     src/app/diagnostics/ShellMetrics.h
     src/app/logging/Logging.cpp
@@ -146,7 +187,7 @@ add_library(atlas_app_support STATIC
     src/app/settings/AppPreferences.h
 )
 target_include_directories(atlas_app_support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(atlas_app_support PUBLIC Qt6::Core Qt6::Gui Qt6::Quick)
+target_link_libraries(atlas_app_support PUBLIC Qt6::Core Qt6::Gui Qt6::Quick PRIVATE Qt6::QuickPrivate)
 atlas_enable_warnings(atlas_app_support)
 
 add_library(atlas_library_ui STATIC
@@ -161,6 +202,9 @@ target_link_libraries(atlas_library_ui PUBLIC
 atlas_enable_warnings(atlas_library_ui)
 
 add_library(atlas_reader_ui STATIC
+    src/app/document/DocumentCapabilityCheck.cpp
+    src/app/document/QpdfOutlineWriter.cpp
+    src/app/document/DocumentCapabilityCheck.h
     src/app/reader/ReaderController.cpp
     src/app/reader/ReaderController.h
     src/app/reader/PdfRenderWorker.cpp
@@ -174,11 +218,26 @@ add_library(atlas_reader_ui STATIC
     src/app/reader/ReaderViewport.h
 )
 target_include_directories(atlas_reader_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(atlas_reader_ui PUBLIC
-    atlas_reader_session atlas_reader_viewport atlas_library_document_inspector
+target_link_libraries(atlas_reader_ui PUBLIC atlas_document_policy
+    atlas_reader_session atlas_reader_viewport atlas_library_document_inspector atlas_bookmark_overlay
     Qt6::Core Qt6::Concurrent Qt6::Gui Qt6::Quick Qt6::Pdf
 )
 atlas_enable_warnings(atlas_reader_ui)
+
+# N5.3: Bookmarks panel model and its storage worker (Qt Core only).
+add_library(atlas_bookmark_ui STATIC
+    src/app/bookmarks/BookmarkExchange.cpp
+    src/app/bookmarks/BookmarkExchange.h
+    src/app/bookmarks/BookmarkModel.cpp
+    src/app/bookmarks/BookmarkModel.h
+    src/app/bookmarks/BookmarkService.cpp
+    src/app/bookmarks/BookmarkService.h
+    src/app/bookmarks/OutlineSafeSave.cpp
+    src/app/bookmarks/OutlineSafeSave.h
+)
+target_include_directories(atlas_bookmark_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(atlas_bookmark_ui PUBLIC atlas_bookmark_store atlas_library_index atlas_reader_ui Qt6::Core Qt6::Pdf)
+atlas_enable_warnings(atlas_bookmark_ui)
 
 set(ATLAS_READER_PLATFORM_SOURCES)
 if(WIN32)
@@ -200,7 +259,7 @@ set(ATLAS_QML_FILES
     qml/AtlasButton.qml qml/AtlasIconButton.qml qml/AtlasTextField.qml qml/SidebarItem.qml
     qml/TitleBar.qml qml/LibraryView.qml qml/ReaderView.qml qml/ReaderTab.qml
     qml/RibbonButton.qml qml/RibbonBar.qml qml/DocumentTabBar.qml qml/Backstage.qml
-    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/AtlasCheckBox.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
+    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/SignaturesPanel.qml qml/CommandCenter.qml qml/AutoBookmarksDialog.qml qml/SaveBookmarksDialog.qml qml/ExportBookmarksDialog.qml qml/ImportBookmarksDialog.qml qml/AtlasCheckBox.qml qml/AtlasRadioButton.qml qml/AtlasMenuItem.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
 )
 # Place every QML file at the module root so the module's qmldir (and its
 # singletons) is the implicit import of each file.
@@ -229,7 +288,7 @@ qt_add_qml_module(atlas_reader
 
 target_compile_definitions(atlas_reader PRIVATE ATLAS_VERSION_STRING="${ATLAS_VERSION_STRING}")
 target_link_libraries(atlas_reader
-    PRIVATE atlas_core atlas_app_support atlas_library_ui atlas_reader_ui
+    PRIVATE atlas_core atlas_app_support atlas_library_ui atlas_reader_ui atlas_bookmark_ui
     Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2 Qt6::Svg
 )
 atlas_enable_warnings(atlas_reader)
@@ -239,6 +298,10 @@ if(MSVC)
     # suppressing this upstream/generated warning on the QML executable only.
     target_compile_options(atlas_reader PRIVATE /wd4702)
 endif()
+
+add_executable(atlas_n5_bookmark_benchmark tools/bench/n5_bookmark_benchmark.cpp)
+target_link_libraries(atlas_n5_bookmark_benchmark PRIVATE atlas_bookmark_store atlas_library_index)
+atlas_enable_warnings(atlas_n5_bookmark_benchmark)
 
 add_executable(atlas_n3_library_benchmark tools/bench/n3_library_benchmark.cpp)
 target_link_libraries(atlas_n3_library_benchmark PRIVATE atlas_library_scanner atlas_library_index)
@@ -354,15 +417,94 @@ target_link_libraries(atlas_reader_viewport_render_tests PRIVATE atlas_reader_ui
 atlas_enable_warnings(atlas_reader_viewport_render_tests)
 add_test(NAME atlas_reader_viewport_render COMMAND atlas_reader_viewport_render_tests)
 
+add_executable(atlas_heading_scan_tests tests/reader/heading_scan_tests.cpp)
+target_link_libraries(atlas_heading_scan_tests PRIVATE atlas_reader_ui Qt6::Gui)
+atlas_enable_warnings(atlas_heading_scan_tests)
+add_test(NAME atlas_heading_scan COMMAND atlas_heading_scan_tests)
+
 add_executable(atlas_reader_controller_tests tests/reader/reader_controller_tests.cpp)
 target_link_libraries(atlas_reader_controller_tests PRIVATE atlas_reader_ui)
 atlas_enable_warnings(atlas_reader_controller_tests)
+
+add_executable(atlas_capability_policy_tests tests/document/capability_policy_tests.cpp)
+target_link_libraries(atlas_capability_policy_tests PRIVATE atlas_document_policy)
+atlas_enable_warnings(atlas_capability_policy_tests)
+add_test(NAME atlas_capability_policy COMMAND atlas_capability_policy_tests)
+
+add_executable(atlas_bookmark_overlay_tests tests/bookmarks/bookmark_overlay_tests.cpp)
+target_link_libraries(atlas_bookmark_overlay_tests PRIVATE atlas_bookmark_overlay)
+atlas_enable_warnings(atlas_bookmark_overlay_tests)
+add_test(NAME atlas_bookmark_overlay COMMAND atlas_bookmark_overlay_tests)
+
+add_executable(atlas_bookmark_store_tests tests/bookmarks/bookmark_overlay_store_tests.cpp)
+target_link_libraries(atlas_bookmark_store_tests PRIVATE atlas_bookmark_store atlas_library_index)
+atlas_enable_warnings(atlas_bookmark_store_tests)
+add_test(NAME atlas_bookmark_store COMMAND atlas_bookmark_store_tests)
+
+add_executable(atlas_bookmark_editor_tests tests/bookmarks/bookmark_editor_tests.cpp)
+target_link_libraries(atlas_bookmark_editor_tests PRIVATE atlas_bookmark_store atlas_library_index)
+atlas_enable_warnings(atlas_bookmark_editor_tests)
+add_test(NAME atlas_bookmark_editor COMMAND atlas_bookmark_editor_tests)
+
+add_executable(atlas_heading_detector_tests tests/bookmarks/heading_detector_tests.cpp)
+target_link_libraries(atlas_heading_detector_tests PRIVATE atlas_bookmark_overlay)
+atlas_enable_warnings(atlas_heading_detector_tests)
+add_test(NAME atlas_heading_detector COMMAND atlas_heading_detector_tests)
+
+add_executable(atlas_outline_save_plan_tests tests/bookmarks/outline_save_plan_tests.cpp)
+target_link_libraries(atlas_outline_save_plan_tests PRIVATE atlas_bookmark_overlay)
+atlas_enable_warnings(atlas_outline_save_plan_tests)
+add_test(NAME atlas_outline_save_plan COMMAND atlas_outline_save_plan_tests)
+
+add_executable(atlas_reconcile_tests tests/bookmarks/reconcile_tests.cpp)
+target_link_libraries(atlas_reconcile_tests PRIVATE atlas_bookmark_overlay)
+atlas_enable_warnings(atlas_reconcile_tests)
+add_test(NAME atlas_reconcile COMMAND atlas_reconcile_tests)
+
+add_executable(atlas_bookmark_exchange_tests tests/bookmarks/bookmark_exchange_tests.cpp)
+target_link_libraries(atlas_bookmark_exchange_tests PRIVATE atlas_bookmark_ui)
+target_compile_definitions(atlas_bookmark_exchange_tests PRIVATE
+    ATLAS_BOOKMARK_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/bookmarks")
+atlas_enable_warnings(atlas_bookmark_exchange_tests)
+add_test(NAME atlas_bookmark_exchange COMMAND atlas_bookmark_exchange_tests)
+
+add_executable(atlas_bookmark_model_tests tests/bookmarks/bookmark_model_tests.cpp)
+target_link_libraries(atlas_bookmark_model_tests PRIVATE atlas_bookmark_ui)
+atlas_enable_warnings(atlas_bookmark_model_tests)
+add_test(NAME atlas_bookmark_model COMMAND atlas_bookmark_model_tests)
+
+add_executable(atlas_outline_safe_save_tests tests/bookmarks/outline_safe_save_tests.cpp)
+target_link_libraries(atlas_outline_safe_save_tests PRIVATE atlas_bookmark_ui)
+target_compile_definitions(atlas_outline_safe_save_tests PRIVATE
+    ATLAS_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
+atlas_enable_warnings(atlas_outline_safe_save_tests)
+add_test(NAME atlas_outline_safe_save COMMAND atlas_outline_safe_save_tests)
+
+add_executable(atlas_qpdf_inspector_tests tests/document/qpdf_inspector_tests.cpp)
+target_link_libraries(atlas_qpdf_inspector_tests PRIVATE atlas_reader_ui)
+target_compile_definitions(atlas_qpdf_inspector_tests PRIVATE
+    ATLAS_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
+atlas_enable_warnings(atlas_qpdf_inspector_tests)
+add_test(NAME atlas_qpdf_inspector COMMAND atlas_qpdf_inspector_tests)
+
+add_executable(atlas_qpdf_outline_writer_tests tests/document/qpdf_outline_writer_tests.cpp)
+target_link_libraries(atlas_qpdf_outline_writer_tests PRIVATE atlas_reader_ui)
+target_compile_definitions(atlas_qpdf_outline_writer_tests PRIVATE
+    ATLAS_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/pdf/generated")
+atlas_enable_warnings(atlas_qpdf_outline_writer_tests)
+add_test(NAME atlas_qpdf_outline_writer COMMAND atlas_qpdf_outline_writer_tests)
 
 add_executable(atlas_app_preferences_tests tests/app/app_preferences_tests.cpp)
 target_link_libraries(atlas_app_preferences_tests PRIVATE atlas_app_support)
 atlas_enable_warnings(atlas_app_preferences_tests)
 add_test(NAME atlas_app_preferences COMMAND atlas_app_preferences_tests)
 set_tests_properties(atlas_app_preferences PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(atlas_tree_item_accessible_tests tests/app/tree_item_accessible_tests.cpp)
+target_link_libraries(atlas_tree_item_accessible_tests PRIVATE atlas_app_support Qt6::Qml Qt6::Quick)
+atlas_enable_warnings(atlas_tree_item_accessible_tests)
+add_test(NAME atlas_tree_item_accessible COMMAND atlas_tree_item_accessible_tests)
+set_tests_properties(atlas_tree_item_accessible PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
 add_executable(atlas_document_identity_tests tests/index/document_identity_reconciler_tests.cpp)
 target_link_libraries(atlas_document_identity_tests PRIVATE atlas_document_identity)

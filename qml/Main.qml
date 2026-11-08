@@ -46,10 +46,8 @@ ApplicationWindow {
     LayoutMirroring.enabled: I18n.rtl
     LayoutMirroring.childrenInherit: true
 
-    // Bundled fonts (assets/fonts, OFL): Urdu interface and Arabic/Urdu content.
-    FontLoader { source: "assets/fonts/NotoNastaliqUrdu-wght.ttf" }
-    FontLoader { source: "assets/fonts/NotoNaskhArabic-Regular.ttf" }
-    FontLoader { source: "assets/fonts/NotoNaskhArabic-SemiBold.ttf" }
+    // Bundled fonts (assets/fonts, OFL) are registered in main.cpp before the
+    // engine starts; a FontLoader here would rebuild the font database (N1-03).
 
     Binding { target: I18n; property: "language"; value: preferences.language }
     Binding { target: Theme; property: "dark"; value: preferences.dark }
@@ -59,6 +57,62 @@ ApplicationWindow {
     Binding { target: Theme; property: "themeColor"; value: preferences.themeColor }
 
     readonly property bool inReader: readerController.activeIndex >= 0
+    // The open book's bookmark model: target of Undo/Redo and Command Center.
+    readonly property var currentBookmarks: inReader && reader.currentTab && reader.currentTab.ready ? reader.currentTab.bookmarks : null
+
+    // Command Center (Alt+Q) and anything else that runs a command by id.
+    function runCommand(command) {
+        const view = root.activeViewport
+        const tab = reader.currentTab
+        switch (command) {
+        case "open": pdfDialog.open(); return
+        case "addFolder": folderDialog.open(); return
+        case "library": readerController.showLibrary(); return
+        case "preferences": preferencesDialog.openPage("general"); return
+        case "skins": backstage.page = "skins"; backstage.visible = true; return
+        case "about": aboutDialog.open(); return
+        case "fullScreen": AppState.fullScreen = !AppState.fullScreen; return
+        case "exit": root.close(); return
+        case "closeAll": readerController.closeAll(); return
+        }
+        if (!view || !tab) return
+        switch (command) {
+        case "bookmark": tab.addBookmarkHere(); break
+        case "bookmarksPanel": preferences.navPanel = "bookmarks"; break
+        case "autoBookmarks": tab.openAutoBookmarks(); return
+        case "pagesPanel": preferences.navPanel = "pages"; break
+        case "signaturesPanel": preferences.navPanel = "signatures"; break
+        case "togglePanels": preferences.navPanel = preferences.navPanel === "" ? "bookmarks" : ""; break
+        case "find": tab.openFind(); return
+        case "search": tab.openSearch(); return
+        case "save": tab.saveBookmarks(); return
+        case "saveCopy": tab.saveCopy(); return
+        case "exportBookmarks": tab.exportBookmarks(); return
+        case "importBookmarks": tab.importBookmarks(); return
+        case "undo": if (root.currentBookmarks) root.currentBookmarks.undo(); break
+        case "redo": if (root.currentBookmarks) root.currentBookmarks.redo(); break
+        case "goToPage": tab.focusPageBox(); return
+        case "firstPage": view.firstPage(); break
+        case "lastPage": view.lastPage(); break
+        case "previousView": view.goBack(); break
+        case "zoomIn": view.zoomBy(1.25); break
+        case "zoomOut": view.zoomBy(0.8); break
+        case "zoomTo": readerDialogs.openZoomTo(view); return
+        case "actualSize": view.actualSize(); break
+        case "fitPage": view.fitMode = ReaderViewport.Page; break
+        case "fitWidth": view.fitMode = ReaderViewport.Width; break
+        case "fitVisible": view.fitVisible(); break
+        case "rotateClockwise": view.rotateView(1); break
+        case "rotateCounterclockwise": view.rotateView(-1); break
+        case "hand": view.tool = ReaderViewport.HandTool; break
+        case "selectText": view.tool = ReaderViewport.SelectTool; break
+        case "snapshot": view.tool = ReaderViewport.SnapshotTool; break
+        case "readMode": AppState.readMode = !AppState.readMode; break
+        case "autoScroll": view.toggleAutoScroll(); break
+        case "closeTab": readerController.closeActive(); return
+        }
+        view.forceActiveFocus()
+    }
     property string errorText: ""
 
     // ---- shortcuts (Foxit defaults, FOXIT_PARITY §4)
@@ -69,6 +123,13 @@ ApplicationWindow {
     // Reader text (N4.5, FOXIT_PARITY §4)
     Shortcut { sequence: "Ctrl+F"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.openFind() }
     Shortcut { sequence: "Ctrl+Shift+F"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.openSearch() }
+    Shortcut { sequence: "Ctrl+B"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.addBookmarkHere() }
+    // Undo/Redo: the open book's bookmark edits (text fields keep their own).
+    Shortcut { sequence: "Ctrl+Z"; enabled: root.currentBookmarks !== null && root.currentBookmarks.canUndo; onActivated: root.currentBookmarks.undo() }
+    Shortcut { sequences: ["Ctrl+Y", "Ctrl+Shift+Z"]; enabled: root.currentBookmarks !== null && root.currentBookmarks.canRedo; onActivated: root.currentBookmarks.redo() }
+    Shortcut { sequence: "Ctrl+S"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.saveBookmarks() }
+    Shortcut { sequence: "Ctrl+Shift+S"; enabled: root.activeViewport !== null; onActivated: reader.currentTab.saveCopy() }
+    Shortcut { sequence: "Alt+Q"; enabled: !(AppState.chromeHidden && root.inReader); onActivated: titleBar.openSearch() }
     Shortcut { sequence: "F3"; enabled: root.activeViewport !== null && root.activeViewport.searchHits.length > 0; onActivated: root.activeViewport.findNext() }
     Shortcut { sequence: "Shift+F3"; enabled: root.activeViewport !== null && root.activeViewport.searchHits.length > 0; onActivated: root.activeViewport.findPrevious() }
     Shortcut { sequence: "Alt+3"; enabled: root.activeViewport !== null; onActivated: root.activeViewport.tool = ReaderViewport.HandTool }
@@ -134,7 +195,18 @@ ApplicationWindow {
         }
     }
 
-    PreferencesDialog { id: preferencesDialog }
+    Loader {
+        id: preferencesDialog
+        active: false
+        property string requestedPage: "general"
+        sourceComponent: PreferencesDialog { parent: root.contentItem }
+        function openPage(page) {
+            requestedPage = page
+            if (item) item.openPage(page)
+            else active = true
+        }
+        onLoaded: item.openPage(requestedPage)
+    }
     ReaderDialogs { id: readerDialogs; z: 50 }
 
     // Visual QA (--show): open one surface after startup.
@@ -142,25 +214,57 @@ ApplicationWindow {
         interval: 1500
         running: qaShow.length > 0
         onTriggered: {
-            if (qaShow === "backstage") { backstage.page = "open"; backstage.visible = true }
+            if (qaShow.indexOf("a11y:") === 0) {
+                // a11y:<surface>@<file> — open a surface (library, bookmarks, preferences,
+                // backstage, about), then dump the accessibility tree to <file>.
+                const spec = qaShow.slice(5)
+                const at = spec.indexOf("@")
+                const surface = spec.slice(0, at)
+                const file = spec.slice(at + 1)
+                if (surface === "bookmarks" && reader.currentTab) reader.currentTab.bookmarksQa("select:2")
+                else if (surface.indexOf("tab-") === 0 && reader.currentTab) reader.currentTab.bookmarksQa(surface.slice(4))
+                else if (surface === "command") titleBar.openSearch()
+                else if (surface === "autobookmarks" && reader.currentTab) { preferences.navPanel = "bookmarks"; reader.currentTab.openAutoBookmarks() }
+                else if (surface === "preferences") preferencesDialog.openPage("general")
+                else if (surface === "backstage") { backstage.page = "open"; backstage.visible = true }
+                else if (surface === "about") aboutDialog.open()
+                a11yTimer.file = file
+                // Flows that run work first (auto-create, then the Save dialog) need longer.
+                a11yTimer.interval = surface.indexOf("autocreate") >= 0 ? 3000 : 800
+                a11yTimer.start()
+            }
+            else if (qaShow === "library-grid") { readerController.showLibrary(); libraryView.gridMode = true }
+            else if (qaShow === "backstage") { backstage.page = "open"; backstage.visible = true }
             else if (qaShow === "skins") { backstage.page = "skins"; backstage.visible = true }
             else if (qaShow.indexOf("preferences") === 0) preferencesDialog.openPage(qaShow.split(":")[1] || "general")
             else if (qaShow === "about") aboutDialog.open()
+            else if (qaShow === "highcontrast") { Theme.qaHighContrast = true; preferences.navPanel = "bookmarks" }
             else if (qaShow.indexOf("display:") === 0 && root.activeViewport) {
                 const parts = qaShow.split(":")
                 root.activeViewport.pageDisplay = parseInt(parts[1])
                 root.activeViewport.rightToLeft = parts[2] === "rtl"
-                ribbon.currentTab = 2
+                ribbon.currentTab = 3
             }
             else if (qaShow.indexOf("find:") === 0 && reader.currentTab) { reader.currentTab.openFind(); reader.currentTab.findBarRun(qaShow.slice(5)) }
             else if (qaShow.indexOf("search:") === 0 && reader.currentTab) { reader.currentTab.openSearch(); reader.currentTab.searchRun(qaShow.slice(7)) }
+            else if (qaShow === "capability" && reader.currentTab) reader.currentTab.showCapability()
             else if (qaShow === "bookmarks") preferences.navPanel = "bookmarks"
+            else if (qaShow.indexOf("bookmarks-") === 0 && reader.currentTab) reader.currentTab.bookmarksQa(qaShow.slice(10))
+            else if (qaShow.indexOf("command:") === 0) { titleBar.openSearch(); titleBar.commandCenter.setQuery(qaShow.slice(8)) }
+            else if (qaShow === "signatures") preferences.navPanel = "signatures"
+            else if (qaShow === "autobookmarks" && reader.currentTab) { preferences.navPanel = "bookmarks"; reader.currentTab.openAutoBookmarks() }
             else if (qaShow === "wordcount" && root.activeViewport) readerDialogs.openWordCount(root.activeViewport)
             else if (qaShow === "zoomto" && root.activeViewport) readerDialogs.openZoomTo(root.activeViewport)
             else if (qaShow === "link") readerDialogs.confirmLink("https://example.org/atlas")
             else if (qaShow === "selectall" && root.activeViewport) { root.activeViewport.goToPage(4); root.activeViewport.selectAllOnPage() }
-            else if (qaShow.indexOf("ribbon-") === 0) ribbon.currentTab = ({ home: 1, view: 2, accessibility: 3, help: 4 })[qaShow.slice(7)] || 1
+            else if (qaShow.indexOf("ribbon-") === 0) ribbon.currentTab = ({ home: 1, edit: 2, view: 3, accessibility: 4, help: 5 })[qaShow.slice(7)] || 1
         }
+    }
+    Timer { // lets the opened surface finish drawing before the dump
+        id: a11yTimer
+        property string file: ""
+        interval: 800
+        onTriggered: console.info("ATLAS_A11Y_DUMP", qaAccessibility.write(root.contentItem, file), file)
     }
     AboutDialog { id: aboutDialog }
 
@@ -202,11 +306,23 @@ ApplicationWindow {
         spacing: 0
 
         TitleBar {
+            id: titleBar
             Layout.fillWidth: true
             visible: !(AppState.chromeHidden && root.inReader)
             customFrame: root.customFrame
             placeTitle: root.inReader && reader.currentTab ? reader.currentTab.title : ""
             onOpenPdfRequested: pdfDialog.open()
+            canSave: root.currentBookmarks !== null && !root.currentBookmarks.saving && root.currentBookmarks.unsavedCount > 0
+            onSaveRequested: if (reader.currentTab) reader.currentTab.saveBookmarks()
+            canUndo: root.currentBookmarks !== null && root.currentBookmarks.canUndo
+            canRedo: root.currentBookmarks !== null && root.currentBookmarks.canRedo
+            onUndoRequested: root.currentBookmarks.undo()
+            onRedoRequested: root.currentBookmarks.redo()
+            hasDocument: root.activeViewport !== null
+            bookmarks: root.currentBookmarks
+            onCommandRequested: (command) => root.runCommand(command)
+            onBookRequested: (documentId, path) => libraryController.openFoundBook(documentId, path)
+            onBookmarkRequested: (found) => { if (reader.currentTab) reader.currentTab.goToBookmark(found) }
         }
 
         RibbonBar {
@@ -220,6 +336,8 @@ ApplicationWindow {
             onAboutRequested: aboutDialog.open()
             onPreferencesRequested: (page) => preferencesDialog.openPage(page)
             onFindRequested: if (reader.currentTab) reader.currentTab.openFind()
+            onBookmarkRequested: if (reader.currentTab) reader.currentTab.addBookmarkHere()
+            onAutoBookmarksRequested: if (reader.currentTab) { preferences.navPanel = "bookmarks"; reader.currentTab.openAutoBookmarks() }
             onSearchRequested: if (reader.currentTab) reader.currentTab.openSearch()
             onZoomToRequested: if (root.activeViewport) readerDialogs.openZoomTo(root.activeViewport)
             onWordCountRequested: if (root.activeViewport) readerDialogs.openWordCount(root.activeViewport)

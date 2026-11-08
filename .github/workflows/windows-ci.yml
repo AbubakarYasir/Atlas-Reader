@@ -4,6 +4,14 @@ on:
   push:
     branches: ['**']
   pull_request:
+  # Review builds are made only when asked (owner, 2026-11-03):
+  # Actions → Windows CI → Run workflow → "Build the owner review package".
+  workflow_dispatch:
+    inputs:
+      review_build:
+        description: 'Build and upload the owner review package'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -11,10 +19,12 @@ permissions:
 jobs:
   build-test:
     runs-on: windows-2022
-    timeout-minutes: 35
+    timeout-minutes: 75 # the review steps add ~35 minutes on Release
     env:
       ATLAS_IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       ATLAS_CHECKOUT_SHA: ${{ github.sha }}
+      QPDF_ASSET: 'qpdf-12.4.1-msvc64.zip'
+      QPDF_ASSET_SHA256: '3cd016cd433ef7232e42f4c13348a49cc14907a3c7278ef4f99120593126f7a6'
 
     strategy:
       fail-fast: false
@@ -221,6 +231,39 @@ jobs:
             throw "Independent N2 fixture validation failed with exit code $LASTEXITCODE"
           }
 
+      - name: Verify synthetic signed PDF integrity independently
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          python tests/fixtures/pdf/source/signed_fixture.py --openssl 'C:/Program Files/Git/usr/bin/openssl.exe'
+          if ($LASTEXITCODE -ne 0) { throw 'Signed fixture integrity or tamper test failed.' }
+
+      - name: Acquire pinned qpdf 12.4.1 runtime (N5 capability check)
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP $env:QPDF_ASSET
+          $root = Join-Path $env:RUNNER_TEMP 'qpdf-12.4.1-msvc64'
+          Invoke-WebRequest -Uri 'https://github.com/qpdf/qpdf/releases/download/v12.4.1/qpdf-12.4.1-msvc64.zip' -OutFile $archive
+          $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:QPDF_ASSET_SHA256) { throw "qpdf archive SHA-256 mismatch: $actual" }
+          Expand-Archive -LiteralPath $archive -DestinationPath $root -Force
+          $qpdf = @(Get-ChildItem -Path $root -Recurse -Filter qpdf.exe -File)
+          if ($qpdf.Count -ne 1) { throw "Expected one qpdf.exe; found $($qpdf.Count)" }
+          $version = (& $qpdf[0].FullName --version 2>&1 | Out-String).Trim()
+          if ($version -notmatch '(?<![0-9])12\.4\.1(?![0-9])') { throw "Unexpected qpdf version: $version" }
+          $compliance = Join-Path $env:RUNNER_TEMP 'qpdf-compliance'
+          New-Item -ItemType Directory -Force $compliance | Out-Null
+          foreach ($file in @(
+            @{ Name = 'LICENSE.txt'; Url = 'https://raw.githubusercontent.com/qpdf/qpdf/v12.4.1/LICENSE.txt'; Sha = 'cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30' },
+            @{ Name = 'NOTICE.md'; Url = 'https://raw.githubusercontent.com/qpdf/qpdf/v12.4.1/NOTICE.md'; Sha = 'b207f65a9e5491195ded63b2941199b19a4d30148871f2742c88eae7bfc513a6' })) {
+            $path = Join-Path $compliance $file.Name
+            Invoke-WebRequest -Uri $file.Url -OutFile $path
+            if ((Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $file.Sha) { throw "$($file.Name) SHA-256 mismatch" }
+          }
+          "ATLAS_QPDF=$($qpdf[0].FullName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "QPDF_BIN=$($qpdf[0].DirectoryName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "QPDF_COMPLIANCE=$compliance" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Configure
         shell: pwsh
         run: >-
@@ -232,7 +275,7 @@ jobs:
           -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
           -DPDFium_DIR="$env:PDFium_DIR"
           -DATLAS_ENABLE_PDFIUM_PROBE=ON
-          "-DATLAS_PRERELEASE:STRING=beta.2"
+          "-DATLAS_PRERELEASE:STRING=beta.2-n5-review.2"
           -DATLAS_WARNINGS_AS_ERRORS=ON
 
       - name: Build
@@ -248,6 +291,53 @@ jobs:
           ctest --test-dir build/ci-${{ matrix.configuration }}
           -C ${{ matrix.configuration }}
           --output-on-failure
+
+      - name: N5 bookmark benchmark (10,000 nodes, gates from QUALITY.md)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          & "build/ci-Release/Release/atlas_n5_bookmark_benchmark.exe" (Join-Path $env:RUNNER_TEMP 'atlas-n5-benchmark')
+          if ($LASTEXITCODE -ne 0) { throw "N5 bookmark benchmark missed a gate." }
+
+      # Startup is measured first, on a machine the review steps below have not
+      # yet touched (they launch the app ~100 times and switch high contrast and scale).
+      - name: Startup time on Windows (N1-03; report, not a gate on CI hardware)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: pwsh -NoProfile -File tools/perf/measure-startup.ps1 -Exe build/ci-Release/Release/atlas_reader.exe
+
+      - name: Accessibility sweep on Windows (EN/AR/UR, ten surfaces)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: pwsh -NoProfile -File tools/a11y/run-a11y-check.ps1 -Exe build/ci-Release/Release/atlas_reader.exe -Pdf tests/fixtures/pdf/generated/A003_outlines_links.pdf -HeadingPdf tests/fixtures/pdf/generated/A001_simple_text.pdf
+
+      - name: Keyboard and Narrator review through UI Automation (EN/AR/UR)
+        if: matrix.configuration == 'Release'
+        shell: powershell
+        run: powershell -NoProfile -File tools/a11y/windows-uia-review.ps1 -Exe build/ci-Release/Release/atlas_reader.exe -Pdf tests/fixtures/pdf/generated/A003_outlines_links.pdf -Out "$env:RUNNER_TEMP/atlas-review/uia"
+
+      - name: Rendered review screenshots (100 %, 200 %, narrow, high contrast)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: pwsh -NoProfile -File tools/review/windows-visual-review.ps1 -Exe build/ci-Release/Release/atlas_reader.exe -Fixtures tests/fixtures/pdf/generated -Out "$env:RUNNER_TEMP/atlas-review/screens"
+
+      - name: Upload review evidence
+        if: always() && matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-windows-review
+          path: ${{ runner.temp }}/atlas-review
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: N4 long-book search qualification (2,000 pages)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          $env:ATLAS_LONG_BOOK = '1'
+          & "build/ci-Release/Release/atlas_reader_viewport_render_tests.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Long-book search/navigation qualification failed." }
+          Remove-Item Env:ATLAS_LONG_BOOK
 
       - name: Stage N2 Windows engineering artifact + engine evidence
         if: matrix.configuration == 'Release'
@@ -428,7 +518,7 @@ jobs:
 
           @(
             'Atlas Reader Native inherited N2 PDF qualification probes'
-            'Version: 2.0.0-beta.2'
+            'Version: 2.0.0-beta.2-n5-review.2'
             'Checkpoint evidence origin: N2 PDF engine qualification spike'
             "Implementation head SHA: $env:ATLAS_IMPLEMENTATION_SHA"
             "Checkout SHA: $env:ATLAS_CHECKOUT_SHA"
@@ -459,7 +549,7 @@ jobs:
           ) | Set-Content -Encoding UTF8 (Join-Path $stage 'N2_BUILD_INFO.txt')
 
       - name: Upload N2 Windows engineering artifact
-        if: matrix.configuration == 'Release'
+        if: matrix.configuration == 'Release' && github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: atlas-reader-n2-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
@@ -477,6 +567,8 @@ jobs:
             -OutputDirectory artifacts/beta `
             -ImplementationSha $env:ATLAS_IMPLEMENTATION_SHA `
             -CheckoutSha $env:ATLAS_CHECKOUT_SHA `
+            -QpdfBin $env:QPDF_BIN `
+            -QpdfCompliance $env:QPDF_COMPLIANCE `
             -PackageName 'atlas-reader-2.0.0-beta.2-windows-x64' `
             -Checkpoint 'N4' `
             -Purpose 'Accepted beta: N4 PASS recorded by the owner on 2026-11-02'
@@ -492,8 +584,56 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Stage owner review package (stage branch)
-        if: matrix.configuration == 'Release' && startsWith(github.head_ref || github.ref_name, 'native-v2-')
+      - name: Review package smoke test (built and launched, not uploaded)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'pkg-smoke'
+          ./tools/release/package-n4-review.ps1 `
+            -Executable build/ci-Release/Release/atlas_reader.exe `
+            -QtRoot $env:QT_ROOT_DIR `
+            -OutputDirectory $out `
+            -ImplementationSha $env:ATLAS_IMPLEMENTATION_SHA `
+            -CheckoutSha $env:ATLAS_CHECKOUT_SHA `
+            -QpdfBin $env:QPDF_BIN `
+            -QpdfCompliance $env:QPDF_COMPLIANCE `
+            -PackageName 'atlas-reader-review-windows-x64' `
+            -Checkpoint 'N5' `
+            -Version '2.0.0-beta.2-n5-review.2' `
+            -Purpose 'CI smoke test only; not uploaded'
+          $zip = Join-Path $out 'atlas-reader-review-windows-x64.zip'
+          $expected = ((Get-Content "$zip.sha256" -Raw).Trim() -split '\s+')[0].ToLowerInvariant()
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Package checksum mismatch' }
+          $run = Join-Path $env:RUNNER_TEMP 'pkg-run'
+          Expand-Archive -LiteralPath $zip -DestinationPath $run
+          $exe = @(Get-ChildItem $run -Recurse -Filter atlas_reader.exe)[0].FullName
+          # The review instructions travel with the build (PKG-01).
+          $root = Split-Path $exe
+          foreach ($doc in 'START-HERE.md', 'docs/N5_REVIEW.md', 'docs/baselines/N1_N5_CLOSURE.md') {
+            if (-not (Test-Path (Join-Path $root $doc))) { throw "Package is missing $doc" }
+          }
+          if ((Get-Content (Join-Path $root 'START-HERE.md') -Raw) -notmatch 'N5_REVIEW\.md') { throw 'START-HERE does not point to the N5 review guide' }
+          $qpdf = @(Get-ChildItem (Split-Path $exe) -Recurse -Filter qpdf.exe)[0].FullName
+          # Clean PATH: only Windows itself, so a missing DLL in the package fails here.
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+          Remove-Item Env:ATLAS_QPDF -ErrorAction SilentlyContinue
+          $qpdfVersion = (& $qpdf --version 2>&1 | Out-String)
+          if ($LASTEXITCODE -ne 0 -or $qpdfVersion -notmatch '12\.4\.1') { throw "Packaged qpdf did not run: $qpdfVersion" }
+          $sample = @(Get-ChildItem (Join-Path (Split-Path $exe) 'samples') -Filter *.pdf -ErrorAction SilentlyContinue)[0]
+          $book = if ($sample) { $sample.FullName } else { (Resolve-Path tests/fixtures/pdf/generated/A003_outlines_links.pdf).Path }
+          foreach ($lang in 'en', 'ar', 'ur') {
+            $metrics = Join-Path $env:RUNNER_TEMP "pkg-$lang.jsonl"
+            $p = Start-Process -FilePath $exe -PassThru -ArgumentList "--language $lang --profile-directory `"$env:RUNNER_TEMP\pkg-profile-$lang`" --metrics-file `"$metrics`" --quit-after-ms 8000 `"$book`""
+            if (-not $p.WaitForExit(90000)) { $p.Kill(); throw "Packaged app did not exit ($lang)" }
+            if ($p.ExitCode -ne 0) { throw "Packaged app exited with $($p.ExitCode) ($lang)" }
+            $frame = Select-String -Path $metrics -Pattern 'first_frame' -Quiet
+            if (-not $frame) { throw "Packaged app drew no first frame ($lang)" }
+            Write-Host "Packaged app ($lang): started from a clean PATH, drew its first frame and exited 0."
+          }
+          Write-Host "Package: $((Get-Item $zip).Length) bytes, SHA-256 verified; qpdf: $($qpdfVersion.Trim().Split([Environment]::NewLine)[0])"
+
+      - name: Stage owner review package (on request)
+        if: matrix.configuration == 'Release' && github.event_name == 'workflow_dispatch' && inputs.review_build
         shell: pwsh
         run: |
           ./tools/release/package-n4-review.ps1 `
@@ -502,12 +642,15 @@ jobs:
             -OutputDirectory artifacts/review `
             -ImplementationSha $env:ATLAS_IMPLEMENTATION_SHA `
             -CheckoutSha $env:ATLAS_CHECKOUT_SHA `
+            -QpdfBin $env:QPDF_BIN `
+            -QpdfCompliance $env:QPDF_COMPLIANCE `
             -PackageName 'atlas-reader-review-windows-x64' `
             -Checkpoint 'N5' `
+            -Version '2.0.0-beta.2-n5-review.2' `
             -Purpose 'Owner review build; the stage is in progress'
 
-      - name: Upload owner review package (stage branch)
-        if: matrix.configuration == 'Release' && startsWith(github.head_ref || github.ref_name, 'native-v2-')
+      - name: Upload owner review package (on request)
+        if: matrix.configuration == 'Release' && github.event_name == 'workflow_dispatch' && inputs.review_build
         uses: actions/upload-artifact@v4
         with:
           name: atlas-reader-review-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}

@@ -11,6 +11,35 @@ Item {
     property bool gridMode: false
     property alias searchField: searchField
 
+    // Keyboard and screen-reader focus starts in the library: the first book
+    // when there are books, otherwise the search field. Without this nothing
+    // was focused, so Narrator announced nothing and arrow keys did nothing.
+    function focusDefault() {
+        if (!visible) return
+        if (bookView.count > 0) {
+            if (bookView.currentIndex < 0) bookView.currentIndex = 0
+            bookView.forceActiveFocus(Qt.OtherFocusReason)
+        } else {
+            searchField.forceActiveFocus(Qt.OtherFocusReason)
+        }
+    }
+    onVisibleChanged: if (visible) Qt.callLater(focusDefault)
+    Component.onCompleted: if (visible) Qt.callLater(focusDefault)
+
+    // Book names can use any supported script regardless of interface language.
+    // Reserve both title lines and metadata from actual font metrics, not a
+    // fixed card height that lets the layout push actions outside the border.
+    FontMetrics { id: latinTitleMetrics; font.family: I18n.systemFamily; font.pixelSize: 15; font.weight: Font.DemiBold }
+    FontMetrics { id: arabicTitleMetrics; font.family: library.gridMode ? "Noto Naskh Arabic" : I18n.systemFamily; font.pixelSize: 15; font.weight: Font.DemiBold }
+    FontMetrics { id: urduTitleMetrics; font.family: library.gridMode ? "Noto Nastaliq Urdu" : I18n.systemFamily; font.pixelSize: 15; font.weight: Font.DemiBold }
+    FontMetrics { id: latinDetailMetrics; font.family: I18n.systemFamily; font.pixelSize: 12 }
+    FontMetrics { id: arabicDetailMetrics; font.family: library.gridMode ? "Noto Naskh Arabic" : I18n.systemFamily; font.pixelSize: 12 }
+    FontMetrics { id: urduDetailMetrics; font.family: library.gridMode ? "Noto Nastaliq Urdu" : I18n.systemFamily; font.pixelSize: 12 }
+    readonly property real gridTitleLineHeight: Math.ceil(Math.max(latinTitleMetrics.height, arabicTitleMetrics.height, urduTitleMetrics.height))
+    readonly property real gridDetailHeight: Math.ceil(Math.max(latinDetailMetrics.height, arabicDetailMetrics.height, urduDetailMetrics.height))
+    readonly property real gridCardHeight: Theme.libraryCoverHeight + 2 * gridTitleLineHeight
+        + gridDetailHeight + Theme.controlHeight + 4 * Theme.sm + 2 * Theme.md + 2 * Theme.xs
+
     function statusText(value) {
         if (value === "scanning") return I18n.t("library.status.scanning")
         if (value === "complete") return I18n.t("library.status.complete", libraryController.lastAddedCount)
@@ -233,8 +262,11 @@ Item {
                 clip: true
                 model: libraryController
                 cellWidth: library.gridMode ? Math.max(220, width / Math.max(1, Math.floor(width / 260))) : width
-                cellHeight: library.gridMode ? 252 + 2 * Theme.scriptExtra : 84 + 2 * Theme.scriptExtra
+                cellHeight: library.gridMode ? library.gridCardHeight : 84 + 2 * Theme.scriptExtra
                 keyNavigationEnabled: true
+                // Focus ring only once the keyboard is in use (Windows convention);
+                // focus itself starts here so Narrator and arrow keys work at once.
+                readonly property bool showFocus: activeFocus && atlasAccessibility.keyboardInUse
                 activeFocusOnTab: true
                 ScrollBar.vertical: ScrollBar {}
 
@@ -269,8 +301,8 @@ Item {
                         anchors.margins: Theme.xs
                         radius: Theme.radiusSurface
                         color: hoverArea.hovered ? Theme.hover : Theme.raised
-                        border.color: bookView.activeFocus && bookCell.GridView.isCurrentItem ? Theme.focusRing : Theme.line
-                        border.width: bookView.activeFocus && bookCell.GridView.isCurrentItem ? 2 : 1
+                        border.color: bookView.showFocus && bookCell.GridView.isCurrentItem ? Theme.focusRing : Theme.line
+                        border.width: bookView.showFocus && bookCell.GridView.isCurrentItem ? 2 : 1
                         Behavior on color { ColorAnimation { duration: Theme.fast } }
                         HoverHandler { id: hoverArea }
                         TapHandler {
@@ -296,7 +328,7 @@ Item {
                                     anchors.centerIn: parent
                                     text: (bookCell.fileExtension || "FILE").toUpperCase()
                                     color: bookCell.canOpen ? Theme.accent : Theme.warning
-                                    font.family: ""
+                                    font.family: I18n.systemFamily
                                     font.pixelSize: 11
                                     font.weight: Font.DemiBold
                                 }
@@ -330,7 +362,7 @@ Item {
                                     Layout.fillWidth: true
                                     text: I18n.ltr(bookCell.sourcePath)
                                     color: Theme.muted
-                                    font.family: ""
+                                    font.family: I18n.systemFamily
                                     font.pixelSize: 12
                                     horizontalAlignment: Text.AlignLeft
                                     elide: Text.ElideMiddle
@@ -376,7 +408,9 @@ Item {
 
                             Rectangle {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 108
+                                Layout.preferredHeight: Theme.libraryCoverHeight
+                                Layout.minimumHeight: Theme.libraryCoverHeight
+                                Layout.maximumHeight: Theme.libraryCoverHeight
                                 radius: Theme.radiusControl
                                 color: bookCell.canOpen ? Theme.accentSoft : Theme.warningSoft
                                 IconImage {
@@ -392,7 +426,7 @@ Item {
                                     anchors.margins: Theme.sm
                                     text: (bookCell.fileExtension || "FILE").toUpperCase()
                                     color: bookCell.canOpen ? Theme.accent : Theme.warning
-                                    font.family: ""
+                                    font.family: I18n.systemFamily
                                     font.pixelSize: 11
                                     font.weight: Font.DemiBold
                                 }
@@ -413,7 +447,7 @@ Item {
                                 Layout.fillWidth: true
                                 text: bookCell.detailLine.length > 0 ? bookCell.detailLine : I18n.ltr(bookCell.sourcePath)
                                 color: Theme.muted
-                                font.family: bookCell.detailLine.length > 0 ? I18n.contentFamily(text) : ""
+                                font.family: bookCell.detailLine.length > 0 ? I18n.contentFamily(text) : I18n.systemFamily
                                 font.pixelSize: 12
                                 horizontalAlignment: Text.AlignLeft
                                 elide: bookCell.detailLine.length > 0 ? Text.ElideRight : Text.ElideMiddle

@@ -7,7 +7,7 @@ Atlas reuses mature open-source work when it clearly improves reliability or spe
 | Component | Version / pin | Role | License | Boundary |
 |---|---|---|---|---|
 | Qt (Core, Gui, Qml, Quick, QuickControls2, Pdf) | 6.10.3, dynamic | UI, platform, PDF reading | LGPLv3 (per module; verify each) | Presentation/infrastructure; Qt PDF only inside adapters |
-| qpdf CLI | 12.4.1, first-party build route | PDF structure/security/writes (used from N5) | Apache-2.0 | PDF infrastructure adapter |
+| qpdf CLI | 12.4.1, official MSVC64 package (SHA-256 pinned) | PDF structure/security/writes; bundled in `qpdf/` beside the app from N5.1 (capability check) | Apache-2.0 | PDF infrastructure adapter |
 | SQLite + FTS5 | 3.53.4#1, vcpkg baseline `9e2895bf6afb246396d85232ba70fcfa1fa67ba1`, `x64-windows-static-md` | Index, search, local state | Public domain | Repository layer only |
 | Noto Nastaliq Urdu, Noto Naskh Arabic | pinned files, see `assets/fonts/README.md` | Urdu interface; Arabic/Urdu content | OFL-1.1 | Loaded at startup from bundled resources |
 | Fluent UI System Icons | commit `9eb184e9`, 40 SVGs, see `assets/icons/README.md` | Interface icons | MIT | Tinted at runtime; one family only |
@@ -60,6 +60,8 @@ These never become runtime dependencies.
 
 | Tool | Use |
 |---|---|
+| pypdf 6.12.2 + cryptography 46.0.5 (generator only) | Synthetic A016 self-signed fixture; BSD-3-Clause / Apache-2.0 or BSD-3-Clause. Existing local developer tools, no shipped code, ephemeral key never saved; pinned fixture bytes avoid a CI generation dependency |
+| OpenSSL bundled with Git for Windows (verification only) | Independent detached-CMS integrity and tamper test; no certificate trust claim, no runtime dependency |
 | Qt QML Profiler | Bindings, QML creation, frame timing |
 | Tracy | C++ zones, queues, locks, thread timing |
 | RenderDoc | GPU frames, textures, overdraw |

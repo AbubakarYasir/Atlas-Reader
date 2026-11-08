@@ -47,7 +47,7 @@ The full measured layout is in [FOXIT_PARITY.md §1](FOXIT_PARITY.md#1-window-an
 ├────┴───────────┴ status 32: « ‹ [ 12 / 340 ] › »  ……  layouts − ━●━ + 125% ⛶ ┤
 ```
 
-- **Title bar (custom, Windows snap kept):** app mark; Quick Access Toolbar (Open, Mouse/Touch mode; Save/Undo/Redo from N5, Print from N7; customize from N7); file name; title-bar search box from N5 (Alt+Q); minimize, maximize, close. Colourful skin tints it with the theme colour; Classic keeps it neutral.
+- **Title bar (custom, Windows snap kept):** app mark; Quick Access Toolbar (Open, Save, Undo, Redo, Mouse/Touch mode; Print from N7; customize from N7); file name; Command Center magnifier (Alt+Q) that opens into a search field with commands, books and bookmarks; minimize, maximize, close. Colourful skin tints it with the theme colour; Classic keeps it neutral.
 - **Ribbon:** *File* opens the File page (backstage). Task tabs follow Foxit's order and appear only with working commands: **Home · View · Accessibility · Help** in N4.3, **Comment** in N6, others after 2.0. Commands are grouped with 1 px separators; large buttons (24 px icon over a 12 px label, ▾ for menus) and small buttons (16 px icon, 2–3 per column). Ctrl+F11 or the ⌃ button collapses the ribbon to its tab row; clicking a tab then shows it as a temporary overlay.
 - **Document tabs:** the **Library** is the first, pinned tab (Foxit's *Start* tab). Book tabs are 124 px wide, filename-first with ellipsis, close ✕ on the active or hovered tab, Ctrl+Tab cycling, middle-click closes, overflow ▾ lists all tabs.
 - **Navigation rail:** 40 px, icon buttons for panels (Bookmarks = document outline and Pages, done in N4; editable Atlas bookmarks N5, Comments N6; Search opens on the right); a panel opens beside the rail, resizable (200–480 px), F4 toggles; icons appear only when their panel works.
@@ -114,11 +114,12 @@ The storage states (Embedded, Local only, Pending, Conflict, Signed, Read-only, 
 | `caption` | 12 / 18 | Regular | Metadata, hints (never smaller) |
 | `label` | 12 / 16 | Semibold | Small caps-free section labels |
 
-- **Latin UI:** Segoe UI Variable (Windows system font, so nothing is bundled).
-- **Arabic UI:** Segoe UI's Arabic glyphs as the baseline. Noto Sans Arabic UI (OFL) is a candidate if the N4.5 rendered comparison shows better joining and diacritic clarity at 12–14 px. Bundling needs the [dependency gate](DEPENDENCIES.md).
-- **Urdu UI and Urdu content:** **Noto Nastaliq Urdu** (bundled, OFL, the same pinned file as the N2 evidence). Nastaliq needs room: Urdu body text uses 15 px on 30 px line height, controls grow to fit (never clip), and labels are kept short.
-- **Arabic content** (bookmark titles, notes, document titles): **Noto Naskh Arabic** (bundled, OFL) at +1 px; Arabic UI chrome uses Segoe UI.
-- **Any other script** in user content falls back to Windows system fonts automatically (Segoe UI, Nirmala UI for Devanagari, Microsoft YaHei/Yu Gothic/Malgun Gothic for CJK, Segoe UI Emoji), so nothing renders as empty boxes.
+- **Latin UI:** the Windows application system font, explicitly selected rather than an empty font family. Verify the actual family in the running build; do not assume Segoe UI Variable is installed or selected.
+- **Arabic UI and Arabic content:** bundled **Noto Naskh Arabic** (OFL). Check joining, marks, baseline and small menu labels in the running build.
+- **Urdu UI and Urdu content:** bundled **Noto Nastaliq Urdu** (OFL). Allow the actual shaped text height, including descending strokes and marks; never shrink text to force Foxit's English row height.
+- **User content:** script detection is a heuristic, not a language detector. Arabic and Urdu share letters; text without Urdu-specific letters can use the Arabic family. Include these ambiguous names in review and do not claim automatic language detection is perfect.
+- **PDF pages:** retain the document's own fonts and layout through the PDF renderer. Interface font choices must not replace fonts inside a PDF.
+- **Other scripts:** use system fallback; verify the intended test corpus. Font fallback is not a guarantee that every possible character exists on every PC.
 - **Arabic rules:** line height +15–20% (body 14/24); no letter-spacing ever (it breaks joining); no faux italics; avoid semibold below 13 px; keep diacritics clear of underlines and focus rings.
 - Numbers in page labels and counts use tabular figures where available.
 
@@ -173,7 +174,7 @@ Foxit's default keys for every command Atlas has ([FOXIT_PARITY §4](FOXIT_PARIT
 | Preferences | `Ctrl+K` |
 | Collapse or pin the ribbon | `Ctrl+F11` |
 | Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
-| Title-bar search / Command Center | `Alt+Q` (N5) |
+| Title-bar search / Command Center | `Alt+Q` (N5.3: ↑/↓ choose, Enter runs, Esc closes) |
 | Find in the Library | `Ctrl+F` |
 | Find in document / next / previous | `Ctrl+F` / `F3` / `Shift+F3`; Search panel `Ctrl+Shift+F` |
 | Go to page | `Ctrl+G` (focuses the page box) |
@@ -186,10 +187,12 @@ Foxit's default keys for every command Atlas has ([FOXIT_PARITY §4](FOXIT_PARIT
 | Show/hide navigation panel | `F4` |
 | Read mode / Full screen | `Ctrl+H` / `F11` (`Esc` exits either) |
 | Back / Forward (history) | `Alt+←` / `Alt+→` (temporal, not mirrored in RTL) |
-| Add bookmark | `Ctrl+B` (N5) |
-| Save portable changes | `Ctrl+S` (N5+) |
+| Add bookmark | `Ctrl+B` (N5.3: opens the Bookmarks panel and names the new bookmark at once) |
+| Move bookmark / nest under the one above / move out | `Alt+↑` `Alt+↓` / `Alt+→` / `Alt+←` (Bookmarks panel; nest/move-out mirrored in RTL) |
+| Save bookmarks into the PDF | `Ctrl+S` (N5.4; first save of a book shows what will change) |
+| Save a copy with bookmarks | `Ctrl+Shift+S` (N5.4; for read-only, in-use, signed or certified books) |
 | Print | `Ctrl+P` (N7) |
-| Undo / redo | `Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z` |
+| Undo / redo | `Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z` (N5.3: bookmark edits in the open book; text fields keep their own) |
 | Rename / delete / activate | `F2` / `Delete` / `Enter` |
 | Context menu | `Shift+F10` or the Menu key |
 
@@ -227,7 +230,7 @@ Before a UI change is called done, the author captures and inspects screenshots 
 
 | Axis | Values |
 |---|---|
-| Language | English, Arabic |
+| Language | English, Arabic, Urdu |
 | Theme | Light, Dark (+ Windows high contrast at N4.5, N9) |
 | Scale | 100%, 200% |
 | Width | Wide (≥ 1280), narrow (≈ 760) |
@@ -265,3 +268,31 @@ Windows is mouse and keyboard first, but:
 - Touch mode enlarges targets to 40 px.
 - Panning never creates ink. Writing mode has a clear exit that never loses unsaved work.
 - Stylus input goes to a low-latency live layer (see [ARCHITECTURE.md](ARCHITECTURE.md)). Barrel and eraser buttons and palm rejection are mapped only after hardware tests.
+
+### N5 repair refinements
+
+The Arabic interface explicitly selects bundled Noto Naskh Arabic; Urdu retains
+Noto Nastaliq Urdu. Export, Import and Save dialogs constrain their height to the
+available window and keep their action row outside scrollable options. Toasts use
+Qt accessibility announcements. Qt 6.10 does not expose QML expanded/expandable
+properties; descriptions currently convey that state and a real Narrator review
+is still required (see [Qt Accessible properties](https://doc.qt.io/qt-6.10/qml-qtquick-accessible.html)).
+
+
+### Windows contrast preference repair (N5)
+
+Atlas's custom theme now observes `Qt.styleHints.accessibility.contrastPreference`
+and uses `SystemPalette` colours under high contrast, even if a custom skin was
+selected. The [Qt 6.10 accessibility contract](https://doc.qt.io/qt-6.10/qstylehints.html#accessibility-prop)
+is used without changing the PDF colours. `--show highcontrast` exercises the
+branch for visual QA without changing or persisting Windows settings; it is not
+proof of a real Windows contrast-theme switch. Text buttons keep an outline.
+
+## N5 language and size closure (owner clarification, 2026-11-04)
+
+These are N5 repair gates for existing N1–N5 screens, not work deferred to N9.
+Use familiar software terms and short action labels. Urdu uses بُک مارک، فائل، فولڈر، سیٹنگز، امپورٹ، ایکسپورٹ، بیک اپ where appropriate; avoid literary substitutes merely to translate every word. Arabic keeps familiar إشارة مرجعية، ملف، مجلد، إعدادات، استيراد، تصدير، نسخة احتياطية. Explain recovery consequences in plain sentences. Preserve distinct meanings for save, copy, restore and overwrite.
+
+Compare right-click menus, submenus, dialogs, toolbars, panels and buttons to runtime Foxit evidence at matched scale. Record the reference image, measured size, Atlas size and reason for any difference. Match English density where practical; enlarge only as needed for readable Arabic/Urdu, accessibility or viewport fit. Never clip marks, silently truncate commands or shrink text to claim parity. Keep Atlas assets and existing layout.
+
+Before closure, render existing workflows in English/Arabic/Urdu, light/dark, wide/narrow and required display scales. Check joined letters, vowel marks, Urdu line height, mixed Latin paths/numbers, punctuation, focus, menu opening near screen edges and long labels. Review the wording in context, not just translation-key coverage. Save before/after evidence and list unverified cases explicitly. Owner language review complements automated checks; neither a font filename nor a successful build proves perfect rendering.

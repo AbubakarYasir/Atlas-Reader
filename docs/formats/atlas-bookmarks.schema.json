@@ -1,0 +1,55 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/AbubakarYasir/Atlas-Reader/docs/formats/atlas-bookmarks.schema.json",
+    "title": "Atlas bookmarks file, schema 1.x",
+    "description": "Lossless bookmark export of Atlas Reader (.atlas-bookmarks.json). See atlas-bookmarks.md. Readers accept 1.x.y and ignore unknown members; a newer major version is refused.",
+    "type": "object",
+    "required": ["format", "schemaVersion", "bookmarks"],
+    "properties": {
+        "format": { "const": "atlas-bookmarks" },
+        "schemaVersion": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
+        "exporter": {
+            "type": "object",
+            "description": "Informational only.",
+            "properties": {
+                "name": { "type": "string" },
+                "version": { "type": "string" },
+                "exportedUtc": { "type": "string", "description": "ISO 8601 UTC time." }
+            }
+        },
+        "document": {
+            "type": "object",
+            "description": "Hints about the book the bookmarks came from. Never used to bind a file by themselves.",
+            "properties": {
+                "title": { "type": "string" },
+                "fileName": { "type": "string" },
+                "pageCount": { "type": "integer", "minimum": 0 }
+            }
+        },
+        "scope": { "enum": ["all", "subtree", "localOnly"] },
+        "bookmarks": { "$ref": "#/$defs/list" }
+    },
+    "$defs": {
+        "list": { "type": "array", "items": { "$ref": "#/$defs/bookmark" } },
+        "bookmark": {
+            "type": "object",
+            "required": ["title"],
+            "properties": {
+                "id": { "type": "string", "description": "The bookmark's Atlas ID when exported; imports always make new IDs." },
+                "title": { "type": "string", "description": "Exact UTF-8; spaces and duplicates kept. At most 16 KiB." },
+                "location": {
+                    "type": "string",
+                    "pattern": "^atlas-location/[0-9]+;",
+                    "description": "Atlas location envelope (ADR-0008). Omitted for a bookmark without destination."
+                },
+                "notes": { "type": "string" },
+                "tags": { "type": "array", "items": { "type": "string" } },
+                "state": {
+                    "enum": ["embedded", "local_only", "pending_embed", "local_override", "locally_hidden", "conflict"],
+                    "description": "Provenance at export. Imported bookmarks are always Atlas's own (local_only)."
+                },
+                "children": { "$ref": "#/$defs/list" }
+            }
+        }
+    }
+}

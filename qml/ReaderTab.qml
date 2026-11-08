@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Controls.impl
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import Atlas.Reader
 
@@ -17,6 +18,7 @@ Rectangle {
     required property string detail
     required property string documentTitle
     required property var sessionId
+    required property var capability     // N5.1 capability check (ReaderController)
 
     readonly property bool ready: status === "ready"
     readonly property alias viewport: view
@@ -37,6 +39,392 @@ Rectangle {
     signal toastRequested(string text)
 
     function focusPageBox() { pageBox.forceActiveFocus() }
+
+    // ---- N5.3 bookmarks: this book's overlay, attached once the outline is read
+    BookmarkModel {
+        id: bookmarkModel
+        service: bookmarkService
+    }
+    readonly property alias bookmarks: bookmarkModel
+    Popup {
+        id: recoveryDialog
+        parent: Overlay.overlay
+        modal: true
+        focus: true
+        width: Math.min(460, parent.width - Theme.xl * 2)
+        height: Math.min(recoveryBody.implicitHeight + padding * 2, parent.height - Theme.xl * 2)
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        padding: Theme.lg
+        closePolicy: Popup.CloseOnEscape
+        onOpened: recoveryCancel.forceActiveFocus(Qt.TabFocusReason)
+        background: Rectangle { color: Theme.raised; radius: Theme.radiusSurface; border.color: Theme.chromeLine }
+        contentItem: ScrollView {
+            id: recoveryScroll
+            contentWidth: availableWidth
+            clip: true
+            ColumnLayout {
+                id: recoveryBody
+                width: recoveryScroll.availableWidth
+                spacing: Theme.md
+                Accessible.role: Accessible.Dialog
+                Accessible.name: I18n.t("recovery.review")
+                Label {
+                    Layout.fillWidth: true
+                    text: I18n.t("recovery.review")
+                    color: Theme.ink
+                    font.family: I18n.uiFamily
+                    font.bold: true
+                    wrapMode: Text.WordWrap
+                }
+                Label {
+                    Layout.fillWidth: true
+                    text: I18n.t("recovery.explain")
+                    color: Theme.ink
+                    font.family: I18n.uiFamily
+                    wrapMode: Text.WordWrap
+                }
+                AtlasButton { text: I18n.t("recovery.keep"); onClicked: { recoveryDialog.close(); bookmarkModel.resolveRecovery("keep") } }
+                AtlasButton { text: I18n.t("recovery.restore"); onClicked: { recoveryDialog.close(); bookmarkModel.resolveRecovery("restore") } }
+                AtlasButton { text: I18n.t("recovery.show"); onClicked: { if (!bookmarkModel.showBackups()) tab.toastRequested(I18n.t("recovery.noBackups")) } }
+                AtlasButton { id: recoveryCancel; text: I18n.t("prefs.cancel"); onClicked: recoveryDialog.close() }
+            }
+        }
+    }
+    Connections {
+        target: bookmarkModel
+        function onRecoveryResolved(result) {
+            tab.toastRequested(I18n.t((result === "kept" || result === "restored") ? "bookmarks.readOnly.recoveredReopen" : "save.reason.recoveryRequired"))
+        }
+    }
+    // The current bookmark follows the top of the view, not just the page, so
+    // a chapter starting mid-page lights up once it reaches the top.
+    function trackPosition() {
+        const loc = view.viewLocation()
+        if (loc.page !== undefined) bookmarkModel.setPosition(loc.page, loc.fy !== undefined ? loc.fy : 0)
+    }
+    Timer { id: positionTimer; interval: 120; onTriggered: tab.trackPosition() }
+    Connections {
+        target: view
+        function onScrollChanged() { if (!positionTimer.running) positionTimer.start() }
+        function onLayoutChanged() { positionTimer.restart() }
+    }
+    // After "Add this book's folder", open the bookmarks again once the scan ends.
+    Connections {
+        target: libraryController
+        function onScanningChanged() {
+            if (!libraryController.scanning && bookmarkModel.status === "readOnly" && bookmarkModel.statusReason === "notInLibrary")
+                tab.attachBookmarks()
+        }
+    }
+    // ---- N5.4 Save into the PDF (Ctrl+S, Quick Access Save, ADR-0009)
+    property bool saveAsked: false          // the preview was shown for this book
+    property bool saveRemovesHidden: false
+    property string qaSave: ""              // visual QA: save after Auto Create ("ask" or "confirm")
+    SaveBookmarksDialog {
+        id: saveDialog
+        bookmarks: bookmarkModel
+        onAccepted: (removeHidden) => tab.runSave(removeHidden)
+    }
+    function saveMessage(reason) {
+        const messages = {
+            nothingToSave: I18n.t("save.nothing"),
+            resolveFirst: I18n.t("save.reason.conflict"),
+            changedOutside: I18n.t("save.reason.changed"),
+            changedDuringSave: I18n.t("save.reason.changed"),
+            notPermitted: I18n.t("save.reason.notPermitted"),
+            sameFile: I18n.t("save.reason.sameFile"),
+            diskFull: I18n.t("save.reason.diskFull"),
+            folderReadOnly: I18n.t("save.reason.locked"),
+            replaceFailed: I18n.t("save.reason.locked"),
+            qpdfUnavailable: I18n.t("save.reason.engine"),
+            replaceUnverified: I18n.t("save.reason.restored"),
+            recoveryRequired: I18n.t("save.reason.recoveryRequired"),
+            overlayChanged: I18n.t("save.reason.reopen")
+        }
+        return messages[reason] || I18n.t("save.reason.unsafe")
+    }
+    function saveBookmarks() {
+        if (!tab.ready || bookmarkModel.saving) return
+        if (!bookmarkModel.editable) {
+            tab.toastRequested(I18n.t("bookmarks.readOnly." + (bookmarkModel.statusReason || "storageError")))
+            return
+        }
+        if (tab.capability && tab.capability.checked && !tab.capability.canEmbedOutline) {
+            tab.toastRequested(I18n.t("save.reason.notPermitted"))
+            return
+        }
+        const preview = bookmarkModel.savePreview(tab.saveRemovesHidden)
+        if (preview.refusal) {
+            tab.toastRequested(tab.saveMessage(preview.refusal))
+            return
+        }
+        if (!tab.saveAsked) saveDialog.ask()
+        else tab.runSave(tab.saveRemovesHidden)
+    }
+    // Save a Copy (Ctrl+Shift+S): the bookmarks into a new PDF; works for
+    // read-only, in-use, signed and certified books too.
+    FileDialog {
+        id: copyDialog
+        title: I18n.t("save.copyTitle")
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "pdf"
+        nameFilters: [I18n.t("dialog.pdfFilter") + " (*.pdf)"]
+        onAccepted: bookmarkModel.saveCopy(selectedFile, tab.saveRemovesHidden)
+    }
+    function saveCopy() {
+        if (!tab.ready || bookmarkModel.saving) return
+        if (bookmarkModel.status !== "editable") {
+            tab.toastRequested(I18n.t("bookmarks.readOnly." + (bookmarkModel.statusReason || "storageError")))
+            return
+        }
+        const folder = tab.sourcePath.replace(/[\\/][^\\/]*$/, "")
+        const name = tab.sourcePath.split(/[\\/]/).pop().replace(/\.pdf$/i, "")
+        copyDialog.currentFolder = "file:///" + folder.replace(/^\/+/, "")
+        copyDialog.selectedFile = "file:///" + (folder + "/" + name + I18n.t("save.copySuffix") + ".pdf").replace(/^\/+/, "")
+        copyDialog.open()
+    }
+    Connections {
+        target: bookmarkModel
+        function onCopySaved(ok, reason, path) {
+            tab.toastRequested(ok ? I18n.t("save.copyDone", path.split(/[\\/]/).pop()) : tab.saveMessage(reason))
+        }
+    }
+    function runSave(removeHidden) {
+        tab.saveAsked = true
+        tab.saveRemovesHidden = removeHidden
+        tab.toastRequested(I18n.t("save.saving"))
+        bookmarkModel.save(removeHidden)
+    }
+    Connections {
+        target: bookmarkModel
+        function onSaveFinished(ok, reason, pdfChanged, added, changed, removed) {
+            if (pdfChanged) readerController.acceptSavedFile(tab.sourcePath)
+            tab.toastRequested(ok ? I18n.t("save.done") : tab.saveMessage(reason))
+        }
+    }
+
+    // Export / Import Bookmarks (N5.5; panel options, Command Center).
+    readonly property string selectedBookmarkTitle: {
+        const row = bookmarksPanel.currentRow
+        const data = row >= 0 ? bookmarkModel.get(row) : null
+        return data && data.title !== undefined ? data.title : ""
+    }
+    function bookmarkFolder() { return "file:///" + tab.sourcePath.replace(/[\\/][^\\/]*$/, "").replace(/^\/+/, "") }
+    ExportBookmarksDialog {
+        id: exportDialog
+        selectedTitle: tab.selectedBookmarkTitle
+        hasLocal: bookmarkModel.unsavedCount > 0
+        onAccepted: (format, scope) => {
+            exportFile.format = format
+            exportFile.scope = scope
+            exportFile.row = bookmarksPanel.currentRow
+            const name = tab.sourcePath.split(/[\\/]/).pop().replace(/\.pdf$/i, "")
+            const suffix = format === "markdown" ? ".md" : format === "csv" ? ".csv" : ".atlas-bookmarks.json"
+            exportFile.currentFolder = tab.bookmarkFolder()
+            exportFile.selectedFile = tab.bookmarkFolder() + "/" + name + suffix
+            exportFile.open()
+        }
+    }
+    FileDialog {
+        id: exportFile
+        property string format: "json"
+        property string scope: "all"
+        property int row: -1
+        title: I18n.t("exchange.exportTitle")
+        fileMode: FileDialog.SaveFile
+        nameFilters: format === "markdown" ? [I18n.t("exchange.filterMarkdown") + " (*.md)"]
+                   : format === "csv" ? [I18n.t("exchange.filterCsv") + " (*.csv)"]
+                   : [I18n.t("exchange.filterJson") + " (*.atlas-bookmarks.json *.json)"]
+        onAccepted: {
+            bookmarkModel.exportAsync(selectedFile, format, scope, row, {
+                title: tab.documentTitle,
+                pageCount: view.pageCount,
+                pageLabels: tab.hasLabels ? view.pageLabels : []
+            })
+        }
+    }
+    function exportBookmarks() {
+        if (!tab.ready) return
+        if (bookmarkModel.totalCount === 0) {
+            tab.toastRequested(I18n.t("exchange.error.nothing"))
+            return
+        }
+        exportDialog.ask()
+    }
+    FileDialog {
+        id: importFile
+        title: I18n.t("exchange.importTitle")
+        fileMode: FileDialog.OpenFile
+        nameFilters: [I18n.t("exchange.filterJson") + " (*.atlas-bookmarks.json *.json)"]
+        onAccepted: tab.previewImport(selectedFile)
+    }
+    function previewImport(file) { bookmarkModel.readImportAsync(file) }
+    Connections {
+        target: bookmarkModel
+        function onImportRead(info) {
+            if (info.ok) importDialog.ask(info)
+            else tab.toastRequested(I18n.t("exchange.error." + info.error))
+        }
+        function onExportFinished(error, target) {
+            const file = String(target).split(/[\\/]/).pop()
+            tab.toastRequested(error.length === 0 ? I18n.t("exchange.exported", decodeURIComponent(file))
+                                                  : I18n.t("exchange.error." + error))
+        }
+        function onImportApplied(row) {
+            if (row >= 0) {
+                bookmarksPanel.select(row)
+                tab.toastRequested(I18n.t("exchange.imported"))
+            }
+        }
+    }
+    Popup {
+        id: exchangeProgress
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(480, parent.width - Theme.xl * 2)
+        padding: Theme.xl
+        modal: true
+        focus: true
+        visible: bookmarkModel.exchanging
+        closePolicy: Popup.NoAutoClose
+        background: Rectangle { color: Theme.raised; radius: Theme.radiusSurface; border.color: Theme.chromeLine }
+        contentItem: ColumnLayout {
+            spacing: Theme.md
+            Accessible.role: Accessible.Dialog
+            Accessible.name: I18n.t("exchange.working")
+            Label {
+                Layout.fillWidth: true
+                text: I18n.t("exchange.working")
+                wrapMode: Text.Wrap
+                color: Theme.ink
+                font.family: I18n.uiFamily
+                font.pixelSize: Math.round(14 * I18n.sizeScale)
+            }
+            BusyIndicator { Layout.alignment: Qt.AlignHCenter; running: bookmarkModel.exchanging }
+            AtlasButton {
+                Layout.alignment: Qt.AlignRight
+                text: I18n.t("prefs.cancel")
+                focus: true
+                onClicked: bookmarkModel.cancelExchange()
+                Keys.onEscapePressed: bookmarkModel.cancelExchange()
+            }
+        }
+    }
+    ImportBookmarksDialog {
+        id: importDialog
+        selectedTitle: tab.selectedBookmarkTitle
+        hasBookmarks: bookmarkModel.totalCount > 0
+        onAccepted: (mode) => {
+            preferences.navPanel = "bookmarks"
+            bookmarkModel.applyImportAsync(mode, bookmarksPanel.currentRow)
+        }
+    }
+    function importBookmarks() {
+        if (!tab.ready) return
+        if (!bookmarkModel.editable) {
+            tab.toastRequested(I18n.t("bookmarks.readOnly." + (bookmarkModel.statusReason || "storageError")))
+            return
+        }
+        importFile.currentFolder = tab.bookmarkFolder()
+        importFile.open()
+    }
+
+    // Auto Create Bookmarks (panel options, Command Center).
+    AutoBookmarksDialog {
+        id: autoBookmarks
+        view: view
+        bookmarks: bookmarkModel
+        pageLabel: (page) => tab.pageLabel(page)
+        onCreated: (count) => {
+            preferences.navPanel = "bookmarks"
+            tab.toastRequested(I18n.t("autoBookmarks.done", count))
+            if (tab.qaSave === "ask") Qt.callLater(tab.saveBookmarks)
+            else if (tab.qaSave === "confirm") Qt.callLater(() => tab.runSave(false))
+            tab.qaSave = ""
+        }
+    }
+    function openAutoBookmarks() {
+        if (!tab.ready) return
+        if (!bookmarkModel.editable) {
+            tab.toastRequested(I18n.t("bookmarks.readOnly." + (bookmarkModel.statusReason || "storageError")))
+            return
+        }
+        autoBookmarks.start()
+    }
+    // Command Center → bookmark: go there and show it in the panel.
+    function goToBookmark(found) {
+        if (!tab.ready || found.page < 0) return
+        view.goToNormalized(found.page, found.fx, found.fy)
+        if (preferences.navPanel === "bookmarks") bookmarksPanel.select(bookmarkModel.reveal(found.nodeId))
+        view.forceActiveFocus()
+    }
+    function attachBookmarks() {
+        if (view.textReady && tab.sourcePath.length > 0) bookmarkModel.attach(tab.sourcePath, view.outline)
+    }
+    Connections {
+        target: view
+        function onTextInfoChanged() { tab.attachBookmarks() }
+    }
+    // Visual QA (--show bookmarks-find:<text>, bookmarks-menu, bookmarks-add, bookmarks-expand)
+    function bookmarksQa(action) {
+        preferences.navPanel = "bookmarks"
+        if (action.indexOf("find:") === 0) bookmarkModel.filter = action.slice(5)
+        else if (action === "expand") bookmarkModel.expandAll()
+        else if (action.indexOf("select:") === 0) { bookmarkModel.expandAll(); bookmarksPanel.select(parseInt(action.slice(7))); bookmarksPanel.focusTree() }
+        else if (action === "perf" && !tab.qaPerfRunning) { tab.qaPerfRunning = true; tab.qaPanelPerf(0) }
+        else if (action === "menu") { bookmarkModel.expandAll(); bookmarksPanel.openMenu(1, 40, 60, null) }
+        else if (action === "add") bookmarksPanel.addHere(false)
+        else if (action === "autocreate") { autoBookmarks.qaCreate = true; openAutoBookmarks() }
+        else if (action === "save") saveBookmarks()
+        else if (action === "export") exportBookmarks()
+        else if (action === "recovery" && bookmarkModel.statusReason === "recoveryRequired") recoveryDialog.open()
+        else if (action.indexOf("import:") === 0) { preferences.navPanel = "bookmarks"; previewImport("file://" + action.slice(7)) }
+        else if (action.indexOf("autocreate-save") === 0) {
+            tab.qaSave = action === "autocreate-save-confirm" ? "confirm" : "ask"
+            autoBookmarks.qaCreate = true
+            openAutoBookmarks()
+        }
+    }
+    // QA (--show bookmarks-perf): time from a panel action to the next drawn
+    // frame, 20 rounds each of expand all, collapse all and jump to the last
+    // bookmark. Printed as "ATLAS_PERF panel.<action> p50/p95/max".
+    property var qaPerfSamples: ({ expand: [], collapse: [], jump: [] })
+    property bool qaPerfRunning: false
+    function qaPanelPerf(round) {
+        const actions = ["expand", "collapse", "jump"]
+        const action = actions[round % 3]
+        if (round >= 60) {
+            for (const name of actions) {
+                const values = qaPerfSamples[name].slice().sort(function(a, b) { return a - b })
+                console.info("ATLAS_PERF panel." + name + " n=" + values.length + " p50=" + values[Math.floor(values.length / 2)]
+                             + " p95=" + values[Math.ceil(values.length * 0.95) - 1] + " max=" + values[values.length - 1]
+                             + " rows=" + bookmarkModel.rowCount() + " total=" + bookmarkModel.totalCount)
+            }
+            return
+        }
+        const win = tab.Window.window
+        const start = Date.now()
+        const done = function() {
+            win.frameSwapped.disconnect(done)
+            tab.qaPerfSamples[action].push(Date.now() - start)
+            Qt.callLater(function() { tab.qaPanelPerf(round + 1) })
+        }
+        win.frameSwapped.connect(done)
+        if (action === "expand") bookmarkModel.expandAll()
+        else if (action === "collapse") { bookmarkModel.collapseAll(); bookmarksPanel.select(0) }
+        else bookmarksPanel.select(bookmarkModel.reveal(bookmarkModel.lastNodeIdForQa()))
+        win.requestUpdate()
+    }
+    // Ctrl+B / Bookmark buttons: open the panel and add a bookmark for this view.
+    function addBookmarkHere() {
+        if (!tab.ready) return
+        preferences.navPanel = "bookmarks"
+        bookmarksPanel.addHere(false)
+    }
+    function showCapability() { if (capabilityChip.visible) capabilityPopup.open() }
+    // Coming back to a tab re-checks the file (it may have changed outside Atlas).
+    onVisibleChanged: if (visible && ready && preferences.recheckOnReturn && capability && capability.checked) readerController.recheckCapabilities(index)
     function openFind() {
         if (preferences.rightPanel === "search") { searchPanel.focusField(view.selectedText); return }
         findBar.open(view.selectedText.length < 80 ? view.selectedText : "")
@@ -115,7 +503,8 @@ Rectangle {
                     Repeater {
                         model: [
                             { panel: "bookmarks", icon: "bookmark", key: "panel.bookmarks" },
-                            { panel: "pages", icon: "document_copy", key: "panel.pages" }
+                            { panel: "pages", icon: "document_copy", key: "panel.pages" },
+                            { panel: "signatures", icon: "signature", key: "panel.signatures" }
                         ]
                         delegate: AtlasIconButton {
                             required property var modelData
@@ -133,6 +522,13 @@ Rectangle {
                 }
             }
 
+            SignaturesPanel {
+                Layout.preferredWidth: preferences.navPanelWidth
+                Layout.fillHeight: true
+                visible: preferences.navPanel === "signatures" && !AppState.chromeHidden
+                view: view
+                capability: tab.capability
+            }
             PagesPanel {
                 id: pagesPanel
                 Layout.preferredWidth: preferences.navPanelWidth
@@ -147,6 +543,13 @@ Rectangle {
                 Layout.fillHeight: true
                 visible: preferences.navPanel === "bookmarks" && !AppState.chromeHidden
                 view: view
+                bookmarks: bookmarkModel
+                onToastRequested: (text) => tab.toastRequested(text)
+                onAddFolderRequested: libraryController.addFolderOf(tab.sourcePath)
+                onAutoCreateRequested: tab.openAutoBookmarks()
+                onExportRequested: tab.exportBookmarks()
+                onImportRequested: tab.importBookmarks()
+                onRecoveryRequested: recoveryDialog.open()
             }
             Rectangle { // splitter: drag to resize, double-click to hide (Foxit)
                 Layout.preferredWidth: 6
@@ -445,6 +848,96 @@ Rectangle {
 
                 Item { Layout.fillWidth: true }
 
+                // N5.1: shown only when Atlas may not change this PDF; explains why on click.
+                AbstractButton {
+                    id: capabilityChip
+                    readonly property string state: tab.capability && tab.capability.checked ? tab.capability.state : ""
+                    visible: preferences.showDocumentStatus && state.length > 0 && state !== "writable"
+                    Layout.rightMargin: Theme.sm
+                    implicitHeight: 22
+                    implicitWidth: chipRow.implicitWidth + 14
+                    hoverEnabled: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: I18n.t("capability.title") + ": " + chipLabel.text
+                    onClicked: capabilityPopup.open()
+                    background: Rectangle {
+                        radius: 11
+                        color: capabilityChip.hovered ? Theme.hover : Theme.warningSoft
+                        border.width: capabilityChip.visualFocus ? 2 : 1
+                        border.color: capabilityChip.visualFocus ? Theme.focusRing : Theme.line
+                    }
+                    contentItem: Row {
+                        id: chipRow
+                        anchors.centerIn: parent
+                        spacing: 4
+                        IconImage {
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: Theme.icon("lock_closed")
+                            sourceSize.width: 12
+                            sourceSize.height: 12
+                            color: Theme.ink
+                        }
+                        Text {
+                            id: chipLabel
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: capabilityChip.state.length > 0 ? I18n.t("capability.state." + capabilityChip.state) : ""
+                            color: Theme.ink
+                            font.family: I18n.uiFamily
+                            font.pixelSize: Math.round(11 * I18n.sizeScale)
+                        }
+                    }
+                    Popup {
+                        id: capabilityPopup
+                        y: -implicitHeight - 6
+                        x: capabilityChip.mirrored ? 0 : capabilityChip.width - width
+                        width: 340
+                        padding: Theme.md
+                        focus: true
+                        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+                        background: Rectangle { color: Theme.raised; radius: Theme.radiusSurface; border.color: Theme.chromeLine }
+                        contentItem: ColumnLayout {
+                            spacing: Theme.sm
+                            Accessible.role: Accessible.Dialog
+                            Accessible.name: I18n.t("capability.title")
+                            Label {
+                                Layout.fillWidth: true
+                                horizontalAlignment: Text.AlignLeft
+                                text: I18n.t("capability.title")
+                                color: Theme.ink
+                                font.family: I18n.uiFamily
+                                font.weight: Font.DemiBold
+                            }
+                            Repeater {
+                                model: tab.capability && tab.capability.reasons ? tab.capability.reasons : []
+                                delegate: Label {
+                                    required property string modelData
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: "• " + I18n.t("capability.reason." + modelData)
+                                    color: Theme.ink
+                                    wrapMode: Text.WordWrap
+                                    font.pixelSize: Math.round(12 * I18n.sizeScale)
+                                }
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                horizontalAlignment: Text.AlignLeft
+                                visible: !!tab.capability && tab.capability.canKeepLocalResearch === true
+                                text: I18n.t("capability.local")
+                                color: Theme.muted
+                                wrapMode: Text.WordWrap
+                                font.pixelSize: Math.round(12 * I18n.sizeScale)
+                            }
+                            AtlasButton {
+                                Layout.alignment: Qt.AlignRight
+                                iconName: "arrow_sync"
+                                text: I18n.t("capability.recheck")
+                                onClicked: { readerController.recheckCapabilities(tab.index); capabilityPopup.close() }
+                            }
+                        }
+                    }
+                }
+
                 Repeater { // page display (Foxit status bar)
                     model: [
                         { icon: "document_one_page", key: "cmd.singlePage", mode: 0 },
@@ -518,9 +1011,9 @@ Rectangle {
                             }
                         }
                         MenuSeparator {}
-                        MenuItem { text: I18n.t("zoom.actualSize"); onTriggered: view.actualSize() }
-                        MenuItem { text: I18n.t("zoom.fitPage"); onTriggered: view.fitMode = ReaderViewport.Page }
-                        MenuItem { text: I18n.t("zoom.fitWidth"); onTriggered: view.fitMode = ReaderViewport.Width }
+                        AtlasMenuItem { text: I18n.t("zoom.actualSize"); onTriggered: view.actualSize() }
+                        AtlasMenuItem { text: I18n.t("zoom.fitPage"); onTriggered: view.fitMode = ReaderViewport.Page }
+                        AtlasMenuItem { text: I18n.t("zoom.fitWidth"); onTriggered: view.fitMode = ReaderViewport.Width }
                     }
                 }
                 Rectangle { width: 1; Layout.preferredHeight: 16; color: Theme.chromeLine; Layout.leftMargin: 4; Layout.rightMargin: 4 }
@@ -644,39 +1137,40 @@ Rectangle {
     Menu {
         id: pageMenu
         property string link: ""
-        MenuItem {
+        AtlasMenuItem {
             visible: pageMenu.link.length > 0
             height: visible ? implicitHeight : 0
             text: I18n.t("link.copy")
             onTriggered: readerController.copyText(pageMenu.link)
         }
-        MenuItem {
+        AtlasMenuItem {
             visible: pageMenu.link.length > 0
             height: visible ? implicitHeight : 0
             text: I18n.t("link.open")
             onTriggered: tab.linkConfirmRequested(pageMenu.link)
         }
         MenuSeparator { visible: pageMenu.link.length > 0; height: visible ? implicitHeight : 0 }
-        MenuItem {
+        AtlasMenuItem {
             text: I18n.t("action.copy") + "\tCtrl+C"
             enabled: view.selectedText.length > 0
             onTriggered: view.copySelection()
         }
-        MenuItem { text: I18n.t("action.selectAll") + "\tCtrl+A"; enabled: view.hasText; onTriggered: view.selectAllOnPage() }
+        AtlasMenuItem { text: I18n.t("action.selectAll") + "\tCtrl+A"; enabled: view.hasText; onTriggered: view.selectAllOnPage() }
+        AtlasMenuItem { text: I18n.t("bookmarks.add") + "\tCtrl+B"; onTriggered: tab.addBookmarkHere() }
         MenuSeparator {}
-        MenuItem { text: I18n.t("cmd.hand") + "\tAlt+3"; checkable: true; checked: view.tool === ReaderViewport.HandTool; onTriggered: view.tool = ReaderViewport.HandTool }
-        MenuItem { text: I18n.t("cmd.selectText") + "\tAlt+6"; checkable: true; checked: view.tool === ReaderViewport.SelectTool; onTriggered: view.tool = ReaderViewport.SelectTool }
-        MenuItem { text: I18n.t("cmd.marqueeZoom"); checkable: true; checked: view.tool === ReaderViewport.MarqueeTool; onTriggered: view.tool = ReaderViewport.MarqueeTool }
-        MenuItem { text: I18n.t("cmd.snapshot") + "\tAlt+7"; checkable: true; checked: view.tool === ReaderViewport.SnapshotTool; onTriggered: view.tool = ReaderViewport.SnapshotTool }
+        AtlasMenuItem { text: I18n.t("cmd.hand") + "\tAlt+3"; checkable: true; checked: view.tool === ReaderViewport.HandTool; onTriggered: view.tool = ReaderViewport.HandTool }
+        AtlasMenuItem { text: I18n.t("cmd.selectText") + "\tAlt+6"; checkable: true; checked: view.tool === ReaderViewport.SelectTool; onTriggered: view.tool = ReaderViewport.SelectTool }
+        AtlasMenuItem { text: I18n.t("cmd.marqueeZoom"); checkable: true; checked: view.tool === ReaderViewport.MarqueeTool; onTriggered: view.tool = ReaderViewport.MarqueeTool }
+        AtlasMenuItem { text: I18n.t("cmd.snapshot") + "\tAlt+7"; checkable: true; checked: view.tool === ReaderViewport.SnapshotTool; onTriggered: view.tool = ReaderViewport.SnapshotTool }
         MenuSeparator {}
-        MenuItem { text: I18n.t("nav.previousPage"); enabled: view.currentPage > 1; onTriggered: view.previousPage() }
-        MenuItem { text: I18n.t("nav.nextPage"); enabled: view.currentPage < view.pageCount; onTriggered: view.nextPage() }
-        MenuItem { text: I18n.t("nav.previousView") + "\tAlt+Left"; enabled: view.canGoBack; onTriggered: view.goBack() }
+        AtlasMenuItem { text: I18n.t("nav.previousPage"); enabled: view.currentPage > 1; onTriggered: view.previousPage() }
+        AtlasMenuItem { text: I18n.t("nav.nextPage"); enabled: view.currentPage < view.pageCount; onTriggered: view.nextPage() }
+        AtlasMenuItem { text: I18n.t("nav.previousView") + "\tAlt+Left"; enabled: view.canGoBack; onTriggered: view.goBack() }
         MenuSeparator {}
-        MenuItem { text: I18n.t("find.title") + "\tCtrl+F"; onTriggered: tab.openFind() }
-        MenuItem { text: I18n.t("panel.search") + "\tCtrl+Shift+F"; onTriggered: tab.openSearch() }
+        AtlasMenuItem { text: I18n.t("find.title") + "\tCtrl+F"; onTriggered: tab.openFind() }
+        AtlasMenuItem { text: I18n.t("panel.search") + "\tCtrl+Shift+F"; onTriggered: tab.openSearch() }
         MenuSeparator {}
-        MenuItem { text: I18n.t("cmd.rotateClockwise"); onTriggered: view.rotateView(1) }
-        MenuItem { text: I18n.t("cmd.rotateCounterclockwise"); onTriggered: view.rotateView(-1) }
+        AtlasMenuItem { text: I18n.t("cmd.rotateClockwise"); onTriggered: view.rotateView(1) }
+        AtlasMenuItem { text: I18n.t("cmd.rotateCounterclockwise"); onTriggered: view.rotateView(-1) }
     }
 }

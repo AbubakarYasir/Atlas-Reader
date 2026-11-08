@@ -74,7 +74,7 @@ void checkSchemaAndFts() {
 
     {
         atlas::index::SqliteLibraryIndex index{databasePath};
-        require(index.schemaVersion() == 4, "A new profile must reach the current schema version.");
+        require(index.schemaVersion() == 5, "A new profile must reach the current schema version.");
         index.registerRoot({"root-ar", temporary.path() / "مكتبتي", atlas::index::LibraryRootAvailability::available});
         index.upsertRecord({"book-ar", temporary.path() / "مكتبتي" / "مدخل.pdf", "مدخل إلى القراءة", "مؤلف عربي", atlas::document::Availability::available}, "root-ar");
         index.upsertRecord({"book-ur", temporary.path() / "مكتبتي" / "کتاب.pdf", "کتاب", "مصنف", atlas::document::Availability::available}, "root-ar");
@@ -98,6 +98,10 @@ void checkSchemaAndFts() {
         require(index.search("Research\"").size() == 1,
             "User punctuation must be escaped rather than interpreted as invalid FTS syntax.");
         require(index.search("").empty(), "An empty query must not scan the entire index.");
+        require(index.search("Updated Atlas Res").empty() && index.searchPrefix("Updated Atlas Res").size() == 1,
+            "Prefix search finds an unfinished last word; ordinary search does not.");
+        require(index.searchPrefix("Research\"").size() == 1 && index.searchPrefix("").empty(),
+            "Prefix search escapes punctuation and ignores empty queries.");
         index.rebuildSearchIndex();
         require(index.search("Updated").size() == 1, "The derived search table must support a complete rebuild.");
         require(index.roots().size() == 1, "The root repository must return the configured root.");
@@ -113,11 +117,19 @@ void checkSchemaAndFts() {
 
     {
         atlas::index::SqliteLibraryIndex reopened{databasePath};
-        require(reopened.schemaVersion() == 4, "Reopening a profile must preserve its schema version.");
+        require(reopened.schemaVersion() == 5, "Reopening a profile must preserve its schema version.");
         const auto roots = reopened.roots();
         require(roots.size() == 1 && roots.front().availability == atlas::index::LibraryRootAvailability::offline,
             "An offline root must remain in the database after reopening.");
         require(reopened.search("القراءة").size() == 1, "Arabic FTS results must survive reopening.");
+        const auto arabicBook = temporary.path() / "مكتبتي" / "مدخل.pdf";
+        require(reopened.documentsAtPath(arabicBook) == std::vector<std::string>{"book-ar"},
+            "An indexed path resolves to exactly its document.");
+        auto upper = temporary.path() / "مكتبتي" / "RESEARCH.PDF";
+        require(reopened.documentsAtPath(upper) == std::vector<std::string>{"book-en"},
+            "A path differing only in ASCII case resolves when no exact match exists.");
+        require(reopened.documentsAtPath(temporary.path() / "elsewhere.pdf").empty(),
+            "An unknown path resolves to no document.");
         require(reopened.favorites().size() == 1, "Favorite state must survive reopening.");
         require(reopened.recentlyOpened().front().id == "book-en", "Recent-opened state must survive reopening.");
 
@@ -385,7 +397,7 @@ PRAGMA user_version = 1;
     sqlite3_close_v2(db);
 
     atlas::index::SqliteLibraryIndex retried{databasePath};
-    require(retried.schemaVersion() == 4, "A later retry must complete the remaining migrations.");
+    require(retried.schemaVersion() == 5, "A later retry must complete the remaining migrations.");
 }
 
 void checkNewerSchemaIsPreserved() {

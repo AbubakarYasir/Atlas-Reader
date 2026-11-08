@@ -204,6 +204,97 @@
       "notes": "Legacy weak RC4-40 is deterministic test data only. The page has an explicit valid empty resource dictionary so strict qpdf validation can distinguish writer behavior from fixture damage.",
       "mutation_allowed": true,
       "password_fixture": true
+    },
+    {
+      "id": "A016",
+      "file": "generated/A016_malformed_outline.pdf",
+      "sha256": "54eac12891b076b89a8465891c2fa7c07415f6308f28188db7cff9376a9c5cf4",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "tests/fixtures/pdf/source/generate_a016_malformed_outline.py",
+      "purpose": [
+        "malformed-outline-readable-pages",
+        "n5-bookmark-corpus"
+      ],
+      "expected_pages": 3,
+      "expected_labels": [
+        "1",
+        "2",
+        "3"
+      ],
+      "expected_text": [
+        "Atlas N5 Fixture A016 page 1"
+      ],
+      "notes": "Outline items: a valid one, a destination to a missing page (integer 99), a destination of the wrong type, and a /Next cycle back to the first item. qpdf --check warns 'Loop detected'. expected_outline is omitted on purpose: readers differ on malformed outlines; Atlas must stay safe (N5 tests).",
+      "mutation_allowed": true,
+      "password_fixture": false
+    },
+    {
+      "id": "A017",
+      "file": "generated/A017_signed_approval.pdf",
+      "sha256": "6e32d36d1022355f6cf20894c1a31c62acab62aea33d0a66945e4cce31e484df",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "tests/fixtures/pdf/source/generate_a017_signed_approval.py",
+      "purpose": [
+        "cryptographic-approval-signature",
+        "signed-original-preservation",
+        "n5-bookmark-corpus"
+      ],
+      "expected_pages": 2,
+      "expected_labels": [
+        "1",
+        "2"
+      ],
+      "expected_text": [
+        "Atlas N5 Fixture A017 page 1"
+      ],
+      "expected_outline": [
+        {
+          "title": "Signed chapter one",
+          "page_index": 0
+        },
+        {
+          "title": "Signed chapter two",
+          "page_index": 1
+        }
+      ],
+      "test_signer_certificate": "generated/A017_test_signer.pem",
+      "notes": "A real PKCS#7 approval signature (pyHanko, RSA-2048, SHA-256) by a throwaway self-signed test certificate; valid and intact over the entire file when the PEM is trusted. Not deterministic: regenerating makes new bytes and a new certificate, so the committed bytes are the fixture. The private key was discarded.",
+      "mutation_allowed": false,
+      "password_fixture": false
+    },
+    {
+      "id": "A018",
+      "file": "generated/A018_self_signed.pdf",
+      "sha256": "9ae28ff59bb46c037321bda5bc647ea3082e10f50296b00d341fbb5aec547a2b",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "source/signed_fixture.py; pypdf 6.12.2; cryptography 46.0.5",
+      "purpose": [
+        "signed-original-refusal",
+        "signed-working-copy",
+        "detached-cms-integrity"
+      ],
+      "expected_pages": 1,
+      "password_fixture": false,
+      "mutation_allowed": true,
+      "notes": "Self-signed test identity, not publicly trusted. OpenSSL verifies CMS integrity and rejects a tampered byte stream. Mutate copies only; working copies do not preserve signature validity. Generation uses an ephemeral private key kept in memory only."
+    },
+    {
+      "id": "A012",
+      "file": "generated/A012_xyz_destinations.pdf",
+      "sha256": "0c710f3f6e4457a44b8d2dbaa42a476a5c5b429764a0a7569002b66222ef069d",
+      "source": "synthetic-atlas",
+      "license": "CC0-1.0 / dedicated test fixture generated for Atlas",
+      "created_by": "source/generate_a012_xyz_destinations.py",
+      "purpose": [
+        "normal-and-rotated-xyz-destinations",
+        "production-navigation-regression"
+      ],
+      "expected_pages": 3,
+      "mutation_allowed": true,
+      "password_fixture": false
     }
   ]
 }

@@ -50,7 +50,9 @@ $liveStatusFiles = @(
     'AGENTS.md',
     'CHANGELOG.md',
     'docs/README.md',
-    'docs/baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md'
+    'docs/baselines/N5_BOOKMARKS_SAFETY_EVIDENCE.md',
+    'docs/N5_REVIEW.md',
+    'docs/baselines/N5_UI_SIZE_COMPARISON.md'
 )
 
 $expectedStatus = $null
@@ -120,6 +122,7 @@ $requiredReferences = @(
     @{ File = 'README.md'; Text = 'CHECKPOINTS.md' },
     @{ File = 'PLAN.md'; Text = 'AFTER_2_0.md' },
     @{ File = 'CHECKPOINTS.md'; Text = 'N4_REVIEW.md' },
+    @{ File = 'CHECKPOINTS.md'; Text = 'N5_REVIEW.md' },
     @{ File = 'AGENTS.md'; Text = 'DESIGN.md' },
     @{ File = 'docs/README.md'; Text = 'WORKFLOW.md' },
     @{ File = 'docs/README.md'; Text = 'QUALITY.md' },

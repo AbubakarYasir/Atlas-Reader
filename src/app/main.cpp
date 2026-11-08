@@ -1,3 +1,7 @@
+#include "app/accessibility/TreeItemAccessible.h"
+#include "app/bookmarks/BookmarkModel.h"
+#include "app/bookmarks/BookmarkService.h"
+#include "app/diagnostics/AccessibilityDump.h"
 #include "app/diagnostics/ShellMetrics.h"
 #include "app/library/LibraryController.h"
 #include "app/logging/Logging.h"
@@ -9,6 +13,8 @@
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QGuiApplication>
+#include <QFont>
+#include <QFontDatabase>
 #include <QDir>
 #include <QFileInfo>
 #include <QImage>
@@ -38,6 +44,18 @@ std::filesystem::path filesystemPath(const QString& value) {
 
 } // namespace
 
+// assets/fonts (OFL), compiled into the AtlasReader QML module's resources.
+static void registerBundledFonts() {
+    static const char* const fonts[] = {"NotoNastaliqUrdu-wght.ttf", "NotoNaskhArabic-Regular.ttf",
+                                        "NotoNaskhArabic-SemiBold.ttf"};
+    for (const char* name : fonts) {
+        const QString file = QString::fromLatin1(name);
+        int id = QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/AtlasReader/assets/fonts/") + file);
+        if (id < 0) id = QFontDatabase::addApplicationFont(QStringLiteral(":/AtlasReader/assets/fonts/") + file);
+        if (id < 0) qCWarning(atlas::logging::startup) << "Bundled font not registered:" << file;
+    }
+}
+
 int main(int argc, char* argv[]) {
     using MetricsClock = atlas::diagnostics::ShellMetrics::Clock;
     const auto processStart = MetricsClock::now();
@@ -47,6 +65,15 @@ int main(int argc, char* argv[]) {
     // the deployed package (windeployqt follows real module imports).
     static_cast<void>(QSvgRenderer::staticMetaObject.className());
     const auto applicationReady = MetricsClock::now();
+    MetricsClock::time_point metrics_fontsRegistered{};
+
+    // Bundled Arabic/Urdu fonts are registered once, before anything asks for
+    // a font. Adding an application font later (QML FontLoader) invalidates
+    // Qt's font database, which then enumerates every installed font again:
+    // seconds on font-heavy Windows machines (N1-03).
+    registerBundledFonts();
+    atlas::accessibility::installTreeItemAccessibility(); // before any QML exists
+    metrics_fontsRegistered = MetricsClock::now();
 
     QGuiApplication::setApplicationName(QStringLiteral("Atlas Reader Native"));
     QGuiApplication::setOrganizationName(QStringLiteral("Atlas Reader"));
@@ -147,10 +174,14 @@ int main(int argc, char* argv[]) {
         parser.isSet(benchmarkShellOption),
         &app);
     metrics.recordCheckpoint(QStringLiteral("startup.qgui_application_ready_ms"), applicationReady);
+    metrics.recordCheckpoint(QStringLiteral("startup.fonts_registered_ms"), metrics_fontsRegistered);
     metrics.recordCheckpoint(QStringLiteral("startup.arguments_ready_ms"), argumentsReady);
     metrics.recordStage(QStringLiteral("startup.metrics_ready_ms"));
 
     qmlRegisterType<atlas::app::ReaderViewport>("Atlas.Reader", 1, 0, "ReaderViewport");
+    qmlRegisterType<atlas::app::BookmarkModel>("Atlas.Reader", 1, 0, "BookmarkModel");
+    qmlRegisterUncreatableType<atlas::app::BookmarkService>(
+        "Atlas.Reader", 1, 0, "BookmarkService", QStringLiteral("Provided by the application"));
     qmlRegisterUncreatableType<atlas::app::ReaderController>(
         "Atlas.Reader", 1, 0, "ReaderController", QStringLiteral("Provided by the application"));
 
@@ -160,13 +191,26 @@ int main(int argc, char* argv[]) {
     atlas::app::LibraryController libraryController(
         filesystemPath(QDir{profileDirectory}.filePath(QStringLiteral("library.sqlite3"))));
     atlas::app::ReaderController readerController(filesystemPath(profileDirectory));
+    // N5.3: bookmark storage on its own worker, in the same profile database.
+    atlas::app::BookmarkService bookmarkService(
+        filesystemPath(QDir{profileDirectory}.filePath(QStringLiteral("library.sqlite3"))));
+    // Safe save asks the open reader session for a PDF's password (never QML).
+    bookmarkService.setPasswordSource([&readerController](const QString& path) {
+        return readerController.passwordForPath(path);
+    });
     atlas::app::AppPreferences preferences(QDir{profileDirectory}.filePath(QStringLiteral("preferences.ini")));
     if (parser.isSet(languageOption)) preferences.overrideLanguage(parser.value(languageOption));
     if (parser.isSet(themeOption)) preferences.overrideThemeMode(parser.value(themeOption));
 
     // Declared after the objects it exposes so it is destroyed first: QML
     // bindings never see a destroyed context object during shutdown.
+    // Before the engine, so it outlives every QML binding that reads it.
+    atlas::accessibility::AccessibilityNotifier accessibilityNotifier;
     QQmlApplicationEngine engine;
+    // An empty QML font family selects a legacy Windows bitmap font under GDI.
+    // Preserve the actual platform interface font instead of clearing it.
+    engine.rootContext()->setContextProperty(QStringLiteral("atlasSystemFontFamily"),
+                                            QGuiApplication::font().family());
     metrics.recordStage(QStringLiteral("startup.qml_engine_ready_ms"));
     QObject::connect(
         &libraryController,
@@ -182,8 +226,12 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty(QStringLiteral("preferences"), &preferences);
     engine.rootContext()->setContextProperty(QStringLiteral("nativeFrame"), parser.isSet(nativeFrameOption));
     engine.rootContext()->setContextProperty(QStringLiteral("qaShow"), parser.value(showOption));
+    atlas::diagnostics::AccessibilityDump accessibilityDump;
+    engine.rootContext()->setContextProperty(QStringLiteral("qaAccessibility"), &accessibilityDump);
+    engine.rootContext()->setContextProperty(QStringLiteral("atlasAccessibility"), &accessibilityNotifier);
     engine.rootContext()->setContextProperty(QStringLiteral("libraryController"), &libraryController);
     engine.rootContext()->setContextProperty(QStringLiteral("readerController"), &readerController);
+    engine.rootContext()->setContextProperty(QStringLiteral("bookmarkService"), &bookmarkService);
     // Pages panel thumbnails (engine owns the provider).
     auto* thumbnails = new atlas::app::PageThumbnailProvider;
     QObject thumbnailConnections; // destroyed before the engine deletes the provider

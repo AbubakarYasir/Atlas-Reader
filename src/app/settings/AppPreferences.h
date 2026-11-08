@@ -31,6 +31,14 @@ class AppPreferences final : public QObject {
     Q_PROPERTY(bool searchMatchCase READ searchMatchCase WRITE setSearchMatchCase NOTIFY searchOptionsChanged)
     Q_PROPERTY(bool searchWholeWords READ searchWholeWords WRITE setSearchWholeWords NOTIFY searchOptionsChanged)
     Q_PROPERTY(QStringList pinnedFiles READ pinnedFiles NOTIFY recentFilesChanged)
+    // N5.3 Preferences → Identity: who you are, for notes, bookmarks and exports
+    // you create. Kept in this file only; never sent anywhere.
+    Q_PROPERTY(QString identityName READ identityName WRITE setIdentityName NOTIFY identityChanged)
+    Q_PROPERTY(QString identityOrganization READ identityOrganization WRITE setIdentityOrganization NOTIFY identityChanged)
+    Q_PROPERTY(QString identityEmail READ identityEmail WRITE setIdentityEmail NOTIFY identityChanged)
+    // N5.3 Preferences → Security.
+    Q_PROPERTY(bool recheckOnReturn READ recheckOnReturn WRITE setRecheckOnReturn NOTIFY securityChanged)
+    Q_PROPERTY(bool showDocumentStatus READ showDocumentStatus WRITE setShowDocumentStatus NOTIFY securityChanged)
     Q_PROPERTY(QStringList recentFiles READ recentFiles NOTIFY recentFilesChanged)
 
 public:
@@ -76,6 +84,16 @@ public:
     void setSearchMatchCase(bool value);
     [[nodiscard]] bool searchWholeWords() const { return searchWholeWords_; }
     void setSearchWholeWords(bool value);
+    [[nodiscard]] QString identityName() const { return identityName_; }
+    void setIdentityName(const QString& value);
+    [[nodiscard]] QString identityOrganization() const { return identityOrganization_; }
+    void setIdentityOrganization(const QString& value);
+    [[nodiscard]] QString identityEmail() const { return identityEmail_; }
+    void setIdentityEmail(const QString& value);
+    [[nodiscard]] bool recheckOnReturn() const { return recheckOnReturn_; }
+    void setRecheckOnReturn(bool value);
+    [[nodiscard]] bool showDocumentStatus() const { return showDocumentStatus_; }
+    void setShowDocumentStatus(bool value);
     [[nodiscard]] QStringList pinnedFiles() const { return pinnedFiles_; }
     Q_INVOKABLE void setPinned(const QString& path, bool pinned);
     // Last reading position per file (History): page, zoom, fit, display.
@@ -99,6 +117,8 @@ public:
     [[nodiscard]] static QString normalizedThemeMode(const QString& value);
 
 signals:
+    void identityChanged();
+    void securityChanged();
     void languageChanged();
     void themeChanged();
     void touchModeChanged();
@@ -134,6 +154,11 @@ private:
     bool rememberPosition_{true};
     bool searchMatchCase_{};
     bool searchWholeWords_{};
+    QString identityName_;
+    QString identityOrganization_;
+    QString identityEmail_;
+    bool recheckOnReturn_{true};
+    bool showDocumentStatus_{true};
     QStringList pinnedFiles_;
     bool persist_{true};
 };

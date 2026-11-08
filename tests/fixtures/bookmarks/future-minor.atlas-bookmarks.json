@@ -1,0 +1,11 @@
+{
+    "format": "atlas-bookmarks",
+    "schemaVersion": "1.7.2",
+    "exporter": { "name": "Atlas Reader", "version": "3.1.0", "exportedUtc": "2027-05-01T08:00:00Z" },
+    "document": { "title": "Future", "fileName": "future.pdf", "pageCount": 3, "fingerprint": "unknown-to-1.0" },
+    "scope": "all",
+    "colourTheme": "ignored",
+    "bookmarks": [
+        { "title": "Kept", "location": "atlas-location/2;scheme=pdf;page=0;kind=fit;spread=left", "colour": "red", "children": [ { "title": "Child" } ] }
+    ]
+}

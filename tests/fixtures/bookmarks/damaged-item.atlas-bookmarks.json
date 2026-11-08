@@ -1,0 +1,2 @@
+{ "format": "atlas-bookmarks", "schemaVersion": "1.0.0",
+  "bookmarks": [ { "title": "Good" }, { "title": "Bad destination", "location": "atlas-location/1;scheme=pdf;page=-4;kind=fit" } ] }

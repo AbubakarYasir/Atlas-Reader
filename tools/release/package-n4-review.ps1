@@ -6,14 +6,18 @@ param(
     [string]$ImplementationSha = '',
     [string]$CheckoutSha = '',
     [string]$PackageName = 'atlas-reader-review-windows-x64',
+    [string]$QpdfBin = '',
+    [string]$QpdfCompliance = '',
     [string]$Version = '2.0.0-beta.2',
     [string]$Checkpoint = 'N4',
     [string]$Purpose = 'Owner review build'
 )
 
 $ErrorActionPreference = 'Stop'
+if ($Checkpoint -eq 'N5' -and (-not $QpdfBin -or -not $QpdfCompliance)) { throw 'N5 requires the qpdf runtime and notices.' }
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $sourceExe = (Resolve-Path -LiteralPath $Executable).Path
+if ((Get-Item -LiteralPath $sourceExe).VersionInfo.ProductVersion -ne $Version) { throw 'Package version must match the built executable.' }
 $qtPath = (Resolve-Path -LiteralPath $QtRoot).Path
 $output = [IO.Path]::GetFullPath($OutputDirectory)
 if (Test-Path -LiteralPath $output) { throw 'Use a new output directory; existing review builds are preserved.' }
@@ -38,15 +42,33 @@ Copy-Item -LiteralPath $sqliteNotice -Destination (Join-Path $notices 'sqlite3-c
 Copy-Item -LiteralPath (Join-Path $repo 'assets/fonts/OFL.txt') -Destination (Join-Path $notices 'noto-fonts-OFL.txt')
 Copy-Item -LiteralPath (Join-Path $repo 'assets/fonts/README.md') -Destination (Join-Path $notices 'noto-fonts-README.md')
 Copy-Item -LiteralPath (Join-Path $repo 'assets/icons/LICENSE.txt') -Destination (Join-Path $notices 'fluentui-system-icons-LICENSE.txt')
-foreach ($doc in @('N4_REVIEW.md', 'DEPENDENCIES.md')) {
+$reviewGuide = if ($Checkpoint -eq 'N5') { 'N5_REVIEW.md' } else { 'N4_REVIEW.md' }
+foreach ($doc in @($reviewGuide, 'DEPENDENCIES.md')) {
     Copy-Item -LiteralPath (Join-Path $repo "docs/$doc") -Destination $docs
 }
-Copy-Item -LiteralPath (Join-Path $repo 'docs/N4_REVIEW.md') -Destination (Join-Path $stage 'START-HERE.md')
-foreach ($fixture in @('A001_simple_text.pdf','A002_geometry_labels.pdf','A006_unicode_semantics.pdf','A008_password_rc4_40.pdf')) {
+if ($Checkpoint -eq 'N5') {
+    New-Item -ItemType Directory -Force (Join-Path $docs 'baselines') | Out-Null
+    Copy-Item -LiteralPath (Join-Path $repo 'docs/baselines/N1_N5_CLOSURE.md') -Destination (Join-Path $docs 'baselines')
+}
+@"
+# Atlas Reader — $Checkpoint review
+
+Version: $Version. This is an inspection build, not a newly accepted release.
+
+Run **atlas_reader.exe**. Use copies of your books for testing.
+Read the [plain-language review guide](docs/$reviewGuide) before testing saves.
+The build identity is in BUILD-INFO.json; file hashes are in SHA256SUMS.txt.
+The samples are synthetic, redistributable fixtures; their provenance is in samples/PROVENANCE.md.
+N5 acceptance remains subject to the open checks in docs/baselines/N1_N5_CLOSURE.md.
+"@ | Set-Content -LiteralPath (Join-Path $stage 'START-HERE.md') -Encoding utf8
+foreach ($fixture in @('A001_simple_text.pdf','A002_geometry_labels.pdf','A003_outlines_links.pdf','A006_unicode_semantics.pdf','A008_password_rc4_40.pdf','A010_certification_structure.pdf','A012_xyz_destinations.pdf','A016_malformed_outline.pdf','A017_signed_approval.pdf','A018_self_signed.pdf')) {
     Copy-Item -LiteralPath (Join-Path $repo "tests/fixtures/pdf/generated/$fixture") -Destination $samples
 }
 Copy-Item -LiteralPath (Join-Path $repo 'tests/fixtures/pdf/README.md') -Destination (Join-Path $samples 'PROVENANCE.md')
 Copy-Item -LiteralPath (Join-Path $repo 'tests/fixtures/pdf/manifest.json') -Destination $samples
+if ($Checkpoint -eq 'N5') {
+    Copy-Item -LiteralPath (Join-Path $repo 'tests/fixtures/bookmarks/valid-1.0.atlas-bookmarks.json') -Destination $samples
+}
 
 & (Join-Path $qtPath 'bin/windeployqt.exe') --release --no-translations --compiler-runtime --qmldir (Join-Path $repo 'qml') (Join-Path $stage 'atlas_reader.exe')
 if ($LASTEXITCODE -ne 0) { throw 'Qt deployment failed.' }
@@ -56,6 +78,20 @@ foreach ($dll in @('Qt6Core.dll','Qt6Gui.dll','Qt6Quick.dll','Qt6Pdf.dll','Qt6Sv
     if (-not (Test-Path -LiteralPath (Join-Path $stage $dll))) { throw "Missing packaged runtime: $dll" }
 }
 if (Test-Path -LiteralPath (Join-Path $stage 'pdfium.dll')) { throw 'Standalone PDFium is qualification-only.' }
+
+# First-party qpdf 12.4.1 CLI (structure and security checks, N5), in its own folder.
+if ($QpdfBin) {
+    $qpdfStage = Join-Path $stage 'qpdf'
+    New-Item -ItemType Directory -Force -Path $qpdfStage | Out-Null
+    foreach ($name in @('qpdf.exe', 'qpdf30.dll', 'concrt140.dll', 'msvcp140.dll', 'msvcp140_1.dll', 'msvcp140_2.dll',
+                        'msvcp140_atomic_wait.dll', 'msvcp140_codecvt_ids.dll', 'vcruntime140.dll', 'vcruntime140_1.dll')) {
+        $source = Join-Path $QpdfBin $name
+        if (-not (Test-Path -LiteralPath $source)) { throw "qpdf runtime file missing: $source" }
+        Copy-Item -LiteralPath $source -Destination $qpdfStage
+    }
+    Copy-Item -LiteralPath (Join-Path $QpdfCompliance 'LICENSE.txt') -Destination (Join-Path $notices 'qpdf-LICENSE.txt')
+    Copy-Item -LiteralPath (Join-Path $QpdfCompliance 'NOTICE.md') -Destination (Join-Path $notices 'qpdf-NOTICE.md')
+}
 
 # Preserve the same pinned Qt source-license route used by the accepted N2 lane.
 $licenseSources = @(
@@ -92,7 +128,7 @@ $buildInfo = [ordered]@{
     version = $Version; implementationSha = $ImplementationSha; checkoutSha = $CheckoutSha
     configuration = 'Release'; qt = '6.10.3'; sqlite = '3.53.4#1'
     sourceExeSha256 = (Get-FileHash -LiteralPath $sourceExe -Algorithm SHA256).Hash.ToLowerInvariant()
-    builtUtc = [DateTime]::UtcNow.ToString('o'); pageRendering = $true; pdfWrites = $false
+    builtUtc = [DateTime]::UtcNow.ToString('o'); pageRendering = $true; pdfWrites = ($Checkpoint -eq 'N5')
 }
 $buildInfo | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $stage 'BUILD-INFO.json') -Encoding utf8
 
@@ -100,12 +136,13 @@ $smokeProfile = Join-Path $output 'smoke-profile'
 $smokeArgs = '--profile-directory "{0}" --quit-after-ms 1800' -f $smokeProfile
 $smokeLog = Join-Path $output 'smoke-stderr.log'
 $savedEnvironment = @{}
-foreach ($name in @('PATH','QT_PLUGIN_PATH','QML_IMPORT_PATH','QML2_IMPORT_PATH')) {
+foreach ($name in @('PATH','QT_PLUGIN_PATH','QML_IMPORT_PATH','QML2_IMPORT_PATH','ATLAS_QPDF','QT_FORCE_STDERR_LOGGING')) {
     $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
 }
 try {
     $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
-    foreach ($name in @('QT_PLUGIN_PATH','QML_IMPORT_PATH','QML2_IMPORT_PATH')) {
+    $env:QT_FORCE_STDERR_LOGGING = "1"
+    foreach ($name in @('QT_PLUGIN_PATH','QML_IMPORT_PATH','QML2_IMPORT_PATH','ATLAS_QPDF')) {
         [Environment]::SetEnvironmentVariable($name, $null, 'Process')
     }
     $smoke = Start-Process -FilePath (Join-Path $stage 'atlas_reader.exe') -ArgumentList $smokeArgs -PassThru -WindowStyle Hidden -RedirectStandardError $smokeLog

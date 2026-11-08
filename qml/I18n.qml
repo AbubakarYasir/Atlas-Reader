@@ -17,7 +17,8 @@ QtObject {
     ]
 
     // Urdu is read in Nastaliq, which needs a bundled font and more room.
-    readonly property string uiFamily: language === "ur" ? "Noto Nastaliq Urdu" : ""
+    readonly property string systemFamily: atlasSystemFontFamily
+    readonly property string uiFamily: language === "ur" ? "Noto Nastaliq Urdu" : language === "ar" ? "Noto Naskh Arabic" : systemFamily
     readonly property real sizeScale: language === "ur" ? 1.12 : 1.0
 
     // Font for user content (titles, names), chosen by the text's own script so
@@ -25,7 +26,7 @@ QtObject {
     function contentFamily(text) {
         if (/[\u0679\u0688\u0691\u06BA\u06BE\u06C1\u06D2\u06D3]/.test(text)) return "Noto Nastaliq Urdu"
         if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text)) return "Noto Naskh Arabic"
-        return ""  // other scripts: the system interface font and its fallbacks
+        return systemFamily  // other scripts: the system interface font and its fallbacks
     }
 
     function t(key) {

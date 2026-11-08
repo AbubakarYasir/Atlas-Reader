@@ -10,6 +10,7 @@
 #include <QProcess>
 #include <QFileInfo>
 #include <QPdfDocument>
+#include <QPointer>
 #include <QSettings>
 #include <QTimer>
 #include <QtConcurrentRun>
@@ -95,6 +96,9 @@ ReaderController::~ReaderController() {
         pending->watcher->waitForFinished();
     }
     for (auto& pending : retired_) pending->watcher->waitForFinished();
+    // Permission probes run qpdf too; discarding their futures allowed them to
+    // outlive the controller and keep a source file in use after shutdown.
+    for (auto& job : capabilityJobs_) job.waitForFinished();
     pending_.clear();
     retired_.clear();
 }
@@ -114,6 +118,10 @@ QVariant ReaderController::data(const QModelIndex& index, int role) const {
     case PageCountRole: return session.pageCount;
     case DetailRole: return fromUtf8(session.detail);
     case DocumentTitleRole: return fromUtf8(session.title);
+    case CapabilityRole: {
+        const auto it = capabilities_.find(session.id);
+        return it == capabilities_.end() ? QVariantMap{{QStringLiteral("checked"), false}} : it->second.map;
+    }
     default: return {};
     }
 }
@@ -121,7 +129,7 @@ QVariant ReaderController::data(const QModelIndex& index, int role) const {
 QHash<int, QByteArray> ReaderController::roleNames() const {
     return {{SessionIdRole, "sessionId"}, {TitleRole, "title"}, {SourceRole, "sourcePath"},
         {StatusRole, "status"}, {PageCountRole, "pageCount"}, {DetailRole, "detail"},
-        {DocumentTitleRole, "documentTitle"}};
+        {DocumentTitleRole, "documentTitle"}, {CapabilityRole, "capability"}};
 }
 
 int ReaderController::activeIndex() const { return libraryVisible_ ? -1 : model_.activeIndex(); }
@@ -161,6 +169,7 @@ void ReaderController::closeAt(int index) {
     const auto id = model_.sessions().at(static_cast<std::size_t>(index)).id;
     cancelPending(id);
     sessionPasswords_.erase(id);
+    capabilities_.erase(id);
     beginResetModel();
     const bool closed = model_.close(id);
     Q_ASSERT(closed);
@@ -326,6 +335,10 @@ void ReaderController::launchOpen(
             emit dataChanged(index(row), index(row));
             saveSessions();
         }
+        if (accepted && watcher->result().state == atlas::reader::OpenState::ready) {
+            capabilities_.erase(sessionId); // a (re)open accepts the file as it is now
+            startCapabilityCheck(sessionId);
+        }
         QTimer::singleShot(0, this, [this, sessionId, revision, watcher] {
             const auto pending = pending_.find(sessionId);
             if (pending != pending_.end()
@@ -363,6 +376,63 @@ void ReaderController::scheduleRetiredCleanup(QFutureWatcher<atlas::reader::Open
         });
         if (retired != retired_.end()) retired_.erase(retired);
     });
+}
+
+void ReaderController::recheckCapabilities(int index) {
+    if (index < 0 || index >= rowCount()) return;
+    const auto& session = model_.sessions().at(static_cast<std::size_t>(index));
+    if (session.state == atlas::reader::OpenState::ready) startCapabilityCheck(session.id);
+}
+
+void ReaderController::acceptSavedFile(const QString& path) {
+    const QString key = normalizedSourceKey(path);
+    for (const auto& session : model_.sessions()) {
+        if (normalizedSourceKey(pathToQString(session.source)) != key) continue;
+        capabilities_[session.id].baseline = {}; // the next check records the saved revision
+        if (session.state == atlas::reader::OpenState::ready) startCapabilityCheck(session.id);
+    }
+}
+
+QString ReaderController::passwordForPath(const QString& path) const {
+    const QString key = normalizedSourceKey(path);
+    for (const auto& session : model_.sessions()) {
+        if (normalizedSourceKey(pathToQString(session.source)) != key) continue;
+        const auto found = sessionPasswords_.find(session.id);
+        if (found != sessionPasswords_.end()) return found->second;
+    }
+    return {};
+}
+
+void ReaderController::startCapabilityCheck(std::uint64_t sessionId) {
+    const auto found = std::find_if(model_.sessions().begin(), model_.sessions().end(),
+                                    [sessionId](const auto& session) { return session.id == sessionId; });
+    if (found == model_.sessions().end()) return;
+    const QString path = pathToQString(found->source);
+    const auto passwordIt = sessionPasswords_.find(sessionId);
+    const QString password = passwordIt == sessionPasswords_.end() ? QString{} : passwordIt->second;
+    auto& state = capabilities_[sessionId];
+    const quint64 generation = ++capabilityGeneration_;
+    state.generation = generation;
+    const RevisionStamp baseline = state.baseline;
+    QPointer<ReaderController> self{this};
+    // Runs qpdf and file probes off the UI thread; only reads.
+    std::erase_if(capabilityJobs_, [](const auto& job) { return job.isFinished(); });
+    capabilityJobs_.push_back(QtConcurrent::run([self, sessionId, generation, path, password, baseline] {
+        const auto result = checkDocumentCapabilities(path, password, baseline);
+        QMetaObject::invokeMethod(qApp, [self, sessionId, generation, result] {
+            if (!self) return;
+            const auto it = self->capabilities_.find(sessionId);
+            if (it == self->capabilities_.end() || it->second.generation != generation) return;
+            if (!it->second.baseline.valid()) it->second.baseline = result.stamp;
+            it->second.map = capabilityMap(result.assessment, result.pdf);
+            const auto& sessions = self->model_.sessions();
+            for (std::size_t row = 0; row < sessions.size(); ++row) {
+                if (sessions[row].id != sessionId) continue;
+                const QModelIndex changed = self->index(static_cast<int>(row));
+                emit self->dataChanged(changed, changed, {CapabilityRole});
+            }
+        }, Qt::QueuedConnection);
+    }));
 }
 
 void ReaderController::refreshModel(int previousActiveIndex, int previousCount) {

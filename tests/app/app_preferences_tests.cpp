@@ -49,9 +49,30 @@ int main(int argc, char** argv) {
             require(prefs.recentFiles() == QStringList{QStringLiteral("C:/Books/25.pdf")},
                     "Clear History keeps pinned files only.");
             require(prefs.positionFor(book).isEmpty(), "Clear History forgets reading positions.");
+            // N5.3 Identity and Security: exact text in any script, defaults on.
+            require(prefs.recheckOnReturn() && prefs.showDocumentStatus(), "Security options default on.");
+            prefs.setIdentityName(QStringLiteral("  أبو بكر ياسر  "));
+            prefs.setIdentityOrganization(QStringLiteral("ڈیرک سول"));
+            prefs.setIdentityEmail(QStringLiteral("reader@example.org"));
+            prefs.setRecheckOnReturn(false);
+            prefs.setNavPanel(QStringLiteral("nonsense"));
+            require(prefs.navPanel().isEmpty(), "Unknown navigation panels are closed.");
+            prefs.setNavPanel(QStringLiteral("signatures"));
+            prefs.setIdentityName(QString(1000, QLatin1Char('x')));
+            require(prefs.identityName().size() == 256, "Identity text is capped.");
+            prefs.setIdentityName(QStringLiteral("  أبو بكر ياسر  "));
             prefs.setRememberPosition(false);
             prefs.savePosition(book, 7, 1.0, 1, 1);
             require(prefs.positionFor(book).isEmpty(), "With remembering off, nothing is saved.");
+        }
+        {
+            atlas::app::AppPreferences prefs{file};
+            require(prefs.identityName() == QStringLiteral("  أبو بكر ياسر  ") &&
+                        prefs.identityOrganization() == QStringLiteral("ڈیرک سول") &&
+                        prefs.identityEmail() == QStringLiteral("reader@example.org"),
+                    "Identity persists exactly as typed.");
+            require(!prefs.recheckOnReturn() && prefs.showDocumentStatus(), "Security options persist.");
+            require(prefs.navPanel() == QStringLiteral("signatures"), "The Signatures panel stays open across restarts.");
         }
     } catch (const std::exception& error) {
         std::cerr << "FAIL: " << error.what() << '\n';

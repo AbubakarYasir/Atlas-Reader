@@ -15,7 +15,7 @@ Accessibility review explicitly includes Windows Narrator: complete an edit, sav
 
 - Extract the whole review ZIP into a new folder and run `atlas_reader.exe`.
 - **Use copies of your PDFs.** N5 is the first stage that writes into PDFs (only when you press Save); every save keeps a backup in Atlas's profile, but copies keep the review stress-free.
-- Have ready: an Arabic or Urdu book with bookmarks, a long book (1,000+ pages), one PDF without bookmarks that has clear chapter headings, a password-protected PDF (`A008_password_rc4_40.pdf` in `samples`, password **atlas-user**), the synthetic signed sample `A018_self_signed.pdf` (its test signer is intentionally not trusted), or a signed/certified copy of your own, and Foxit (or another reader) to check results.
+- Have ready: an Arabic or Urdu book with bookmarks, a long book (1,000+ pages), one PDF without bookmarks that has clear chapter headings, a password-protected PDF (`A015_encrypted_outline_rc4_40.pdf` in `samples`, password **atlas-user**; `A008_password_rc4_40.pdf` has the same password but is deliberately damaged, so Atlas shows **Damaged** and will not change it), the synthetic signed sample `A018_self_signed.pdf` (its test signer is intentionally not trusted), or a signed/certified copy of your own, and Foxit (or another reader) to check results.
 - Add the folder with your copies to the Library first: bookmarks are kept per book in the Library.
 
 ## Checks

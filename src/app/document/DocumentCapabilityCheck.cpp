@@ -237,6 +237,10 @@ QVariantMap capabilityMap(const document::CapabilityAssessment& assessment, cons
     }
     QStringList reasons;
     for (const auto reason : assessment.reasons) reasons.append(QString::fromStdString(document::reasonName(reason)));
+    // "Not checked" is wrong for a PDF Atlas did check and found damaged.
+    if (state == QStringLiteral("unknown") &&
+        (reasons.contains(QStringLiteral("malformed")) || reasons.contains(QStringLiteral("unreadable"))))
+        state = QStringLiteral("damaged");
     QVariantList signatures;
     for (const auto& field : pdf.signatureFields) {
         signatures.append(QVariantMap{

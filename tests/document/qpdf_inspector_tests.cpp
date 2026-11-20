@@ -108,6 +108,22 @@ int main(int argc, char** argv) {
             require(pdf.certified, "A010's certification structure is detected.");
 
             // Full check, including file facts and an external change.
+            // A008 (missing page /Resources, repaired by qpdf) is damaged: never
+            // changed, and shown as "damaged", not "not checked". A015 is a sound
+            // encrypted book and can be saved (the N5 review's password sample).
+            const auto damaged = app::checkDocumentCapabilities(fixtures + QStringLiteral("/A008_password_rc4_40.pdf"),
+                                                                QStringLiteral("atlas-user"), {});
+            const auto damagedMap = app::capabilityMap(damaged.assessment, damaged.pdf);
+            require(!damaged.assessment.capabilities.canEmbedOutline &&
+                        damagedMap.value(QStringLiteral("state")).toString() == QStringLiteral("damaged") &&
+                        damagedMap.value(QStringLiteral("reasons")).toStringList().contains(QStringLiteral("malformed")),
+                    "A damaged PDF is reported as damaged and never changed.");
+            const auto sound = app::checkDocumentCapabilities(fixtures + QStringLiteral("/A015_encrypted_outline_rc4_40.pdf"),
+                                                              QStringLiteral("atlas-user"), {});
+            require(sound.assessment.capabilities.canEmbedOutline &&
+                        app::capabilityMap(sound.assessment, sound.pdf).value(QStringLiteral("state")).toString() ==
+                            QStringLiteral("writable"),
+                    "A sound password-protected PDF can take bookmarks.");
             const auto first = app::checkDocumentCapabilities(restricted, QStringLiteral("atlas-user"), {});
             require(!first.assessment.capabilities.canEmbedOutline && first.assessment.canKeepLocalResearch &&
                         first.stamp.valid(),

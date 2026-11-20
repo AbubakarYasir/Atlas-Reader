@@ -151,7 +151,12 @@ Rectangle {
             return
         }
         if (tab.capability && tab.capability.checked && !tab.capability.canEmbedOutline) {
-            tab.toastRequested(I18n.t("save.reason.notPermitted"))
+            // A damaged or unchecked PDF gets its own reason; "protected, signed,
+            // read-only or in use" would be untrue for it.
+            const reasons = tab.capability.reasons || []
+            const own = ["malformed", "unreadable", "notInspected"].find(r => reasons.indexOf(r) >= 0)
+            tab.toastRequested(own ? I18n.t("capability.reason." + own) + " " + I18n.t("capability.local")
+                                   : I18n.t("save.reason.notPermitted"))
             return
         }
         const preview = bookmarkModel.savePreview(tab.saveRemovesHidden)

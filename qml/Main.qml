@@ -324,6 +324,14 @@ ApplicationWindow {
             onBookRequested: (documentId, path) => libraryController.openFoundBook(documentId, path)
             onBookmarkRequested: (found) => { if (reader.currentTab) reader.currentTab.goToBookmark(found) }
         }
+        // The title-bar search hands the keyboard back when it closes.
+        Connections {
+            target: titleBar.commandCenter
+            function onFocusFallbackRequested() {
+                if (root.activeViewport) root.activeViewport.forceActiveFocus()
+                else libraryView.focusDefault()
+            }
+        }
 
         RibbonBar {
             id: ribbon

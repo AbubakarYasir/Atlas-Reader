@@ -75,14 +75,17 @@ Rectangle {
         editingId = ""
         const row = bookmarks.rowOf(id)
         if (accept && row >= 0 && text.length > 0) select(bookmarks.rename(row, text))
-        list.forceActiveFocus()
+        focusTree()
     }
     function select(row) {
         if (row < 0) return
         list.currentIndex = row
         list.positionViewAtIndex(row, ListView.Contain)
     }
-    function focusTree() { list.forceActiveFocus() }
+    function focusTree() {
+        list.forceActiveFocus()
+        if (list.currentItem) list.currentItem.forceActiveFocus()
+    }
     function removeCurrent() {
         const row = list.currentIndex
         if (row < 0) return
@@ -170,6 +173,8 @@ Rectangle {
             Layout.margins: Theme.sm
             implicitHeight: (Theme.touch ? 36 : 28) + Theme.scriptExtra
             visible: panel.bookmarks.totalCount > 0
+            // Hidden when the last bookmark goes (an undo, say): give the keyboard to the panel.
+            onVisibleChanged: if (!visible && activeFocus) { focus = false; panel.forceActiveFocus() }
             placeholderText: I18n.t("bookmarks.find")
             Accessible.name: I18n.t("bookmarks.find")
             font.family: I18n.contentFamily(text) || I18n.uiFamily
@@ -533,7 +538,13 @@ Rectangle {
                             font.pixelSize: 13
                             Accessible.name: I18n.t("bookmarks.renameField")
                             background: Rectangle { color: Theme.raised; border.width: 2; border.color: Theme.focusRing; radius: 2 }
-                            onVisibleChanged: if (visible) { text = row.title; selectAll(); forceActiveFocus() }
+                            // When it closes it must give focus up: it stayed the list's
+                            // focused item while hidden, so Delete, Ctrl+Z and the arrow
+                            // keys did nothing after naming a bookmark.
+                            onVisibleChanged: {
+                                if (visible) { text = row.title; selectAll(); forceActiveFocus() }
+                                else focus = false
+                            }
                             Keys.onReturnPressed: panel.finishRename(row.nodeId, text, true)
                             Keys.onEnterPressed: panel.finishRename(row.nodeId, text, true)
                             Keys.onEscapePressed: panel.finishRename(row.nodeId, text, false)

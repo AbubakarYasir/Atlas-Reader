@@ -61,6 +61,11 @@ jobs:
         shell: pwsh
         run: python tools/i18n/check-strings.py
 
+      - name: Validate QML rules (announcements reach screen readers, hidden fields release the keyboard)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: python tools/qml/check-qml-rules.py
+
       - name: Validate inherited qualification scripts and N1 shell contract
         if: matrix.configuration == 'Release'
         shell: pwsh

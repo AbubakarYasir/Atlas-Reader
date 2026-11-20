@@ -9,6 +9,8 @@
     close with the mirrored keys in Arabic and Urdu); every row is a named
     TreeItem with its level in the help text; the native ExpandCollapse
     pattern reports and changes the open/closed state.
+  * Editing by keyboard: Ctrl+B, name, Enter, Delete, Ctrl+Z, Alt+Q/Escape,
+    Ctrl+S and Enter saves into the PDF.
   * Tab order: Tab walks the window without a trap; every stop is named.
   * Library: focus starts on a book and moves with the arrow keys.
   * About: opens with focus on a named dialog; Escape closes it.
@@ -41,6 +43,7 @@ New-Item -ItemType Directory -Path $books | Out-Null
 $book = Join-Path $books 'Accessibility Sample.pdf'
 Copy-Item -LiteralPath $Pdf -Destination $book
 Copy-Item -LiteralPath $Pdf -Destination (Join-Path $books 'Second Sample.pdf')
+foreach ($l in $Languages) { Copy-Item -LiteralPath $Pdf -Destination (Join-Path $books "Edit $l.pdf") }
 $script:failures = New-Object System.Collections.Generic.List[string]
 $script:log = New-Object System.Collections.Generic.List[object]
 $script:proc = $null
@@ -151,6 +154,56 @@ function Check-Bookmarks([string]$lang) {
     } finally { Close-App }
 }
 
+function TreeNames($window) {
+    $cond = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::TreeItem)
+    @($window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond) | ForEach-Object { $_.Current.Name })
+}
+
+# Editing with the keyboard only (N5 review checks 1 and 4): add, name, delete,
+# undo, save with Enter. Regressions this guards: after naming a bookmark the
+# hidden rename field kept the keyboard (Delete and Ctrl+Z did nothing); Enter
+# did not press Save; the title-bar search kept the keyboard after closing.
+function Check-Editing([string]$lang) {
+    Write-Host "[$lang] editing with the keyboard"
+    $edit = Join-Path $books "Edit $lang.pdf"
+    $before = (Get-FileHash -LiteralPath $edit -Algorithm SHA256).Hash
+    $window = Launch $lang @('--show', 'bookmarks-select:0', $edit)
+    if (-not $window) { Fail $lang 'window did not appear'; return }
+    try {
+        WaitFocus 'TreeItem' | Out-Null
+        $f = Press '^b'
+        Record $lang 'edit' 'Ctrl+B' $f
+        if ($f.type -ne 'Edit') { Fail $lang "Ctrl+B did not open the name field (focus $($f.type) '$($f.name)')" }
+        [System.Windows.Forms.SendKeys]::SendWait('^a'); Start-Sleep -Milliseconds 300
+        [System.Windows.Forms.SendKeys]::SendWait('QA'); Start-Sleep -Milliseconds 400
+        $f = Press '{ENTER}'
+        Record $lang 'edit' 'name + Enter' $f
+        if ($f.type -ne 'TreeItem' -or $f.name -ne 'QA') { Fail $lang "after naming, focus is $($f.type) '$($f.name)', expected TreeItem 'QA'" }
+        $f = Press '{DELETE}'
+        Record $lang 'edit' 'Delete' $f
+        if ((TreeNames $window) -contains 'QA') { Fail $lang 'Delete did not remove the new bookmark (keyboard stuck after naming)' }
+        $f = Press '^z'
+        Record $lang 'edit' 'Ctrl+Z' $f
+        if ((TreeNames $window) -notcontains 'QA') { Fail $lang 'Ctrl+Z did not bring the bookmark back' }
+        # Title-bar search: Escape hands the keyboard back (not to a hidden field).
+        Press '%q' | Out-Null
+        $f = Press '{ESC}'
+        Record $lang 'edit' 'Alt+Q, Escape' $f
+        if ($f.type -eq 'Edit') { Fail $lang 'after closing the title-bar search the keyboard is still in its field' }
+        $f = Press '^s'
+        Start-Sleep -Milliseconds 800
+        $f = Focused
+        Record $lang 'edit' 'Ctrl+S' $f
+        if (-not $f.name) { Fail $lang "Save dialog opens with focus on unnamed $($f.type)" }
+        Press '{ENTER}' | Out-Null
+        $deadline = (Get-Date).AddSeconds(25)
+        $after = $before
+        while ((Get-Date) -lt $deadline -and $after -eq $before) { Start-Sleep -Milliseconds 700; $after = (Get-FileHash -LiteralPath $edit -Algorithm SHA256).Hash }
+        Write-Host ("  Save with Enter: file changed = {0}" -f ($after -ne $before))
+        if ($after -eq $before) { Fail $lang 'Enter in the Save dialog did not save the bookmarks into the PDF' }
+    } finally { Close-App }
+}
+
 function Check-TabOrder([string]$lang) {
     $start = Focused
     $startKey = "$($start.type)|$($start.name)"
@@ -201,6 +254,7 @@ function Check-About([string]$lang) {
 try {
     foreach ($lang in $Languages) {
         Check-Bookmarks $lang
+        Check-Editing $lang
         Check-Library $lang
         Check-About $lang
     }

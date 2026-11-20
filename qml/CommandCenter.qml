@@ -135,7 +135,12 @@ Item {
         }
     }
 
+    // Where the keyboard was before the search opened; it goes back there on
+    // close. Otherwise the hidden field kept (and after a dialog, regained)
+    // focus, and Ctrl+Z, Delete and the arrow keys went into it.
+    property Item returnFocus: null
     function open() {
+        if (!field.visible) returnFocus = Window.activeFocusItem
         field.visible = true
         field.text = ""
         bookRows = []
@@ -147,8 +152,14 @@ Item {
     function close() {
         popup.close()
         field.visible = false
+        field.focus = false
         field.text = ""
+        const target = returnFocus
+        returnFocus = null
+        if (target && target.visible && target.enabled) target.forceActiveFocus(Qt.OtherFocusReason)
+        else center.focusFallbackRequested()
     }
+    signal focusFallbackRequested()
     function run(index) {
         const row = results[index]
         if (!row || !row.enabled) return

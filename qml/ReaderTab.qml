@@ -1077,8 +1077,11 @@ Rectangle {
             Accessible.name: I18n.t("reader.passwordPlaceholder")
             Accessible.description: I18n.t("reader.passwordNotSaved")
             onVisibleChanged: {
-                if (visible) forceActiveFocus()
-                else text = ""
+                if (visible) { forceActiveFocus(); return }
+                text = ""
+                // Once the book opens the field hides: hand the keyboard to the pages.
+                focus = false
+                view.forceActiveFocus()
             }
             onAccepted: {
                 if (text.length === 0) return

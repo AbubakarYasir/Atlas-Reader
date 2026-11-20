@@ -39,8 +39,8 @@ $sqliteNotice = Join-Path $buildDirectory 'vcpkg_installed/x64-windows-static-md
 if (-not (Test-Path -LiteralPath $sqliteNotice)) { throw 'Pinned SQLite notice is missing from this build.' }
 Copy-Item -LiteralPath $sqliteNotice -Destination (Join-Path $notices 'sqlite3-copyright.txt')
 # Bundled interface assets (compiled into the executable): fonts (OFL-1.1) and icons (MIT).
-Copy-Item -LiteralPath (Join-Path $repo 'assets/fonts/OFL.txt') -Destination (Join-Path $notices 'noto-fonts-OFL.txt')
-Copy-Item -LiteralPath (Join-Path $repo 'assets/fonts/README.md') -Destination (Join-Path $notices 'noto-fonts-README.md')
+Copy-Item -LiteralPath (Join-Path $repo 'assets/fonts/OFL.txt') -Destination (Join-Path $notices 'fonts-OFL.txt')
+Copy-Item -LiteralPath (Join-Path $repo 'assets/fonts/README.md') -Destination (Join-Path $notices 'fonts-README.md')
 Copy-Item -LiteralPath (Join-Path $repo 'assets/icons/LICENSE.txt') -Destination (Join-Path $notices 'fluentui-system-icons-LICENSE.txt')
 $reviewGuide = if ($Checkpoint -eq 'N5') { 'N5_REVIEW.md' } else { 'N4_REVIEW.md' }
 foreach ($doc in @($reviewGuide, 'DEPENDENCIES.md')) {

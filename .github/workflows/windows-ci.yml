@@ -61,6 +61,11 @@ jobs:
         shell: pwsh
         run: python tools/i18n/check-strings.py
 
+      - name: Validate interface fonts cover the interface text (a missing character makes Qt read every installed font)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: python tools/fonts/check-ui-coverage.py
+
       - name: Validate QML rules (announcements reach screen readers, hidden fields release the keyboard)
         if: matrix.configuration == 'Release'
         shell: pwsh
@@ -309,7 +314,7 @@ jobs:
       - name: Startup time on Windows (N1-03; report, not a gate on CI hardware)
         if: matrix.configuration == 'Release'
         shell: pwsh
-        run: pwsh -NoProfile -File tools/perf/measure-startup.ps1 -Exe build/ci-Release/Release/atlas_reader.exe
+        run: pwsh -NoProfile -File tools/perf/measure-startup.ps1 -Exe build/ci-Release/Release/atlas_reader.exe -FontCheckFile (Join-Path $env:RUNNER_TEMP 'atlas-font-check.txt')
 
       - name: Accessibility sweep on Windows (EN/AR/UR, ten surfaces)
         if: matrix.configuration == 'Release'
@@ -664,3 +669,14 @@ jobs:
             artifacts/review/atlas-reader-review-windows-x64.zip.sha256
           if-no-files-found: error
           retention-days: 30
+
+      # Last, so a failure here never withholds the review evidence or package.
+      - name: Startup font check (Qt must not read every installed font before the first frame)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        run: |
+          $file = Join-Path $env:RUNNER_TEMP 'atlas-font-check.txt'
+          if (-not (Test-Path -LiteralPath $file)) { throw 'The startup step did not write the font check result.' }
+          $failures = (Get-Content -LiteralPath $file -Raw)
+          if ($failures -and $failures.Trim().Length -gt 0) { Write-Host $failures; throw 'Startup font check failed.' }
+          Write-Host 'Startup font check passed.'

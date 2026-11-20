@@ -501,7 +501,9 @@ Rectangle {
                             textFormat: Text.PlainText
                             font.family: I18n.contentFamily(row.title)
                             font.pixelSize: 13
-                            font.italic: row.storage === "locally_hidden"
+                            // The Arabic and Urdu fonts have no italic face, and asking for a
+                            // face a font lacks makes Qt read every installed font on Windows.
+                            font.italic: row.storage === "locally_hidden" && font.family === I18n.systemFamily
                             color: row.storage === "locally_hidden" ? Theme.muted : Theme.ink
                             elide: Text.ElideRight
                             horizontalAlignment: Text.AlignLeft   // each title keeps its own script direction

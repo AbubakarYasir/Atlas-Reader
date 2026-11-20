@@ -115,11 +115,12 @@ The storage states (Embedded, Local only, Pending, Conflict, Signed, Read-only, 
 | `label` | 12 / 16 | Semibold | Small caps-free section labels |
 
 - **Latin UI:** the Windows application system font, explicitly selected rather than an empty font family. Verify the actual family in the running build; do not assume Segoe UI Variable is installed or selected.
-- **Arabic UI and Arabic content:** bundled **Noto Naskh Arabic** (OFL). Check joining, marks, baseline and small menu labels in the running build.
-- **Urdu UI and Urdu content:** bundled **Noto Nastaliq Urdu** (OFL). Allow the actual shaped text height, including descending strokes and marks; never shrink text to force Foxit's English row height.
+- **Arabic UI and Arabic content:** bundled **Atlas Naskh** (Noto Naskh Arabic with Latin from Noto Sans, OFL). Check joining, marks, baseline and small menu labels in the running build.
+- **Urdu UI and Urdu content:** bundled **Atlas Nastaliq** (Noto Nastaliq Urdu at weights 400 and 600, OFL). Allow the actual shaped text height, including descending strokes and marks; never shrink text to force Foxit's English row height.
 - **User content:** script detection is a heuristic, not a language detector. Arabic and Urdu share letters; text without Urdu-specific letters can use the Arabic family. Include these ambiguous names in review and do not claim automatic language detection is perfect.
 - **PDF pages:** retain the document's own fonts and layout through the PDF renderer. Interface font choices must not replace fonts inside a PDF.
 - **Other scripts:** use system fallback; verify the intended test corpus. Font fallback is not a guarantee that every possible character exists on every PC.
+- **No lookups outside the font at startup (Windows):** Qt reads every installed font family the first time a text needs a character its font lacks or a weight its family lacks; with thousands of fonts installed that takes seconds. So: interface text uses only Regular (400) and Semibold (600), never bold or italic on the bundled fonts; every character of an interface string must be in the font that draws it (`tools/fonts/check-ui-coverage.py`); symbols the system font lacks are drawn (`MenuCaret.qml`), not typed; direction marks are U+202A–U+202C, which every interface font has. After the first frame the remaining families are read in the background so a later character from another script costs milliseconds (`src/app/fonts/InterfaceFonts.h`).
 - **Arabic rules:** line height +15–20% (body 14/24); no letter-spacing ever (it breaks joining); no faux italics; avoid semibold below 13 px; keep diacritics clear of underlines and focus rings.
 - Numbers in page labels and counts use tabular figures where available.
 
@@ -256,7 +257,7 @@ Screenshots and answers go into the stage evidence ledger. Raw screenshots stay 
 
 - `qml/Theme.qml` (`pragma Singleton`) holds every token in §4 and switches on dark mode, Windows contrast and touch mode.
 - `qml/I18n.qml` (`pragma Singleton`) exposes `language`, `rtl`, `t(key, args…)` and font families per language; strings live in `qml/i18n/Strings.js` as one table per language. Bindings that call `I18n.t()` re-evaluate when the language changes, so switching is instant with no restart ([ADR-0006](decisions/ADR-0006-interface-languages.md)). `tools/i18n/check-strings.py` (CI) fails if any key is missing, empty or has mismatched `%1` placeholders in any language.
-- Fonts: Noto Nastaliq Urdu and Noto Naskh Arabic ship in `assets/fonts/` (OFL, pinned SHA-256) and load at startup.
+- Fonts: Atlas Naskh and Atlas Nastaliq ship in `assets/fonts/` (OFL; built from pinned Noto sources by `tools/fonts/build-ui-fonts.py`) and are registered at startup.
 - Icons: one outline family (Fluent UI System Icons, MIT, pinned) in `assets/icons/`, tinted through the control's `icon.color`; directional icons mirror in RTL.
 - Components and views live in `qml/`; `Main.qml` only composes views. No literal colours, sizes or strings in views.
 - Respect `Qt.styleHints` for reduced motion and Windows accessibility settings.
@@ -271,8 +272,8 @@ Windows is mouse and keyboard first, but:
 
 ### N5 repair refinements
 
-The Arabic interface explicitly selects bundled Noto Naskh Arabic; Urdu retains
-Noto Nastaliq Urdu. Export, Import and Save dialogs constrain their height to the
+The Arabic interface explicitly selects the bundled Naskh font; Urdu retains
+the bundled Nastaliq font (both are derived fonts since 2026-11-21, see §4.2). Export, Import and Save dialogs constrain their height to the
 available window and keep their action row outside scrollable options. Toasts use
 Qt accessibility announcements. Qt 6.10 does not expose QML expanded/expandable
 properties; descriptions currently convey that state and a real Narrator review

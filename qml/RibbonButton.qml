@@ -3,8 +3,8 @@ import QtQuick.Controls.Basic
 import QtQuick.Controls.impl
 
 // Large ribbon command (Foxit layout, FOXIT_PARITY §1): 24 px icon with 6 px
-// top padding over a 12 px label of one or two lines; "▾" marks a menu.
-// Two-word labels break onto two lines like Foxit ("Page Fit / Option ▾").
+// top padding over a 12 px label of one or two lines; a small caret marks a menu.
+// Two-word labels break onto two lines like Foxit ("Page Fit / Option" with the caret).
 AbstractButton {
     id: control
 
@@ -64,21 +64,38 @@ AbstractButton {
             anchors.horizontalCenter: parent.horizontalCenter
             y: 6 + 24 + 6
             spacing: -2
-            Text {
+            Row {
                 id: line1
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: control.lines[0] + (control.hasMenu && control.lines[1].length === 0 ? " ▾" : "")
-                font.family: I18n.uiFamily
-                font.pixelSize: Math.round(12 * I18n.sizeScale)
-                color: control.enabled ? Theme.ink : Qt.alpha(Theme.ink, 0.38)
+                spacing: 4
+                Text {
+                    id: label1
+                    text: control.lines[0]
+                    font.family: I18n.uiFamily
+                    font.pixelSize: Math.round(12 * I18n.sizeScale)
+                    color: control.enabled ? Theme.ink : Qt.alpha(Theme.ink, 0.38)
+                }
+                MenuCaret {
+                    visible: control.hasMenu && control.lines[1].length === 0
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: label1.color
+                }
             }
-            Text {
+            Row {
                 id: line2
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: control.lines[1].length > 0
-                text: control.lines[1] + (control.hasMenu ? " ▾" : "")
-                font: line1.font
-                color: line1.color
+                spacing: 4
+                Text {
+                    text: control.lines[1]
+                    font: label1.font
+                    color: label1.color
+                }
+                MenuCaret {
+                    visible: control.hasMenu
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: label1.color
+                }
             }
         }
     }

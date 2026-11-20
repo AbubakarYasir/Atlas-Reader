@@ -9,22 +9,35 @@
   One extra traced run logs Qt font and QML disk-cache events with process
   timestamps and prints the largest gaps (N1-03 investigation).
   Target (docs/QUALITY.md): warm first frame under 800 ms.
+
+  Font check (does not depend on the speed of the machine): Qt on Windows reads
+  every installed font family when a font request is inexact or a character is
+  missing from its font; with thousands of fonts that costs seconds. For each
+  language, with the library and with a document open, the run must read fewer
+  than -MaxFontFamilies families and never start Qt's all-fonts alias pass.
+  Failures are printed, written to -FontCheckFile when given, and thrown with
+  -EnforceFonts.
 #>
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
     [int]$Runs = 3,
     [string[]]$Languages = @('en', 'ar', 'ur'),
     [double]$TargetMs = 800,
-    [switch]$Enforce
+    [switch]$Enforce,
+    [string]$Document = '',
+    [int]$MaxFontFamilies = 40,
+    [string]$FontCheckFile = '',
+    [switch]$EnforceFonts
 )
 $ErrorActionPreference = 'Stop'
 $exePath = (Resolve-Path $Exe).Path
 $work = Join-Path ([IO.Path]::GetTempPath()) ("atlas-startup-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $work | Out-Null
 
-function Invoke-Atlas([string]$Language, [string]$MetricsFile, [hashtable]$ExtraEnv = @{}, [string]$LogFile = $null) {
+function Invoke-Atlas([string]$Language, [string]$MetricsFile, [hashtable]$ExtraEnv = @{}, [string]$LogFile = $null, [string]$OpenDocument = '') {
     $profileDir = Join-Path $work "profile-$Language"
     $argList = @('--language', $Language, '--profile-directory', $profileDir, '--quit-after-ms', '2500', '--metrics-file', $MetricsFile)
+    if ($OpenDocument) { $argList += ('"' + $OpenDocument + '"') }
     $saved = @{}
     foreach ($k in $ExtraEnv.Keys) { $saved[$k] = [Environment]::GetEnvironmentVariable($k); [Environment]::SetEnvironmentVariable($k, $ExtraEnv[$k]) }
     try {
@@ -92,5 +105,51 @@ foreach ($e in $events) { $cat = ($e.Text -split ':')[0]; $counts[$cat] = 1 + [i
 Write-Host 'Events per category:'
 $counts.GetEnumerator() | Sort-Object Value -Descending | ForEach-Object { Write-Host ("  {0,6}  {1}" -f $_.Value, $_.Key) }
 
+# Font check: how many font families did Qt read, and did it start the all-fonts pass?
+if (-not $Document) {
+    $candidate = Join-Path $PSScriptRoot '..\..\tests\fixtures\pdf\generated\A001_simple_text.pdf'
+    if (Test-Path -LiteralPath $candidate) { $Document = (Resolve-Path -LiteralPath $candidate).Path }
+}
+$fontFailures = @()
+$fontRows = @()
+$scenarios = @(@{ Name = 'library'; Doc = '' })
+if ($Document) { $scenarios += @{ Name = 'document'; Doc = $Document } } else { Write-Host 'Font check: no sample document found; only the library is checked.' }
+foreach ($lang in $Languages) {
+    foreach ($scenario in $scenarios) {
+        $fontLog = Join-Path $work ("fonts-$lang-" + $scenario.Name + '.log')
+        Invoke-Atlas $lang (Join-Path $work ("fonts-$lang-" + $scenario.Name + '.jsonl')) @{
+            QT_LOGGING_RULES        = 'qt.qpa.fonts.debug=true;qt.text.font.match.debug=true'
+            QT_MESSAGE_PATTERN      = '%{time process} %{category}: %{message}'
+            QT_FORCE_STDERR_LOGGING = '1'
+            ATLAS_FONT_WARMUP       = '0'
+        } $fontLog $scenario.Doc
+        $families = New-Object System.Collections.Generic.HashSet[string]
+        $aliasPass = 0
+        $fallbackPass = 0
+        foreach ($line in Get-Content -LiteralPath $fontLog -ErrorAction SilentlyContinue) {
+            if ($line -match '^\s*[\d.]+\s+qt\.qpa\.fonts: "([^"]*)"\s*$') { [void]$families.Add($Matches[1]) }
+            elseif ($line -match 'qt\.text\.font\.match: Alias match pass') { $aliasPass++ }
+            elseif ($line -match 'qt\.text\.font\.match: Fallbacks pass') { $fallbackPass++ }
+        }
+        $fontRows += [pscustomobject]@{ Language = $lang; Scenario = $scenario.Name; FamiliesRead = $families.Count; AliasPass = $aliasPass; FallbackPass = $fallbackPass }
+        $label = "$lang/" + $scenario.Name
+        if ($families.Count -ge $MaxFontFamilies) {
+            $sample = (@($families) | Select-Object -First 12) -join ', '
+            $fontFailures += "${label}: Qt read $($families.Count) font families (limit $MaxFontFamilies). First: $sample"
+        }
+        if ($aliasPass -gt 0) { $fontFailures += "${label}: an inexact font request started Qt's all-fonts alias pass ($aliasPass)." }
+        if ($families.Count -lt $MaxFontFamilies) { Write-Host ("  {0}: {1}" -f $label, ((@($families) | Sort-Object) -join ', ')) }
+    }
+}
+$fontRows | Format-Table -AutoSize | Out-String | Write-Host
+if ($fontFailures.Count -gt 0) {
+    Write-Host 'Font check FAILED:'
+    $fontFailures | ForEach-Object { Write-Host "  $_" }
+} else {
+    Write-Host "Font check passed: every run read fewer than $MaxFontFamilies font families and none started the all-fonts pass."
+}
+if ($FontCheckFile) { Set-Content -LiteralPath $FontCheckFile -Value ($fontFailures -join "`n") -Encoding utf8 }
+
 Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue
+if ($EnforceFonts -and $fontFailures.Count -gt 0) { throw "Startup font check failed ($($fontFailures.Count))." }
 if ($Enforce -and $worst -gt $TargetMs) { throw "Startup missed the $TargetMs ms target ($worst ms)." }

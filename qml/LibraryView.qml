@@ -30,11 +30,11 @@ Item {
     // Reserve both title lines and metadata from actual font metrics, not a
     // fixed card height that lets the layout push actions outside the border.
     FontMetrics { id: latinTitleMetrics; font.family: I18n.systemFamily; font.pixelSize: 15; font.weight: Font.DemiBold }
-    FontMetrics { id: arabicTitleMetrics; font.family: library.gridMode ? "Noto Naskh Arabic" : I18n.systemFamily; font.pixelSize: 15; font.weight: Font.DemiBold }
-    FontMetrics { id: urduTitleMetrics; font.family: library.gridMode ? "Noto Nastaliq Urdu" : I18n.systemFamily; font.pixelSize: 15; font.weight: Font.DemiBold }
+    FontMetrics { id: arabicTitleMetrics; font.family: library.gridMode ? I18n.arabicFamily : I18n.systemFamily; font.pixelSize: 15; font.weight: Font.DemiBold }
+    FontMetrics { id: urduTitleMetrics; font.family: library.gridMode ? I18n.urduFamily : I18n.systemFamily; font.pixelSize: 15; font.weight: Font.DemiBold }
     FontMetrics { id: latinDetailMetrics; font.family: I18n.systemFamily; font.pixelSize: 12 }
-    FontMetrics { id: arabicDetailMetrics; font.family: library.gridMode ? "Noto Naskh Arabic" : I18n.systemFamily; font.pixelSize: 12 }
-    FontMetrics { id: urduDetailMetrics; font.family: library.gridMode ? "Noto Nastaliq Urdu" : I18n.systemFamily; font.pixelSize: 12 }
+    FontMetrics { id: arabicDetailMetrics; font.family: library.gridMode ? I18n.arabicFamily : I18n.systemFamily; font.pixelSize: 12 }
+    FontMetrics { id: urduDetailMetrics; font.family: library.gridMode ? I18n.urduFamily : I18n.systemFamily; font.pixelSize: 12 }
     readonly property real gridTitleLineHeight: Math.ceil(Math.max(latinTitleMetrics.height, arabicTitleMetrics.height, urduTitleMetrics.height))
     readonly property real gridDetailHeight: Math.ceil(Math.max(latinDetailMetrics.height, arabicDetailMetrics.height, urduDetailMetrics.height))
     readonly property real gridCardHeight: Theme.libraryCoverHeight + 2 * gridTitleLineHeight

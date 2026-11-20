@@ -74,7 +74,7 @@ Rectangle {
                     text: I18n.t("recovery.review")
                     color: Theme.ink
                     font.family: I18n.uiFamily
-                    font.bold: true
+                    font.weight: Font.DemiBold
                     wrapMode: Text.WordWrap
                 }
                 Label {

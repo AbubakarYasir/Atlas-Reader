@@ -3,6 +3,7 @@
 #include "app/bookmarks/BookmarkService.h"
 #include "app/diagnostics/AccessibilityDump.h"
 #include "app/diagnostics/ShellMetrics.h"
+#include "app/fonts/InterfaceFonts.h"
 #include "app/library/LibraryController.h"
 #include "app/logging/Logging.h"
 #include "app/reader/PageThumbnailProvider.h"
@@ -44,18 +45,6 @@ std::filesystem::path filesystemPath(const QString& value) {
 
 } // namespace
 
-// assets/fonts (OFL), compiled into the AtlasReader QML module's resources.
-static void registerBundledFonts() {
-    static const char* const fonts[] = {"NotoNastaliqUrdu-wght.ttf", "NotoNaskhArabic-Regular.ttf",
-                                        "NotoNaskhArabic-SemiBold.ttf"};
-    for (const char* name : fonts) {
-        const QString file = QString::fromLatin1(name);
-        int id = QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/AtlasReader/assets/fonts/") + file);
-        if (id < 0) id = QFontDatabase::addApplicationFont(QStringLiteral(":/AtlasReader/assets/fonts/") + file);
-        if (id < 0) qCWarning(atlas::logging::startup) << "Bundled font not registered:" << file;
-    }
-}
-
 int main(int argc, char* argv[]) {
     using MetricsClock = atlas::diagnostics::ShellMetrics::Clock;
     const auto processStart = MetricsClock::now();
@@ -71,7 +60,20 @@ int main(int argc, char* argv[]) {
     // a font. Adding an application font later (QML FontLoader) invalidates
     // Qt's font database, which then enumerates every installed font again:
     // seconds on font-heavy Windows machines (N1-03).
-    registerBundledFonts();
+    for (const QString& file : atlas::fonts::registerBundledFonts()) {
+        qCWarning(atlas::logging::startup) << "Bundled font not registered:" << file;
+    }
+    // Weight 600 becomes an exact match for the system interface font; an
+    // inexact match makes Qt read every installed font (see InterfaceFonts.h).
+    const QString systemFontFamily = QGuiApplication::font().family();
+    const bool semiboldAttached = atlas::fonts::attachSystemSemibold(systemFontFamily);
+#ifdef Q_OS_WIN
+    if (!semiboldAttached) {
+        qCInfo(atlas::logging::startup) << "No semibold face for the system font" << systemFontFamily;
+    }
+#else
+    static_cast<void>(semiboldAttached);
+#endif
     atlas::accessibility::installTreeItemAccessibility(); // before any QML exists
     metrics_fontsRegistered = MetricsClock::now();
 
@@ -210,7 +212,11 @@ int main(int argc, char* argv[]) {
     // An empty QML font family selects a legacy Windows bitmap font under GDI.
     // Preserve the actual platform interface font instead of clearing it.
     engine.rootContext()->setContextProperty(QStringLiteral("atlasSystemFontFamily"),
-                                            QGuiApplication::font().family());
+                                            systemFontFamily);
+    engine.rootContext()->setContextProperty(QStringLiteral("atlasArabicFontFamily"),
+                                            QString::fromLatin1(atlas::fonts::arabicFamily));
+    engine.rootContext()->setContextProperty(QStringLiteral("atlasUrduFontFamily"),
+                                            QString::fromLatin1(atlas::fonts::urduFamily));
     metrics.recordStage(QStringLiteral("startup.qml_engine_ready_ms"));
     QObject::connect(
         &libraryController,
@@ -289,7 +295,18 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, [&metrics] {
+    // Once the window is up, the remaining font families are read in the
+    // background (InterfaceFonts.h). ATLAS_FONT_WARMUP=0 turns this off.
+    atlas::fonts::FontWarmup fontWarmup;
+    if (qEnvironmentVariable("ATLAS_FONT_WARMUP") != QLatin1String("0")) {
+        auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst());
+        QObject::connect(window, &QQuickWindow::frameSwapped, &app, [&fontWarmup, &app] {
+            QTimer::singleShot(1500, &app, [&fontWarmup] { fontWarmup.start(); });
+        }, Qt::SingleShotConnection);
+    }
+
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, [&metrics, &fontWarmup] {
+        fontWarmup.stop();
         metrics.recordShutdown();
         qCInfo(atlas::logging::startup) << "Atlas Reader Native shutdown cleanly";
     });

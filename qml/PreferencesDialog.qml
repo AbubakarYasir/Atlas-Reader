@@ -377,7 +377,7 @@ Popup {
                                     delegate: AtlasRadioButton {
                                         required property var modelData
                                         text: modelData.name
-                                        font.family: modelData.code === "ur" ? "Noto Nastaliq Urdu" : modelData.code === "ar" ? "Noto Naskh Arabic" : I18n.systemFamily
+                                        font.family: modelData.code === "ur" ? I18n.urduFamily : modelData.code === "ar" ? I18n.arabicFamily : I18n.systemFamily
                                         checked: preferences.language === modelData.code
                                         onClicked: preferences.language = modelData.code
                                     }

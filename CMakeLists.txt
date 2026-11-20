@@ -177,6 +177,8 @@ atlas_enable_warnings(atlas_library_ingestion)
 add_library(atlas_app_support STATIC
     src/app/accessibility/TreeItemAccessible.cpp
     src/app/accessibility/TreeItemAccessible.h
+    src/app/fonts/InterfaceFonts.cpp
+    src/app/fonts/InterfaceFonts.h
     src/app/diagnostics/AccessibilityDump.cpp
     src/app/diagnostics/AccessibilityDump.h
     src/app/diagnostics/ShellMetrics.cpp
@@ -259,7 +261,7 @@ set(ATLAS_QML_FILES
     qml/AtlasButton.qml qml/AtlasIconButton.qml qml/AtlasTextField.qml qml/SidebarItem.qml
     qml/TitleBar.qml qml/LibraryView.qml qml/ReaderView.qml qml/ReaderTab.qml
     qml/RibbonButton.qml qml/RibbonBar.qml qml/DocumentTabBar.qml qml/Backstage.qml
-    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/SignaturesPanel.qml qml/CommandCenter.qml qml/AutoBookmarksDialog.qml qml/SaveBookmarksDialog.qml qml/ExportBookmarksDialog.qml qml/ImportBookmarksDialog.qml qml/AtlasCheckBox.qml qml/AtlasRadioButton.qml qml/AtlasMenuItem.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
+    qml/SkinsPanel.qml qml/PreferencesDialog.qml qml/AboutDialog.qml qml/PagesPanel.qml qml/BookmarksPanel.qml qml/SignaturesPanel.qml qml/CommandCenter.qml qml/AutoBookmarksDialog.qml qml/SaveBookmarksDialog.qml qml/ExportBookmarksDialog.qml qml/ImportBookmarksDialog.qml qml/AtlasCheckBox.qml qml/AtlasRadioButton.qml qml/AtlasMenuItem.qml qml/MenuCaret.qml qml/FindBar.qml qml/SearchPanel.qml qml/ReaderDialogs.qml qml/RibbonSmallButton.qml
 )
 # Place every QML file at the module root so the module's qmldir (and its
 # singletons) is the implicit import of each file.
@@ -280,9 +282,10 @@ qt_add_qml_module(atlas_reader
         qml/i18n/Strings.js
     RESOURCES
         ${ATLAS_ICON_FILES}
-        assets/fonts/NotoNastaliqUrdu-wght.ttf
-        assets/fonts/NotoNaskhArabic-Regular.ttf
-        assets/fonts/NotoNaskhArabic-SemiBold.ttf
+        assets/fonts/AtlasNaskh-Regular.ttf
+        assets/fonts/AtlasNaskh-SemiBold.ttf
+        assets/fonts/AtlasNastaliq-Regular.ttf
+        assets/fonts/AtlasNastaliq-SemiBold.ttf
         assets/branding/atlas-reader-icon.png
 )
 
@@ -505,6 +508,13 @@ target_link_libraries(atlas_tree_item_accessible_tests PRIVATE atlas_app_support
 atlas_enable_warnings(atlas_tree_item_accessible_tests)
 add_test(NAME atlas_tree_item_accessible COMMAND atlas_tree_item_accessible_tests)
 set_tests_properties(atlas_tree_item_accessible PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(atlas_interface_fonts_tests tests/app/interface_fonts_tests.cpp)
+target_link_libraries(atlas_interface_fonts_tests PRIVATE atlas_app_support Qt6::Gui)
+target_compile_definitions(atlas_interface_fonts_tests PRIVATE ATLAS_FONT_DIRECTORY="${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts")
+atlas_enable_warnings(atlas_interface_fonts_tests)
+add_test(NAME atlas_interface_fonts COMMAND atlas_interface_fonts_tests)
+set_tests_properties(atlas_interface_fonts PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
 add_executable(atlas_document_identity_tests tests/index/document_identity_reconciler_tests.cpp)
 target_link_libraries(atlas_document_identity_tests PRIVATE atlas_document_identity)

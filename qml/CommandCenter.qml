@@ -296,7 +296,7 @@ Item {
                         color: Theme.muted
                         font.family: I18n.uiFamily
                         font.pixelSize: Math.round(11 * I18n.sizeScale)
-                        font.bold: true
+                        font.weight: Font.DemiBold
                         Accessible.role: Accessible.Heading
                     }
                 AbstractButton {

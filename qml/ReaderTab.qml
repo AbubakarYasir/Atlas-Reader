@@ -210,7 +210,9 @@ Rectangle {
     }
 
     // Export / Import Bookmarks (N5.5; panel options, Command Center).
-    readonly property string selectedBookmarkTitle: {
+    // Read when a dialog opens: a binding on the row number alone kept the old
+    // title after a rename ("Page 1" for a bookmark just named).
+    function selectedBookmarkTitle() {
         const row = bookmarksPanel.currentRow
         const data = row >= 0 ? bookmarkModel.get(row) : null
         return data && data.title !== undefined ? data.title : ""
@@ -218,7 +220,6 @@ Rectangle {
     function bookmarkFolder() { return "file:///" + tab.sourcePath.replace(/[\\/][^\\/]*$/, "").replace(/^\/+/, "") }
     ExportBookmarksDialog {
         id: exportDialog
-        selectedTitle: tab.selectedBookmarkTitle
         hasLocal: bookmarkModel.unsavedCount > 0
         onAccepted: (format, scope) => {
             exportFile.format = format
@@ -255,6 +256,7 @@ Rectangle {
             tab.toastRequested(I18n.t("exchange.error.nothing"))
             return
         }
+        exportDialog.selectedTitle = tab.selectedBookmarkTitle()
         exportDialog.ask()
     }
     FileDialog {
@@ -268,7 +270,7 @@ Rectangle {
     Connections {
         target: bookmarkModel
         function onImportRead(info) {
-            if (info.ok) importDialog.ask(info)
+            if (info.ok) { importDialog.selectedTitle = tab.selectedBookmarkTitle(); importDialog.ask(info) }
             else tab.toastRequested(I18n.t("exchange.error." + info.error))
         }
         function onExportFinished(error, target) {
@@ -318,7 +320,6 @@ Rectangle {
     }
     ImportBookmarksDialog {
         id: importDialog
-        selectedTitle: tab.selectedBookmarkTitle
         hasBookmarks: bookmarkModel.totalCount > 0
         onAccepted: (mode) => {
             preferences.navPanel = "bookmarks"

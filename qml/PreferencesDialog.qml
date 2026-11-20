@@ -92,6 +92,10 @@ Popup {
     contentItem: ColumnLayout {
         Accessible.role: Accessible.Dialog
         Accessible.name: I18n.t("prefs.title")
+        // Enter presses the default button unless another button has focus.
+        focus: true
+        Keys.onReturnPressed: if (defaultButton.enabled) defaultButton.clicked()
+        Keys.onEnterPressed: if (defaultButton.enabled) defaultButton.clicked()
         spacing: 0
 
         // header
@@ -522,6 +526,7 @@ Popup {
             spacing: Theme.sm
             Item { Layout.fillWidth: true }
             AtlasButton {
+                id: defaultButton
                 kind: "primary"
                 implicitWidth: 86
                 text: I18n.t("prefs.ok")

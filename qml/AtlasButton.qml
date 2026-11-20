@@ -21,6 +21,9 @@ Button {
     spacing: Theme.sm
     hoverEnabled: true
     focusPolicy: Qt.StrongFocus
+    // Enter presses the focused button, as Space does (Windows convention).
+    Keys.onReturnPressed: clicked()
+    Keys.onEnterPressed: clicked()
     font.family: I18n.uiFamily
     font.pixelSize: Math.round(14 * I18n.sizeScale)
     Accessible.name: text

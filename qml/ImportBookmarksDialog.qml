@@ -36,6 +36,10 @@ Popup {
         spacing: Theme.sm
         Accessible.role: Accessible.Dialog
         Accessible.name: I18n.t("exchange.importTitle")
+        // Enter presses the default button unless another button has focus.
+        focus: true
+        Keys.onReturnPressed: if (defaultButton.enabled) defaultButton.clicked()
+        Keys.onEnterPressed: if (defaultButton.enabled) defaultButton.clicked()
 
         ScrollView {
             id: bodyScroll
@@ -116,6 +120,7 @@ Popup {
             spacing: Theme.sm
             AtlasButton { text: I18n.t("prefs.cancel"); onClicked: dialog.close() }
             AtlasButton {
+                id: defaultButton
                 kind: "primary"
                 iconName: "arrow_import"
                 text: I18n.t("exchange.importAction")

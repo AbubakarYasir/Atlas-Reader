@@ -104,6 +104,10 @@ Popup {
         spacing: Theme.md
         Accessible.role: Accessible.Dialog
         Accessible.name: I18n.t("autoBookmarks.title")
+        // Enter presses the default button unless another button has focus.
+        focus: true
+        Keys.onReturnPressed: if (defaultButton.enabled) defaultButton.clicked()
+        Keys.onEnterPressed: if (defaultButton.enabled) defaultButton.clicked()
 
         Label {
             Layout.fillWidth: true
@@ -326,6 +330,7 @@ Popup {
             spacing: Theme.sm
             AtlasButton { text: I18n.t("prefs.cancel"); onClicked: dialog.close() }
             AtlasButton {
+                id: defaultButton
                 kind: "primary"
                 enabled: !dialog.scanning && dialog.chosen > 0
                 text: I18n.t("autoBookmarks.create", dialog.chosen)

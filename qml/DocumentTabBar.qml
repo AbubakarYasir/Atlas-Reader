@@ -159,7 +159,8 @@ Rectangle {
                     delegate: MenuItem {
                         required property int index
                         required property string title
-                        text: title
+                        text: I18n.contentIn(title, I18n.uiFamily)
+                        Accessible.name: title
                         checkable: true
                         checked: index === readerController.activeIndex
                         onTriggered: readerController.activeIndex = index

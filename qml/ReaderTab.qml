@@ -1051,7 +1051,7 @@ Rectangle {
         }
         Label {
             Layout.fillWidth: true
-            text: tab.title
+            text: I18n.contentIn(tab.title, I18n.systemFamily)
             color: Theme.ink
             font.pixelSize: 22
             font.weight: Font.DemiBold

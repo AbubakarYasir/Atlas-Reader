@@ -220,7 +220,7 @@ Rectangle {
                                 Label {
                                     Layout.fillWidth: true
                                     horizontalAlignment: Text.AlignLeft
-                                    text: row.fileName
+                                    text: I18n.content(row.fileName)
                                     color: Theme.ink
                                     elide: Text.ElideRight
                                     font.family: I18n.contentFamily(text)
@@ -229,7 +229,7 @@ Rectangle {
                                 Label {
                                     Layout.fillWidth: true
                                     horizontalAlignment: Text.AlignLeft
-                                    text: I18n.ltr(row.modelData)
+                                    text: I18n.ltr(I18n.contentIn(row.modelData, I18n.systemFamily))
                                     color: Theme.muted
                                     elide: Text.ElideMiddle
                                     font.family: I18n.systemFamily

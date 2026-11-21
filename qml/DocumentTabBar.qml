@@ -63,7 +63,7 @@ Rectangle {
                 Layout.leftMargin: 8
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignLeft
-                text: tabItem.contentText
+                text: I18n.content(tabItem.contentText)
                 color: tabItem.active ? Theme.brand : Theme.ink
                 elide: Text.ElideRight
                 font.family: I18n.contentFamily(text) || I18n.uiFamily

@@ -497,7 +497,7 @@ Rectangle {
                             id: titleText
                             width: parent.width
                             visible: !row.editing
-                            text: row.title
+                            text: I18n.content(row.title)
                             textFormat: Text.PlainText
                             font.family: I18n.contentFamily(row.title)
                             font.pixelSize: 13
@@ -516,7 +516,7 @@ Rectangle {
                                 if (row.breadcrumb.length > 0) parts.push(row.breadcrumb.join(" › "))
                                 if (row.match === "notes") parts.push(I18n.t("bookmarks.matchNotes"))
                                 if (row.match === "tag") parts.push(I18n.t("bookmarks.matchTag"))
-                                return parts.join(" · ")
+                                return I18n.content(parts.join(" · "))
                             }
                             textFormat: Text.PlainText
                             font.family: I18n.contentFamily(text) || I18n.uiFamily

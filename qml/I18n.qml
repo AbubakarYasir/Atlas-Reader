@@ -31,6 +31,21 @@ QtObject {
         return systemFamily  // other scripts: the system interface font and its fallbacks
     }
 
+    // User content as it can be drawn right now. For a moment after startup,
+    // characters that the text's font lacks (another script, emoji) are left
+    // out, because looking them up makes Qt read every installed font; they
+    // appear as soon as that has been done in the background
+    // (src/app/fonts/InterfaceFonts.h). Use for titles, names and paths.
+    function content(text) {
+        const value = String(text)
+        return atlasContentFonts.ready ? value : atlasContentFonts.shown(value, contentFamily(value))
+    }
+
+    function contentIn(text, family) {
+        const value = String(text)
+        return atlasContentFonts.ready ? value : atlasContentFonts.shown(value, family)
+    }
+
     function t(key) {
         const table = Strings.tables[language] || Strings.tables.en
         let text = table[key]

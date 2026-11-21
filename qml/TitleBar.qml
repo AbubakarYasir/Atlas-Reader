@@ -148,7 +148,7 @@ Rectangle {
             Layout.leftMargin: 8
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignLeft
-            text: bar.placeTitle.length > 0 ? bar.placeTitle : I18n.t("library.title")
+            text: bar.placeTitle.length > 0 ? I18n.content(bar.placeTitle) : I18n.t("library.title")
             color: Theme.titleBarText
             elide: Text.ElideMiddle
             font.family: I18n.contentFamily(text) || I18n.uiFamily

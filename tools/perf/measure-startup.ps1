@@ -12,17 +12,19 @@
 
   Font check (does not depend on the speed of the machine): Qt on Windows reads
   every installed font family when a font request is inexact or a character is
-  missing from its font; with thousands of fonts that costs seconds. For each
-  language, with the library and with a document open, the run must read fewer
-  than -MaxFontFamilies families and never start Qt's all-fonts alias pass.
-  Failures are printed, written to -FontCheckFile when given, and thrown with
-  -EnforceFonts. The font check runs with the background font read switched
-  off (ATLAS_FONT_WARMUP=0), so it sees only what the interface itself asks for.
+  missing from its font; with thousands of fonts that costs half a second or
+  more. For each language the app is started on a library whose folder, file
+  and title contain Chinese, emoji and direction marks, once showing the
+  library and once with that book open. Each run must read fewer than
+  -MaxFontFamilies families and never start Qt's all-fonts alias pass. The
+  check runs with ATLAS_FONT_WARMUP=hold, so nothing but the first screens
+  themselves can ask for a font. Failures are printed, written to
+  -FontCheckFile when given, and thrown with -EnforceFonts.
 
   -ProfileTemplate <folder> measures with a copy of an existing profile (a real
   library) instead of an empty one; the folder itself is never written to.
-  A last table shows when the background font read finished and what a
-  character from another script costs afterwards, for each start mode.
+  A last table shows when the idle font read finished and what characters from
+  other scripts cost afterwards, compared with leaving it all to Qt.
 #>
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
@@ -41,9 +43,11 @@ $exePath = (Resolve-Path $Exe).Path
 $work = Join-Path ([IO.Path]::GetTempPath()) ("atlas-startup-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $work | Out-Null
 
-function Invoke-Atlas([string]$Language, [string]$MetricsFile, [hashtable]$ExtraEnv = @{}, [string]$LogFile = $null, [string]$OpenDocument = '') {
-    $profileDir = Join-Path $work "profile-$Language"
-    $argList = @('--language', $Language, '--profile-directory', $profileDir, '--quit-after-ms', '2500', '--metrics-file', $MetricsFile)
+function Invoke-Atlas([string]$Language, [string]$MetricsFile, [hashtable]$ExtraEnv = @{}, [string]$LogFile = $null,
+                      [string]$OpenDocument = '', [string]$ProfileName = '', [string]$AddLibraryRoot = '') {
+    $profileDir = Join-Path $work $(if ($ProfileName) { $ProfileName } else { "profile-$Language" })
+    $argList = @('--language', $Language, '--profile-directory', ('"' + $profileDir + '"'), '--quit-after-ms', '2500', '--metrics-file', ('"' + $MetricsFile + '"'))
+    if ($AddLibraryRoot) { $argList += @('--add-library-root', ('"' + $AddLibraryRoot + '"')) }
     if ($OpenDocument) { $argList += ('"' + $OpenDocument + '"') }
     $saved = @{}
     foreach ($k in $ExtraEnv.Keys) { $saved[$k] = [Environment]::GetEnvironmentVariable($k); [Environment]::SetEnvironmentVariable($k, $ExtraEnv[$k]) }
@@ -120,22 +124,38 @@ $counts.GetEnumerator() | Sort-Object Value -Descending | ForEach-Object { Write
 
 # Font check: how many font families did Qt read, and did it start the all-fonts pass?
 if (-not $Document) {
-    $candidate = Join-Path $PSScriptRoot '..\..\tests\fixtures\pdf\generated\A001_simple_text.pdf'
+    $candidate = Join-Path $PSScriptRoot '..\..\tests\fixtures\pdf\generated\A003_outlines_links.pdf'
     if (Test-Path -LiteralPath $candidate) { $Document = (Resolve-Path -LiteralPath $candidate).Path }
 }
 $fontFailures = @()
 $fontRows = @()
-$scenarios = @(@{ Name = 'library'; Doc = '' })
-if ($Document) { $scenarios += @{ Name = 'document'; Doc = $Document } } else { Write-Host 'Font check: no sample document found; only the library is checked.' }
+$hostileBook = ''
+$hostileRoot = ''
+if ($Document) {
+    # Folder, file name: Han, CJK brackets, an emoji, Arabic, and isolate marks around "x".
+    $han = [string][char]0x66F8
+    $hostileRoot = Join-Path $work ($han + ' folder')
+    New-Item -ItemType Directory -Path $hostileRoot | Out-Null
+    $name = [string][char]0x300A + [char]0x6E2C + [char]0x8A66 + [char]0x300B + ' ' + [char]::ConvertFromUtf32(0x1F600) + ' ' +
+            [char]0x0643 + [char]0x062A + [char]0x0627 + [char]0x0628 + ' ' + [char]0x2068 + 'x' + [char]0x2069 + '.pdf'
+    $hostileBook = Join-Path $hostileRoot $name
+    Copy-Item -LiteralPath $Document -Destination $hostileBook
+} else {
+    Write-Host 'Font check: no sample document found; only an empty library is checked.'
+}
 foreach ($lang in $Languages) {
+    $fontProfile = "fonts-$lang"
+    if ($hostileRoot) { Invoke-Atlas $lang (Join-Path $work "fonts-$lang-index.jsonl") @{} $null '' $fontProfile $hostileRoot }
+    $scenarios = @(@{ Name = 'library'; Doc = '' })
+    if ($hostileBook) { $scenarios += @{ Name = 'document'; Doc = $hostileBook } }
     foreach ($scenario in $scenarios) {
         $fontLog = Join-Path $work ("fonts-$lang-" + $scenario.Name + '.log')
         Invoke-Atlas $lang (Join-Path $work ("fonts-$lang-" + $scenario.Name + '.jsonl')) @{
             QT_LOGGING_RULES        = 'qt.qpa.fonts.debug=true;qt.text.font.match.debug=true'
             QT_MESSAGE_PATTERN      = '%{time process} %{category}: %{message}'
             QT_FORCE_STDERR_LOGGING = '1'
-            ATLAS_FONT_WARMUP       = '0'
-        } $fontLog $scenario.Doc
+            ATLAS_FONT_WARMUP       = 'hold'
+        } $fontLog $scenario.Doc $fontProfile
         $families = New-Object System.Collections.Generic.HashSet[string]
         $aliasPass = 0
         $fallbackPass = 0
@@ -161,20 +181,20 @@ if ($fontFailures.Count -gt 0) {
 } else {
     Write-Host "Font check passed: every run read fewer than $MaxFontFamilies font families and none started the all-fonts pass."
 }
-# Background font read: when it finished, and the cost of a character from another script afterwards.
+# Idle font read: when it finished, and the cost of characters from other scripts afterwards.
 $probeRows = @()
-foreach ($mode in @('', 'late', '0')) {
-    $probeFile = Join-Path $work ("probe-" + ($(if ($mode) { $mode } else { 'default' })) + '.jsonl')
+foreach ($mode in @('', '0')) {
+    $probeFile = Join-Path $work ("probe-" + $(if ($mode) { 'off' } else { 'default' }) + '.jsonl')
     Invoke-Atlas $Languages[0] $probeFile @{ ATLAS_FONT_WARMUP = $mode; ATLAS_FONT_PROBE = '1' }
     $probeRows += [pscustomobject]@{
-        Mode             = $(if ($mode -eq '') { 'default (from start)' } elseif ($mode -eq 'late') { 'late (from first frame)' } else { 'off' })
-        FirstFrame       = Read-Metric $probeFile 'startup.first_frame_ms'
-        ReadFinished     = Read-Metric $probeFile 'fonts.warmup_finished_ms'
-        Families         = Read-Metric $probeFile 'fonts.warmup_families'
-        OtherScriptCost  = Read-Metric $probeFile 'fonts.fallback_probe_ms'
+        Mode            = $(if ($mode -eq '') { 'default (idle read after the first frame)' } else { 'off (Qt reads when first needed)' })
+        FirstFrame      = Read-Metric $probeFile 'startup.first_frame_ms'
+        ReadFinished    = Read-Metric $probeFile 'fonts.warmup_finished_ms'
+        Families        = Read-Metric $probeFile 'fonts.warmup_families'
+        OtherScriptCost = Read-Metric $probeFile 'fonts.fallback_probe_ms'
     }
 }
-Write-Host 'Background font read (ms; OtherScriptCost = laying out Korean, Hindi and Thai text once):'
+Write-Host 'Idle font read (ms; OtherScriptCost = laying out Korean, Hindi and Thai text once on the interface thread):'
 $probeRows | Format-Table -AutoSize | Out-String | Write-Host
 
 if ($FontCheckFile) { Set-Content -LiteralPath $FontCheckFile -Value ($fontFailures -join "`n") -Encoding utf8 }

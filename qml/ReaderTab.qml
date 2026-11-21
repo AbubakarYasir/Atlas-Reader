@@ -1120,7 +1120,7 @@ Rectangle {
         }
         Label {
             Layout.fillWidth: true
-            text: I18n.ltr(tab.sourcePath)
+            text: I18n.ltr(I18n.contentIn(tab.sourcePath, I18n.systemFamily))
             color: Theme.muted
             font.pixelSize: 12
             elide: Text.ElideMiddle

@@ -11,7 +11,7 @@ All four also map the Unicode direction and joining controls (U+200B–U+200F, U
 
 ## Why the fonts are derived
 
-On Windows, Qt reads every installed font family the first time a text needs a character its font lacks, or asks for a weight the family does not have. On a PC with thousands of fonts that takes seconds and happened before the first frame. The interface fonts therefore carry every character the interface shows and both weights it uses. `tools/fonts/check-ui-coverage.py` (CI) fails if an interface string contains a character its font lacks.
+On Windows, Qt reads every installed font family the first time a text needs a character its font lacks, or asks for a weight the family does not have. On a PC with thousands of fonts that takes seconds and happened before the first frame. The interface fonts therefore carry every character the interface shows and both weights it uses. `tools/fonts/check-ui-coverage.py` (CI) fails if an interface string contains a character its font lacks. User content can still contain any character; `src/app/fonts/InterfaceFonts.h` describes how that is kept off the first frame.
 
 The families are renamed because a PC may have the original Noto fonts installed; two different fonts under one family name would be ambiguous. Arabic and Urdu letter shapes and positions are unchanged: shaping the same text with the source and the derived font gives the same glyphs and advances.
 

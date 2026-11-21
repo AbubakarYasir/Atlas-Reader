@@ -340,7 +340,7 @@ Item {
                                 spacing: 0
                                 Label {
                                     Layout.fillWidth: true
-                                    text: bookCell.displayTitle
+                                    text: I18n.content(bookCell.displayTitle)
                                     color: Theme.ink
                                     font.family: I18n.contentFamily(text)
                                     font.pixelSize: 15
@@ -351,7 +351,7 @@ Item {
                                 Label {
                                     Layout.fillWidth: true
                                     visible: bookCell.detailLine.length > 0
-                                    text: bookCell.detailLine
+                                    text: I18n.content(bookCell.detailLine)
                                     color: Theme.muted
                                     font.family: I18n.contentFamily(text)
                                     font.pixelSize: 13
@@ -360,7 +360,7 @@ Item {
                                 }
                                 Label {
                                     Layout.fillWidth: true
-                                    text: I18n.ltr(bookCell.sourcePath)
+                                    text: I18n.ltr(I18n.contentIn(bookCell.sourcePath, I18n.systemFamily))
                                     color: Theme.muted
                                     font.family: I18n.systemFamily
                                     font.pixelSize: 12
@@ -433,7 +433,7 @@ Item {
                             }
                             Label {
                                 Layout.fillWidth: true
-                                text: bookCell.displayTitle
+                                text: I18n.content(bookCell.displayTitle)
                                 color: Theme.ink
                                 font.family: I18n.contentFamily(text)
                                 font.pixelSize: 15
@@ -445,7 +445,7 @@ Item {
                             }
                             Label {
                                 Layout.fillWidth: true
-                                text: bookCell.detailLine.length > 0 ? bookCell.detailLine : I18n.ltr(bookCell.sourcePath)
+                                text: bookCell.detailLine.length > 0 ? I18n.content(bookCell.detailLine) : I18n.ltr(I18n.contentIn(bookCell.sourcePath, I18n.systemFamily))
                                 color: Theme.muted
                                 font.family: bookCell.detailLine.length > 0 ? I18n.contentFamily(text) : I18n.systemFamily
                                 font.pixelSize: 12

@@ -1,6 +1,7 @@
 name: N2 qpdf Encrypted Write
 
 on:
+  workflow_dispatch:
   push:
     branches: ['main']
   pull_request:
@@ -120,7 +121,7 @@ jobs:
           Copy-Item 'tools/pdf/qpdf_encrypted_outline_mutation_probe.py' (Join-Path $out 'qpdf_encrypted_outline_mutation_probe.py')
 
       - name: Upload encrypted-write evidence
-        if: always()
+        if: failure() || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: atlas-reader-n2-qpdf-encrypted-write-${{ github.event.pull_request.head.sha || github.sha }}

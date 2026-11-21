@@ -33,7 +33,7 @@ Button {
         sourceSize.width: control.iconSize
         sourceSize.height: control.iconSize
         fillMode: Image.Pad
-        color: !control.enabled ? Qt.alpha(Theme.ink, 0.38)
+        color: !control.enabled ? Qt.alpha(control.iconColor, 0.38)
             : control.checked ? Theme.accent : control.iconColor
         mirror: control.mirrorIcon && control.mirrored
     }

@@ -19,8 +19,15 @@ Popup {
         { id: "pageDisplay", key: "prefs.pageDisplay", words: "page layout zoom facing continuous single fit" },
         { id: "search", key: "prefs.search.title", words: "search find case whole words arabic" },
         { id: "skins", key: "prefs.skins", words: "skin theme dark light colour color" },
-        { id: "accessibility", key: "prefs.accessibility", words: "reading colours colors contrast sepia night" }
+        { id: "accessibility", key: "prefs.accessibility", words: "reading colours colors contrast sepia night" },
+        { id: "identity", key: "prefs.identity", words: "identity name organization organisation email author" },
+        { id: "security", key: "prefs.security", words: "security protected signed signature password permissions check" }
     ]
+    // Foxit lists categories alphabetically, in the interface language.
+    readonly property var sortedCategories: {
+        const language = I18n.language   // re-sort when the language changes
+        return categories.slice().sort((a, b) => I18n.t(a.key).localeCompare(I18n.t(b.key), language))
+    }
 
     function openPage(name) {
         page = name || "general"
@@ -33,8 +40,12 @@ Popup {
             readingColors: preferences.readingColors, restore: readerController.restoreEnabled,
             defaultPageDisplay: preferences.defaultPageDisplay, defaultZoom: preferences.defaultZoom,
             rememberPosition: preferences.rememberPosition, matchCase: preferences.searchMatchCase,
-            wholeWords: preferences.searchWholeWords
+            wholeWords: preferences.searchWholeWords,
+            recheckOnReturn: preferences.recheckOnReturn, showDocumentStatus: preferences.showDocumentStatus
         }
+        identityName.text = preferences.identityName
+        identityOrganization.text = preferences.identityOrganization
+        identityEmail.text = preferences.identityEmail
     }
     function restore() {
         preferences.language = snapshot.language
@@ -49,6 +60,15 @@ Popup {
         preferences.rememberPosition = snapshot.rememberPosition
         preferences.searchMatchCase = snapshot.matchCase
         preferences.searchWholeWords = snapshot.wholeWords
+        preferences.recheckOnReturn = snapshot.recheckOnReturn
+        preferences.showDocumentStatus = snapshot.showDocumentStatus
+    }
+    // Identity is typed, not previewed: it is kept only on OK.
+    function accept() {
+        preferences.identityName = identityName.text.trim()
+        preferences.identityOrganization = identityOrganization.text.trim()
+        preferences.identityEmail = identityEmail.text.trim()
+        close()
     }
 
     modal: true
@@ -72,6 +92,10 @@ Popup {
     contentItem: ColumnLayout {
         Accessible.role: Accessible.Dialog
         Accessible.name: I18n.t("prefs.title")
+        // Enter presses the default button unless another button has focus.
+        focus: true
+        Keys.onReturnPressed: if (defaultButton.enabled) defaultButton.clicked()
+        Keys.onEnterPressed: if (defaultButton.enabled) defaultButton.clicked()
         spacing: 0
 
         // header
@@ -128,7 +152,7 @@ Popup {
                         anchors.margins: 1
                         clip: true
                         keyNavigationEnabled: true
-                        model: dialog.categories.filter(function(c) {
+                        model: dialog.sortedCategories.filter(function(c) {
                             const q = searchField.text.trim().toLowerCase()
                             return q.length === 0 || I18n.t(c.key).toLowerCase().indexOf(q) >= 0 || c.words.indexOf(q) >= 0
                         })
@@ -267,7 +291,7 @@ Popup {
                                 spacing: 2
                                 Repeater {
                                     model: ["cmd.singlePage", "cmd.continuous", "cmd.facing", "cmd.continuousFacing"]
-                                    delegate: RadioButton {
+                                    delegate: AtlasRadioButton {
                                         required property int index
                                         required property var modelData
                                         text: I18n.t(modelData)
@@ -285,7 +309,7 @@ Popup {
                                 spacing: 2
                                 Repeater {
                                     model: ["zoom.fitWidth", "zoom.fitPage", "zoom.actualSize"]
-                                    delegate: RadioButton {
+                                    delegate: AtlasRadioButton {
                                         required property int index
                                         required property var modelData
                                         text: I18n.t(modelData)
@@ -350,10 +374,10 @@ Popup {
                                 spacing: 2
                                 Repeater {
                                     model: I18n.languages
-                                    delegate: RadioButton {
+                                    delegate: AtlasRadioButton {
                                         required property var modelData
                                         text: modelData.name
-                                        font.family: modelData.code === "ur" ? "Noto Nastaliq Urdu" : ""
+                                        font.family: modelData.code === "ur" ? I18n.urduFamily : modelData.code === "ar" ? I18n.arabicFamily : I18n.systemFamily
                                         checked: preferences.language === modelData.code
                                         onClicked: preferences.language = modelData.code
                                     }
@@ -363,6 +387,90 @@ Popup {
                                     Layout.topMargin: Theme.sm
                                     horizontalAlignment: Text.AlignLeft
                                     text: I18n.t("prefs.languageHint")
+                                    color: Theme.muted
+                                    wrapMode: Text.WordWrap
+                                }
+                            }
+                        }
+                    }
+
+                    // Identity (Foxit: Preferences → Identity)
+                    ColumnLayout {
+                        visible: dialog.page === "identity"
+                        width: pageScroll.availableWidth
+                        spacing: Theme.md
+                        GroupBox {
+                            Layout.fillWidth: true
+                            title: I18n.t("prefs.identity")
+                            GridLayout {
+                                anchors.fill: parent
+                                columns: 2
+                                columnSpacing: Theme.md
+                                rowSpacing: Theme.sm
+                                Label { text: I18n.t("prefs.identity.name"); color: Theme.ink }
+                                AtlasTextField {
+                                    id: identityName
+                                    Layout.fillWidth: true
+                                    maximumLength: 256
+                                    Accessible.name: I18n.t("prefs.identity.name")
+                                    font.family: I18n.contentFamily(text) || I18n.uiFamily
+                                }
+                                Label { text: I18n.t("prefs.identity.organization"); color: Theme.ink }
+                                AtlasTextField {
+                                    id: identityOrganization
+                                    Layout.fillWidth: true
+                                    maximumLength: 256
+                                    Accessible.name: I18n.t("prefs.identity.organization")
+                                    font.family: I18n.contentFamily(text) || I18n.uiFamily
+                                }
+                                Label { text: I18n.t("prefs.identity.email"); color: Theme.ink }
+                                AtlasTextField {
+                                    id: identityEmail
+                                    Layout.fillWidth: true
+                                    maximumLength: 256
+                                    inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoAutoUppercase
+                                    horizontalAlignment: TextInput.AlignLeft
+                                    LayoutMirroring.enabled: false   // an address reads left to right
+                                    Accessible.name: I18n.t("prefs.identity.email")
+                                }
+                                Label {
+                                    Layout.columnSpan: 2
+                                    Layout.fillWidth: true
+                                    Layout.topMargin: Theme.sm
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: I18n.t("prefs.identity.hint")
+                                    color: Theme.muted
+                                    wrapMode: Text.WordWrap
+                                }
+                            }
+                        }
+                    }
+
+                    // Security
+                    ColumnLayout {
+                        visible: dialog.page === "security"
+                        width: pageScroll.availableWidth
+                        spacing: Theme.md
+                        GroupBox {
+                            Layout.fillWidth: true
+                            title: I18n.t("prefs.security")
+                            ColumnLayout {
+                                anchors.fill: parent
+                                AtlasCheckBox {
+                                    text: I18n.t("prefs.security.recheck")
+                                    checked: preferences.recheckOnReturn
+                                    onToggled: preferences.recheckOnReturn = checked
+                                }
+                                AtlasCheckBox {
+                                    text: I18n.t("prefs.security.showStatus")
+                                    checked: preferences.showDocumentStatus
+                                    onToggled: preferences.showDocumentStatus = checked
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    Layout.topMargin: Theme.sm
+                                    horizontalAlignment: Text.AlignLeft
+                                    text: I18n.t("prefs.security.hint")
                                     color: Theme.muted
                                     wrapMode: Text.WordWrap
                                 }
@@ -389,7 +497,7 @@ Popup {
                                 spacing: 2
                                 Repeater {
                                     model: 4
-                                    delegate: RadioButton {
+                                    delegate: AtlasRadioButton {
                                         required property int index
                                         text: I18n.t("view.colors." + index)
                                         checked: preferences.readingColors === index
@@ -418,10 +526,11 @@ Popup {
             spacing: Theme.sm
             Item { Layout.fillWidth: true }
             AtlasButton {
+                id: defaultButton
                 kind: "primary"
                 implicitWidth: 86
                 text: I18n.t("prefs.ok")
-                onClicked: dialog.close()
+                onClicked: dialog.accept()
             }
             AtlasButton {
                 implicitWidth: 86

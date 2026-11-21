@@ -1,0 +1,27 @@
+{
+    "format": "atlas-bookmarks",
+    "schemaVersion": "1.0.0",
+    "exporter": { "name": "Atlas Reader", "version": "2.0.0-beta.3", "exportedUtc": "2026-11-03T10:00:00Z" },
+    "document": { "title": "دليل الباحث", "fileName": "دليل الباحث.pdf", "pageCount": 12 },
+    "scope": "all",
+    "bookmarks": [
+        {
+            "id": "a1",
+            "title": "الباب الأول: في طلب العلم",
+            "location": "atlas-location/1;scheme=pdf;page=0;kind=fit",
+            "state": "embedded",
+            "children": [
+                {
+                    "id": "a2",
+                    "title": "مبحثٌ في الأدب — اردو: کتابِ عِلم",
+                    "location": "atlas-location/1;scheme=pdf;page=1;label=ii;kind=xyz;left=0.1;top=0.25",
+                    "notes": "Two lines\nسطر ثانٍ",
+                    "tags": ["ref", "خاص"],
+                    "state": "local_override"
+                }
+            ]
+        },
+        { "id": "a3", "title": "  Spaces kept  ", "state": "local_only" },
+        { "id": "a4", "title": "Index 🔖", "location": "atlas-location/1;scheme=pdf;page=11;kind=fith;top=0.5", "state": "embedded" }
+    ]
+}

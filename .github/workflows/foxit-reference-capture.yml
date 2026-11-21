@@ -1,0 +1,40 @@
+name: Foxit reference measurement (UI-SIZE-01)
+
+# Measures Foxit PDF Reader's bookmark menu on a disposable runner for the
+# size comparison in docs/baselines/N5_UI_SIZE_COMPARISON.md. Measurement
+# only: nothing from Foxit enters the repository or the app.
+on:
+  workflow_dispatch:
+  push:
+    branches: [native-v2-n5-bookmarks-safety]
+    paths:
+      - .github/workflows/foxit-reference-capture.yml
+      - tools/review/capture-foxit-bookmark-menu.ps1
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Foxit PDF Reader (runner only)
+        shell: pwsh
+        run: choco install foxitreader --no-progress -y
+
+      - name: Capture the bookmark menu
+        shell: pwsh
+        run: pwsh -NoProfile -File tools/review/capture-foxit-bookmark-menu.ps1 -Pdf tests/fixtures/pdf/generated/A003_outlines_links.pdf -Out "$env:RUNNER_TEMP/foxit-reference"
+
+      - name: Upload measurement
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: foxit-bookmark-menu-reference
+          path: ${{ runner.temp }}/foxit-reference
+          if-no-files-found: warn
+          retention-days: 30

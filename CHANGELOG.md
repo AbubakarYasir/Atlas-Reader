@@ -4,6 +4,117 @@
 
 All notable changes to Atlas Reader Native are documented here.
 
+## N1–N5 repair pass — 2026-11-04 (in progress)
+
+- 2026-11-08 — SnapShot copied the blue selection box into every image (owner report); the box is now removed before the page is captured. Regression test in `atlas_reader_viewport_render`.
+
+- 2026-11-08 — Narrator: bookmark rows report open/closed natively (Expand/Collapse work), focus follows the current bookmark or book instead of staying on the list, and dialogs are announced by name ([ADR-0010](docs/decisions/ADR-0010-screen-reader-interfaces.md)). Focus starts on the first book and moves into the File page.
+- 2026-11-08 — Windows CI now presses real keys through UI Automation (EN/AR/UR), renders the main screens at 100 %, Windows 125 %, 200 % and in high contrast, and smoke-tests the review package from a clean PATH.
+- 2026-11-08 — Auto Create leaves headings that are already bookmarks unchecked; in Urdu its list of headings is visible again. Counts read correctly for any number ("Results: 1"). Arabic Zoom menu renamed so it differs from Zoom in.
+- 2026-11-08 — Every menu uses one density, measured against Foxit Reader's bookmark menu (23 px rows; Atlas 25 px in English, growing for Arabic and Urdu).
+
+- 2026-11-07 — Startup: bundled fonts are registered once before the interface loads instead of by QML FontLoaders, which made Qt rebuild its list of every installed font. Windows CI first frame is now 470–767 ms (EN/AR/UR, target 800 ms); it was 4.9–5.3 s on the owner PC.
+- 2026-11-07 — Saving: a full backup drive no longer reports an interrupted save; a drive removed mid-save leaves a recovery that settles once the original is back. New RAM-disk tests for full and unplugged drives, and a broader Save a Copy audit.
+- 2026-11-07 — Accessibility: bookmark rows are tree items (level, open/closed, page, state) instead of buttons; radio buttons, check boxes and menu commands are exposed. A new accessibility dump and checker runs on Windows CI in EN/AR/UR across ten surfaces.
+- 2026-11-07 — Arabic and Urdu wording review; Urdu sidebar rows no longer overlap.
+- 2026-11-07 — The repository is public so GitHub-hosted CI runs again. All nine N2 workflows and Windows CI pass.
+
+- Local inspection package delivered from 0d6d726; both final 59-test Windows suites pass. Independent warm launches expose a 4.9–5.3 s startup target miss, which remains an open repair. Actual OS 175% and Night sky recovery screens verified in all three languages; real 200% and Narrator are not counted as passed.
+
+- Preflight raw outline references before Qt constructs its bookmark model; cyclic A016 now runs in the normal regression suite without exhausting memory. Unsupported outlines remain protected.
+- Normalize link and outline destinations for inherent page rotation, with production tests at all four right-angle rotations and a rotated bookmark save/reopen.
+- Consolidate recovery choices into one dialog, validate evidence before resolving, preserve displaced versions outside ordinary retention, and focus Cancel initially.
+- Measure nested 10,000-bookmark import/export and panel model operations; avoid recomputing document-wide counts during expand/collapse. Measurements distinguish model work from rendered frames.
+- Integrate the three published audit commits without rewriting history; perform Windows verification locally at the owner's request while GitHub Actions is blocked by account billing.
+
+- Reader shutdown now waits for background capability probes; globally increasing request IDs prevent an old probe from updating a reopened tab. The full-suite cancellation test exposed the lifetime bug.
+- Custom theme colours now honor Windows high-contrast preferences through the system palette.
+- Explicit **Review recovery → Keep current file** preserves verified copies of both versions and a resolution receipt before clearing a recovery hold; local research is unchanged and the reader must reopen. Invalid backups or another concurrent edit leave the hold in place.
+- Added a cryptographically signed synthetic PDF, independent OpenSSL integrity/tamper checks, signed-original refusal and working-copy regression. No production signing feature or trusted-identity claim is added.
+- Added actual Windows private-memory sampling during 400 jumps in a 2,000-page document. The last 200 jumps grew from 294 to 309 MiB; this sparse-fixture check does not qualify every complex book.
+
+
+- Added a versioned recovery journal, per-book save lock and six actual process-termination recovery tests; unknown external revisions are preserved and block further saves.
+- Import/export and import merge preparation now run on the existing worker, with busy/cancel state and stale-result rejection. Tested a 10,000-bookmark import/export, single-step undo and tab closure.
+- Ambiguous outline identities no longer match by order. Fixed the bookmark panel's duplicate `currentRow` property/function name; added selectable accessibility state and spoken toast announcements.
+- Arabic UI now explicitly uses the bundled Naskh font. Save/Import/Export dialogs keep actions visible with scrollable content in short windows, including Urdu.
+- Added an opt-in 2,000-page end-to-end search measurement. Review binaries use `beta.2-n5-review.2`, not the accepted beta.2 or a released beta.3.
+
+- Late save failures now attempt verified atomic restoration without deleting the current PDF first. A failed restoration has an explicit recovery-required message in all three languages.
+- Added regression checks for final reopen, overlay commit and failed restoration, including a real database transaction exception.
+- N5 packaging selects the N5 review instructions, includes the closure ledger and a bookmark exchange sample, and checks that the package version matches the executable. START-HERE links to the packaged guide so its relative evidence links work. Added a requirement closure ledger; restart recovery and worker exchange are implemented, with their final qualification tracked explicitly.
+- Corrected the last two N5 commits locally to owner authorship and registered SSH signing; added a pre-push identity/signature gate.
+- This entry supersedes the earlier claim that N5 was complete: acceptance waits for the closure ledger and owner review.
+
+## N5.5: export and import bookmarks — 2026-11-03
+
+- **Export Bookmarks…** (Bookmarks panel ⋯, or the title-bar search): save your bookmarks as an Atlas bookmarks file (complete, with notes and tags, and can be imported again), as Markdown for reading, or as CSV for a spreadsheet. Export all of them, one bookmark with everything under it, or only what you added or changed in Atlas.
+- **Import Bookmarks…**: Atlas checks the file first and shows what it holds (and warns if it came from another book). Add the bookmarks at the end, under the selected bookmark, at the end without the ones already here, or instead of the current ones. One Undo takes the whole import out; the PDF changes only when you save.
+- Files from a newer Atlas Reader are refused with a clear message, and a damaged file imports nothing.
+- The file format is published (`docs/formats/atlas-bookmarks.md`).
+- Historical readiness claim withdrawn by the 2026-11-04 repair audit; see the closure ledger.
+
+## N5.4 (part 3): bookmarks changed elsewhere, and Save a Copy — 2026-11-03
+
+- If another program changed a PDF's bookmarks, Atlas now catches up when you open the book: new bookmarks appear, changed ones update, removed ones go, and the panel tells you what happened. Your own bookmarks and edits are kept. If a bookmark was changed both in Atlas and in the PDF, it is marked; right-click it to keep your version or use the PDF's. If most of the PDF's bookmarks seem to have vanished, Atlas asks before removing them.
+- **Save a Copy with Bookmarks** (Ctrl+Shift+S): for books Atlas can't change in place (read-only, in use, signed, certified), save a new PDF with your bookmarks in it. The original stays untouched.
+- Review builds are now made only when asked for.
+
+## N5.4 (part 2): Save bookmarks into the PDF — 2026-11-03
+
+- Press **Ctrl+S** (or the Save button at the top left) to put the bookmarks you see into the PDF itself, so other PDF readers show them too. The first time for a book, Atlas says how many will be added and changed, and offers to also remove the PDF's own bookmarks you deleted in Atlas (they are kept unless you choose this).
+- Saving is careful: Atlas writes a copy, checks it, compares it with the original, opens it again, keeps a backup of the original in your profile, and only then replaces the PDF. Failures before replacement preserve the original. Later failures attempt validated restoration; unresolved recovery retains the files and blocks another save.
+- Protected, signed, certified, read-only or in-use PDFs are never changed; your bookmarks stay in Atlas. A PDF changed by another program since Atlas read it is never overwritten.
+- After saving, the bookmarks show as being in the PDF; notes and tags stay in Atlas. Undo starts fresh after a save.
+- Auto Create Bookmarks now keeps headings of the same level side by side when a level is missing.
+
+## N5.4 (part 1): groundwork for saving bookmarks into the PDF — 2026-11-03
+
+- Behind the coming Save: Atlas can now write a bookmark tree into a copy of a PDF and prove it is right before anything is replaced: the copy is checked by qpdf, every untouched bookmark keeps everything it had, nothing outside the bookmarks changes (pages, links, forms, document details, encryption), and Atlas's own PDF engine reads the result back. Encrypted PDFs stay encrypted with the same passwords. Nothing in the app writes PDFs yet.
+- Decided: Save will put the bookmarks you see into the PDF. A PDF bookmark you deleted in Atlas stays in the PDF unless you choose to remove it when saving; notes and tags stay in Atlas.
+
+## N5.3 (part 4): Auto Create Bookmarks — 2026-11-03
+
+- In the Bookmarks panel's options (or the Command Center), choose **Auto Create Bookmarks…**. Atlas reads the whole book in the background and suggests headings: lines in larger type, and short lines that start like a heading in English, Arabic or Urdu (Chapter, الفصل, باب …). Running headers, footers and page numbers are left out, and a heading over two lines becomes one bookmark.
+- Check the preview, untick anything you don't want, choose how many levels (1–4) and whether the new bookmarks go after, before or instead of the existing ones, then create them. One Undo takes them all back. Nothing is written into the PDF.
+- Atlas estimates type size from what the PDF engine reports, so bold headings at body size are found only when they start like a heading; the preview is there so you decide.
+- Radio buttons in Preferences and Skins now match the check boxes in every skin.
+- With this, the bookmark editor (N5.3) is complete; next comes saving bookmarks into the PDF safely (N5.4).
+
+## N5.3 (part 3): Command Center, Undo/Redo, Identity, Security, Signatures — 2026-11-03
+
+- **Command Center:** click the magnifier in the title bar or press **Alt+Q**, then type. Atlas lists matching commands (with their shortcuts), books in your library and bookmarks in the open book; use ↑/↓ and Enter, or Esc to close. Commands can be found by their English name in any interface language.
+- **Undo and Redo** buttons in the Quick Access Toolbar, and Ctrl+Z / Ctrl+Y anywhere in the reader, undo and redo your bookmark edits. Save comes with safe saving in the next part.
+- **Preferences → Identity:** your name, organization and email, for notes and markups later. **Preferences → Security:** whether Atlas re-checks a file when you return to its tab, and whether the status bar shows the protection label. Preferences categories are now in alphabetical order, as in Foxit.
+- **Signatures panel** (left rail): which signature fields a PDF has, whether each is signed, on which page, and whether the document is certified. Atlas does not check whether signatures are valid, and says so.
+- Fixes: books outside your library get an **Add This Book's Folder** button in the Bookmarks panel; the bookmark marked as current now follows the top of the view, not just the page; Home → Bookmark uses the plain bookmark icon; disabled title-bar buttons are dimmed correctly in the colourful skin.
+- Three icons added from the same pinned Fluent UI System Icons commit (signature, undo, redo).
+
+## N5.3 (part 2): an editable Bookmarks panel — 2026-11-03
+
+- Press **Ctrl+B** (or Home → Bookmark, or right-click the page) to bookmark what you are reading; name it straight away, or keep the selected text or page number Atlas suggests.
+- In the Bookmarks panel: rename with F2, move with Alt+↑/↓, nest under the bookmark above with Alt+→ (Alt+← in Arabic and Urdu) and out again with the opposite arrow, set a bookmark to the current view, undo and redo, and find any bookmark by its title, notes or tags.
+- Bookmarks that came with the PDF are never removed from the book: deleting one hides it in Atlas, and "N bookmarks are hidden" brings them back. Small icons say which bookmarks live only in Atlas or were changed in Atlas; hover or use a screen reader for the words.
+- Books outside your library show their own bookmarks read-only, with a note on how to add the folder so you can keep your own.
+- Five icons added from the same pinned Fluent UI System Icons commit (bookmark add, delete, edit, eye, eye off) for these commands.
+
+## N5.3 (part 1): the bookmark editing engine — 2026-11-03
+
+- Behind the coming Bookmarks panel: add, rename, move, nest and reorder bookmarks, give them notes and tags, and undo or redo any of it. Deleting a bookmark that belongs to the PDF hides it in Atlas instead, so the book itself is never changed by accident; change a PDF bookmark back and Atlas knows it matches the book again.
+- Bookmark search covers titles, notes and tags, and finds Arabic and Urdu words with or without harakat.
+- Fast on big books: with 10,000 bookmarks, searching takes well under a millisecond and every edit or undo under 2 ms; saving happens in the background. Windows checks these limits automatically on every build.
+
+## N5.2: bookmarks kept safely in Atlas — 2026-11-03
+
+- Groundwork for the bookmark editor: Atlas can now keep your bookmarks in its own profile, next to the book's own table of contents, and remembers for each one whether it is in the PDF, only in Atlas, waiting to be saved into the PDF, changed in Atlas, hidden in Atlas, or in conflict. Nothing is ever shown as saved into the PDF until it really is.
+- Bookmark titles, notes and tags are kept exactly as typed in any language. Bookmarks point at a precise place on a page, not just a page number, and survive a crash or power cut.
+- You will see this in N5.3, when the Bookmarks panel becomes editable. The profile is upgraded automatically (schema 5).
+
+## N5.1: what Atlas may change — 2026-11-02
+
+- Atlas now checks every PDF you open: password-protected, restricted by its owner, signed or certified, read-only, in use by another program, or changed outside Atlas. When Atlas may not change a book, a small label in the status bar says so; click it to see why in plain words. Your bookmarks and notes stay in Atlas either way.
+- The Windows build includes qpdf 12.4.1 (Apache-2.0) for these checks.
+
 ## 2.0.0-beta.2: Reader accepted — 2026-11-02
 
 - Owner wrote **N4 PASS**. Atlas Reader `2.0.0-beta.2` is the first beta that reads PDFs inside Atlas ([acceptance](docs/baselines/N4_ACCEPTANCE.md)).
@@ -326,3 +437,23 @@ The native successor belongs to the `2.0.0` release line.
 - `2.0.0` — accepted stable Windows release
 
 See `docs/RELEASE_STRATEGY.md` for the binding rules.
+
+A failed operating-system replacement is now hash-checked before clearing its
+journal: if the destination differs from the original, the result is recovery
+required and the backup/journal remain. A regression simulates a destination change
+at this failure boundary. This avoids treating the OS error code as proof that
+nothing changed.
+
+N5 language review in progress: simplified Urdu import/export and bookmark-destination labels, standardized Arabic bookmark wording, corrected the font contract, and added explicit language/rendering/menu-size closure gates. Runtime qualification remains open.
+
+- N5 UI repair: keep an explicit system font for Latin text, preserve the bundled Arabic/Urdu fonts, and size bookmark-menu rows from shaped text instead of the Basic style background minimum. Constrain overflow to the window with a visible scrollbar; wider language/size qualification remains open.
+
+- Clarified N7 library scope after owner feedback: covers, selectable title/filename display (book-title default), separate local/PDF metadata editing, and extension-safe file rename now have explicit N7-LIB-01–04 requirements and tests. These are planned, not features in the N5 build.
+
+- Repair library grid card height using Arabic/Urdu/Latin font metrics so the action row has reserved space; add a grid QA entry point. Load Preferences on request to reduce startup work, preserving its window-relative placement. Startup remains above target. Urdu Preferences now uses the familiar سیٹنگز label.
+
+- Startup: the bundled Arabic/Urdu fonts are registered once before the interface loads, instead of from QML after text had already used the font list (which made Windows re-read every installed font). Windows startup is now measured in CI.
+- Safe save: a full backup drive no longer locks the book behind a false "interrupted save"; a save cut off by an unplugged drive settles by itself when the drive comes back unchanged.
+- Screen readers: bookmark rows are announced as a tree (level, open/closed, page, state); option buttons, check boxes and every menu command are reachable. A new automated accessibility check covers ten screens in three languages.
+- Arabic and Urdu wording made consistent (zoom vs window size, "protected" vs "saved", one spelling of PDF and bookmark).
+- Urdu library sidebar rows no longer overlap.

@@ -8,6 +8,14 @@
 #include <algorithm>
 
 namespace atlas::app {
+namespace {
+// Navigation pane panels (Foxit left rail); anything else means "closed".
+QString knownNavPanel(const QString& panel) {
+    return panel == QStringLiteral("pages") || panel == QStringLiteral("bookmarks") || panel == QStringLiteral("signatures")
+               ? panel
+               : QString{};
+}
+} // namespace
 
 AppPreferences::AppPreferences(QString settingsFile, QObject* parent)
     : QObject{parent}, settingsFile_{std::move(settingsFile)} {
@@ -23,8 +31,7 @@ AppPreferences::AppPreferences(QString settingsFile, QObject* parent)
     statusBarMode_ = std::clamp(settings.value(QStringLiteral("statusBarMode"), 0).toInt(), 0, 2);
     recentFiles_ = settings.value(QStringLiteral("recentFiles")).toStringList();
     {
-        const QString panel = settings.value(QStringLiteral("navPanel")).toString();
-        navPanel_ = panel == QStringLiteral("pages") || panel == QStringLiteral("bookmarks") ? panel : QString{};
+        navPanel_ = knownNavPanel(settings.value(QStringLiteral("navPanel")).toString());
     }
     rightPanel_ = settings.value(QStringLiteral("rightPanel")).toString() == QStringLiteral("search") ? QStringLiteral("search") : QString{};
     defaultPageDisplay_ = std::clamp(settings.value(QStringLiteral("defaultPageDisplay"), 1).toInt(), 0, 3);
@@ -32,6 +39,11 @@ AppPreferences::AppPreferences(QString settingsFile, QObject* parent)
     rememberPosition_ = settings.value(QStringLiteral("rememberPosition"), true).toBool();
     searchMatchCase_ = settings.value(QStringLiteral("searchMatchCase"), false).toBool();
     searchWholeWords_ = settings.value(QStringLiteral("searchWholeWords"), false).toBool();
+    identityName_ = settings.value(QStringLiteral("identityName")).toString();
+    identityOrganization_ = settings.value(QStringLiteral("identityOrganization")).toString();
+    identityEmail_ = settings.value(QStringLiteral("identityEmail")).toString();
+    recheckOnReturn_ = settings.value(QStringLiteral("recheckOnReturn"), true).toBool();
+    showDocumentStatus_ = settings.value(QStringLiteral("showDocumentStatus"), true).toBool();
     pinnedFiles_ = settings.value(QStringLiteral("pinnedFiles")).toStringList();
     navPanelWidth_ = std::clamp(settings.value(QStringLiteral("navPanelWidth"), 240).toInt(), 160, 480);
     if (recentFiles_.size() > kMaxRecentFiles) recentFiles_.resize(kMaxRecentFiles);
@@ -129,7 +141,7 @@ void AppPreferences::setStatusBarMode(int mode) {
 }
 
 void AppPreferences::setNavPanel(const QString& panel) {
-    const QString normalized = panel == QStringLiteral("pages") || panel == QStringLiteral("bookmarks") ? panel : QString{};
+    const QString normalized = knownNavPanel(panel);
     if (normalized == navPanel_) return;
     navPanel_ = normalized;
     save();
@@ -187,6 +199,46 @@ void AppPreferences::setSearchWholeWords(bool value) {
     searchWholeWords_ = value;
     save();
     emit searchOptionsChanged();
+}
+
+// Identity text is kept exactly as typed (any script; nothing trimmed), but
+// capped so a pasted document cannot bloat the settings file.
+void AppPreferences::setIdentityName(const QString& value) {
+    const QString capped = value.left(256);
+    if (capped == identityName_) return;
+    identityName_ = capped;
+    save();
+    emit identityChanged();
+}
+
+void AppPreferences::setIdentityOrganization(const QString& value) {
+    const QString capped = value.left(256);
+    if (capped == identityOrganization_) return;
+    identityOrganization_ = capped;
+    save();
+    emit identityChanged();
+}
+
+void AppPreferences::setIdentityEmail(const QString& value) {
+    const QString capped = value.left(256);
+    if (capped == identityEmail_) return;
+    identityEmail_ = capped;
+    save();
+    emit identityChanged();
+}
+
+void AppPreferences::setRecheckOnReturn(bool value) {
+    if (value == recheckOnReturn_) return;
+    recheckOnReturn_ = value;
+    save();
+    emit securityChanged();
+}
+
+void AppPreferences::setShowDocumentStatus(bool value) {
+    if (value == showDocumentStatus_) return;
+    showDocumentStatus_ = value;
+    save();
+    emit securityChanged();
 }
 
 void AppPreferences::setPinned(const QString& path, bool pinned) {
@@ -285,6 +337,11 @@ void AppPreferences::save() const {
     settings.setValue(QStringLiteral("rememberPosition"), rememberPosition_);
     settings.setValue(QStringLiteral("searchMatchCase"), searchMatchCase_);
     settings.setValue(QStringLiteral("searchWholeWords"), searchWholeWords_);
+    settings.setValue(QStringLiteral("identityName"), identityName_);
+    settings.setValue(QStringLiteral("identityOrganization"), identityOrganization_);
+    settings.setValue(QStringLiteral("identityEmail"), identityEmail_);
+    settings.setValue(QStringLiteral("recheckOnReturn"), recheckOnReturn_);
+    settings.setValue(QStringLiteral("showDocumentStatus"), showDocumentStatus_);
     settings.setValue(QStringLiteral("pinnedFiles"), pinnedFiles_);
 }
 

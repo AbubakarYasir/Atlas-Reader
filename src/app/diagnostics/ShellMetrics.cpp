@@ -75,6 +75,10 @@ void ShellMetrics::recordStage(const QString& metricName) {
     writeMetric(metricName, elapsedMs(), QStringLiteral("ms"));
 }
 
+void ShellMetrics::recordValue(const QString& metricName, double value, const QString& unit) {
+    writeMetric(metricName, value, unit);
+}
+
 void ShellMetrics::recordQmlLoaded() {
     writeMetric(QStringLiteral("startup.qml_loaded_ms"), elapsedMs(), QStringLiteral("ms"));
 }

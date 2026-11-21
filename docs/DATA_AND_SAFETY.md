@@ -30,11 +30,15 @@ Every open session stores enough revision information to detect an external chan
 
 These are distinct: internal page index (implementation detail), the user-visible page number, the PDF page label, the optional academic offset, and the precise destination. A destination is **not** just an integer. It can hold page identity, kind (`XYZ`, Fit, FitH, FitV…), coordinates in normalized Atlas page space and optional zoom. Engine raw data stays inside adapters for round-trip preservation. Adapters normalize rotation and crop/media boxes. Ebook and comic locations (after 2.0) use the same versioned location envelope defined in N5, never transient screen page numbers.
 
+**Location envelope (N5.2, [ADR-0008](decisions/ADR-0008-bookmark-overlay-and-location-envelope.md)):** `atlas-location/1;scheme=pdf;page=3;label=iv;kind=xyz;left=0.125;top=0.5;zoom=1.5`. Page is the zero-based index; the label is informational. Coordinates are fractions (0–1) of the page as displayed at view rotation 0, origin top-left; each kind allows only its own coordinates (FitR needs all four). Values are percent-encoded UTF-8; unknown keys are kept and written back; a newer major version or unknown scheme is kept as raw text, never rewritten or dropped.
+
 ### Bookmark node
 
 Stable Atlas ID (independent of title) · document identity · parent and sibling order · title · destination, or grouping-only · description · tags · source fingerprint · storage state · local revision · observed source revision · conflict metadata. Duplicate titles are valid; breadcrumbs never rely on titles alone. Titles, notes and tags may be in **any language or script** and are stored as exact UTF-8; Atlas never transliterates, reorders, normalizes or trims user text when saving (normalization is applied only inside search indexes).
 
-**Storage states:** `Embedded` (in the current PDF) · `LocalOnly` · `PendingEmbed` (waiting for a writable source) · `LocalOverride` (embedded node with a local rename, move or destination change) · `LocallyHidden` (suppressed in Atlas, still in the PDF) · `Conflict`. Transitions are explicit and tested. Nothing becomes `Embedded` before save → validate → reopen → re-index succeeds. The default UI shows these quietly (an icon and text in details), not loudly.
+**Storage states:** `Embedded` (in the current PDF) · `LocalOnly` · `PendingEmbed` (waiting for a writable source) · `LocalOverride` (embedded node with a local rename, move or destination change) · `LocallyHidden` (suppressed in Atlas, still in the PDF) · `Conflict`. Transitions are explicit and tested (the table is in `core/bookmarks/BookmarkOverlay.cpp`): editing an `Embedded` node makes it `LocalOverride`; `LocalOnly` ⇄ `PendingEmbed` by request; `Embedded`/`LocalOverride` → `LocallyHidden` and back (to `Embedded` only if unchanged); any state but `Conflict` → `Conflict`; `Conflict` → `LocalOnly` (keep local), `LocalOverride` (keep Atlas's version over a bookmark the PDF still has; N5.4) or `Embedded` (take the PDF's); hidden and conflicted nodes can't be edited until unhidden or resolved; nodes from the PDF are hidden, never deleted by Atlas alone; removed local nodes leave tombstones. Nothing becomes `Embedded` before save → validate → reopen → re-index succeeds, and an `Embedded` node must always equal the PDF's node in the base snapshot: same title, destination and parent, and Embedded siblings keep the PDF's relative order (local nodes may sit between them). Editing a PDF bookmark back to the PDF's version makes it `Embedded` again. Undo may restore a removed local node from its tombstone, with the same ID, only as an explicit restore.
+
+**Which book an open file is (N5.3):** the Bookmarks panel asks the library for the documents indexed at the file's exact path (ASCII case-insensitive only when nothing matches exactly). Exactly one → its overlay opens for editing. None → the PDF's own outline is shown read-only, with how to add the book to the library. More than one → read-only as well: research is never attached to a guess. The default UI shows these quietly (an icon and text in details), not loudly.
 
 ### SQLite policy
 
@@ -61,6 +65,8 @@ Opening and changing are separate capabilities.
 
 **Passwords:** the open password and the permissions/owner password are different concepts. Passwords are held in session memory only (cleared as far as C++/Qt allows); they never reach SQLite, logs, exports, filenames, diagnostics or session restore. Choosing local-only mode stops repeated prompts during the session. Persistent storage would require a future ADR and an OS secure store. No cracking or bypass, ever.
 
+**Preferences → Identity and Security (N5.3):** the name, organization and email the reader types are kept exactly as typed (up to 256 characters each) in the local preferences file, never in PDFs until a later stage writes an author into a note or markup the reader creates, and never in logs or diagnostics. Security options only decide when Atlas re-checks a file and whether the protection label shows; they cannot turn any protection off. The Signatures panel reads signature fields through the N5.1 qpdf check and never claims a signature is valid.
+
 ## Local overlay and promotion (N5)
 
 The overlay supports add bookmark/folder, rename, edit destination, move, reorder, any practical depth, delete local node, locally hide an embedded node, notes, tags, search and undo. It keeps a **base snapshot** for later reconciliation.
@@ -69,18 +75,48 @@ The overlay supports add bookmark/folder, rename, edit destination, move, reorde
 
 ## Safe save
 
+Repair implementation (2026-11-04): an atomic recovery journal is persisted before
+replacement. Interrupted operations are resolved using file hashes and the expected
+overlay revision before another save. Late reopen/database failures attempt verified
+atomic restoration without first deleting the PDF. Unknown external revisions or
+failed restoration preserve both files and block editing. See the precise protocol
+and limits in [ADR-0009](decisions/ADR-0009-outline-safe-save.md); qualification is
+tracked in the [closure ledger](baselines/N1_N5_CLOSURE.md).
+
+**What Save writes (N5.4, [ADR-0009](decisions/ADR-0009-outline-safe-save.md)):** the PDF outline becomes the bookmark tree the reader sees. Local-only, pending and changed bookmarks are written; untouched PDF bookmarks keep every key they had; a PDF bookmark deleted in Atlas stays in the PDF unless the save preview's removal is ticked (its children move up); notes and tags stay in Atlas; a conflict blocks Save. Destinations are converted from Atlas's displayed-page fractions through the page's crop box and /Rotate. Atlas matches each PDF bookmark to its object by place and title and refuses to save if any does not match.
+
+**How it runs (N5.4):** a hidden temporary file `.<name>.atlas-save-<random>.pdf` beside the PDF (removed on handled failure; a killed process can leave a temporary sibling); verification by qpdf and by Qt PDF; a recovery backup of the original in `<profile>/backups/<document>/` (hash-checked; pending backups are retained, resolved saves keep the newest three); atomic replace (Windows `ReplaceFileW` keeps attributes and security); the replaced file must hash equal to the verified one, else recovery is required; the overlay commits the new base and the saved nodes as Embedded in one transaction. Editing pauses during a save; undo history starts over after it. The password comes from the open reader session in memory and is cleared after use.
+
 **Preflight** (every write): identity confirmed or safely relocated · revision unchanged · PDF security permits the operation · destination writable · signature/certification consequence acceptable and explicit · enough storage · the operation fits the engine's preservation guarantees.
 
 **Commit:** temporary write → open and validate → verify preservation invariants ([QUALITY.md §3](QUALITY.md#3-preservation-and-interoperability)) → keep a recovery backup → replace → reopen and re-index → mark committed.
 
 **Failures that must preserve work:** sharing violation, antivirus lock, permission revoked, disk full, destination lost, crash, source moved, external change, validation failure. Recovery choices (only the safe ones): *Retry · Keep in Atlas · Save a copy · Locate file · Export changes · Discard changes*.
 
-## Import and export (N5)
+**Reconcile (N5.4):** when a book opens and its PDF outline differs from the base Atlas read before, the outlines are matched (title and page in reading order, then title, then same parent and page). Atlas follows the PDF where the reader did nothing; keeps the reader's own bookmarks and changes; marks a conflict where both changed one bookmark, or the PDF dropped one the reader changed (kept, never lost); drops only untouched PDF bookmarks the PDF dropped; and waits for the reader's go-ahead if that would remove most of them (a reading problem looks the same). All of it is one transaction. A conflict is settled by the reader: keep Atlas's version, or take the PDF's.
 
-- **`.atlas-bookmarks.json`**, lossless and versioned: UTF-8, `format` name, semantic `schemaVersion`, document identity *hints* that can never force automatic binding, full hierarchy and order, exact Atlas destinations, titles, notes, tags, provenance, and informational exporter version and time. Unknown fields are handled by the version policy; newer schemas are explicitly rejected. Never contains passwords. N5 publishes the real JSON Schema and fixtures.
+**Save a Copy (N5.4):** the same verified write into a new file, for books Atlas may not change in place (read-only, in use, signed, certified). A PDF whose own security forbids changing its outline gets no changed copy either. The original and the overlay stay as they are. A changed copy of a signed/certified PDF is not represented as retaining the original signature validity.
+
+## Import and export (N5.5)
+
+Implemented; the file format, versions, refusals and import modes are specified in [formats/atlas-bookmarks.md](formats/atlas-bookmarks.md) with a [JSON Schema](formats/atlas-bookmarks.schema.json) and fixtures.
+
+- **`.atlas-bookmarks.json`**, lossless and versioned: UTF-8, `format` name, semantic `schemaVersion`, document identity *hints* that can never force automatic binding, full hierarchy and order, exact Atlas destinations, titles, notes, tags, provenance, and informational exporter version and time. Unknown fields are handled by the version policy; newer schemas are explicitly rejected. Never contains passwords or paths. A damaged file is refused whole; nothing is half-imported.
 - **Markdown** (readable hierarchy with page references) and **CSV** (UTF-8, documented columns, full breadcrumb, page and storage state) are convenience formats, never called lossless.
-- **Scope:** all, a subtree, or local-only/pending changes. **Import modes:** append at root, append under the selection, merge, explicit replace (with preview), import as local-only even into a writable PDF.
+- **Scope:** all, a subtree, or local-only/pending changes. **Import modes** (after a preview): append at the end, append under the selection, merge (skip bookmarks already here), explicit replace. Imports are always Atlas's own (local-only) until the reader saves, even for a writable PDF; one Undo step.
 - Foxit XML only after real round-trip fixtures prove hierarchy, order, destinations and Unicode.
+
+Import reading, parsing, preview construction, merge preparation, serialization and
+file writes run on the bookmark worker. The interface holds an isolated editor
+snapshot while an exchange runs. Cancel or closing the tab invalidates its generation;
+a late result cannot mutate the book. Applying a successful import is one overlay
+transaction and one undo operation. Export uses an atomic temporary file; cancellation
+before commit removes it. Cancellation after atomic commit cannot retract the already
+written export. The bounded JSON parse itself runs to completion on the worker before
+its cancelled result is discarded. The exchange schema remains 1.0.0.
+
+Ambiguous external bookmark matches are held for review, not paired by reading order.
+The original local overlay is retained when reconciliation cannot prove a unique match.
 
 ## Library scanning
 
@@ -130,3 +166,11 @@ Vulnerability reporting: [SECURITY.md](../SECURITY.md).
 Writable mixed Arabic/English outline · open-password · permission-restricted · read-only copy · file held by another process · signed/certified · externally modified · removable/offline folder · corrupt outline with readable pages · image-only · duplicate/copy/rename identity cases · 10,000-bookmark document. No core stage is complete while any applicable fixture can silently lose research or change the wrong file.
 
 > **Invariant:** if a transformation can't be proved safe, keep the local state and show it as unresolved. Never guess and overwrite. This outranks convenience.
+
+### Explicit recovery resolution
+
+**Keep current file** is an explicit choice for a held interrupted save. The worker
+checks the current PDF can open and archives verified original/current copies and
+a receipt before clearing the pending journal. It leaves the PDF and overlay
+unchanged and requires reopening to reconcile. Invalid evidence or another change
+keeps the hold. Archives are retained outside ordinary three-backup pruning.

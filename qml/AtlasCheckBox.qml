@@ -7,6 +7,15 @@ CheckBox {
     id: control
     font.family: I18n.uiFamily
     spacing: Theme.sm
+    // Explicit, so screen readers find it even before Qt Quick Controls
+    // registers its own accessibility role (found by the a11y dump).
+    Accessible.role: Accessible.CheckBox
+    Accessible.name: text
+    Accessible.checkable: true
+    Accessible.checked: checked
+    Accessible.focusable: true
+    Accessible.onToggleAction: if (enabled) toggle()
+    Accessible.onPressAction: if (enabled) toggle()
 
     indicator: Rectangle {
         implicitWidth: 16

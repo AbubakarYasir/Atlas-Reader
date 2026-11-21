@@ -2,13 +2,32 @@
 
 The goal is fast progress without losing discipline. Atlas is built stage by stage ([CHECKPOINTS.md](../CHECKPOINTS.md)), never on one long branch that becomes impossible to review.
 
+## Current repair workflow (2026-11-04)
+
+Active branch: `native-v2-n5-bookmarks-safety`, PR #8 Draft. The owner's explicit
+repair authorization permits correcting the affected N5 history using an exact-head
+force-with-lease after a verified backup. Main and release tags are preserved.
+Use repository-local owner identity and SSH signing with the registered public key;
+configure `core.hooksPath=.githooks` to enforce identity and signature checks before
+push. GitHub verification must also be checked after push (a local signature alone
+does not prove GitHub recognizes the key).
+
+Owner review packages are on request only, not on every stage push. The repair
+delivery includes one inspection package on request; it must explicitly list open gates. See the
+[closure ledger](baselines/N1_N5_CLOSURE.md) for open work; earlier readiness claims
+do not override it.
+
+The owner requested local Windows verification while Actions is blocked by account
+billing. Record cloud checks as unavailable; do not substitute an older green run.
+Source pushes do not authorize uploading a review package or merging.
+
 ## 1. Branches
 
 | Branch | Purpose |
 |---|---|
 | `main` | Default branch. Accepted stage state only. Permanent name. |
 | `legacy/flutter` | Stopped Flutter app, kept as a reference. Permanent name. Never revived. |
-| `native-v2-n<#>-<name>` | The **one** active stage branch, created from the exact accepted `main` commit. Today: `native-v2-n4-reader-foundation`. |
+| `native-v2-n<#>-<name>` | The **one** active stage branch, created from the exact accepted `main` commit. Today: `native-v2-n5-bookmarks-safety`. |
 | `<area>/<short-name>` | Short-lived task branch from the stage branch, merged back into it (for example `docs/focused-2-0-plan`, `reader/viewport-cache`). |
 | `spike/<name>` | Experiments, never merged silently into production architecture. |
 
@@ -43,14 +62,14 @@ Documentation-only changes don't bump the product version, but they still need t
 ## 4. Push, pull requests and merge
 
 1. Push the branch. It is not "on GitHub" until `git rev-parse HEAD` equals `git rev-parse origin/<branch>`.
-2. The stage PR stays **Draft** until the stage's owner review passes. N4 was PR #6 (merged); N5 gets its own PR.
+2. The stage PR stays **Draft** until the stage's owner review passes. N4 was PR #6 (merged); N5 is PR #8 (Draft).
 3. CI must pass on the **exact** head; an older green run doesn't count.
 4. After **`N# PASS`**: update the ADR and status files, merge stage → `main`, verify ancestry, tag the release, delete the stage branch, then open the next stage branch from the merge commit. The owner may direct an earlier merge when a stage's build is complete (N4, 2026-11-02); the review then runs on `main`, and the release tag still waits for `N# PASS`.
 5. Never force-push a published branch without explicit owner permission; prefer corrective commits.
 
 **PR description:** stage and requirement · what changed · boundaries touched · dependencies · tests run (with run IDs) · performance evidence for hot paths · schema/format changes · accessibility/RTL impact and screenshots · known limitations with their owning stage.
 
-**CI:** Windows CI (Debug + Release, docs governance, script syntax, review package on every `native-v2-*` stage branch; the accepted beta package on `main`) runs on every push. The seven inherited N2 PDF regression workflows run on `main` and PRs. N4 will path-filter them and add a nightly schedule ([CHECKPOINTS.md](../CHECKPOINTS.md#engineering-speed-tasks-in-n4)).
+**CI:** Windows CI (Debug + Release, docs governance, script syntax, owner review package only when run by hand with *Build and upload the owner review package*; the accepted beta package on `main`) runs on every push. The inherited N2 PDF regression workflows run on `main` and PRs; they upload their evidence only when they fail or are run by hand, to stay within the account's artifact storage. N4 will path-filter them and add a nightly schedule ([CHECKPOINTS.md](../CHECKPOINTS.md#engineering-speed-tasks-in-n4)).
 
 ## 5. Versions and releases
 
@@ -89,3 +108,13 @@ Every idea goes into exactly one bucket: active stage · next stage · Windows 2
 ## 10. Handoff record
 
 Every pushed handoff states: branch and PR · local and remote SHA (equal) · worktree state · what changed · tests and CI on that SHA · artifact and checksum if any · limitations with owners · whether owner PASS, merge or tag are still pending.
+
+## N5 repair delivery
+
+The repair candidate identifies itself as `2.0.0-beta.2-n5-review.2`. Package metadata
+must equal the executable's ProductVersion. N5 packaging requires qpdf plus its
+pinned notices, selects N5 instructions, includes outline/security fixtures and
+records the executable hash and source commit. Clean-PATH smoke clears development
+Qt and qpdf overrides and explicitly captures Qt warnings on stderr. Upload a final
+review package only on request, never on every intermediate push. Keep PR #8 Draft;
+N5 acceptance and a release remain owner decisions.

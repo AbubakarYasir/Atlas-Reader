@@ -104,10 +104,10 @@ A command appears in Atlas only when it works; until then its group is absent, n
 | Foxit feature | Where in Foxit | Atlas |
 |---|---|---|
 | Custom title bar, file name, window buttons | Title bar | Done (N4.3) |
-| Quick Access Toolbar: Open, Save, Print, Create, Undo, Redo, Hand/Select, Mouse/Touch | Title bar | Done: Open, Mouse/Touch · N5: Save, Undo, Redo · N7: Print · Hand/Select on the Home tab Done (N4.5) |
+| Quick Access Toolbar: Open, Save, Print, Create, Undo, Redo, Hand/Select, Mouse/Touch | Title bar | Done: Open, Save (N5.4, bookmarks into the PDF), Undo, Redo (N5.3), Mouse/Touch · N7: Print · Hand/Select on the Home tab Done (N4.5) |
 | Customize Quick Access Toolbar (add, remove, order, above/below ribbon) | ▾ on QAT, right-click ribbon | N7 |
 | Customize ribbon (new tabs/groups, rename, reorder, import/export, reset) and keyboard shortcuts | Right-click ribbon → Customize | Track H |
-| Title-bar search (commands, text, help; Alt+Q), collapsed search option | Title bar | N5 (Command Center) |
+| Title-bar search (commands, text, help; Alt+Q), collapsed search option | Title bar | Done N5.3 (Command Center: commands, library books, bookmarks; collapsed magnifier) · help search with N12 |
 | Notifications bell | Title bar | Track J (local notices only before that) |
 | Ribbon collapse / pin (Ctrl+F11), double-click a tab | Ribbon | Done (N4.3) |
 | Classic menu bar (File, Edit, View, Tools, Help) as an option | View → Menu Bar | N7 (keyboard Alt menus) |
@@ -130,7 +130,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 | Open → Recent Documents (pin, open a copy, copy path, remove), Computer, cloud places | Done: recent, Computer, remove · pin, copy path, open containing folder Done (N4.4) · open a copy N7 · cloud places Track J |
 | Create (blank, from file, scanner, clipboard, web page, template, portfolio, binder) | Track C (portfolio/binder Track H) |
 | Properties (Ctrl+D): description, security, fonts, initial view, custom, advanced, XMP | N7 (view and permitted edits) |
-| Save (Ctrl+S), Save As (Ctrl+Shift+S), Revert | N5 safe save |
+| Save (Ctrl+S), Save As (Ctrl+Shift+S), Revert | Save Done (N5.4: bookmarks, safe save with backup) · Save a Copy Done (N5.4, Ctrl+Shift+S) · Revert: the recovery backup is kept in the profile; a Revert command is Track D |
 | Print (Ctrl+P), Print preview, Batch Print, print current/all tabs | N7 (batch print Track H) |
 | Share: e-mail current/all tabs (Ctrl+Shift+L / K) | Track I |
 | Export (to images, Office, HTML, text) | Track C |
@@ -149,7 +149,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 | Done (N4.3) | General, Languages, Skins, Accessibility |
 | N4.4 | Done: Page Display (default layout, default zoom), History (clear; pinned files kept), Documents (restore tabs, restore last view per book) · N7: Full Screen options, rendering options |
 | N4.5 | Done: Search (whole words, case-sensitive, Arabic/Urdu note) · N7: Reading (reading order, caret browsing) |
-| N5 | Security (protected files, local research), Identity (author name for notes and bookmarks) |
+| N5 | Security (re-check on return, protection label), Identity (name, organization, email) — Done N5.3; categories sorted alphabetically as in Foxit |
 | N6 | Commenting, Tablet (pen and touch) |
 | N7 | Print, File Associations, Library (Atlas), Backup (N8) |
 | N9 | Accessibility completed, Speech (when read-aloud lands, Track A) |
@@ -159,7 +159,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 
 | Group | Foxit commands | Atlas |
 |---|---|---|
-| Tools | Hand (Alt+3), Select Text and Image (Alt+6), Select Annotation, SnapShot (Alt+7), Clipboard ▾ (copy, paste, paste in place), Bookmark | Hand Done · Select Text, SnapShot, Clipboard (copy, select all, deselect) Done (N4.5) · paste N6 · Select annotation N6 · Bookmark N5 |
+| Tools | Hand (Alt+3), Select Text and Image (Alt+6), Select Annotation, SnapShot (Alt+7), Clipboard ▾ (copy, paste, paste in place), Bookmark | Hand Done · Select Text, SnapShot, Clipboard (copy, select all, deselect) Done (N4.5) · paste N6 · Select annotation N6 · Bookmark Done (N5.3) |
 | View | Zoom ▾ (in, out, marquee, loupe, magnifier, Zoom To Ctrl+M), Page Fit Option ▾ (Actual Size Ctrl+1, Fit Page Ctrl+0, Fit Width Ctrl+2, Fit Visible Ctrl+3), Reflow (Ctrl+4), Rotate View ▾ | Zoom, Page Fit, Rotate View Done · Fit Visible, Zoom To, marquee zoom, full zoom list Done (N4.4) · loupe, magnifier, Reflow Track A |
 | Edit | Edit Text, Edit Object ▾ | Track D |
 | Comment | Typewriter, Highlight | N6 |
@@ -182,7 +182,7 @@ A command appears in Atlas only when it works; until then its group is absent, n
 |---|---|---|
 | Content | Edit Text, Edit Object (text, image, shape, shading), Link & Join Text, Check Spelling, Search & Replace (Ctrl+T) | Track D |
 | Add | Add Text, Add Images, Add Shapes, Reflow Editing, Add Article Box, Articles panel | Track D |
-| Links | Web Links ▾ (create from URLs, remove all), Link, Bookmark (Ctrl+B), Auto Create Bookmarks, Cross Reference (Ctrl+Shift+C) | Following links Done (N4.5) · Bookmark N5 · Auto Create Bookmarks from outline/headings N5 · creating links, web-link detection, cross reference Track D |
+| Links | Web Links ▾ (create from URLs, remove all), Link, Bookmark (Ctrl+B), Auto Create Bookmarks, Cross Reference (Ctrl+Shift+C) | Following links Done (N4.5) · Bookmark (Ctrl+B) Done (N5.3) · Auto Create Bookmarks Done (N5.3: headings by type size and wording, preview, levels, placement; Foxit's font/sample-text rules need engine font data, see CHECKPOINTS) · creating links, web-link detection, cross reference Track D |
 | Insert | File Attachment, Image Annotation, Audio & Video, Add 3D | Attachments panel (read, save copy) Track D · image annotation Track D · audio/video and 3D playback Track D (sandboxed, off by default) |
 | Image editing | Page Editor tools: magic wand, lasso, polygonal lasso, filters (dodge, greyen, sharpen, binarize, soften…), add image | Track D |
 
@@ -240,7 +240,7 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 
 | Foxit commands | Atlas |
 |---|---|
-| Show security, permissions, signature status of a file | N5 |
+| Show security, permissions, signature status of a file | Implemented N5: protection label, capability reasons and signature fields/status. Certificate trust validation remains Track F. Final Windows review is recorded in the closure ledger. |
 | Mark for Redaction (text, area, page, search & redact, smart redact patterns), Apply, Whiteout, Mosaic | Track F (to a new copy, verified unrecoverable) |
 | Hidden Data: remove hidden information, sanitize document | Track F |
 | Secure Document: password protection, certificate protection, permissions, remove security (with the password only), security policies | Track F (never bypasses; removing security needs the owner password) |
@@ -281,13 +281,13 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 | Panel | Atlas |
 |---|---|
 | Pages (thumbnails, page operations menu) | Done (view, N4.4) · Track C (operations) |
-| Bookmarks (Atlas's signature editor) | N5 |
+| Bookmarks (Atlas's signature editor) | Editable panel Done (N5.3 slice 2: add, rename, delete/hide, move, nest, undo, find, states); Command Center Done (slice 3); Auto Create Done (slice 4); Save into the PDF, reconcile, Save a Copy Done (N5.4); Export/Import (Atlas JSON, Markdown, CSV) Done (N5.5) · Foxit XML bookmark exchange after round-trip fixtures |
 | Outline / document bookmarks (read) | Done (N4.5) |
 | Comments | N6 |
 | Search (right panel; whole words, case, include bookmarks/comments, highlight all, save results to PDF/CSV) | Done: whole words, case, highlight all (always on), results with context (N4.5) · include bookmarks/comments N6 · save results Track H |
 | Attachments | Track D (read and save copy first) |
 | Layers (show/hide, list for all/visible pages, reset, print/export overrides, import, merge, flatten) | Track D (view first) |
-| Signatures | N5 (status) · Track F (validation) |
+| Signatures | Status panel Done (N5.3 slice 3: fields, signed/empty, page, certified) · Track F (validation) |
 | Destinations (named positions; new, sort by name/page) | Following named destinations Done (N4.5) · Destinations panel N7 · Track D (create) |
 | Content, Tags, Order, Fields, Links, Articles, Model Tree (3D) | Track G (Tags, Order, Content) · Track E (Fields) · Track D (Links, Articles, 3D) |
 
@@ -297,7 +297,7 @@ Insert (file, folder, open files, scanner, clipboard, blank, web page) · Delete
 |---|---|
 | Page background (paste, add bookmark, read mode, zoom, fit, rotate, reverse view, print, rulers, navigation panels, look up, preferences) | Done for current features (N4.4/N4.5); more items appear as their features land |
 | Document tab (close, others, left, right, copy path, open folder, print, tab groups) | Done (N4.4) · print N7 · tab groups Track A |
-| Text selection (copy, highlight, underline, strikeout, add bookmark, search) | copy and search Done (N4.5) · bookmark N5 · markup N6 |
+| Text selection (copy, highlight, underline, strikeout, add bookmark, search) | copy and search Done (N4.5) · bookmark implemented N5.3: Ctrl+B uses selected text up to 200 characters · markup N6 |
 | Link (open in browser after confirmation, copy link location; open in tab/new document for PDFs) | Done (N4.5) · open PDF links in a tab N7 |
 | Image (copy, save image as, bookmark, extract text, edit image) | N7 (copy, save as; SnapShot copies any area now) · Track D/G |
 | Recent file (open, open a copy, pin, copy path, remove) | Done (N4.4) · open a copy N7 |
@@ -332,7 +332,7 @@ Atlas adopts Foxit's default shortcuts for every command it has. Changes to Atla
 |---|---|---|
 | Ctrl+K | Library search | **Preferences** |
 | Ctrl+F | — | Find in the current view: Library search box, or document Find bar (done) |
-| Alt+Q | — | Title-bar search (N5 Command Center) |
+| Alt+Q | — | Title-bar search (Command Center, Done N5.3) |
 | Ctrl+Shift+F | — | Search panel (done) |
 | Ctrl+Shift+A | Add library folder | Deselect all in the reader (done); Add folder moves to **Ctrl+Shift+O** |
 | Ctrl+Q | — | Exit |
@@ -351,3 +351,5 @@ Single-key accelerators (H hand, V select, Z zoom, …) are off by default and e
 ## 5. Translation of the layout to Arabic and Urdu
 
 Foxit has no Arabic or Urdu interface. Atlas mirrors the whole workspace in Arabic and Urdu: title bar, ribbon tab order, command order within groups, rail on the right, status bar navigation on the right, ‹ › meaning previous/next in reading direction. Ribbon labels use the translated text; buttons grow to the label (Urdu Nastaliq adds 10 px to fixed heights). Shortcuts are the same physical keys in every language.
+
+N5 sizing follow-up (2026-11-04): context menus, submenus and existing dialogs require matched-scale runtime measurements, with reference/Atlas dimensions and reasons for differences. Arabic/Urdu shaped text must fit without clipping or shrinking; see DESIGN.md, closure UI-SIZE-01. Existing anatomy measurements do not establish context-menu parity.

@@ -194,3 +194,25 @@ Directories need not be created empty in Git. They appear as fixtures are added.
 Every result added to `docs/baselines/N2_PDF_ENGINE_MATRIX.md` should name the fixture IDs and exact engine revision/version used.
 
 N2 cannot be accepted with undocumented PDFs as the sole evidence for a core capability.
+
+## A016 — cryptographically signed synthetic fixture
+
+A016 is a CC0 copy of synthetic A001 with a detached SHA-256/RSA CMS signature.
+Its self-signed certificate represents an invented test identity, never public trust.
+The private key was generated in memory and discarded. `source/signed_fixture.py`
+verifies its byte ranges through OpenSSL CMS and requires altered data to fail.
+The manifest pins the exact bytes. Regeneration needs the named development tools
+and produces new bytes; CI only verifies the committed file. Atlas must refuse an
+in-place write, retain the source hash, and describe a saved working copy as having
+no preserved signature-validity guarantee. This complements A010's structural
+certification policy test; it does not implement certificate validation in Atlas.
+
+### A012 production navigation regression
+
+The existing deterministic A012 XYZ fixture is also checked into the main corpus
+for N4/N5 production regression: its normal link lands at (40, 50) and its 90-degree
+rotated target at (250, 40) in displayed page coordinates. The original generator,
+CC0 provenance and SHA-256 `0c710f3f6e4457a44b8d2dbaa42a476a5c5b429764a0a7569002b66222ef069d`
+are unchanged. The safe-save suite checks production link normalization and a
+bookmark save/reopen on the rotated page; raw Qt comparison probes still report
+the engine limitation, distinct from Atlas's corrected adapter behavior.

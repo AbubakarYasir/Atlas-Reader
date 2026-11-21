@@ -30,6 +30,9 @@ Item {
     function showToast(text) {
         toast.text = text
         toast.open()
+        // Announced from the label: Accessible is not available on a Popup, so
+        // screen readers never heard "Saved" or a save error.
+        toastLabel.Accessible.announce(text, Accessible.Polite)
         toastTimer.restart()
     }
 
@@ -214,7 +217,7 @@ Item {
         padding: Theme.md
         closePolicy: Popup.NoAutoClose
         background: Rectangle { color: Theme.inkStrong; radius: Theme.radiusControl; opacity: 0.92 }
-        contentItem: Label { text: toast.text; color: Theme.raised }
+        contentItem: Label { id: toastLabel; text: toast.text; color: Theme.raised }
         Timer { id: toastTimer; interval: 1800; onTriggered: toast.close() }
     }
 }

@@ -107,20 +107,20 @@ Rectangle {
             onClicked: optionsMenu.popup(optionsButton, 0, optionsButton.height)
             Menu {
                 id: optionsMenu
-                MenuItem {
+                AtlasMenuItem {
                     text: I18n.t("find.wholeWords")
                     checkable: true
                     checked: preferences.searchWholeWords
                     onTriggered: preferences.searchWholeWords = !preferences.searchWholeWords
                 }
-                MenuItem {
+                AtlasMenuItem {
                     text: I18n.t("find.matchCase")
                     checkable: true
                     checked: preferences.searchMatchCase
                     onTriggered: preferences.searchMatchCase = !preferences.searchMatchCase
                 }
                 MenuSeparator {}
-                MenuItem { text: I18n.t("find.advanced") + "\tCtrl+Shift+F"; onTriggered: bar.advancedRequested() }
+                AtlasMenuItem { text: I18n.t("find.advanced") + "\tCtrl+Shift+F"; onTriggered: bar.advancedRequested() }
             }
         }
         AtlasIconButton {

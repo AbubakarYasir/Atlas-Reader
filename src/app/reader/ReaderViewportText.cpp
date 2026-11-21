@@ -39,6 +39,13 @@ void ReaderViewport::ensureTextWorker() {
             [this](quint64 id, int words, int characters, int pages) {
                 if (id == wordCountRequest_) emit wordCountReady(words, characters, pages);
             });
+    connect(textWorker_, &DocumentTextWorker::headingsProgress, this, [this](quint64 id, int done, int count) {
+        if (id == headingScan_) emit headingsProgress(done, count);
+    });
+    connect(textWorker_, &DocumentTextWorker::headingsReady, this,
+            [this](quint64 id, const QVariantList& headings, double bodySize, bool truncated) {
+                if (id == headingScan_) emit headingsReady(headings, bodySize, truncated);
+            });
     connect(textWorker_, &DocumentTextWorker::contentBoxReady, this,
             [this](quint64 id, int page, const QRectF& fraction) {
                 if (id != contentBoxRequest_ || page < 0 || static_cast<std::size_t>(page) >= layout_.pageCount())
@@ -288,6 +295,44 @@ void ReaderViewport::goToDestination(int zeroBasedPage, QPointF location) {
     }
 }
 
+void ReaderViewport::goToNormalized(int zeroBasedPage, qreal fx, qreal fy) {
+    if (layout_.pageCount() == 0) return;
+    const auto page = static_cast<std::size_t>(std::clamp(zeroBasedPage, 0, static_cast<int>(layout_.pageCount()) - 1));
+    if (!std::isfinite(fx) || !std::isfinite(fy) || fy <= 0.0 || fy > 1.0) {
+        recordJump();
+        jumpToIndex(page);
+        return;
+    }
+    const QSizeF size = pageSizePoints(static_cast<int>(page) + 1);
+    const bool upright = static_cast<int>(layout_.settings().viewRotation) % 2 == 0;
+    const double w = upright ? size.width() : size.height();
+    const double h = upright ? size.height() : size.width();
+    const QPointF location{std::clamp(fx, 0.0, 1.0) * w, fy * h};
+    recordJump();
+    const QRectF target = pointsToContent(page, QRectF{location, QSizeF{1, 1}});
+    setContentY(target.top() - layout_.settings().pageGap);
+}
+
+QVariantMap ReaderViewport::viewLocation() const {
+    QVariantMap result;
+    if (layout_.pageCount() == 0 || currentPage_ < 1) return result;
+    const auto page = static_cast<std::size_t>(currentPage_ - 1);
+    const auto r = layout_.pageRect(page);
+    const QSizeF size = pageSizePoints(currentPage_);
+    const bool upright = static_cast<int>(layout_.settings().viewRotation) % 2 == 0;
+    const double w = upright ? size.width() : size.height();
+    const double h = upright ? size.height() : size.width();
+    // The top of the view, or the top of the page when the view starts above it.
+    const QPointF points = contentToPoints(page, QPointF{r.x, std::max<double>(contentY_, r.y)});
+    const double fx = w > 0 ? std::clamp(points.x() / w, 0.0, 1.0) : 0.0;
+    const double fy = h > 0 ? std::clamp(points.y() / h, 0.0, 1.0) : 0.0;
+    result.insert(QStringLiteral("page"), static_cast<int>(page));
+    result.insert(QStringLiteral("fx"), fx);
+    result.insert(QStringLiteral("fy"), fy);
+    result.insert(QStringLiteral("zoom"), layout_.settings().zoom);
+    return result;
+}
+
 // ------------------------------------------------------------ geometry
 
 QPointF ReaderViewport::toContent(QPointF itemPos) const {
@@ -414,7 +459,7 @@ void ReaderViewport::mouseReleaseEvent(QMouseEvent* event) {
             else if (page >= 0) goToDestination(page, link->value(QStringLiteral("location")).toPointF());
         }
     } else if (tool_ == SnapshotTool && rubberBand_.width() > 4 && rubberBand_.height() > 4) {
-        finishSnapshot(rubberBand_);
+        finishSnapshot(QRectF{rubberBand_}); // a copy: finishSnapshot clears the box
     } else if (tool_ == MarqueeTool && rubberBand_.width() > 4 && rubberBand_.height() > 4) {
         finishMarquee(rubberBand_);
     }
@@ -456,6 +501,10 @@ void ReaderViewport::hoverMoveEvent(QHoverEvent* event) {
 void ReaderViewport::finishSnapshot(const QRectF& itemRect) {
     QQuickWindow* w = window();
     if (!w) return;
+    // Remove the blue selection box first: grabWindow() renders the scene as
+    // it stands, so the box (fill and border) was copied into every snapshot.
+    rubberBand_ = {};
+    update();
     const QImage frame = w->grabWindow();
     if (frame.isNull()) return;
     const qreal dpr = frame.devicePixelRatio() > 0 ? frame.devicePixelRatio() : 1.0;
@@ -488,6 +537,22 @@ void ReaderViewport::requestWordCount() {
     const quint64 id = ++wordCountRequest_;
     QMetaObject::invokeMethod(textWorker_, [worker = textWorker_, id] { worker->wordCount(id); },
                               Qt::QueuedConnection);
+}
+
+void ReaderViewport::scanHeadings(int maxLevels) {
+    if (!textWorker_ || !textReady_) {
+        emit headingsReady({}, 0, false);
+        return;
+    }
+    const quint64 id = ++headingScan_;
+    QMetaObject::invokeMethod(textWorker_, [worker = textWorker_, id, maxLevels] { worker->scanHeadings(id, maxLevels); },
+                              Qt::QueuedConnection);
+}
+
+void ReaderViewport::cancelHeadingScan() {
+    ++headingScan_; // late answers are ignored
+    if (!textWorker_) return;
+    QMetaObject::invokeMethod(textWorker_, [worker = textWorker_] { worker->cancelScan(); }, Qt::QueuedConnection);
 }
 
 void ReaderViewport::fitVisible() {

@@ -17,15 +17,33 @@ QtObject {
     ]
 
     // Urdu is read in Nastaliq, which needs a bundled font and more room.
-    readonly property string uiFamily: language === "ur" ? "Noto Nastaliq Urdu" : ""
+    readonly property string systemFamily: atlasSystemFontFamily
+    readonly property string arabicFamily: atlasArabicFontFamily
+    readonly property string urduFamily: atlasUrduFontFamily
+    readonly property string uiFamily: language === "ur" ? urduFamily : language === "ar" ? arabicFamily : systemFamily
     readonly property real sizeScale: language === "ur" ? 1.12 : 1.0
 
     // Font for user content (titles, names), chosen by the text's own script so
     // Arabic stays in Naskh and Urdu in Nastaliq whatever the interface language.
     function contentFamily(text) {
-        if (/[\u0679\u0688\u0691\u06BA\u06BE\u06C1\u06D2\u06D3]/.test(text)) return "Noto Nastaliq Urdu"
-        if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text)) return "Noto Naskh Arabic"
-        return ""  // other scripts: the system interface font and its fallbacks
+        if (/[\u0679\u0688\u0691\u06BA\u06BE\u06C1\u06D2\u06D3]/.test(text)) return urduFamily
+        if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text)) return arabicFamily
+        return systemFamily  // other scripts: the system interface font and its fallbacks
+    }
+
+    // User content as it can be drawn right now. For a moment after startup,
+    // characters that the text's font lacks (another script, emoji) are left
+    // out, because looking them up makes Qt read every installed font; they
+    // appear as soon as that has been done in the background
+    // (src/app/fonts/InterfaceFonts.h). Use for titles, names and paths.
+    function content(text) {
+        const value = String(text)
+        return atlasContentFonts.ready ? value : atlasContentFonts.shown(value, contentFamily(value))
+    }
+
+    function contentIn(text, family) {
+        const value = String(text)
+        return atlasContentFonts.ready ? value : atlasContentFonts.shown(value, family)
     }
 
     function t(key) {
@@ -47,15 +65,23 @@ QtObject {
         return t(count === 1 ? key + ".one" : key + ".other", count)
     }
 
-    // Wraps text in Unicode isolates so file names and numbers never reorder
-    // the surrounding sentence in right-to-left languages.
-    // Left-to-right embedding for paths and versions: keeps "/" and "\\"
-    // separators in place inside right-to-left layouts.
+    // Direction marks for text placed inside a sentence (file names, paths,
+    // numbers), so it never reorders the words around it. Embedding marks
+    // (U+202A-U+202C) are used, not the newer isolates (U+2066-U+2069): the
+    // Windows interface font has no isolates, and one missing character makes
+    // Qt read every installed font (see src/app/fonts/InterfaceFonts.h).
+
+    // Left to right: paths, versions, addresses.
     function ltr(text) {
         return "\u202A" + text + "\u202C"
     }
 
+    // In the text's own direction: its first Arabic-script or Hebrew letter
+    // makes it right to left; numbers and Latin text stay left to right.
     function isolate(text) {
-        return "⁨" + text + "⁩"
+        const value = String(text)
+        const strong = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFC]/.exec(value)
+        const rightToLeft = strong !== null && /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFC]/.test(strong[0])
+        return (rightToLeft ? "\u202B" : "\u202A") + value + "\u202C"
     }
 }

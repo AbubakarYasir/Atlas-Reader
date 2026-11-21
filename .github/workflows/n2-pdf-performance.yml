@@ -187,6 +187,7 @@ jobs:
           Copy-Item 'tools/pdf/bench/README.md' (Join-Path $out 'BENCHMARK_METHOD.md')
 
       - name: Upload N2 performance evidence
+        if: failure() || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: atlas-reader-n2-pdf-performance-${{ github.event.pull_request.head.sha || github.sha }}

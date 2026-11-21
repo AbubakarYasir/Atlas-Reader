@@ -21,6 +21,9 @@ Button {
     spacing: Theme.sm
     hoverEnabled: true
     focusPolicy: Qt.StrongFocus
+    // Enter presses the focused button, as Space does (Windows convention).
+    Keys.onReturnPressed: clicked()
+    Keys.onEnterPressed: clicked()
     font.family: I18n.uiFamily
     font.pixelSize: Math.round(14 * I18n.sizeScale)
     Accessible.name: text
@@ -31,7 +34,7 @@ Button {
     icon.color: contentColor
 
     readonly property color contentColor: !enabled
-        ? Qt.alpha(Theme.ink, 0.38)
+        ? (Theme.highContrast ? Theme.ink : Qt.alpha(Theme.ink, 0.38))
         : kind === "primary" ? Theme.accentText
         : kind === "danger" ? Theme.danger
         : Theme.ink
@@ -70,7 +73,7 @@ Button {
             if (control.hovered || control.checked) return Theme.hover
             return control.kind === "quiet" ? "transparent" : Theme.raised
         }
-        border.width: control.visualFocus ? 2 : (control.kind === "secondary" || control.kind === "danger" ? 1 : 0)
+        border.width: control.visualFocus ? 2 : Theme.highContrast ? 1 : (control.kind === "secondary" || control.kind === "danger" ? 1 : 0)
         border.color: control.visualFocus ? Theme.focusRing
             : control.kind === "danger" ? Theme.dangerBorder : Theme.line
         Behavior on color { ColorAnimation { duration: Theme.fast } }

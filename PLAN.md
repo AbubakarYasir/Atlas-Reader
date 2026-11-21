@@ -4,7 +4,9 @@
 
 This is the single source of direction: what Atlas is, what Windows 2.0 must contain, what comes later, and how we judge quality. Order and status live in [CHECKPOINTS.md](CHECKPOINTS.md). The detailed contracts live in the [docs folder](docs/README.md).
 
-**Owner:** Abu Bakar (`AbubakarYasir`) · **Current version:** `2.0.0-beta.1` · **Active stage:** N4 Reader · **Target:** Windows 11, then other platforms after 2.0 · **Interface languages:** English (default), Arabic, Urdu · **Content:** any language
+**Owner:** Abu Bakar (`AbubakarYasir`) · **Released version:** `2.0.0-beta.2` · **Active stage:** N5 repair and verification · **Target:** Windows 11, then other platforms after 2.0 · **Interface languages:** English (default), Arabic, Urdu · **Content:** any language
+
+2026-11-04: owner authorized the [N1–N5 closure pass](docs/baselines/N1_N5_CLOSURE.md), including corrected signed N5 history. No feature expansion or N6 work; deferred features retain their named stages. N5 is not yet ready for acceptance.
 
 ## 1. North star
 
@@ -66,7 +68,7 @@ Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after
 - Background, progressive, cancellable scanning; safe overlapping folders; protection against junction/symlink loops.
 - Guarded document identity: moves and renames keep research; copies stay separate; ambiguous matches are never guessed.
 - Clear per-book states: available, locked, read-only/restricted, signed, offline, missing, cloud placeholder, unreadable, changed, unsupported.
-- Filename-first names (extension kept separately and protected); embedded title and author shown as secondary.
+- Current N3–N5 build: filename-first names, with extension kept separate and embedded title/author secondary. Latest owner direction for N7: selectable name source, defaulting to a usable internal book title with filename fallback; see §4.5.
 - Search across metadata, with a documented Arabic/Unicode normalization policy; Favorites, Recents and folders.
 - Global **Command Center** in the title-bar search box (`Alt+Q`, Foxit's key) for commands, books and bookmarks [N5].
 - The Library is the pinned first document tab (Foxit's *Start* tab) [N4.3].
@@ -112,6 +114,8 @@ Priority labels: **P0** cannot ship without it · **P1** required for 2.0, after
 - Printing: printer choice, preview, page and label ranges, copies, orientation, paper size, scaling, grayscale. The source file stays byte-identical.
 - Covers: generated from page one, with correct cache invalidation and a fallback for locked or offline books.
 - Book details panel that separates PDF values from Atlas-local values; selected metadata editing with preview through the N5 safe-save path.
+- Library name source preference: **Book title** (default) or **File name**. Book-title mode uses an explicit user-edited Atlas title, otherwise usable embedded title, otherwise filename stem. File-name mode always uses the filename stem. Show the other distinct name and author in details; keep extension in the format badge/details. Display preference changes never rename files or write PDF metadata.
+- Keep three separate actions: edit Atlas-local book details; preview/save permitted metadata into the PDF; rename the physical file with its extension protected. Explain the scope before applying and preserve research identity. Missing, corrupt, source-program and generic metadata must have tested fallbacks. Existing profiles receive an explicit migration rule and can choose either display mode.
 - Sort (filename, title, author, last opened), filters with one-step clear, safe filename rename separate from metadata editing.
 - Local collections and tags that never move or delete files.
 - Windows integration: Open With, drag and drop, clipboard, long and Unicode paths, and no lost work when Windows shuts down or the session ends.
@@ -217,6 +221,12 @@ At the end of each stage we run the same tasks on the same files in a relevant m
 | **2026-11-02** | **N4 build complete; small items moved.** N4.4 and N4.5 are implemented. Items that write files or need later features moved with named owners: Open a Copy, image menu, Destinations panel, single-key accelerators, Preferences → Full Screen/Reading → N7; search in comments → N6; >8,192 px tiling, tagged reading order, one shared PDF copy → N10. Reason: keep N4 read-only and reviewable now ([CHECKPOINTS.md](CHECKPOINTS.md)). |
 | **2026-11-02** | **DerekSol is the publisher; N4 merged before review.** Owner: the software is built by DerekSol and should say so (executable details, About, repository); the repository becomes private; merge N4 into `main` now that its build is complete and delete the stage branch. The review gate stays: `2.0.0-beta.2` is tagged only after `N4 PASS`. Code signing (to remove "Unknown publisher") needs a DerekSol certificate, planned with N11. |
 | **2026-11-02** | **N4 Accepted; `2.0.0-beta.2` released.** Owner `N4 PASS`, accepting the open items listed in [N4 acceptance](docs/baselines/N4_ACCEPTANCE.md) as carried forward. N5 starts. |
+| **2026-11-03** | **Bookmark overlay format** ([ADR-0008](docs/decisions/ADR-0008-bookmark-overlay-and-location-envelope.md), Proposed until `N5 PASS`). The overlay lives in the profile database (schema 5) with explicit storage states, a base snapshot of the PDF outline, tombstones and a versioned text location envelope. Reason: one consistent snapshot for backup, foreign keys to document identity, and SQL-enforced "no false Embedded". |
+| **2026-11-03** | **Review builds only on request.** Owner: build and upload the review package only when asked (Windows CI → Run workflow), not on every push; N2 workflows upload evidence only on failure or by hand. Reason: the account's artifact storage filled up (about 300 MB per push). |
+| **2026-11-03** | **What Save writes into the PDF** ([ADR-0009](docs/decisions/ADR-0009-outline-safe-save.md), Proposed until `N5 PASS`). Save makes the PDF outline the tree the reader sees (Atlas-only, pending and changed bookmarks are written; untouched PDF bookmarks stay byte-identical in meaning); a PDF bookmark deleted in Atlas stays in the PDF unless the save preview's removal is ticked; notes and tags stay in Atlas. Reason: Foxit users expect Ctrl+S to keep what they see, and Atlas never deletes the PDF's own work by accident. Owner may switch the default to "embed only on request". |
+| **2026-11-03** | **Atlas bookmarks file, schema 1.0.0** ([docs/formats/atlas-bookmarks.md](docs/formats/atlas-bookmarks.md), JSON Schema and fixtures; final with `N5 PASS`). The one lossless bookmark export: nested bookmarks with exact titles, notes, tags and location envelopes; storage state as provenance; document hints that never bind a file. Readers accept 1.x and ignore unknown members; a newer major is refused; a damaged file is refused whole. Markdown and CSV are export-only conveniences. Imports are always Atlas's own bookmarks until saved. |
+| **2026-11-03** | **Quick Access Save moves to N5.4; Auto Create Bookmarks is N5.3 slice 4.** Save has nothing to do until safe save exists (no PDF writes before N5.4), so a Save button would be dead; Undo/Redo ship now for bookmark edits. Auto Create needs heading detection with a preview, so it gets its own slice. |
+| **2026-11-07** | **Screen readers on Qt 6.10** ([ADR-0010](docs/decisions/ADR-0010-screen-reader-interfaces.md), Proposed until `N5 PASS`). Keep Qt 6.10.3 and fix Narrator's tree state, list focus and dialog names through Qt Quick's private accessibility API instead of upgrading to 6.12 now. Reason: 6.12 fixes only the tree state and would re-open the pinned PDF engine qualification. |
 
 Every change to scope, priority or release gates is added here with its reason.
 
@@ -235,3 +245,24 @@ Every change to scope, priority or release gates is added here with its reason.
 | Libraries, tools, licenses | [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) |
 | After 2.0 | [docs/AFTER_2_0.md](docs/AFTER_2_0.md) |
 | Rules for coding agents | [AGENTS.md](AGENTS.md) |
+
+## N1–N5 repair implementation, 2026-11-04
+
+Explicit recovery can retain the current PDF after preserving both versions; independent
+signed-fixture verification and a real Windows navigation memory series qualify that
+repair without adding a signing feature or changing engines.
+Recovery uses a versioned journal beside profile backups, not a destructive database
+migration. Bookmark exchange uses the existing worker and an isolated editor snapshot;
+the published exchange format stays 1.0.0. Ambiguous external matches are held without
+guessing. The owner requested a runnable inspection build while engineering closure
+continues. Its version is `2.0.0-beta.2-n5-review.2`; this does not accept N5, authorize
+N6, or authorize merging PR #8. See the [closure ledger](docs/baselines/N1_N5_CLOSURE.md).
+
+The integrated audit also repairs cyclic outline loading and rotated destinations.
+The owner requested local verification after GitHub refused to start Actions for
+account billing reasons. Local evidence does not turn unavailable cloud checks or
+unverified Narrator, real display settings and physical media faults into passes.
+
+Owner clarification 2026-11-04: Arabic/Urdu readability, common software wording, and measured Foxit context-menu/dialog/control sizing are mandatory repairs of existing N1–N5 UI before N5 completion. See DESIGN.md and closure items UI-LANG-01/UI-SIZE-01; no later-stage features are authorized.
+
+2026-11-04 owner clarification: library name display must be selectable, defaulting to the internal book title rather than forcing filenames. N7 owns the preference and details/rename actions alongside library covers. N3 acceptance explicitly deferred covers; N4 page thumbnails are separate. Current N5 behavior remains filename-first until that planned implementation.

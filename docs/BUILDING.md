@@ -85,7 +85,7 @@ After a successful Release build and test:
   -OutputDirectory artifacts/n4-review-local
 ```
 
-The script refuses to overwrite an existing output. It deploys the Qt runtime, restores the accepted `qt.conf`, adds public samples with their provenance, the [review guide](N4_REVIEW.md) as `START-HERE.md`, Atlas/Qt/SQLite notices and the Qt SBOM, records build identity, runs an isolated-profile startup check, and writes file and ZIP SHA-256 checksums. It needs Internet only to gather notices; the app itself runs offline. It rejects a standalone `pdfium.dll`. CI on the N4 branch uploads the same package for 30 days.
+The script refuses to overwrite an existing output. It deploys the Qt runtime, restores the accepted `qt.conf`, adds public samples with their provenance, the [review guide](N4_REVIEW.md) as `START-HERE.md`, Atlas/Qt/SQLite notices and the Qt SBOM, records build identity, runs an isolated-profile startup check, and writes file and ZIP SHA-256 checksums. It needs Internet only to gather notices; the app itself runs offline. It rejects a standalone `pdfium.dll`. CI builds the same package **only on request** (owner, 2026-11-03): GitHub → Actions → Windows CI → *Run workflow* on the stage branch, with "Build and upload the owner review package" ticked; it is kept for 30 days.
 
 ## 7. CI
 

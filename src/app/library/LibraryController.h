@@ -76,9 +76,17 @@ public:
     [[nodiscard]] QVariantList pendingProposals() const;
 
     Q_INVOKABLE void addRoot(const QUrl& folder);
+    // Adds the folder that holds this file (bookmarks: "add this book's folder").
+    Q_INVOKABLE void addFolderOf(const QString& filePath);
     Q_INVOKABLE void rescan();
     Q_INVOKABLE void setFavorite(const QString& documentId, bool favorite);
     Q_INVOKABLE void openInReader(const QString& documentId);
+    // N5.3 Command Center: books whose title, author or file name match, from
+    // the whole library (not the current view), on the worker. The answer comes
+    // as booksFound(requestId, [{documentId, title, author, path}]), at most `limit`.
+    Q_INVOKABLE void findBooks(const QString& text, int requestId, int limit = 8);
+    // Opens a book found by findBooks and records it as recently opened.
+    Q_INVOKABLE void openFoundBook(const QString& documentId, const QString& path);
     Q_INVOKABLE void applyProposal(const QString& proposalId);
     Q_INVOKABLE void dismissProposal(const QString& proposalId);
 
@@ -93,6 +101,7 @@ signals:
     void pendingProposalsChanged();
     void operationError(const QString& message);
     void openDocumentRequested(const QUrl& source);
+    void booksFound(int requestId, const QVariantList& books);
 
 private:
     void requestRefresh();

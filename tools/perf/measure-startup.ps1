@@ -16,7 +16,13 @@
   language, with the library and with a document open, the run must read fewer
   than -MaxFontFamilies families and never start Qt's all-fonts alias pass.
   Failures are printed, written to -FontCheckFile when given, and thrown with
-  -EnforceFonts.
+  -EnforceFonts. The font check runs with the background font read switched
+  off (ATLAS_FONT_WARMUP=0), so it sees only what the interface itself asks for.
+
+  -ProfileTemplate <folder> measures with a copy of an existing profile (a real
+  library) instead of an empty one; the folder itself is never written to.
+  A last table shows when the background font read finished and what a
+  character from another script costs afterwards, for each start mode.
 #>
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
@@ -27,7 +33,8 @@ param(
     [string]$Document = '',
     [int]$MaxFontFamilies = 40,
     [string]$FontCheckFile = '',
-    [switch]$EnforceFonts
+    [switch]$EnforceFonts,
+    [string]$ProfileTemplate = ''
 )
 $ErrorActionPreference = 'Stop'
 $exePath = (Resolve-Path $Exe).Path
@@ -58,6 +65,12 @@ function Read-Metric([string]$File, [string]$Name) {
         if ($m.metric -eq $Name) { return [double]$m.value }
     }
     return $null
+}
+
+if ($ProfileTemplate) {
+    $templatePath = (Resolve-Path -LiteralPath $ProfileTemplate).Path
+    foreach ($lang in $Languages) { Copy-Item -LiteralPath $templatePath -Destination (Join-Path $work "profile-$lang") -Recurse }
+    Write-Host "Profiles are copies of $templatePath"
 }
 
 $rows = @()
@@ -127,7 +140,7 @@ foreach ($lang in $Languages) {
         $aliasPass = 0
         $fallbackPass = 0
         foreach ($line in Get-Content -LiteralPath $fontLog -ErrorAction SilentlyContinue) {
-            if ($line -match '^\s*[\d.]+\s+qt\.qpa\.fonts: "([^"]*)"\s*$') { [void]$families.Add($Matches[1]) }
+            if ($line -match '^\s*[\d.]+\s+qt\.qpa\.fonts: "([^"]*)"\s*$' -and $Matches[1] -notmatch '^addFontToDatabase ') { [void]$families.Add($Matches[1]) }
             elseif ($line -match 'qt\.text\.font\.match: Alias match pass') { $aliasPass++ }
             elseif ($line -match 'qt\.text\.font\.match: Fallbacks pass') { $fallbackPass++ }
         }
@@ -148,6 +161,22 @@ if ($fontFailures.Count -gt 0) {
 } else {
     Write-Host "Font check passed: every run read fewer than $MaxFontFamilies font families and none started the all-fonts pass."
 }
+# Background font read: when it finished, and the cost of a character from another script afterwards.
+$probeRows = @()
+foreach ($mode in @('', 'late', '0')) {
+    $probeFile = Join-Path $work ("probe-" + ($(if ($mode) { $mode } else { 'default' })) + '.jsonl')
+    Invoke-Atlas $Languages[0] $probeFile @{ ATLAS_FONT_WARMUP = $mode; ATLAS_FONT_PROBE = '1' }
+    $probeRows += [pscustomobject]@{
+        Mode             = $(if ($mode -eq '') { 'default (from start)' } elseif ($mode -eq 'late') { 'late (from first frame)' } else { 'off' })
+        FirstFrame       = Read-Metric $probeFile 'startup.first_frame_ms'
+        ReadFinished     = Read-Metric $probeFile 'fonts.warmup_finished_ms'
+        Families         = Read-Metric $probeFile 'fonts.warmup_families'
+        OtherScriptCost  = Read-Metric $probeFile 'fonts.fallback_probe_ms'
+    }
+}
+Write-Host 'Background font read (ms; OtherScriptCost = laying out Korean, Hindi and Thai text once):'
+$probeRows | Format-Table -AutoSize | Out-String | Write-Host
+
 if ($FontCheckFile) { Set-Content -LiteralPath $FontCheckFile -Value ($fontFailures -join "`n") -Encoding utf8 }
 
 Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue

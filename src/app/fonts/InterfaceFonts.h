@@ -13,10 +13,11 @@
 // families (seconds, with thousands installed) as soon as
 //   1. a request is not an exact match (a weight the family lacks), or
 //   2. a piece of text has a character its font lacks.
-// The interface is therefore built so that neither happens at startup:
+// The interface is therefore built so that neither happens for its own text:
 // the bundled fonts carry Latin, punctuation and direction marks in both
 // weights the interface uses, and the system font gets its semibold face
-// attached before any text is laid out.
+// attached before any text is laid out. User content (titles, bookmarks) can
+// still contain any character; FontWarmup keeps that case short.
 namespace atlas::fonts {
 
 inline constexpr auto arabicFamily = "Atlas Naskh";
@@ -30,9 +31,16 @@ inline constexpr auto urduFamily = "Atlas Nastaliq";
 // to "Segoe UI". Returns true when the family has an exact weight-600 style.
 bool attachSystemSemibold(const QString& family);
 
-// Reads the remaining font families one at a time on a background thread,
-// after the first frame, so that a later character from another script costs
-// milliseconds instead of a pause. Windows only; a no-op elsewhere.
+// Diagnostic: lays out a short text with characters from a script the family
+// lacks and returns how long Qt's lookup of another font took (milliseconds).
+// Interface thread only.
+[[nodiscard]] double measureFallbackLookupMs(const QString& family);
+
+// Reads the remaining font families one at a time on a background thread, so
+// that the first character from another script (a book title, a bookmark) does
+// not make the interface thread read them all. Started as early as possible:
+// by the time the first window has loaded most families are read.
+// Windows only; a no-op elsewhere.
 class FontWarmup {
 public:
     FontWarmup() = default;

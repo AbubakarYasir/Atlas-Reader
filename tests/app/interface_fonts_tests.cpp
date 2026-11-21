@@ -75,6 +75,11 @@ void warmupStopsOnRequest() {
     warmup.stop();
 }
 
+void fallbackProbeReturnsADuration() {
+    require(atlas::fonts::measureFallbackLookupMs(QString::fromLatin1(atlas::fonts::arabicFamily)) >= 0.0,
+            "the fallback probe returned a negative duration");
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -83,6 +88,7 @@ int main(int argc, char* argv[]) {
         bundledFamiliesHaveBothWeights();
         bundledFontsCarryLatinAndDirectionMarks();
         warmupStopsOnRequest();
+        fallbackProbeReturnsADuration();
     } catch (const std::exception& error) {
         std::cerr << "interface_fonts_tests FAILED: " << error.what() << '\n';
         return 1;

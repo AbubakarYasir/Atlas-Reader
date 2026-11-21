@@ -1,7 +1,9 @@
 #include "app/fonts/InterfaceFonts.h"
 
 #include <QFont>
+#include <QElapsedTimer>
 #include <QFontDatabase>
+#include <QTextLayout>
 
 #include <chrono>
 
@@ -48,6 +50,20 @@ bool attachSystemSemibold(const QString& family) {
     return false;
 }
 
+double measureFallbackLookupMs(const QString& family) {
+    QFont font(family);
+    font.setPixelSize(13);
+    // Hangul, Devanagari and Thai: three scripts the interface fonts do not carry.
+    const char16_t sample[] = {0xD55C, 0xAE00, 0x20, 0x0939, 0x093F, 0x0928, 0x20, 0x0E44, 0x0E17, 0x0E22, 0};
+    QElapsedTimer timer;
+    timer.start();
+    QTextLayout layout(QString::fromUtf16(sample), font);
+    layout.beginLayout();
+    static_cast<void>(layout.createLine());
+    layout.endLayout();
+    return static_cast<double>(timer.nsecsElapsed()) / 1.0e6;
+}
+
 FontWarmup::~FontWarmup() { stop(); }
 
 void FontWarmup::start() {
@@ -62,7 +78,8 @@ void FontWarmup::start() {
             if (cancel_.load()) return;
             static_cast<void>(QFontDatabase::styles(family));
             familiesRead_.fetch_add(1);
-            if ((familiesRead_.load() & 0x1f) == 0) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            // Let the interface thread take the font lock between families.
+            std::this_thread::yield();
         }
         finished_.store(true);
     });

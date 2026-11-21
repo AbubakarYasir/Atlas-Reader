@@ -23,6 +23,7 @@ public:
 
     void recordCheckpoint(const QString& metricName, Clock::time_point checkpoint);
     void recordStage(const QString& metricName);
+    void recordValue(const QString& metricName, double value, const QString& unit);
     void recordQmlLoaded();
     void attach(QQuickWindow* window);
     void recordShutdown();

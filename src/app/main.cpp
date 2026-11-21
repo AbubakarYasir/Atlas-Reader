@@ -74,6 +74,14 @@ int main(int argc, char* argv[]) {
 #else
     static_cast<void>(semiboldAttached);
 #endif
+
+    // The remaining font families are read in the background from here on, so
+    // that a book title or bookmark with characters outside the interface fonts
+    // does not make the interface thread read them all (InterfaceFonts.h).
+    // ATLAS_FONT_WARMUP: "0" off, "late" starts at the first frame; default now.
+    const QString fontWarmupMode = qEnvironmentVariable("ATLAS_FONT_WARMUP");
+    atlas::fonts::FontWarmup fontWarmup;
+    if (fontWarmupMode != QLatin1String("0") && fontWarmupMode != QLatin1String("late")) fontWarmup.start();
     atlas::accessibility::installTreeItemAccessibility(); // before any QML exists
     metrics_fontsRegistered = MetricsClock::now();
 
@@ -295,13 +303,27 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // Once the window is up, the remaining font families are read in the
-    // background (InterfaceFonts.h). ATLAS_FONT_WARMUP=0 turns this off.
-    atlas::fonts::FontWarmup fontWarmup;
-    if (qEnvironmentVariable("ATLAS_FONT_WARMUP") != QLatin1String("0")) {
-        auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst());
-        QObject::connect(window, &QQuickWindow::frameSwapped, &app, [&fontWarmup, &app] {
-            QTimer::singleShot(1500, &app, [&fontWarmup] { fontWarmup.start(); });
+    // Font diagnostics: when the background read finished, and (ATLAS_FONT_PROBE=1)
+    // what a character from another script costs afterwards.
+    auto* fontWarmupWatch = new QTimer(&app);
+    fontWarmupWatch->setInterval(50);
+    QObject::connect(fontWarmupWatch, &QTimer::timeout, &app,
+                     [&fontWarmup, &metrics, fontWarmupWatch, systemFontFamily, fontWarmupMode] {
+        if (!fontWarmup.finished() && fontWarmupMode != QLatin1String("0")) return;
+        fontWarmupWatch->stop();
+        if (fontWarmupMode != QLatin1String("0")) {
+            metrics.recordStage(QStringLiteral("fonts.warmup_finished_ms"));
+            metrics.recordValue(QStringLiteral("fonts.warmup_families"), fontWarmup.familiesRead(), QStringLiteral("count"));
+        }
+        if (qEnvironmentVariable("ATLAS_FONT_PROBE") == QLatin1String("1")) {
+            metrics.recordValue(QStringLiteral("fonts.fallback_probe_ms"),
+                                atlas::fonts::measureFallbackLookupMs(systemFontFamily), QStringLiteral("ms"));
+        }
+    });
+    if (auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst())) {
+        QObject::connect(window, &QQuickWindow::frameSwapped, &app, [&fontWarmup, fontWarmupWatch, fontWarmupMode] {
+            if (fontWarmupMode == QLatin1String("late")) fontWarmup.start();
+            fontWarmupWatch->start();
         }, Qt::SingleShotConnection);
     }
 
